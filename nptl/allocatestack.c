@@ -212,7 +212,7 @@ get_cached_stack (size_t *sizep, void **memp)
     }
 
   /* Don't allow setxid until cloned.  */
-  result->setxid_futex = -1;
+  atomic_store_relaxed(&result->setxid_futex, -1);
 
   /* Dequeue the entry.  */
   stack_list_del (&result->list);
@@ -231,7 +231,7 @@ get_cached_stack (size_t *sizep, void **memp)
   *memp = result->stackblock;
 
   /* Cancellation handling is back to the default.  */
-  result->cancelhandling = 0;
+  atomic_store_relaxed(&result->cancelhandling, 0);
   result->cleanup = NULL;
 
   /* No pending event.  */
@@ -497,7 +497,7 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
 #endif
 
       /* Don't allow setxid until cloned.  */
-      pd->setxid_futex = -1;
+      atomic_store_relaxed(&pd->setxid_futex, -1);
 
       /* Allocate the DTV for this thread.  */
       if (_dl_allocate_tls (TLS_TPADJ (pd)) == NULL)
@@ -617,7 +617,7 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
 #endif
 
 	  /* Don't allow setxid until cloned.  */
-	  pd->setxid_futex = -1;
+	  atomic_store_relaxed(&pd->setxid_futex, -1);
 
 	  /* Allocate the DTV for this thread.  */
 	  if (_dl_allocate_tls (TLS_TPADJ (pd)) == NULL)
@@ -909,7 +909,7 @@ __reclaim_stacks (void)
       if (curp != self)
 	{
 	  /* This marks the stack as free.  */
-	  curp->tid = 0;
+		atomic_store_relaxed(&curp->tid, 0);
 
 	  /* Account for the size of the stack.  */
 	  stack_cache_actsize += curp->stackblock_size;
@@ -1019,18 +1019,18 @@ setxid_mark_thread (struct xid_command *cmdp, struct pthread *t)
   int ch;
 
   /* Wait until this thread is cloned.  */
-  if (t->setxid_futex == -1
+  if (atomic_load_relaxed(&t->setxid_futex) == -1
       && ! atomic_compare_and_exchange_bool_acq (&t->setxid_futex, -2, -1))
     do
       futex_wait_simple (&t->setxid_futex, -2, FUTEX_PRIVATE);
-    while (t->setxid_futex == -2);
+    while (atomic_load_relaxed(&t->setxid_futex) == -2);
 
   /* Don't let the thread exit before the setxid handler runs.  */
-  t->setxid_futex = 0;
+  atomic_store_release(&t->setxid_futex, 0);
 
   do
     {
-      ch = t->cancelhandling;
+		ch = atomic_load_relaxed(&t->cancelhandling);
 
       /* If the thread is exiting right now, ignore it.  */
       if ((ch & EXITING_BITMASK) != 0)
@@ -1039,7 +1039,7 @@ setxid_mark_thread (struct xid_command *cmdp, struct pthread *t)
 	     progress.  */
 	  if ((ch & SETXID_BITMASK) == 0)
 	    {
-	      t->setxid_futex = 1;
+			atomic_store_release(&t->setxid_futex, 1);
 	      futex_wake (&t->setxid_futex, 1, FUTEX_PRIVATE);
 	    }
 	  return;
@@ -1057,7 +1057,7 @@ setxid_unmark_thread (struct xid_command *cmdp, struct pthread *t)
 
   do
     {
-      ch = t->cancelhandling;
+		ch = atomic_load_relaxed(&t->cancelhandling);
       if ((ch & SETXID_BITMASK) == 0)
 	return;
     }
@@ -1065,7 +1065,7 @@ setxid_unmark_thread (struct xid_command *cmdp, struct pthread *t)
 					       ch & ~SETXID_BITMASK, ch));
 
   /* Release the futex just in case.  */
-  t->setxid_futex = 1;
+  atomic_store_release(&t->setxid_futex, 1);
   futex_wake (&t->setxid_futex, 1, FUTEX_PRIVATE);
 }
 
@@ -1073,7 +1073,7 @@ setxid_unmark_thread (struct xid_command *cmdp, struct pthread *t)
 static int
 setxid_signal_thread (struct xid_command *cmdp, struct pthread *t)
 {
-  if ((t->cancelhandling & SETXID_BITMASK) == 0)
+	if ((atomic_load_relaxed(&t->cancelhandling) & SETXID_BITMASK) == 0)
     return 0;
 
   int val;

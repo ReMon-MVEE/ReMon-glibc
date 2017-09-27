@@ -43,7 +43,7 @@ __pthread_cancel (pthread_t th)
   do
     {
     again:
-      oldval = pd->cancelhandling;
+		oldval = atomic_load_relaxed(&pd->cancelhandling);
       newval = oldval | CANCELING_BITMASK | CANCELED_BITMASK;
 
       /* Avoid doing unnecessary work.  The atomic operation can

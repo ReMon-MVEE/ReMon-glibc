@@ -144,7 +144,7 @@ __pthread_mutex_timedlock (pthread_mutex_t *mutex,
 	 see comments at ENQUEUE_MUTEX.  */
       __asm ("" ::: "memory");
 
-      oldval = mutex->__data.__lock;
+      oldval = atomic_load_relaxed(&mutex->__data.__lock);
       /* This is set to FUTEX_WAITERS iff we might have shared the
 	 FUTEX_WAITERS flag with other threads, and therefore need to keep it
 	 set to avoid lost wake-ups.  We have the same requirement in the
@@ -272,7 +272,7 @@ __pthread_mutex_timedlock (pthread_mutex_t *mutex,
 							oldval)
 		  != 0)
 		{
-		  oldval = mutex->__data.__lock;
+			oldval = atomic_load_relaxed(&mutex->__data.__lock);
 		  continue;
 		}
 	      oldval |= FUTEX_WAITERS;
@@ -298,7 +298,7 @@ __pthread_mutex_timedlock (pthread_mutex_t *mutex,
 	    return -err;
 #endif
 	  /* Reload current lock value.  */
-	  oldval = mutex->__data.__lock;
+	  oldval = atomic_load_relaxed(&mutex->__data.__lock);
 	}
 
       /* We have acquired the mutex; check if it is still consistent.  */
@@ -352,7 +352,7 @@ __pthread_mutex_timedlock (pthread_mutex_t *mutex,
 	    __asm ("" ::: "memory");
 	  }
 
-	oldval = mutex->__data.__lock;
+	oldval = atomic_load_relaxed(&mutex->__data.__lock);
 
 	/* Check whether we already hold the mutex.  */
 	if (__glibc_unlikely ((oldval & FUTEX_TID_MASK) == id))
@@ -441,7 +441,7 @@ __pthread_mutex_timedlock (pthread_mutex_t *mutex,
 		return INTERNAL_SYSCALL_ERRNO (e, __err);
 	      }
 
-	    oldval = mutex->__data.__lock;
+	    oldval = atomic_load_relaxed(&mutex->__data.__lock);
 
 	    assert (robust || (oldval & FUTEX_OWNER_DIED) == 0);
 	  }
@@ -511,7 +511,7 @@ __pthread_mutex_timedlock (pthread_mutex_t *mutex,
       {
 	int kind = mutex->__data.__kind & PTHREAD_MUTEX_KIND_MASK_NP;
 
-	oldval = mutex->__data.__lock;
+	oldval = atomic_load_relaxed(&mutex->__data.__lock);
 
 	/* Check whether we already hold the mutex.  */
 	if (mutex->__data.__owner == id)

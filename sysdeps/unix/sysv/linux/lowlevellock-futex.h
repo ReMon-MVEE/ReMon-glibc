@@ -115,7 +115,7 @@
 		     nr_wake, nr_move, mutex, val)
 
 /* Returns non-zero if error happened, zero if success.  */
-#define lll_futex_wake_unlock(futexp, nr_wake, nr_wake2, futexp2, private) \
+#define orig_lll_futex_wake_unlock(futexp, nr_wake, nr_wake2, futexp2, private) \
   lll_futex_syscall (6, futexp,                                         \
 		     __lll_private_flag (FUTEX_WAKE_OP, private),       \
 		     nr_wake, nr_wake2, futexp2,                        \

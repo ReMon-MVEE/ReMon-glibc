@@ -26,7 +26,7 @@
 void
 __lll_lock_wait_private (int *futex)
 {
-  if (*futex == 2)
+  if (atomic_load_relaxed(futex) == 2)
     lll_futex_wait (futex, 2, LLL_PRIVATE); /* Wait if *futex == 2.  */
 
   while (atomic_exchange_acq (futex, 2) != 0)
@@ -39,7 +39,7 @@ __lll_lock_wait_private (int *futex)
 void
 __lll_lock_wait (int *futex, int private)
 {
-  if (*futex == 2)
+  if (atomic_load_relaxed(futex) == 2)
     lll_futex_wait (futex, 2, private); /* Wait if *futex == 2.  */
 
   while (atomic_exchange_acq (futex, 2) != 0)

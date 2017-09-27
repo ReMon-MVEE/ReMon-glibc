@@ -44,7 +44,7 @@ __internal_atexit (void (*func) (void *), void *arg, void *d,
   new->func.cxa.arg = arg;
   new->func.cxa.dso_handle = d;
   atomic_write_barrier ();
-  new->flavor = ef_cxa;
+  atomic_store_relaxed(&new->flavor, ef_cxa);
   return 0;
 }
 
@@ -81,7 +81,7 @@ __new_exitfn (struct exit_function_list **listp)
   for (l = *listp; l != NULL; p = l, l = l->next)
     {
       for (i = l->idx; i > 0; --i)
-	if (l->fns[i - 1].flavor != ef_free)
+		  if (atomic_load_relaxed(&l->fns[i - 1].flavor) != ef_free)
 	  break;
 
       if (i > 0)
@@ -123,7 +123,7 @@ __new_exitfn (struct exit_function_list **listp)
   /* Mark entry as used, but we don't know the flavor now.  */
   if (r != NULL)
     {
-      r->flavor = ef_us;
+		atomic_store_relaxed(&r->flavor, ef_us);
       ++__new_exitfn_called;
     }
 

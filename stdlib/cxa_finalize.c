@@ -70,7 +70,7 @@ __cxa_finalize (void *d)
 
       for (f = &funcs->fns[funcs->idx - 1]; f >= &funcs->fns[0]; --f)
 	if (d == NULL || d == f->func.cxa.dso_handle)
-	  f->flavor = ef_free;
+		atomic_store_relaxed(&f->flavor, ef_free);
     }
 
   /* Remove the registered fork handlers.  We do not have to

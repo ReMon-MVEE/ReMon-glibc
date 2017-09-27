@@ -1,1 +1,1 @@
-/* __lll_timedlock_wait is in lowlevellock.S.  */
+#include "../../../../../nptl/lll_timedlock_wait.c"

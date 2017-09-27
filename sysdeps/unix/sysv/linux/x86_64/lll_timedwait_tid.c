@@ -1,1 +1,1 @@
-/* __lll_timedwait_tid is in lowlevellock.S.  */
+#include "../../../../../nptl/lll_timedwait_tid.c"

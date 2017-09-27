@@ -31,7 +31,7 @@ __pthread_setcancelstate (int state, int *oldstate)
 
   self = THREAD_SELF;
 
-  int oldval = THREAD_GETMEM (self, cancelhandling);
+  int oldval = THREAD_ATOMIC_GETMEM (self, cancelhandling);
   while (1)
     {
       int newval = (state == PTHREAD_CANCEL_DISABLE

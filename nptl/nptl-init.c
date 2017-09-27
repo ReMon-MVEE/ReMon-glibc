@@ -191,7 +191,7 @@ sigcancel_handler (int sig, siginfo_t *si, void *ctx)
 
   struct pthread *self = THREAD_SELF;
 
-  int oldval = THREAD_GETMEM (self, cancelhandling);
+  int oldval = THREAD_ATOMIC_GETMEM (self, cancelhandling);
   while (1)
     {
       /* We are canceled now.  When canceled by another thread this flag
@@ -257,14 +257,14 @@ sighandler_setxid (int sig, siginfo_t *si, void *ctx)
   int flags, newval;
   do
     {
-      flags = THREAD_GETMEM (self, cancelhandling);
+      flags = THREAD_ATOMIC_GETMEM (self, cancelhandling);
       newval = THREAD_ATOMIC_CMPXCHG_VAL (self, cancelhandling,
 					  flags & ~SETXID_BITMASK, flags);
     }
   while (flags != newval);
 
   /* And release the futex.  */
-  self->setxid_futex = 1;
+  atomic_store_release(&self->setxid_futex, 1);
   futex_wake (&self->setxid_futex, 1, FUTEX_PRIVATE);
 
   if (atomic_decrement_val (&__xidcmd->cntr) == 0)

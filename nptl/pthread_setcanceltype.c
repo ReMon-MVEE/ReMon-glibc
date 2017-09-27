@@ -34,7 +34,7 @@ __pthread_setcanceltype (int type, int *oldtype)
 
   volatile struct pthread *self = THREAD_SELF;
 
-  int oldval = THREAD_GETMEM (self, cancelhandling);
+  int oldval = THREAD_ATOMIC_GETMEM (self, cancelhandling);
   while (1)
     {
       int newval = (type == PTHREAD_CANCEL_ASYNCHRONOUS

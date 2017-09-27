@@ -1620,7 +1620,7 @@ typedef struct malloc_chunk *mfastbinptr;
 
 #define FASTCHUNKS_BIT        (1U)
 
-#define have_fastchunks(M)     (((M)->flags & FASTCHUNKS_BIT) == 0)
+#define have_fastchunks(M)     ((atomic_load_acquire(&(M)->flags) & FASTCHUNKS_BIT) == 0)
 #define clear_fastchunks(M)    catomic_or (&(M)->flags, FASTCHUNKS_BIT)
 #define set_fastchunks(M)      catomic_and (&(M)->flags, ~FASTCHUNKS_BIT)
 
@@ -2151,7 +2151,7 @@ do_check_malloc_state (mstate av)
 
   for (i = 0; i < NFASTBINS; ++i)
     {
-      p = fastbin (av, i);
+      p = atomic_load_acquire(&fastbin (av, i));
 
       /* The following test can only be performed for the main arena.
          While mallopt calls malloc_consolidate to get rid of all fast
@@ -2303,7 +2303,7 @@ sysmalloc (INTERNAL_SIZE_T nb, mstate av)
 
   if (av == NULL
       || ((unsigned long) (nb) >= (unsigned long) (mp_.mmap_threshold)
-	  && (mp_.n_mmaps < mp_.n_mmaps_max)))
+		  && (atomic_load_acquire(&mp_.n_mmaps) < mp_.n_mmaps_max)))
     {
       char *mm;           /* return value from mmap call*/
 
@@ -3540,7 +3540,7 @@ _int_malloc (mstate av, size_t bytes)
     {
       idx = fastbin_index (nb);
       mfastbinptr *fb = &fastbin (av, idx);
-      mchunkptr pp = *fb;
+      mchunkptr pp = atomic_load_acquire(fb);
       REMOVE_FB (fb, victim, pp);
       if (victim != 0)
         {
@@ -3557,7 +3557,7 @@ _int_malloc (mstate av, size_t bytes)
 
 	      /* While bin not empty and tcache not full, copy chunks over.  */
 	      while (tcache->counts[tc_idx] < mp_.tcache_count
-		     && (pp = *fb) != NULL)
+				 && (pp = atomic_load_acquire(fb)) != NULL)
 		{
 		  REMOVE_FB (fb, tc_victim, pp);
 		  if (tc_victim != 0)
@@ -4168,7 +4168,7 @@ _int_free (mstate av, mchunkptr p, int have_lock)
     fb = &fastbin (av, idx);
 
     /* Atomically link P to its fastbin: P->FD = *FB; *FB = P;  */
-    mchunkptr old = *fb, old2;
+    mchunkptr old = atomic_load_acquire(fb), old2;
     unsigned int old_idx = ~0u;
     do
       {
@@ -4845,7 +4845,7 @@ int_mallinfo (mstate av, struct mallinfo *m)
 
   for (i = 0; i < NFASTBINS; ++i)
     {
-      for (p = fastbin (av, i); p != 0; p = p->fd)
+      for (p = atomic_load_acquire(&fastbin (av, i)); p != 0; p = p->fd)
         {
           ++nfastblocks;
           fastavail += chunksize (p);
@@ -4873,8 +4873,8 @@ int_mallinfo (mstate av, struct mallinfo *m)
   m->fsmblks += fastavail;
   if (av == &main_arena)
     {
-      m->hblks = mp_.n_mmaps;
-      m->hblkhd = mp_.mmapped_mem;
+      m->hblks = atomic_load_acquire(&mp_.n_mmaps);
+      m->hblkhd = atomic_load_relaxed(&mp_.mmapped_mem);
       m->usmblks = 0;
       m->keepcost = chunksize (av->top);
     }
@@ -4914,7 +4914,7 @@ __malloc_stats (void)
 {
   int i;
   mstate ar_ptr;
-  unsigned int in_use_b = mp_.mmapped_mem, system_b = in_use_b;
+  unsigned int in_use_b = atomic_load_acquire(&mp_.mmapped_mem), system_b = in_use_b;
 
   if (__malloc_initialized < 0)
     ptmalloc_init ();
@@ -4945,9 +4945,9 @@ __malloc_stats (void)
   fprintf (stderr, "Total (incl. mmap):\n");
   fprintf (stderr, "system bytes     = %10u\n", system_b);
   fprintf (stderr, "in use bytes     = %10u\n", in_use_b);
-  fprintf (stderr, "max mmap regions = %10u\n", (unsigned int) mp_.max_n_mmaps);
+  fprintf (stderr, "max mmap regions = %10u\n", (unsigned int) atomic_load_relaxed(&mp_.max_n_mmaps));
   fprintf (stderr, "max mmap bytes   = %10lu\n",
-           (unsigned long) mp_.max_mmapped_mem);
+           (unsigned long) atomic_load_relaxed(&mp_.max_mmapped_mem));
   ((_IO_FILE *) stderr)->_flags2 |= old_flags2;
   _IO_funlockfile (stderr);
 }
@@ -5363,7 +5363,7 @@ __malloc_info (int options, FILE *fp)
 
       for (size_t i = 0; i < NFASTBINS; ++i)
 	{
-	  mchunkptr p = fastbin (ar_ptr, i);
+	  mchunkptr p = atomic_load_acquire(&fastbin (ar_ptr, i));
 	  if (p != NULL)
 	    {
 	      size_t nthissize = 0;
@@ -5485,7 +5485,7 @@ __malloc_info (int options, FILE *fp)
 	   "<aspace type=\"mprotect\" size=\"%zu\"/>\n"
 	   "</malloc>\n",
 	   total_nfastblocks, total_fastavail, total_nblocks, total_avail,
-	   mp_.n_mmaps, mp_.mmapped_mem,
+		   atomic_load_relaxed(&mp_.n_mmaps), atomic_load_relaxed(&mp_.mmapped_mem),
 	   total_system, total_max_system,
 	   total_aspace, total_aspace_mprotect);
 

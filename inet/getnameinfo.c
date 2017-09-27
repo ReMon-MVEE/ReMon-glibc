@@ -90,8 +90,6 @@ nrl_domainname (void)
 {
   static int not_first;
 
-  if (! not_first)
-    {
       __libc_lock_define_initialized (static, lock);
       __libc_lock_lock (lock);
 
@@ -181,7 +179,6 @@ nrl_domainname (void)
 	}
 
       __libc_lock_unlock (lock);
-    }
 
   return domain;
 };

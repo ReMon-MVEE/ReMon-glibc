@@ -1077,6 +1077,18 @@ of this helper program; chances are you did not intend to run this program.\n\
       main_map->l_name = (char *) "";
       *user_entry = main_map->l_entry;
 
+     /* GHUMVEE patch: ask the MVEE for the "virtualized" argv[0].  This can be
+     necessary if we run compile-time diversified variants that print out their
+     argv[0] value. */                                                                                                                                                                                             
+	 char virtualized_argv0[4096];
+	 if (syscall(MVEE_GET_VIRTUALIZED_ARGV0, _dl_argv[0], virtualized_argv0, 4096) == 0)
+	 {
+		 // should we do this?
+		 if (_dl_argv[0])
+			 free(_dl_argv[0]);
+		 _dl_argv[0] = strdup(virtualized_argv0);
+	 }
+
 #ifdef HAVE_AUX_VECTOR
       /* Adjust the on-stack auxiliary vector so that it looks like the
 	 binary was executed directly.  */

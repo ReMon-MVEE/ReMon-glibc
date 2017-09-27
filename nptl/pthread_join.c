@@ -66,10 +66,10 @@ __pthread_join (pthread_t threadid, void **thread_return)
 
   if ((pd == self
        || (self->joinid == pd
-	   && (pd->cancelhandling
+		   && (atomic_load_relaxed(&pd->cancelhandling)
 	       & (CANCELING_BITMASK | CANCELED_BITMASK | EXITING_BITMASK
 		  | TERMINATED_BITMASK)) == 0))
-      && !CANCEL_ENABLED_AND_CANCELED (self->cancelhandling))
+      && !CANCEL_ENABLED_AND_CANCELED (atomic_load_relaxed(&self->cancelhandling)))
     /* This is a deadlock situation.  The threads are waiting for each
        other to finish.  Note that this is a "may" error.  To be 100%
        sure we catch this error we would have to lock the data
@@ -100,7 +100,7 @@ __pthread_join (pthread_t threadid, void **thread_return)
   if (__glibc_likely (result == 0))
     {
       /* We mark the thread as terminated and as joined.  */
-      pd->tid = -1;
+		atomic_store_relaxed(&pd->tid, -1);
 
       /* Store the return value if the caller is interested.  */
       if (thread_return != NULL)

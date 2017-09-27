@@ -25,7 +25,7 @@ __lll_unlock_elision(int *lock, int private)
 {
   /* When the lock was free we're in a transaction.
      When you crash here you unlocked a free lock.  */
-  if (*lock == 0)
+	if (atomic_load_relaxed(lock) == 0)
     _xend();
   else
     lll_unlock ((*lock), private);

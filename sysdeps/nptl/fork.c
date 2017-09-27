@@ -63,12 +63,12 @@ __libc_fork (void)
   /* Run all the registered preparation handlers.  In reverse order.
      While doing this we build up a list of all the entries.  */
   struct fork_handler *runp;
-  while ((runp = __fork_handlers) != NULL)
+  while ((runp = atomic_load_relaxed(&__fork_handlers)) != NULL)
     {
       /* Make sure we read from the current RUNP pointer.  */
       atomic_full_barrier ();
 
-      unsigned int oldval = runp->refcntr;
+      unsigned int oldval = atomic_load_relaxed(&runp->refcntr);
 
       if (oldval == 0)
 	/* This means some other thread removed the list just after
@@ -103,7 +103,7 @@ __libc_fork (void)
 	  allp = newp;
 
 	  /* Advance to the next handler.  */
-	  runp = runp->next;
+	  runp = atomic_load_relaxed(&runp->next);
 	  if (runp == NULL)
 	    break;
 
@@ -208,7 +208,7 @@ __libc_fork (void)
 	     may have been bumped up by other threads doing a fork.
 	     We reset it to 1, to avoid waiting for non-existing
 	     thread(s) to release the count.  */
-	  allp->handler->refcntr = 1;
+	  atomic_store_relaxed(&allp->handler->refcntr, 1);
 
 	  /* XXX We could at this point look through the object pool
 	     and mark all objects not on the __fork_handlers list as
@@ -216,7 +216,7 @@ __libc_fork (void)
 	     while another thread called dlclose() and that call had
 	     to create a new list.  */
 
-	  allp = allp->next;
+	  allp = atomic_load_relaxed(&allp->next);
 	}
 
       /* Initialize the fork lock.  */
@@ -244,7 +244,7 @@ __libc_fork (void)
 	      && allp->handler->need_signal)
 	    futex_wake (&allp->handler->refcntr, 1, FUTEX_PRIVATE);
 
-	  allp = allp->next;
+	  allp = atomic_load_relaxed(&allp->next);
 	}
     }
 

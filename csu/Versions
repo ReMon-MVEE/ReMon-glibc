@@ -2,6 +2,14 @@ libc {
   GLIBC_2.0 {
     # helper functions
     __libc_init_first; __libc_start_main;
+    mvee_atomic_preop;
+    mvee_atomic_postop;
+    mvee_atomic_preop_internal;
+    mvee_atomic_postop_internal;
+    mvee_invalidate_buffer;
+    mvee_all_heaps_aligned;
+    mvee_should_sync_tid;
+    mvee_should_futex_unlock;
   }
   GLIBC_2.1 {
     # New special glibc functions.

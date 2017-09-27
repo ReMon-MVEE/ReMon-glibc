@@ -59,7 +59,7 @@ pthread_mutex_setprioceiling (pthread_mutex_t *mutex, int prioceiling,
 	locked = true;
     }
 
-  int oldval = mutex->__data.__lock;
+  int oldval = atomic_load_relaxed(&mutex->__data.__lock);
   if (! locked)
     do
       {
@@ -109,9 +109,9 @@ pthread_mutex_setprioceiling (pthread_mutex_t *mutex, int prioceiling,
 
   int newlock = 0;
   if (locked)
-    newlock = (mutex->__data.__lock & ~PTHREAD_MUTEX_PRIO_CEILING_MASK);
-  mutex->__data.__lock = newlock
-			 | (prioceiling << PTHREAD_MUTEX_PRIO_CEILING_SHIFT);
+	  newlock = (atomic_load_relaxed(&mutex->__data.__lock) & ~PTHREAD_MUTEX_PRIO_CEILING_MASK);
+  atomic_store_relaxed(&mutex->__data.__lock, newlock
+			   | (prioceiling << PTHREAD_MUTEX_PRIO_CEILING_SHIFT));
   atomic_full_barrier ();
 
   lll_futex_wake (&mutex->__data.__lock, INT_MAX,

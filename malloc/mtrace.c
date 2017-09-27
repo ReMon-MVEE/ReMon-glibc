@@ -137,12 +137,12 @@ tr_freehook (void *ptr, const void *caller)
       tr_break ();
       __libc_lock_lock (lock);
     }
-  __free_hook = tr_old_free_hook;
+  atomic_store_relaxed(&__free_hook, tr_old_free_hook);
   if (tr_old_free_hook != NULL)
     (*tr_old_free_hook)(ptr, caller);
   else
     free (ptr);
-  __free_hook = tr_freehook;
+  atomic_store_relaxed(&__free_hook, tr_freehook);
   __libc_lock_unlock (lock);
 }
 
@@ -154,12 +154,12 @@ tr_mallochook (size_t size, const void *caller)
   Dl_info mem;
   Dl_info *info = lock_and_info (caller, &mem);
 
-  __malloc_hook = tr_old_malloc_hook;
+  atomic_store_relaxed(&__malloc_hook, tr_old_malloc_hook);
   if (tr_old_malloc_hook != NULL)
     hdr = (void *) (*tr_old_malloc_hook)(size, caller);
   else
     hdr = (void *) malloc (size);
-  __malloc_hook = tr_mallochook;
+  atomic_store_relaxed(&__malloc_hook, tr_mallochook);
 
   tr_where (caller, info);
   /* We could be printing a NULL here; that's OK.  */
@@ -184,16 +184,16 @@ tr_reallochook (void *ptr, size_t size, const void *caller)
   Dl_info mem;
   Dl_info *info = lock_and_info (caller, &mem);
 
-  __free_hook = tr_old_free_hook;
-  __malloc_hook = tr_old_malloc_hook;
-  __realloc_hook = tr_old_realloc_hook;
+  atomic_store_relaxed(&__free_hook, tr_old_free_hook);
+  atomic_store_relaxed(&__malloc_hook, tr_old_malloc_hook);
+  atomic_store_relaxed(&__realloc_hook, tr_old_realloc_hook);
   if (tr_old_realloc_hook != NULL)
     hdr = (void *) (*tr_old_realloc_hook)(ptr, size, caller);
   else
     hdr = (void *) realloc (ptr, size);
-  __free_hook = tr_freehook;
-  __malloc_hook = tr_mallochook;
-  __realloc_hook = tr_reallochook;
+  atomic_store_relaxed(&__free_hook, tr_freehook);
+  atomic_store_relaxed(&__malloc_hook, tr_mallochook);
+  atomic_store_relaxed(&__realloc_hook, tr_reallochook);
 
   tr_where (caller, info);
   if (hdr == NULL)
@@ -229,14 +229,14 @@ tr_memalignhook (size_t alignment, size_t size, const void *caller)
   Dl_info mem;
   Dl_info *info = lock_and_info (caller, &mem);
 
-  __memalign_hook = tr_old_memalign_hook;
-  __malloc_hook = tr_old_malloc_hook;
+  atomic_store_relaxed(&__memalign_hook, tr_old_memalign_hook);
+  atomic_store_relaxed(&__malloc_hook, tr_old_malloc_hook);
   if (tr_old_memalign_hook != NULL)
     hdr = (void *) (*tr_old_memalign_hook)(alignment, size, caller);
   else
     hdr = (void *) memalign (alignment, size);
-  __memalign_hook = tr_memalignhook;
-  __malloc_hook = tr_mallochook;
+  atomic_store_relaxed(&__memalign_hook, tr_memalignhook);
+  atomic_store_relaxed(&__malloc_hook, tr_mallochook);
 
   tr_where (caller, info);
   /* We could be printing a NULL here; that's OK.  */
@@ -304,14 +304,14 @@ mtrace (void)
           malloc_trace_buffer = mtb;
           setvbuf (mallstream, malloc_trace_buffer, _IOFBF, TRACE_BUFFER_SIZE);
           fprintf (mallstream, "= Start\n");
-          tr_old_free_hook = __free_hook;
-          __free_hook = tr_freehook;
-          tr_old_malloc_hook = __malloc_hook;
-          __malloc_hook = tr_mallochook;
-          tr_old_realloc_hook = __realloc_hook;
-          __realloc_hook = tr_reallochook;
-          tr_old_memalign_hook = __memalign_hook;
-          __memalign_hook = tr_memalignhook;
+          tr_old_free_hook = atomic_load_relaxed(&__free_hook);
+          atomic_store_relaxed(&__free_hook, tr_freehook);
+          tr_old_malloc_hook = atomic_load_relaxed(&__malloc_hook);
+          atomic_store_relaxed(&__malloc_hook, tr_mallochook);
+          tr_old_realloc_hook = atomic_load_relaxed(&__realloc_hook);
+          atomic_store_relaxed(&__realloc_hook, tr_reallochook);
+          tr_old_memalign_hook = atomic_load_relaxed(&__memalign_hook);
+          atomic_store_relaxed(&__memalign_hook, tr_memalignhook);
 #ifdef _LIBC
           if (!added_atexit_handler)
             {
@@ -338,10 +338,10 @@ muntrace (void)
      file.  */
   FILE *f = mallstream;
   mallstream = NULL;
-  __free_hook = tr_old_free_hook;
-  __malloc_hook = tr_old_malloc_hook;
-  __realloc_hook = tr_old_realloc_hook;
-  __memalign_hook = tr_old_memalign_hook;
+  atomic_store_relaxed(&__free_hook, tr_old_free_hook);
+  atomic_store_relaxed(&__malloc_hook, tr_old_malloc_hook);
+  atomic_store_relaxed(&__realloc_hook, tr_old_realloc_hook);
+  atomic_store_relaxed(&__memalign_hook, tr_old_memalign_hook);
 
   fprintf (f, "= End\n");
   fclose (f);

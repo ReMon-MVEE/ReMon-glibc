@@ -68,7 +68,7 @@ __lll_trylock_elision (int *futex, short *adapt_count)
     {
       /* Lost updates are possible but harmless (see above).  */
       atomic_store_relaxed (adapt_count,
-	  atomic_load_relaxed (adapt_count) - 1);
+	  orig_atomic_load_relaxed (adapt_count) - 1);
     }
 
   return lll_trylock (*futex);

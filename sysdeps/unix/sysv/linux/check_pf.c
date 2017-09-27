@@ -269,7 +269,7 @@ make_request (int fd, pid_t pid)
   if (seen_ipv6 && result != NULL)
     {
       result->timestamp = get_nl_timestamp ();
-      result->usecnt = 2;
+      atomic_store_relaxed(&result->usecnt, 2);
       result->seen_ipv4 = seen_ipv4;
       result->seen_ipv6 = true;
       result->in6ailen = result_len;
@@ -348,7 +348,7 @@ __check_pf (bool *seen_ipv4, bool *seen_ipv6,
       *in6ailen = data->in6ailen;
       *in6ai = data->in6ai;
 
-      if (olddata != NULL && olddata->usecnt > 0
+      if (olddata != NULL && atomic_load_relaxed(&olddata->usecnt) > 0
 	  && atomic_add_zero (&olddata->usecnt, -1))
 	free (olddata);
 
@@ -381,7 +381,7 @@ __free_in6ai (struct in6addrinfo *ai)
 	{
 	  __libc_lock_lock (lock);
 
-	  if (data->usecnt == 0)
+	  if (atomic_load_relaxed(&data->usecnt) == 0)
 	    /* Still unused.  */
 	    free (data);
 

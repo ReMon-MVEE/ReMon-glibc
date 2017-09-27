@@ -412,7 +412,7 @@ START_THREAD_DEFN
   /* If the parent was running cancellation handlers while creating
      the thread the new thread inherited the signal mask.  Reset the
      cancellation signal mask.  */
-  if (__glibc_unlikely (pd->parent_cancelhandling & CANCELING_BITMASK))
+  if (__glibc_unlikely (atomic_load_relaxed(&pd->parent_cancelhandling) & CANCELING_BITMASK))
     {
       INTERNAL_SYSCALL_DECL (err);
       sigset_t mask;
@@ -556,7 +556,7 @@ START_THREAD_DEFN
   if (IS_DETACHED (pd))
     /* Free the TCB.  */
     __free_tcb (pd);
-  else if (__glibc_unlikely (pd->cancelhandling & SETXID_BITMASK))
+  else if (__glibc_unlikely (atomic_load_relaxed(&pd->cancelhandling) & SETXID_BITMASK))
     {
       /* Some other thread might call any of the setXid functions and expect
 	 us to reply.  In this case wait until we did that.  */
@@ -566,10 +566,10 @@ START_THREAD_DEFN
 	   condition used in the surrounding loop (cancelhandling).  We need
 	   to check and document why this is correct.  */
 	futex_wait_simple (&pd->setxid_futex, 0, FUTEX_PRIVATE);
-      while (pd->cancelhandling & SETXID_BITMASK);
+      while (atomic_load_relaxed(&pd->cancelhandling) & SETXID_BITMASK);
 
       /* Reset the value so that the stack can be reused.  */
-      pd->setxid_futex = 0;
+      atomic_store_release(&pd->setxid_futex, 0);
     }
 
   /* We cannot call '_exit' here.  '_exit' will terminate the process.
@@ -708,7 +708,8 @@ __pthread_create_2_1 (pthread_t *newthread, const pthread_attr_t *attr,
 
   /* Inform start_thread (above) about cancellation state that might
      translate into inherited signal state.  */
-  pd->parent_cancelhandling = THREAD_GETMEM (THREAD_SELF, cancelhandling);
+  int tmp_cancelhandling = THREAD_ATOMIC_GETMEM(THREAD_SELF, cancelhandling);
+  atomic_store_relaxed(&pd->parent_cancelhandling, tmp_cancelhandling);
 
   /* Determine scheduling parameters for the thread.  */
   if (__builtin_expect ((iattr->flags & ATTR_FLAG_NOTINHERITSCHED) != 0, 0)

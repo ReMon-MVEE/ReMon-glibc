@@ -35,7 +35,7 @@ __on_exit (void (*func) (int status, void *arg), void *arg)
   new->func.on.fn = func;
   new->func.on.arg = arg;
   atomic_write_barrier ();
-  new->flavor = ef_on;
+  atomic_store_relaxed(&new->flavor, ef_on);
   return 0;
 }
 weak_alias (__on_exit, on_exit)

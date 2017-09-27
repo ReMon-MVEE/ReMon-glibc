@@ -86,73 +86,73 @@
 
 /* Atomically store NEWVAL in *MEM if *MEM is equal to OLDVAL.
    Return the old *MEM value.  */
-#if !defined atomic_compare_and_exchange_val_acq \
-    && defined __arch_compare_and_exchange_val_32_acq
-# define atomic_compare_and_exchange_val_acq(mem, newval, oldval) \
-  __atomic_val_bysize (__arch_compare_and_exchange_val,acq,		      \
+#if !defined orig_atomic_compare_and_exchange_val_acq \
+    && defined orig___arch_compare_and_exchange_val_32_acq
+# define orig_atomic_compare_and_exchange_val_acq(mem, newval, oldval) \
+  __atomic_val_bysize (orig___arch_compare_and_exchange_val,acq,		      \
 		       mem, newval, oldval)
 #endif
 
 
-#ifndef catomic_compare_and_exchange_val_acq
-# ifdef __arch_c_compare_and_exchange_val_32_acq
-#  define catomic_compare_and_exchange_val_acq(mem, newval, oldval) \
-  __atomic_val_bysize (__arch_c_compare_and_exchange_val,acq,		      \
+#ifndef orig_catomic_compare_and_exchange_val_acq
+# ifdef orig___arch_c_compare_and_exchange_val_32_acq
+#  define orig_catomic_compare_and_exchange_val_acq(mem, newval, oldval) \
+  __atomic_val_bysize (orig___arch_c_compare_and_exchange_val,acq,		      \
 		       mem, newval, oldval)
 # else
-#  define catomic_compare_and_exchange_val_acq(mem, newval, oldval) \
-  atomic_compare_and_exchange_val_acq (mem, newval, oldval)
+#  define orig_catomic_compare_and_exchange_val_acq(mem, newval, oldval) \
+  orig_atomic_compare_and_exchange_val_acq (mem, newval, oldval)
 # endif
 #endif
 
 
-#ifndef catomic_compare_and_exchange_val_rel
-# ifndef atomic_compare_and_exchange_val_rel
-#  define catomic_compare_and_exchange_val_rel(mem, newval, oldval)	      \
-  catomic_compare_and_exchange_val_acq (mem, newval, oldval)
+#ifndef orig_catomic_compare_and_exchange_val_rel
+# ifndef orig_atomic_compare_and_exchange_val_rel
+#  define orig_catomic_compare_and_exchange_val_rel(mem, newval, oldval)	      \
+  orig_catomic_compare_and_exchange_val_acq (mem, newval, oldval)
 # else
-#  define catomic_compare_and_exchange_val_rel(mem, newval, oldval)	      \
-  atomic_compare_and_exchange_val_rel (mem, newval, oldval)
+#  define orig_catomic_compare_and_exchange_val_rel(mem, newval, oldval)	      \
+  orig_atomic_compare_and_exchange_val_rel (mem, newval, oldval)
 # endif
 #endif
 
 
-#ifndef atomic_compare_and_exchange_val_rel
-# define atomic_compare_and_exchange_val_rel(mem, newval, oldval)	      \
-  atomic_compare_and_exchange_val_acq (mem, newval, oldval)
+#ifndef orig_atomic_compare_and_exchange_val_rel
+# define orig_atomic_compare_and_exchange_val_rel(mem, newval, oldval)	      \
+  orig_atomic_compare_and_exchange_val_acq (mem, newval, oldval)
 #endif
 
 
 /* Atomically store NEWVAL in *MEM if *MEM is equal to OLDVAL.
    Return zero if *MEM was changed or non-zero if no exchange happened.  */
-#ifndef atomic_compare_and_exchange_bool_acq
-# ifdef __arch_compare_and_exchange_bool_32_acq
-#  define atomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
-  __atomic_bool_bysize (__arch_compare_and_exchange_bool,acq,		      \
+#ifndef orig_atomic_compare_and_exchange_bool_acq
+# ifdef orig___arch_compare_and_exchange_bool_32_acq
+#  define orig_atomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
+  __atomic_bool_bysize (orig___arch_compare_and_exchange_bool,acq,		      \
 		        mem, newval, oldval)
 # else
-#  define atomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
+#  define orig_atomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
   ({ /* Cannot use __oldval here, because macros later in this file might     \
 	call this macro with __oldval argument.	 */			      \
      __typeof (oldval) __atg3_old = (oldval);				      \
-     atomic_compare_and_exchange_val_acq (mem, newval, __atg3_old)	      \
+     orig_atomic_compare_and_exchange_val_acq (mem, newval, __atg3_old)	      \
        != __atg3_old;							      \
   })
 # endif
 #endif
 
 
-#ifndef catomic_compare_and_exchange_bool_acq
-# ifdef __arch_c_compare_and_exchange_bool_32_acq
-#  define catomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
-  __atomic_bool_bysize (__arch_c_compare_and_exchange_bool,acq,		      \
+#ifndef orig_catomic_compare_and_exchange_bool_acq
+# ifdef orig___arch_c_compare_and_exchange_bool_32_acq
+#  define orig_catomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
+  __atomic_bool_bysize (orig___arch_c_compare_and_exchange_bool,acq,		      \
 		        mem, newval, oldval)
 # else
-#  define catomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
+#  define orig_catomic_compare_and_exchange_bool_acq(mem, newval, oldval) \
   ({ /* Cannot use __oldval here, because macros later in this file might     \
 	call this macro with __oldval argument.	 */			      \
      __typeof (oldval) __atg4_old = (oldval);				      \
-     catomic_compare_and_exchange_val_acq (mem, newval, __atg4_old)	      \
+     orig_catomic_compare_and_exchange_val_acq (mem, newval, __atg4_old)	      \
        != __atg4_old;							      \
   })
 # endif
@@ -169,24 +169,24 @@
      do									      \
        __atg5_oldval = *__atg5_memp;					      \
      while (__builtin_expect						      \
-	    (atomic_compare_and_exchange_bool_acq (__atg5_memp, __atg5_value, \
+	    (orig_atomic_compare_and_exchange_bool_acq (__atg5_memp, __atg5_value, \
 						   __atg5_oldval), 0));	      \
 									      \
      __atg5_oldval; })
 #endif
 
-#ifndef atomic_exchange_rel
-# define atomic_exchange_rel(mem, newvalue) atomic_exchange_acq (mem, newvalue)
+#ifndef orig_atomic_exchange_rel
+# define orig_atomic_exchange_rel(mem, newvalue) orig_atomic_exchange_acq (mem, newvalue)
 #endif
 
 
 /* Add VALUE to *MEM and return the old value of *MEM.  */
-#ifndef atomic_exchange_and_add_acq
-# ifdef atomic_exchange_and_add
-#  define atomic_exchange_and_add_acq(mem, value) \
-  atomic_exchange_and_add (mem, value)
+#ifndef orig_atomic_exchange_and_add_acq
+# ifdef orig_atomic_exchange_and_add
+#  define orig_atomic_exchange_and_add_acq(mem, value) \
+  orig_atomic_exchange_and_add (mem, value)
 # else
-#  define atomic_exchange_and_add_acq(mem, value) \
+#  define orig_atomic_exchange_and_add_acq(mem, value) \
   ({ __typeof (*(mem)) __atg6_oldval;					      \
      __typeof (mem) __atg6_memp = (mem);				      \
      __typeof (*(mem)) __atg6_value = (value);				      \
@@ -194,7 +194,7 @@
      do									      \
        __atg6_oldval = *__atg6_memp;					      \
      while (__builtin_expect						      \
-	    (atomic_compare_and_exchange_bool_acq (__atg6_memp,		      \
+	    (orig_atomic_compare_and_exchange_bool_acq (__atg6_memp,		      \
 						   __atg6_oldval	      \
 						   + __atg6_value,	      \
 						   __atg6_oldval), 0));	      \
@@ -203,18 +203,18 @@
 # endif
 #endif
 
-#ifndef atomic_exchange_and_add_rel
-# define atomic_exchange_and_add_rel(mem, value) \
-  atomic_exchange_and_add_acq(mem, value)
+#ifndef orig_atomic_exchange_and_add_rel
+# define orig_atomic_exchange_and_add_rel(mem, value) \
+  orig_atomic_exchange_and_add_acq(mem, value)
 #endif
 
-#ifndef atomic_exchange_and_add
-# define atomic_exchange_and_add(mem, value) \
-  atomic_exchange_and_add_acq(mem, value)
+#ifndef orig_atomic_exchange_and_add
+# define orig_atomic_exchange_and_add(mem, value) \
+  orig_atomic_exchange_and_add_acq(mem, value)
 #endif
 
-#ifndef catomic_exchange_and_add
-# define catomic_exchange_and_add(mem, value) \
+#ifndef orig_catomic_exchange_and_add
+# define orig_catomic_exchange_and_add(mem, value) \
   ({ __typeof (*(mem)) __atg7_oldv;					      \
      __typeof (mem) __atg7_memp = (mem);				      \
      __typeof (*(mem)) __atg7_value = (value);				      \
@@ -222,7 +222,7 @@
      do									      \
        __atg7_oldv = *__atg7_memp;					      \
      while (__builtin_expect						      \
-	    (catomic_compare_and_exchange_bool_acq (__atg7_memp,	      \
+	    (orig_catomic_compare_and_exchange_bool_acq (__atg7_memp,	      \
 						    __atg7_oldv		      \
 						    + __atg7_value,	      \
 						    __atg7_oldv), 0));	      \
@@ -231,8 +231,8 @@
 #endif
 
 
-#ifndef atomic_max
-# define atomic_max(mem, value) \
+#ifndef orig_atomic_max
+# define orig_atomic_max(mem, value) \
   do {									      \
     __typeof (*(mem)) __atg8_oldval;					      \
     __typeof (mem) __atg8_memp = (mem);					      \
@@ -242,14 +242,14 @@
       if (__atg8_oldval >= __atg8_value)				      \
 	break;								      \
     } while (__builtin_expect						      \
-	     (atomic_compare_and_exchange_bool_acq (__atg8_memp, __atg8_value,\
+	     (orig_atomic_compare_and_exchange_bool_acq (__atg8_memp, __atg8_value,\
 						    __atg8_oldval), 0));      \
   } while (0)
 #endif
 
 
-#ifndef catomic_max
-# define catomic_max(mem, value) \
+#ifndef orig_catomic_max
+# define orig_catomic_max(mem, value) \
   do {									      \
     __typeof (*(mem)) __atg9_oldv;					      \
     __typeof (mem) __atg9_memp = (mem);					      \
@@ -259,15 +259,15 @@
       if (__atg9_oldv >= __atg9_value)					      \
 	break;								      \
     } while (__builtin_expect						      \
-	     (catomic_compare_and_exchange_bool_acq (__atg9_memp,	      \
+	     (orig_catomic_compare_and_exchange_bool_acq (__atg9_memp,	      \
 						     __atg9_value,	      \
 						     __atg9_oldv), 0));	      \
   } while (0)
 #endif
 
 
-#ifndef atomic_min
-# define atomic_min(mem, value) \
+#ifndef orig_atomic_min
+# define orig_atomic_min(mem, value) \
   do {									      \
     __typeof (*(mem)) __atg10_oldval;					      \
     __typeof (mem) __atg10_memp = (mem);				      \
@@ -277,81 +277,81 @@
       if (__atg10_oldval <= __atg10_value)				      \
 	break;								      \
     } while (__builtin_expect						      \
-	     (atomic_compare_and_exchange_bool_acq (__atg10_memp,	      \
+	     (orig_atomic_compare_and_exchange_bool_acq (__atg10_memp,	      \
 						    __atg10_value,	      \
 						    __atg10_oldval), 0));     \
   } while (0)
 #endif
 
 
-#ifndef atomic_add
-# define atomic_add(mem, value) (void) atomic_exchange_and_add ((mem), (value))
+#ifndef orig_atomic_add
+# define orig_atomic_add(mem, value) (void) orig_atomic_exchange_and_add ((mem), (value))
 #endif
 
 
-#ifndef catomic_add
-# define catomic_add(mem, value) \
-  (void) catomic_exchange_and_add ((mem), (value))
+#ifndef orig_catomic_add
+# define orig_catomic_add(mem, value) \
+  (void) orig_catomic_exchange_and_add ((mem), (value))
 #endif
 
 
-#ifndef atomic_increment
-# define atomic_increment(mem) atomic_add ((mem), 1)
+#ifndef orig_atomic_increment
+# define orig_atomic_increment(mem) orig_atomic_add ((mem), 1)
 #endif
 
 
-#ifndef catomic_increment
-# define catomic_increment(mem) catomic_add ((mem), 1)
+#ifndef orig_catomic_increment
+# define orig_catomic_increment(mem) orig_catomic_add ((mem), 1)
 #endif
 
 
-#ifndef atomic_increment_val
-# define atomic_increment_val(mem) (atomic_exchange_and_add ((mem), 1) + 1)
+#ifndef orig_atomic_increment_val
+# define orig_atomic_increment_val(mem) (orig_atomic_exchange_and_add ((mem), 1) + 1)
 #endif
 
 
-#ifndef catomic_increment_val
-# define catomic_increment_val(mem) (catomic_exchange_and_add ((mem), 1) + 1)
+#ifndef orig_catomic_increment_val
+# define orig_catomic_increment_val(mem) (orig_catomic_exchange_and_add ((mem), 1) + 1)
 #endif
 
 
 /* Add one to *MEM and return true iff it's now zero.  */
-#ifndef atomic_increment_and_test
-# define atomic_increment_and_test(mem) \
-  (atomic_exchange_and_add ((mem), 1) + 1 == 0)
+#ifndef orig_atomic_increment_and_test
+# define orig_atomic_increment_and_test(mem) \
+  (orig_atomic_exchange_and_add ((mem), 1) + 1 == 0)
 #endif
 
 
-#ifndef atomic_decrement
-# define atomic_decrement(mem) atomic_add ((mem), -1)
+#ifndef orig_atomic_decrement
+# define orig_atomic_decrement(mem) orig_atomic_add ((mem), -1)
 #endif
 
 
-#ifndef catomic_decrement
-# define catomic_decrement(mem) catomic_add ((mem), -1)
+#ifndef orig_catomic_decrement
+# define orig_catomic_decrement(mem) orig_catomic_add ((mem), -1)
 #endif
 
 
-#ifndef atomic_decrement_val
-# define atomic_decrement_val(mem) (atomic_exchange_and_add ((mem), -1) - 1)
+#ifndef orig_atomic_decrement_val
+# define orig_atomic_decrement_val(mem) (orig_atomic_exchange_and_add ((mem), -1) - 1)
 #endif
 
 
-#ifndef catomic_decrement_val
-# define catomic_decrement_val(mem) (catomic_exchange_and_add ((mem), -1) - 1)
+#ifndef orig_catomic_decrement_val
+# define orig_catomic_decrement_val(mem) (orig_catomic_exchange_and_add ((mem), -1) - 1)
 #endif
 
 
 /* Subtract 1 from *MEM and return true iff it's now zero.  */
-#ifndef atomic_decrement_and_test
-# define atomic_decrement_and_test(mem) \
-  (atomic_exchange_and_add ((mem), -1) == 1)
+#ifndef orig_atomic_decrement_and_test
+# define orig_atomic_decrement_and_test(mem) \
+  (orig_atomic_exchange_and_add ((mem), -1) == 1)
 #endif
 
 
 /* Decrement *MEM if it is > 0, and return the old value.  */
-#ifndef atomic_decrement_if_positive
-# define atomic_decrement_if_positive(mem) \
+#ifndef orig_atomic_decrement_if_positive
+# define orig_atomic_decrement_if_positive(mem) \
   ({ __typeof (*(mem)) __atg11_oldval;					      \
      __typeof (mem) __atg11_memp = (mem);				      \
 									      \
@@ -362,35 +362,35 @@
 	   break;							      \
        }								      \
      while (__builtin_expect						      \
-	    (atomic_compare_and_exchange_bool_acq (__atg11_memp,	      \
+	    (orig_atomic_compare_and_exchange_bool_acq (__atg11_memp,	      \
 						   __atg11_oldval - 1,	      \
 						   __atg11_oldval), 0));      \
      __atg11_oldval; })
 #endif
 
 
-#ifndef atomic_add_negative
-# define atomic_add_negative(mem, value)				      \
+#ifndef orig_atomic_add_negative
+# define orig_atomic_add_negative(mem, value)				      \
   ({ __typeof (value) __atg12_value = (value);				      \
-     atomic_exchange_and_add (mem, __atg12_value) < -__atg12_value; })
+     orig_atomic_exchange_and_add (mem, __atg12_value) < -__atg12_value; })
 #endif
 
 
-#ifndef atomic_add_zero
-# define atomic_add_zero(mem, value)					      \
+#ifndef orig_atomic_add_zero
+# define orig_atomic_add_zero(mem, value)					      \
   ({ __typeof (value) __atg13_value = (value);				      \
-     atomic_exchange_and_add (mem, __atg13_value) == -__atg13_value; })
+     orig_atomic_exchange_and_add (mem, __atg13_value) == -__atg13_value; })
 #endif
 
 
-#ifndef atomic_bit_set
-# define atomic_bit_set(mem, bit) \
-  (void) atomic_bit_test_set(mem, bit)
+#ifndef orig_atomic_bit_set
+# define orig_atomic_bit_set(mem, bit) \
+  (void) orig_atomic_bit_test_set(mem, bit)
 #endif
 
 
-#ifndef atomic_bit_test_set
-# define atomic_bit_test_set(mem, bit) \
+#ifndef orig_atomic_bit_test_set
+# define orig_atomic_bit_test_set(mem, bit) \
   ({ __typeof (*(mem)) __atg14_old;					      \
      __typeof (mem) __atg14_memp = (mem);				      \
      __typeof (*(mem)) __atg14_mask = ((__typeof (*(mem))) 1 << (bit));	      \
@@ -398,7 +398,7 @@
      do									      \
        __atg14_old = (*__atg14_memp);					      \
      while (__builtin_expect						      \
-	    (atomic_compare_and_exchange_bool_acq (__atg14_memp,	      \
+	    (orig_atomic_compare_and_exchange_bool_acq (__atg14_memp,	      \
 						   __atg14_old | __atg14_mask,\
 						   __atg14_old), 0));	      \
 									      \
@@ -406,8 +406,8 @@
 #endif
 
 /* Atomically *mem &= mask.  */
-#ifndef atomic_and
-# define atomic_and(mem, mask) \
+#ifndef orig_atomic_and
+# define orig_atomic_and(mem, mask) \
   do {									      \
     __typeof (*(mem)) __atg15_old;					      \
     __typeof (mem) __atg15_memp = (mem);				      \
@@ -416,14 +416,14 @@
     do									      \
       __atg15_old = (*__atg15_memp);					      \
     while (__builtin_expect						      \
-	   (atomic_compare_and_exchange_bool_acq (__atg15_memp,		      \
+	   (orig_atomic_compare_and_exchange_bool_acq (__atg15_memp,		      \
 						  __atg15_old & __atg15_mask, \
 						  __atg15_old), 0));	      \
   } while (0)
 #endif
 
-#ifndef catomic_and
-# define catomic_and(mem, mask) \
+#ifndef orig_catomic_and
+# define orig_catomic_and(mem, mask) \
   do {									      \
     __typeof (*(mem)) __atg20_old;					      \
     __typeof (mem) __atg20_memp = (mem);				      \
@@ -432,15 +432,15 @@
     do									      \
       __atg20_old = (*__atg20_memp);					      \
     while (__builtin_expect						      \
-	   (catomic_compare_and_exchange_bool_acq (__atg20_memp,	      \
+	   (orig_catomic_compare_and_exchange_bool_acq (__atg20_memp,	      \
 						   __atg20_old & __atg20_mask,\
 						   __atg20_old), 0));	      \
   } while (0)
 #endif
 
 /* Atomically *mem &= mask and return the old value of *mem.  */
-#ifndef atomic_and_val
-# define atomic_and_val(mem, mask) \
+#ifndef orig_atomic_and_val
+# define orig_atomic_and_val(mem, mask) \
   ({ __typeof (*(mem)) __atg16_old;					      \
      __typeof (mem) __atg16_memp = (mem);				      \
      __typeof (*(mem)) __atg16_mask = (mask);				      \
@@ -448,7 +448,7 @@
      do									      \
        __atg16_old = (*__atg16_memp);					      \
      while (__builtin_expect						      \
-	    (atomic_compare_and_exchange_bool_acq (__atg16_memp,	      \
+	    (orig_atomic_compare_and_exchange_bool_acq (__atg16_memp,	      \
 						   __atg16_old & __atg16_mask,\
 						   __atg16_old), 0));	      \
 									      \
@@ -456,8 +456,8 @@
 #endif
 
 /* Atomically *mem |= mask and return the old value of *mem.  */
-#ifndef atomic_or
-# define atomic_or(mem, mask) \
+#ifndef orig_atomic_or
+# define orig_atomic_or(mem, mask) \
   do {									      \
     __typeof (*(mem)) __atg17_old;					      \
     __typeof (mem) __atg17_memp = (mem);				      \
@@ -466,14 +466,14 @@
     do									      \
       __atg17_old = (*__atg17_memp);					      \
     while (__builtin_expect						      \
-	   (atomic_compare_and_exchange_bool_acq (__atg17_memp,		      \
+	   (orig_atomic_compare_and_exchange_bool_acq (__atg17_memp,		      \
 						  __atg17_old | __atg17_mask, \
 						  __atg17_old), 0));	      \
   } while (0)
 #endif
 
-#ifndef catomic_or
-# define catomic_or(mem, mask) \
+#ifndef orig_catomic_or
+# define orig_catomic_or(mem, mask) \
   do {									      \
     __typeof (*(mem)) __atg18_old;					      \
     __typeof (mem) __atg18_memp = (mem);				      \
@@ -482,15 +482,15 @@
     do									      \
       __atg18_old = (*__atg18_memp);					      \
     while (__builtin_expect						      \
-	   (catomic_compare_and_exchange_bool_acq (__atg18_memp,	      \
+	   (orig_catomic_compare_and_exchange_bool_acq (__atg18_memp,	      \
 						   __atg18_old | __atg18_mask,\
 						   __atg18_old), 0));	      \
   } while (0)
 #endif
 
 /* Atomically *mem |= mask and return the old value of *mem.  */
-#ifndef atomic_or_val
-# define atomic_or_val(mem, mask) \
+#ifndef orig_atomic_or_val
+# define orig_atomic_or_val(mem, mask) \
   ({ __typeof (*(mem)) __atg19_old;					      \
      __typeof (mem) __atg19_memp = (mem);				      \
      __typeof (*(mem)) __atg19_mask = (mask);				      \
@@ -498,7 +498,7 @@
      do									      \
        __atg19_old = (*__atg19_memp);					      \
      while (__builtin_expect						      \
-	    (atomic_compare_and_exchange_bool_acq (__atg19_memp,	      \
+	    (orig_atomic_compare_and_exchange_bool_acq (__atg19_memp,	      \
 						   __atg19_old | __atg19_mask,\
 						   __atg19_old), 0));	      \
 									      \
@@ -520,8 +520,8 @@
 #endif
 
 
-#ifndef atomic_forced_read
-# define atomic_forced_read(x) \
+#ifndef orig_atomic_forced_read
+# define orig_atomic_forced_read(x) \
   ({ __typeof (x) __x; __asm ("" : "=r" (__x) : "0" (x)); __x; })
 #endif
 
@@ -572,82 +572,82 @@ void __atomic_link_error (void);
 # define atomic_thread_fence_seq_cst() \
   __atomic_thread_fence (__ATOMIC_SEQ_CST)
 
-# define atomic_load_relaxed(mem) \
+# define orig_atomic_load_relaxed(mem) \
   ({ __atomic_check_size_ls((mem));					      \
      __atomic_load_n ((mem), __ATOMIC_RELAXED); })
-# define atomic_load_acquire(mem) \
+# define orig_atomic_load_acquire(mem) \
   ({ __atomic_check_size_ls((mem));					      \
      __atomic_load_n ((mem), __ATOMIC_ACQUIRE); })
 
-# define atomic_store_relaxed(mem, val) \
+# define orig_atomic_store_relaxed(mem, val) \
   do {									      \
     __atomic_check_size_ls((mem));					      \
     __atomic_store_n ((mem), (val), __ATOMIC_RELAXED);			      \
   } while (0)
-# define atomic_store_release(mem, val) \
+# define orig_atomic_store_release(mem, val) \
   do {									      \
     __atomic_check_size_ls((mem));					      \
     __atomic_store_n ((mem), (val), __ATOMIC_RELEASE);			      \
   } while (0)
 
 /* On failure, this CAS has memory_order_relaxed semantics.  */
-# define atomic_compare_exchange_weak_relaxed(mem, expected, desired) \
+# define orig_atomic_compare_exchange_weak_relaxed(mem, expected, desired) \
   ({ __atomic_check_size((mem));					      \
   __atomic_compare_exchange_n ((mem), (expected), (desired), 1,		      \
     __ATOMIC_RELAXED, __ATOMIC_RELAXED); })
-# define atomic_compare_exchange_weak_acquire(mem, expected, desired) \
+# define orig_atomic_compare_exchange_weak_acquire(mem, expected, desired) \
   ({ __atomic_check_size((mem));					      \
   __atomic_compare_exchange_n ((mem), (expected), (desired), 1,		      \
     __ATOMIC_ACQUIRE, __ATOMIC_RELAXED); })
-# define atomic_compare_exchange_weak_release(mem, expected, desired) \
+# define orig_atomic_compare_exchange_weak_release(mem, expected, desired) \
   ({ __atomic_check_size((mem));					      \
   __atomic_compare_exchange_n ((mem), (expected), (desired), 1,		      \
     __ATOMIC_RELEASE, __ATOMIC_RELAXED); })
 
-# define atomic_exchange_relaxed(mem, desired) \
+# define orig_atomic_exchange_relaxed(mem, desired) \
   ({ __atomic_check_size((mem));					      \
   __atomic_exchange_n ((mem), (desired), __ATOMIC_RELAXED); })
-# define atomic_exchange_acquire(mem, desired) \
+# define orig_atomic_exchange_acquire(mem, desired) \
   ({ __atomic_check_size((mem));					      \
   __atomic_exchange_n ((mem), (desired), __ATOMIC_ACQUIRE); })
-# define atomic_exchange_release(mem, desired) \
+# define orig_atomic_exchange_release(mem, desired) \
   ({ __atomic_check_size((mem));					      \
   __atomic_exchange_n ((mem), (desired), __ATOMIC_RELEASE); })
 
-# define atomic_fetch_add_relaxed(mem, operand) \
+# define orig_atomic_fetch_add_relaxed(mem, operand) \
   ({ __atomic_check_size((mem));					      \
   __atomic_fetch_add ((mem), (operand), __ATOMIC_RELAXED); })
-# define atomic_fetch_add_acquire(mem, operand) \
+# define orig_atomic_fetch_add_acquire(mem, operand) \
   ({ __atomic_check_size((mem));					      \
   __atomic_fetch_add ((mem), (operand), __ATOMIC_ACQUIRE); })
-# define atomic_fetch_add_release(mem, operand) \
+# define orig_atomic_fetch_add_release(mem, operand) \
   ({ __atomic_check_size((mem));					      \
   __atomic_fetch_add ((mem), (operand), __ATOMIC_RELEASE); })
-# define atomic_fetch_add_acq_rel(mem, operand) \
+# define orig_atomic_fetch_add_acq_rel(mem, operand) \
   ({ __atomic_check_size((mem));					      \
   __atomic_fetch_add ((mem), (operand), __ATOMIC_ACQ_REL); })
 
-# define atomic_fetch_and_relaxed(mem, operand) \
+# define orig_atomic_fetch_and_relaxed(mem, operand) \
   ({ __atomic_check_size((mem));					      \
   __atomic_fetch_and ((mem), (operand), __ATOMIC_RELAXED); })
-# define atomic_fetch_and_acquire(mem, operand) \
+# define orig_atomic_fetch_and_acquire(mem, operand) \
   ({ __atomic_check_size((mem));					      \
   __atomic_fetch_and ((mem), (operand), __ATOMIC_ACQUIRE); })
-# define atomic_fetch_and_release(mem, operand) \
+# define orig_atomic_fetch_and_release(mem, operand) \
   ({ __atomic_check_size((mem));					      \
   __atomic_fetch_and ((mem), (operand), __ATOMIC_RELEASE); })
 
-# define atomic_fetch_or_relaxed(mem, operand) \
+# define orig_atomic_fetch_or_relaxed(mem, operand) \
   ({ __atomic_check_size((mem));					      \
   __atomic_fetch_or ((mem), (operand), __ATOMIC_RELAXED); })
-# define atomic_fetch_or_acquire(mem, operand) \
+# define orig_atomic_fetch_or_acquire(mem, operand) \
   ({ __atomic_check_size((mem));					      \
   __atomic_fetch_or ((mem), (operand), __ATOMIC_ACQUIRE); })
-# define atomic_fetch_or_release(mem, operand) \
+# define orig_atomic_fetch_or_release(mem, operand) \
   ({ __atomic_check_size((mem));					      \
   __atomic_fetch_or ((mem), (operand), __ATOMIC_RELEASE); })
 
-# define atomic_fetch_xor_release(mem, operand) \
+# define orig_atomic_fetch_xor_release(mem, operand) \
   ({ __atomic_check_size((mem));					      \
   __atomic_fetch_xor ((mem), (operand), __ATOMIC_RELEASE); })
 
@@ -666,25 +666,25 @@ void __atomic_link_error (void);
 #  define atomic_thread_fence_seq_cst() atomic_full_barrier ()
 # endif
 
-# ifndef atomic_load_relaxed
-#  define atomic_load_relaxed(mem) \
+# ifndef orig_atomic_load_relaxed
+#  define orig_atomic_load_relaxed(mem) \
    ({ __typeof ((__typeof (*(mem))) *(mem)) __atg100_val;		      \
    __asm ("" : "=r" (__atg100_val) : "0" (*(mem)));			      \
    __atg100_val; })
 # endif
-# ifndef atomic_load_acquire
-#  define atomic_load_acquire(mem) \
+# ifndef orig_atomic_load_acquire
+#  define orig_atomic_load_acquire(mem) \
    ({ __typeof (*(mem)) __atg101_val = atomic_load_relaxed (mem);	      \
    atomic_thread_fence_acquire ();					      \
    __atg101_val; })
 # endif
 
-# ifndef atomic_store_relaxed
+# ifndef orig_atomic_store_relaxed
 /* XXX Use inline asm here?  */
-#  define atomic_store_relaxed(mem, val) do { *(mem) = (val); } while (0)
+#  define orig_atomic_store_relaxed(mem, val) do { *(mem) = (val); } while (0)
 # endif
-# ifndef atomic_store_release
-#  define atomic_store_release(mem, val) \
+# ifndef orig_atomic_store_release
+#  define orig_atomic_store_release(mem, val) \
    do {									      \
      atomic_thread_fence_release ();					      \
      atomic_store_relaxed ((mem), (val));				      \
@@ -695,107 +695,107 @@ void __atomic_link_error (void);
 /* XXX This potentially has one branch more than necessary, but archs
    currently do not define a CAS that returns both the previous value and
    the success flag.  */
-# ifndef atomic_compare_exchange_weak_acquire
-#  define atomic_compare_exchange_weak_acquire(mem, expected, desired) \
+# ifndef orig_atomic_compare_exchange_weak_acquire
+#  define orig_atomic_compare_exchange_weak_acquire(mem, expected, desired) \
    ({ typeof (*(expected)) __atg102_expected = *(expected);		      \
    *(expected) =							      \
-     atomic_compare_and_exchange_val_acq ((mem), (desired), *(expected));     \
+     orig_atomic_compare_and_exchange_val_acq ((mem), (desired), *(expected));     \
    *(expected) == __atg102_expected; })
 # endif
-# ifndef atomic_compare_exchange_weak_relaxed
+# ifndef orig_atomic_compare_exchange_weak_relaxed
 /* XXX Fall back to CAS with acquire MO because archs do not define a weaker
    CAS.  */
-#  define atomic_compare_exchange_weak_relaxed(mem, expected, desired) \
-   atomic_compare_exchange_weak_acquire ((mem), (expected), (desired))
+#  define orig_atomic_compare_exchange_weak_relaxed(mem, expected, desired) \
+   orig_atomic_compare_exchange_weak_acquire ((mem), (expected), (desired))
 # endif
-# ifndef atomic_compare_exchange_weak_release
-#  define atomic_compare_exchange_weak_release(mem, expected, desired) \
+# ifndef orig_atomic_compare_exchange_weak_release
+#  define orig_atomic_compare_exchange_weak_release(mem, expected, desired) \
    ({ typeof (*(expected)) __atg103_expected = *(expected);		      \
    *(expected) =							      \
-     atomic_compare_and_exchange_val_rel ((mem), (desired), *(expected));     \
+     orig_atomic_compare_and_exchange_val_rel ((mem), (desired), *(expected));     \
    *(expected) == __atg103_expected; })
 # endif
 
 /* XXX Fall back to acquire MO because archs do not define a weaker
    atomic_exchange.  */
-# ifndef atomic_exchange_relaxed
-#  define atomic_exchange_relaxed(mem, val) \
-   atomic_exchange_acq ((mem), (val))
+# ifndef orig_atomic_exchange_relaxed
+#  define orig_atomic_exchange_relaxed(mem, val) \
+   orig_atomic_exchange_acq ((mem), (val))
 # endif
-# ifndef atomic_exchange_acquire
-#  define atomic_exchange_acquire(mem, val) \
-   atomic_exchange_acq ((mem), (val))
+# ifndef orig_atomic_exchange_acquire
+#  define orig_atomic_exchange_acquire(mem, val) \
+   orig_atomic_exchange_acq ((mem), (val))
 # endif
-# ifndef atomic_exchange_release
-#  define atomic_exchange_release(mem, val) \
-   atomic_exchange_rel ((mem), (val))
+# ifndef orig_atomic_exchange_release
+#  define orig_atomic_exchange_release(mem, val) \
+   orig_atomic_exchange_rel ((mem), (val))
 # endif
 
-# ifndef atomic_fetch_add_acquire
-#  define atomic_fetch_add_acquire(mem, operand) \
-   atomic_exchange_and_add_acq ((mem), (operand))
+# ifndef orig_atomic_fetch_add_acquire
+#  define orig_atomic_fetch_add_acquire(mem, operand) \
+   orig_atomic_exchange_and_add_acq ((mem), (operand))
 # endif
-# ifndef atomic_fetch_add_relaxed
+# ifndef orig_atomic_fetch_add_relaxed
 /* XXX Fall back to acquire MO because the MO semantics of
    atomic_exchange_and_add are not documented; the generic version falls back
    to atomic_exchange_and_add_acq if atomic_exchange_and_add is not defined,
    and vice versa.  */
-#  define atomic_fetch_add_relaxed(mem, operand) \
-   atomic_fetch_add_acquire ((mem), (operand))
+#  define orig_atomic_fetch_add_relaxed(mem, operand) \
+   orig_atomic_fetch_add_acquire ((mem), (operand))
 # endif
-# ifndef atomic_fetch_add_release
-#  define atomic_fetch_add_release(mem, operand) \
-   atomic_exchange_and_add_rel ((mem), (operand))
+# ifndef orig_atomic_fetch_add_release
+#  define orig_atomic_fetch_add_release(mem, operand) \
+   orig_atomic_exchange_and_add_rel ((mem), (operand))
 # endif
-# ifndef atomic_fetch_add_acq_rel
-#  define atomic_fetch_add_acq_rel(mem, operand) \
+# ifndef orig_atomic_fetch_add_acq_rel
+#  define orig_atomic_fetch_add_acq_rel(mem, operand) \
    ({ atomic_thread_fence_release ();					      \
-   atomic_exchange_and_add_acq ((mem), (operand)); })
+   orig_atomic_exchange_and_add_acq ((mem), (operand)); })
 # endif
 
 /* XXX Fall back to acquire MO because archs do not define a weaker
    atomic_and_val.  */
-# ifndef atomic_fetch_and_relaxed
-#  define atomic_fetch_and_relaxed(mem, operand) \
-   atomic_fetch_and_acquire ((mem), (operand))
+# ifndef orig_atomic_fetch_and_relaxed
+#  define orig_atomic_fetch_and_relaxed(mem, operand) \
+   orig_atomic_fetch_and_acquire ((mem), (operand))
 # endif
 /* XXX The default for atomic_and_val has acquire semantics, but this is not
    documented.  */
-# ifndef atomic_fetch_and_acquire
-#  define atomic_fetch_and_acquire(mem, operand) \
-   atomic_and_val ((mem), (operand))
+# ifndef orig_atomic_fetch_and_acquire
+#  define orig_atomic_fetch_and_acquire(mem, operand) \
+   orig_atomic_and_val ((mem), (operand))
 # endif
-# ifndef atomic_fetch_and_release
+# ifndef orig_atomic_fetch_and_release
 /* XXX This unnecessarily has acquire MO.  */
-#  define atomic_fetch_and_release(mem, operand) \
+#  define orig_atomic_fetch_and_release(mem, operand) \
    ({ atomic_thread_fence_release ();					      \
-   atomic_and_val ((mem), (operand)); })
+   orig_atomic_and_val ((mem), (operand)); })
 # endif
 
 /* XXX The default for atomic_or_val has acquire semantics, but this is not
    documented.  */
-# ifndef atomic_fetch_or_acquire
-#  define atomic_fetch_or_acquire(mem, operand) \
-   atomic_or_val ((mem), (operand))
+# ifndef orig_atomic_fetch_or_acquire
+#  define orig_atomic_fetch_or_acquire(mem, operand) \
+   orig_atomic_or_val ((mem), (operand))
 # endif
 /* XXX Fall back to acquire MO because archs do not define a weaker
    atomic_or_val.  */
-# ifndef atomic_fetch_or_relaxed
-#  define atomic_fetch_or_relaxed(mem, operand) \
-   atomic_fetch_or_acquire ((mem), (operand))
+# ifndef orig_atomic_fetch_or_relaxed
+#  define orig_atomic_fetch_or_relaxed(mem, operand) \
+   orig_atomic_fetch_or_acquire ((mem), (operand))
 # endif
 /* XXX Contains an unnecessary acquire MO because archs do not define a weaker
    atomic_or_val.  */
-# ifndef atomic_fetch_or_release
-#  define atomic_fetch_or_release(mem, operand) \
+# ifndef orig_atomic_fetch_or_release
+#  define orig_atomic_fetch_or_release(mem, operand) \
    ({ atomic_thread_fence_release ();					      \
-   atomic_fetch_or_acquire ((mem), (operand)); })
+   orig_atomic_fetch_or_acquire ((mem), (operand)); })
 # endif
 
-# ifndef atomic_fetch_xor_release
+# ifndef orig_atomic_fetch_xor_release
 /* Failing the atomic_compare_exchange_weak_release reloads the value in
    __atg104_expected, so we need only do the XOR again and retry.  */
-# define atomic_fetch_xor_release(mem, operand) \
+# define orig_atomic_fetch_xor_release(mem, operand) \
   ({ __typeof (mem) __atg104_memp = (mem);				      \
      __typeof (*(mem)) __atg104_expected = (*__atg104_memp);		      \
      __typeof (*(mem)) __atg104_desired;				      \
@@ -804,7 +804,7 @@ void __atomic_link_error (void);
      do									      \
        __atg104_desired = __atg104_expected ^ __atg104_op;		      \
      while (__glibc_unlikely						      \
-	    (atomic_compare_exchange_weak_release (			      \
+	    (orig_atomic_compare_exchange_weak_release (			      \
 	       __atg104_memp, &__atg104_expected, __atg104_desired)	      \
 	     == 0));							      \
      __atg104_expected; })

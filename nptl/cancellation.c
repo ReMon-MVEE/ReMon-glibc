@@ -30,7 +30,7 @@ attribute_hidden
 __pthread_enable_asynccancel (void)
 {
   struct pthread *self = THREAD_SELF;
-  int oldval = THREAD_GETMEM (self, cancelhandling);
+  int oldval = THREAD_ATOMIC_GETMEM (self, cancelhandling);
 
   while (1)
     {
@@ -45,7 +45,7 @@ __pthread_enable_asynccancel (void)
 	{
 	  if (CANCEL_ENABLED_AND_CANCELED_AND_ASYNCHRONOUS (newval))
 	    {
-	      THREAD_SETMEM (self, result, PTHREAD_CANCELED);
+	      THREAD_ATOMIC_SETMEM (self, result, PTHREAD_CANCELED);
 	      __do_cancel ();
 	    }
 
@@ -72,7 +72,7 @@ __pthread_disable_asynccancel (int oldtype)
   struct pthread *self = THREAD_SELF;
   int newval;
 
-  int oldval = THREAD_GETMEM (self, cancelhandling);
+  int oldval = THREAD_ATOMIC_GETMEM (self, cancelhandling);
 
   while (1)
     {
@@ -96,6 +96,6 @@ __pthread_disable_asynccancel (int oldtype)
     {
       futex_wait_simple ((unsigned int *) &self->cancelhandling, newval,
 			 FUTEX_PRIVATE);
-      newval = THREAD_GETMEM (self, cancelhandling);
+      newval = THREAD_ATOMIC_GETMEM (self, cancelhandling);
     }
 }

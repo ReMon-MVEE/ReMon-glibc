@@ -51,18 +51,19 @@ fork_handler_alloc (void)
     {
       /* Search for an empty entry.  */
       for (i = 0; i < NHANDLER; ++i)
-	if (runp->mem[i].refcntr == 0)
+        if (atomic_load_relaxed(&runp->mem[i].refcntr) == 0)
 	  goto found;
     }
-  while ((runp = runp->next) != NULL);
+  while ((runp = atomic_load_relaxed(&runp->next)) != NULL);
 
   /* We have to allocate a new entry.  */
   runp = (struct fork_handler_pool *) calloc (1, sizeof (*runp));
   if (runp != NULL)
     {
       /* Enqueue the new memory pool into the list.  */
-      runp->next = fork_handler_pool.next;
-      fork_handler_pool.next = runp;
+		void* tmp = atomic_load_relaxed(&fork_handler_pool.next);
+      atomic_store_relaxed(&runp->next, tmp);
+      atomic_store_relaxed(&fork_handler_pool.next, runp);
 
       /* We use the last entry on the page.  This means when we start
 	 searching from the front the next time we will find the first
@@ -71,7 +72,7 @@ fork_handler_alloc (void)
 
     found:
       result = &runp->mem[i];
-      result->refcntr = 1;
+      atomic_store_relaxed(&result->refcntr, 1);
       result->need_signal = 0;
     }
 
@@ -112,7 +113,7 @@ attribute_hidden
 __linkin_atfork (struct fork_handler *newp)
 {
   do
-    newp->next = __fork_handlers;
+	  newp->next = atomic_load_relaxed(&__fork_handlers);
   while (catomic_compare_and_exchange_bool_acq (&__fork_handlers,
 						newp, newp->next) != 0);
 }
@@ -124,10 +125,10 @@ libc_freeres_fn (free_mem)
   lll_lock (__fork_lock, LLL_PRIVATE);
 
   /* No more fork handlers.  */
-  __fork_handlers = NULL;
+  atomic_store_relaxed(&__fork_handlers, NULL);
 
   /* Free eventually allocated memory blocks for the object pool.  */
-  struct fork_handler_pool *runp = fork_handler_pool.next;
+  struct fork_handler_pool *runp = atomic_load_relaxed(&fork_handler_pool.next);
 
   memset (&fork_handler_pool, '\0', sizeof (fork_handler_pool));
 
@@ -138,7 +139,7 @@ libc_freeres_fn (free_mem)
   while (runp != NULL)
     {
       struct fork_handler_pool *oldp = runp;
-      runp = runp->next;
+      runp = atomic_load_relaxed(&runp->next);
       free (oldp);
     }
 }

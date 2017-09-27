@@ -28,8 +28,8 @@ pthread_mutex_getprioceiling (const pthread_mutex_t *mutex, int *prioceiling)
 			 & PTHREAD_MUTEX_PRIO_PROTECT_NP) == 0, 0))
     return EINVAL;
 
-  *prioceiling = (mutex->__data.__lock & PTHREAD_MUTEX_PRIO_CEILING_MASK)
-		 >> PTHREAD_MUTEX_PRIO_CEILING_SHIFT;
+  *prioceiling = (atomic_load_relaxed((int*)&mutex->__data.__lock) & PTHREAD_MUTEX_PRIO_CEILING_MASK)
+	  >> PTHREAD_MUTEX_PRIO_CEILING_SHIFT;
 
   return 0;
 }

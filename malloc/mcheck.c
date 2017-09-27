@@ -189,12 +189,12 @@ freehook (void *ptr, const void *caller)
       flood (ptr, FREEFLOOD, hdr->size);
       ptr = hdr->block;
     }
-  __free_hook = old_free_hook;
+  atomic_store_relaxed(&__free_hook, old_free_hook);
   if (old_free_hook != NULL)
     (*old_free_hook)(ptr, caller);
   else
     free (ptr);
-  __free_hook = freehook;
+  atomic_store_relaxed(&__free_hook, freehook);
 }
 
 static void *
@@ -211,13 +211,13 @@ mallochook (size_t size, const void *caller)
       return NULL;
     }
 
-  __malloc_hook = old_malloc_hook;
+  atomic_store_relaxed(&__malloc_hook, old_malloc_hook);
   if (old_malloc_hook != NULL)
     hdr = (struct hdr *) (*old_malloc_hook)(sizeof (struct hdr) + size + 1,
                                             caller);
   else
     hdr = (struct hdr *) malloc (sizeof (struct hdr) + size + 1);
-  __malloc_hook = mallochook;
+  atomic_store_relaxed(&__malloc_hook, mallochook);
   if (hdr == NULL)
     return NULL;
 
@@ -249,12 +249,12 @@ memalignhook (size_t alignment, size_t size,
       return NULL;
     }
 
-  __memalign_hook = old_memalign_hook;
+  atomic_store_relaxed(&__memalign_hook, old_memalign_hook);
   if (old_memalign_hook != NULL)
     block = (*old_memalign_hook)(alignment, slop + size + 1, caller);
   else
     block = memalign (alignment, slop + size + 1);
-  __memalign_hook = memalignhook;
+  atomic_store_relaxed(&__memalign_hook, memalignhook);
   if (block == NULL)
     return NULL;
 
@@ -305,10 +305,10 @@ reallochook (void *ptr, size_t size, const void *caller)
       osize = 0;
       hdr = NULL;
     }
-  __free_hook = old_free_hook;
-  __malloc_hook = old_malloc_hook;
-  __memalign_hook = old_memalign_hook;
-  __realloc_hook = old_realloc_hook;
+  atomic_store_relaxed(&__free_hook, old_free_hook);
+  atomic_store_relaxed(&__malloc_hook, old_malloc_hook);
+  atomic_store_relaxed(&__memalign_hook, old_memalign_hook);
+  atomic_store_relaxed(&__realloc_hook, old_realloc_hook);
   if (old_realloc_hook != NULL)
     hdr = (struct hdr *) (*old_realloc_hook)((void *) hdr,
                                              sizeof (struct hdr) + size + 1,
@@ -316,10 +316,10 @@ reallochook (void *ptr, size_t size, const void *caller)
   else
     hdr = (struct hdr *) realloc ((void *) hdr,
                                   sizeof (struct hdr) + size + 1);
-  __free_hook = freehook;
-  __malloc_hook = mallochook;
-  __memalign_hook = memalignhook;
-  __realloc_hook = reallochook;
+  atomic_store_relaxed(&__free_hook, freehook);
+  atomic_store_relaxed(&__malloc_hook, mallochook);
+  atomic_store_relaxed(&__memalign_hook, memalignhook);
+  atomic_store_relaxed(&__realloc_hook, reallochook);
   if (hdr == NULL)
     return NULL;
 
@@ -383,15 +383,15 @@ mcheck (void (*func) (enum mcheck_status))
       p = malloc_opt_barrier (p);
       free (p);
 
-      old_free_hook = __free_hook;
-      __free_hook = freehook;
-      old_malloc_hook = __malloc_hook;
-      __malloc_hook = mallochook;
-      old_memalign_hook = __memalign_hook;
-      __memalign_hook = memalignhook;
-      old_realloc_hook = __realloc_hook;
-      __realloc_hook = reallochook;
-      mcheck_used = 1;
+      old_free_hook = atomic_load_relaxed(&__free_hook);
+      atomic_store_relaxed(&__free_hook, freehook);
+      old_malloc_hook = atomic_load_relaxed(&__malloc_hook);
+      atomic_store_relaxed(&__malloc_hook, mallochook);
+      old_memalign_hook = atomic_load_relaxed(&__memalign_hook);
+      atomic_store_relaxed(&__memalign_hook, memalignhook);
+      old_realloc_hook = atomic_load_relaxed(&__realloc_hook);
+	  atomic_store_relaxed(&__realloc_hook, reallochook);      
+	  mcheck_used = 1;
     }
 
   return mcheck_used ? 0 : -1;

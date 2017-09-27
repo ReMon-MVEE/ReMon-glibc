@@ -77,10 +77,10 @@ __malloc_check_init (void)
       return;
     }
   using_malloc_checking = 1;
-  __malloc_hook = malloc_check;
-  __free_hook = free_check;
-  __realloc_hook = realloc_check;
-  __memalign_hook = memalign_check;
+  atomic_store_relaxed(&__malloc_hook, malloc_check);
+  atomic_store_relaxed(&__free_hook, free_check);
+  atomic_store_relaxed(&__realloc_hook, realloc_check);
+  atomic_store_relaxed(&__memalign_hook, memalign_check);
 }
 
 /* A simple, standard set of debugging hooks.  Overhead is `only' one
@@ -476,10 +476,10 @@ malloc_set_state (void *msptr)
      cannot be more than one thread when we reach this point.  */
 
   /* Disable the malloc hooks (and malloc checking).  */
-  __malloc_hook = NULL;
-  __realloc_hook = NULL;
-  __free_hook = NULL;
-  __memalign_hook = NULL;
+  atomic_store_relaxed(&__malloc_hook, NULL);
+  atomic_store_relaxed(&__realloc_hook, NULL);
+  atomic_store_relaxed(&__free_hook, NULL);
+  atomic_store_relaxed(&__memalign_hook, NULL);
   using_malloc_checking = 0;
 
   /* Patch the dumped heap.  We no longer try to integrate into the

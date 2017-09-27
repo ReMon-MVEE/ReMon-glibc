@@ -290,7 +290,7 @@ typedef struct
 
 
 /* Atomic compare and exchange on TLS, returning old value.  */
-# define THREAD_ATOMIC_CMPXCHG_VAL(descr, member, newval, oldval) \
+# define orig_THREAD_ATOMIC_CMPXCHG_VAL(descr, member, newval, oldval) \
   ({ __typeof (descr->member) __ret;					      \
      __typeof (oldval) __old = (oldval);				      \
      if (sizeof (descr->member) == 4)					      \
@@ -305,7 +305,7 @@ typedef struct
 
 
 /* Atomic logical and.  */
-# define THREAD_ATOMIC_AND(descr, member, val) \
+# define orig_THREAD_ATOMIC_AND(descr, member, val) \
   (void) ({ if (sizeof ((descr)->member) == 4)				      \
 	      asm volatile (LOCK_PREFIX "andl %1, %%fs:%P0"		      \
 			    :: "i" (offsetof (struct pthread, member)),	      \
@@ -316,7 +316,7 @@ typedef struct
 
 
 /* Atomic set bit.  */
-# define THREAD_ATOMIC_BIT_SET(descr, member, bit) \
+# define orig_THREAD_ATOMIC_BIT_SET(descr, member, bit) \
   (void) ({ if (sizeof ((descr)->member) == 4)				      \
 	      asm volatile (LOCK_PREFIX "orl %1, %%fs:%P0"		      \
 			    :: "i" (offsetof (struct pthread, member)),	      \

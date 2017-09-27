@@ -53,7 +53,7 @@ static void __attribute__ ((unused))
 __condvar_add_g1_start_relaxed (pthread_cond_t *cond, unsigned int val)
 {
   atomic_store_relaxed (&cond->__data.__g1_start,
-      atomic_load_relaxed (&cond->__data.__g1_start) + val);
+      orig_atomic_load_relaxed (&cond->__data.__g1_start) + val);
 }
 
 #else

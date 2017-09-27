@@ -99,7 +99,7 @@ __lll_lock_elision (int *futex, short *adapt_count, EXTRAARG int private)
       /* Use a normal lock until the threshold counter runs out.
 	 Lost updates possible.  */
       atomic_store_relaxed (adapt_count,
-	  atomic_load_relaxed (adapt_count) - 1);
+	  orig_atomic_load_relaxed (adapt_count) - 1);
     }
 
   /* Use a normal lock here.  */

@@ -457,7 +457,7 @@ static heap_info *
 new_heap (size_t size, size_t top_pad)
 {
   size_t pagesize = GLRO (dl_pagesize);
-  char *p1, *p2;
+  char *p1, *p2, *prev_heap_area;
   unsigned long ul;
   heap_info *h;
 
@@ -476,12 +476,13 @@ new_heap (size_t size, size_t top_pad)
      mapping (on Linux, this is the case for all non-writable mappings
      anyway). */
   p2 = MAP_FAILED;
-  if (aligned_heap_area)
+  prev_heap_area = atomic_load_acquire(&aligned_heap_area);
+  if (prev_heap_area)
     {
-      p2 = (char *) MMAP (aligned_heap_area, HEAP_MAX_SIZE, PROT_NONE,
+      p2 = (char *) MMAP (prev_heap_area, HEAP_MAX_SIZE, PROT_NONE,
                           MAP_NORESERVE);
-      aligned_heap_area = NULL;
-      if (p2 != MAP_FAILED && ((unsigned long) p2 & (HEAP_MAX_SIZE - 1)))
+      atomic_store_release(&aligned_heap_area, NULL);
+      if (p2 != MAP_FAILED && !mvee_all_heaps_aligned(p2, HEAP_MAX_SIZE))
         {
           __munmap (p2, HEAP_MAX_SIZE);
           p2 = MAP_FAILED;
@@ -489,6 +490,7 @@ new_heap (size_t size, size_t top_pad)
     }
   if (p2 == MAP_FAILED)
     {
+	  (void) mvee_all_heaps_aligned(0, HEAP_MAX_SIZE);
       p1 = (char *) MMAP (0, HEAP_MAX_SIZE << 1, PROT_NONE, MAP_NORESERVE);
       if (p1 != MAP_FAILED)
         {
@@ -497,9 +499,8 @@ new_heap (size_t size, size_t top_pad)
           ul = p2 - p1;
           if (ul)
             __munmap (p1, ul);
-          else
-            aligned_heap_area = p2 + HEAP_MAX_SIZE;
           __munmap (p2 + HEAP_MAX_SIZE, HEAP_MAX_SIZE - ul);
+		  atomic_store_release(&aligned_heap_area, p2 + HEAP_MAX_SIZE);
         }
       else
         {
@@ -509,7 +510,7 @@ new_heap (size_t size, size_t top_pad)
           if (p2 == MAP_FAILED)
             return 0;
 
-          if ((unsigned long) p2 & (HEAP_MAX_SIZE - 1))
+          if (!mvee_all_heaps_aligned(p2, HEAP_MAX_SIZE))
             {
               __munmap (p2, HEAP_MAX_SIZE);
               return 0;
@@ -591,8 +592,8 @@ shrink_heap (heap_info *h, long diff)
 
 #define delete_heap(heap) \
   do {									      \
-      if ((char *) (heap) + HEAP_MAX_SIZE == aligned_heap_area)		      \
-        aligned_heap_area = NULL;					      \
+	if ((char *) (heap) + HEAP_MAX_SIZE == atomic_load_acquire(&aligned_heap_area)) \
+	  atomic_store_release(&aligned_heap_area, NULL);							\
       __munmap ((char *) (heap), HEAP_MAX_SIZE);			      \
     } while (0)
 
@@ -761,9 +762,7 @@ static mstate
 get_free_list (void)
 {
   mstate replaced_arena = thread_arena;
-  mstate result = free_list;
-  if (result != NULL)
-    {
+  mstate result;
       __libc_lock_lock (free_list_lock);
       result = free_list;
       if (result != NULL)
@@ -784,7 +783,6 @@ get_free_list (void)
           __libc_lock_lock (result->mutex);
 	  thread_arena = result;
         }
-    }
 
   return result;
 }
@@ -884,24 +882,24 @@ arena_get2 (size_t size, mstate avoid_arena)
   if (a == NULL)
     {
       /* Nothing immediately available, so generate a new arena.  */
-      if (narenas_limit == 0)
+      if (atomic_load_relaxed(&narenas_limit) == 0)
         {
           if (mp_.arena_max != 0)
-            narenas_limit = mp_.arena_max;
-          else if (narenas > mp_.arena_test)
+            atomic_store_release(&narenas_limit, mp_.arena_max);
+          else if (atomic_load_relaxed(&narenas) > mp_.arena_test)
             {
               int n = __get_nprocs ();
 
               if (n >= 1)
-                narenas_limit = NARENAS_FROM_NCORES (n);
+                atomic_store_release(&narenas_limit, NARENAS_FROM_NCORES (n));
               else
                 /* We have no information about the system.  Assume two
                    cores.  */
-                narenas_limit = NARENAS_FROM_NCORES (2);
+                atomic_store_release(&narenas_limit, NARENAS_FROM_NCORES (2));
             }
         }
     repeat:;
-      size_t n = narenas;
+      size_t n = atomic_load_relaxed(&narenas);
       /* NB: the following depends on the fact that (size_t)0 - 1 is a
          very large number and that the underflow is OK.  If arena_max
          is set the value of arena_test is irrelevant.  If arena_test
@@ -909,7 +907,7 @@ arena_get2 (size_t size, mstate avoid_arena)
          narenas_limit is 0.  There is no possibility for narenas to
          be too big for the test to always fail since there is not
          enough address space to create that many arenas.  */
-      if (__glibc_unlikely (n <= narenas_limit - 1))
+      if (__glibc_unlikely (n <= atomic_load_relaxed(&narenas_limit) - 1))
         {
           if (catomic_compare_and_exchange_bool_acq (&narenas, n + 1, n))
             goto repeat;

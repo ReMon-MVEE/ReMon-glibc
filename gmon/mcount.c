@@ -166,10 +166,10 @@ _MCOUNT_DECL(frompc, selfpc)	/* _mcount; may be static, inline, etc */
 
 	}
 done:
-	p->state = GMON_PROF_ON;
+	atomic_store_relaxed(&p->state, GMON_PROF_ON);
 	return;
 overflow:
-	p->state = GMON_PROF_ERROR;
+	atomic_store_relaxed(&p->state, GMON_PROF_ERROR);
 	return;
 }
 

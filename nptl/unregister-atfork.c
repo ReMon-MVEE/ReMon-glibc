@@ -33,7 +33,7 @@ __unregister_atfork (void *dso_handle)
      We do not worry about other threads adding entries for this DSO
      right this moment.  If this happens this is a race and we can do
      whatever we please.  The program will crash anyway seen.  */
-  struct fork_handler *runp = __fork_handlers;
+  struct fork_handler *runp = atomic_load_relaxed(&__fork_handlers);
   struct fork_handler *lastp = NULL;
 
   while (runp != NULL)
@@ -42,7 +42,7 @@ __unregister_atfork (void *dso_handle)
     else
       {
 	lastp = runp;
-	runp = runp->next;
+	runp = atomic_load_relaxed(&runp->next);
       }
 
   if (runp == NULL)
@@ -77,12 +77,15 @@ __unregister_atfork (void *dso_handle)
 							 runp->next, runp)
 		  != 0)
 		{
-		  runp = __fork_handlers;
+          runp = atomic_load_relaxed(&__fork_handlers);
 		  goto again;
 		}
 	    }
 	  else
-	    lastp->next = runp->next;
+	  {
+		  void* tmp = atomic_load_relaxed(&runp->next);
+        atomic_store_relaxed(&lastp->next, tmp);
+	  }
 
 	  /* We cannot overwrite the ->next element now.  Put the deleted
 	     entries in a separate list.  */
@@ -94,7 +97,7 @@ __unregister_atfork (void *dso_handle)
       else
 	lastp = runp;
 
-      runp = runp->next;
+      runp = atomic_load_relaxed(&runp->next);
     }
   while (runp != NULL);
 
@@ -113,9 +116,9 @@ __unregister_atfork (void *dso_handle)
 	 wait for the last user.  */
       atomic_decrement (&deleted->handler->refcntr);
       unsigned int val;
-      while ((val = deleted->handler->refcntr) != 0)
+      while ((val = atomic_load_relaxed(&deleted->handler->refcntr)) != 0)
 	futex_wait_simple (&deleted->handler->refcntr, val, FUTEX_PRIVATE);
 
-      deleted = deleted->next;
+      deleted = atomic_load_relaxed(&deleted->next);
     }
 }

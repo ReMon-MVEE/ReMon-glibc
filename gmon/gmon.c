@@ -77,20 +77,20 @@ __moncontrol (int mode)
   struct gmonparam *p = &_gmonparam;
 
   /* Don't change the state if we ran into an error.  */
-  if (p->state == GMON_PROF_ERROR)
+  if (atomic_load_relaxed(&p->state) == GMON_PROF_ERROR)
     return;
 
   if (mode)
     {
       /* start */
       __profil((void *) p->kcount, p->kcountsize, p->lowpc, s_scale);
-      p->state = GMON_PROF_ON;
+      atomic_store_relaxed(&p->state, GMON_PROF_ON);
     }
   else
     {
       /* stop */
       __profil(NULL, 0, 0, 0);
-      p->state = GMON_PROF_OFF;
+      atomic_store_relaxed(&p->state, GMON_PROF_OFF);
     }
 }
 weak_alias (__moncontrol, moncontrol)
@@ -133,7 +133,7 @@ __monstartup (u_long lowpc, u_long highpc)
     {
       ERR("monstartup: out of memory\n");
       p->tos = NULL;
-      p->state = GMON_PROF_ERROR;
+      atomic_store_relaxed(&p->state, GMON_PROF_ERROR);
       return;
     }
   p->tos = (struct tostruct *)cp;
@@ -390,11 +390,11 @@ write_gmon (void)
 void
 __write_profiling (void)
 {
-  int save = _gmonparam.state;
-  _gmonparam.state = GMON_PROF_OFF;
+  int save = atomic_load_relaxed(&_gmonparam.state);
+  atomic_store_relaxed(&_gmonparam.state, GMON_PROF_OFF);
   if (save == GMON_PROF_ON)
     write_gmon ();
-  _gmonparam.state = save;
+  atomic_store_relaxed(&_gmonparam.state, save);
 }
 #ifndef SHARED
 /* This symbol isn't used anywhere in the DSO and it is not exported.
@@ -411,7 +411,7 @@ _mcleanup (void)
 {
   __moncontrol (0);
 
-  if (_gmonparam.state != GMON_PROF_ERROR)
+  if (atomic_load_relaxed(&_gmonparam.state) != GMON_PROF_ERROR)
     write_gmon ();
 
   /* free the memory. */

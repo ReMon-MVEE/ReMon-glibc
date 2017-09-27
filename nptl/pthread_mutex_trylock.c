@@ -93,7 +93,7 @@ __pthread_mutex_trylock (pthread_mutex_t *mutex)
       THREAD_SETMEM (THREAD_SELF, robust_head.list_op_pending,
 		     &mutex->__data.__list.__next);
 
-      oldval = mutex->__data.__lock;
+      oldval = atomic_load_relaxed(&mutex->__data.__lock);
       do
 	{
 	again:
@@ -208,7 +208,7 @@ __pthread_mutex_trylock (pthread_mutex_t *mutex)
 			 (void *) (((uintptr_t) &mutex->__data.__list.__next)
 				   | 1));
 
-	oldval = mutex->__data.__lock;
+	oldval = atomic_load_relaxed(&mutex->__data.__lock);
 
 	/* Check whether we already hold the mutex.  */
 	if (__glibc_unlikely ((oldval & FUTEX_TID_MASK) == id))
@@ -267,7 +267,7 @@ __pthread_mutex_trylock (pthread_mutex_t *mutex)
 		return EBUSY;
 	      }
 
-	    oldval = mutex->__data.__lock;
+	    oldval = atomic_load_relaxed(&mutex->__data.__lock);
 	  }
 
 	if (__glibc_unlikely (oldval & FUTEX_OWNER_DIED))
@@ -327,7 +327,7 @@ __pthread_mutex_trylock (pthread_mutex_t *mutex)
       {
 	int kind = mutex->__data.__kind & PTHREAD_MUTEX_KIND_MASK_NP;
 
-	oldval = mutex->__data.__lock;
+	oldval = atomic_load_relaxed(&mutex->__data.__lock);
 
 	/* Check whether we already hold the mutex.  */
 	if (mutex->__data.__owner == id)

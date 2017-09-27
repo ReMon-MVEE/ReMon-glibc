@@ -31,7 +31,7 @@ __pthread_register_cancel_defer (__pthread_unwind_buf_t *buf)
   ibuf->priv.data.prev = THREAD_GETMEM (self, cleanup_jmp_buf);
   ibuf->priv.data.cleanup = THREAD_GETMEM (self, cleanup);
 
-  int cancelhandling = THREAD_GETMEM (self, cancelhandling);
+  int cancelhandling = THREAD_ATOMIC_GETMEM (self, cancelhandling);
 
   /* Disable asynchronous cancellation for now.  */
   if (__glibc_unlikely (cancelhandling & CANCELTYPE_BITMASK))
@@ -69,7 +69,7 @@ __pthread_unregister_cancel_restore (__pthread_unwind_buf_t *buf)
 
   int cancelhandling;
   if (ibuf->priv.data.canceltype != PTHREAD_CANCEL_DEFERRED
-      && ((cancelhandling = THREAD_GETMEM (self, cancelhandling))
+      && ((cancelhandling = THREAD_ATOMIC_GETMEM (self, cancelhandling))
 	  & CANCELTYPE_BITMASK) == 0)
     {
       while (1)

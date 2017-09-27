@@ -29,7 +29,7 @@ _pthread_cleanup_push_defer (struct _pthread_cleanup_buffer *buffer,
   buffer->__arg = arg;
   buffer->__prev = THREAD_GETMEM (self, cleanup);
 
-  int cancelhandling = THREAD_GETMEM (self, cancelhandling);
+  int cancelhandling = THREAD_ATOMIC_GETMEM (self, cancelhandling);
 
   /* Disable asynchronous cancellation for now.  */
   if (__glibc_unlikely (cancelhandling & CANCELTYPE_BITMASK))
@@ -66,7 +66,7 @@ _pthread_cleanup_pop_restore (struct _pthread_cleanup_buffer *buffer,
 
   int cancelhandling;
   if (__builtin_expect (buffer->__canceltype != PTHREAD_CANCEL_DEFERRED, 0)
-      && ((cancelhandling = THREAD_GETMEM (self, cancelhandling))
+      && ((cancelhandling = THREAD_ATOMIC_GETMEM (self, cancelhandling))
 	  & CANCELTYPE_BITMASK) == 0)
     {
       while (1)

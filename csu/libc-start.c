@@ -108,6 +108,14 @@ apply_irel (void)
 
 #include <libc-start.h>
 
+#ifdef USE_MVEE_LIBC
+# ifdef MVEE_USE_TOTALPARTIAL_AGENT
+#  include "mvee-totalpartial-agent.c"
+# else
+#  include "mvee-woc-agent.c"
+# endif
+#endif
+
 STATIC int LIBC_START_MAIN (int (*main) (int, char **, char **
 					 MAIN_AUXVEC_DECL),
 			    int argc,
@@ -285,6 +293,11 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 #ifndef SHARED
   _dl_debug_initialize (0, LM_ID_BASE);
 #endif
+
+  (void) syscall(MVEE_RUNS_UNDER_MVEE_CONTROL, &mvee_sync_enabled, &mvee_infinite_loop, 
+				 NULL, NULL, &mvee_master_variant);
+  mvee_libc_initialized = 1;
+
 #ifdef HAVE_CLEANUP_JMP_BUF
   /* Memory for the cancellation buffer.  */
   struct pthread_unwind_buf unwind_buf;

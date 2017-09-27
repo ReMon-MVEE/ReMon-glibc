@@ -52,7 +52,7 @@ __run_exit_handlers (int status, struct exit_function_list **listp,
 	{
 	  const struct exit_function *const f =
 	    &cur->fns[--cur->idx];
-	  switch (f->flavor)
+	  switch (atomic_load_relaxed((long int*)&f->flavor))
 	    {
 	      void (*atfct) (void);
 	      void (*onfct) (int status, void *arg);

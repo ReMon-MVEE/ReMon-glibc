@@ -37,7 +37,7 @@ __lll_timedwait_tid (int *tidp, const struct timespec *abstime)
     return EINVAL;
 
   /* Repeat until thread terminated.  */
-  while ((tid = *tidp) != 0)
+  while ((tid = (*tidp)) != 0 || mvee_should_sync_tid())
     {
       struct timeval tv;
       struct timespec rt;
@@ -62,8 +62,11 @@ __lll_timedwait_tid (int *tidp, const struct timespec *abstime)
          The kernel up to version 3.16.3 does not use the private futex
          operations for futex wake-up when the clone terminates.
       */
-      if (lll_futex_timed_wait (tidp, tid, &rt, LLL_SHARED) == -ETIMEDOUT)
+	  if (lll_futex_syscall (4, tidp, __lll_private_flag(mvee_should_sync_tid() ? MVEE_FUTEX_WAIT_TID : FUTEX_WAIT, LLL_SHARED),
+							 tid, &rt) == -ETIMEDOUT)
         return ETIMEDOUT;
+	  else if (*tidp == 0)
+		  break;
     }
 
   return 0;

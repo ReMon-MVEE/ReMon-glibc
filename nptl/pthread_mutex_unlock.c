@@ -100,7 +100,7 @@ __pthread_mutex_unlock_full (pthread_mutex_t *mutex, int decr)
     {
     case PTHREAD_MUTEX_ROBUST_RECURSIVE_NP:
       /* Recursive mutex.  */
-      if ((mutex->__data.__lock & FUTEX_TID_MASK)
+		if ((atomic_load_relaxed(&mutex->__data.__lock) & FUTEX_TID_MASK)
 	  == THREAD_GETMEM (THREAD_SELF, tid)
 	  && __builtin_expect (mutex->__data.__owner
 			       == PTHREAD_MUTEX_INCONSISTENT, 0))
@@ -124,7 +124,7 @@ __pthread_mutex_unlock_full (pthread_mutex_t *mutex, int decr)
     case PTHREAD_MUTEX_ROBUST_ERRORCHECK_NP:
     case PTHREAD_MUTEX_ROBUST_NORMAL_NP:
     case PTHREAD_MUTEX_ROBUST_ADAPTIVE_NP:
-      if ((mutex->__data.__lock & FUTEX_TID_MASK)
+		if ((atomic_load_relaxed(&mutex->__data.__lock) & FUTEX_TID_MASK)
 	  != THREAD_GETMEM (THREAD_SELF, tid)
 	  || ! lll_islocked (mutex->__data.__lock))
 	return EPERM;
@@ -187,7 +187,7 @@ __pthread_mutex_unlock_full (pthread_mutex_t *mutex, int decr)
 
     case PTHREAD_MUTEX_PI_ROBUST_RECURSIVE_NP:
       /* Recursive mutex.  */
-      if ((mutex->__data.__lock & FUTEX_TID_MASK)
+		if ((atomic_load_relaxed(&mutex->__data.__lock) & FUTEX_TID_MASK)
 	  == THREAD_GETMEM (THREAD_SELF, tid)
 	  && __builtin_expect (mutex->__data.__owner
 			       == PTHREAD_MUTEX_INCONSISTENT, 0))
@@ -214,7 +214,7 @@ __pthread_mutex_unlock_full (pthread_mutex_t *mutex, int decr)
     case PTHREAD_MUTEX_PI_ROBUST_ERRORCHECK_NP:
     case PTHREAD_MUTEX_PI_ROBUST_NORMAL_NP:
     case PTHREAD_MUTEX_PI_ROBUST_ADAPTIVE_NP:
-      if ((mutex->__data.__lock & FUTEX_TID_MASK)
+		if ((atomic_load_relaxed(&mutex->__data.__lock) & FUTEX_TID_MASK)
 	  != THREAD_GETMEM (THREAD_SELF, tid)
 	  || ! lll_islocked (mutex->__data.__lock))
 	return EPERM;
@@ -294,7 +294,7 @@ __pthread_mutex_unlock_full (pthread_mutex_t *mutex, int decr)
     case PTHREAD_MUTEX_PP_ERRORCHECK_NP:
       /* Error checking mutex.  */
       if (mutex->__data.__owner != THREAD_GETMEM (THREAD_SELF, tid)
-	  || (mutex->__data.__lock & ~ PTHREAD_MUTEX_PRIO_CEILING_MASK) == 0)
+		  || (atomic_load_relaxed(&mutex->__data.__lock) & ~ PTHREAD_MUTEX_PRIO_CEILING_MASK) == 0)
 	return EPERM;
       /* FALLTHROUGH */
 
