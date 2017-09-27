@@ -1,0 +1,1 @@
+CFLAGS="-Wno-maybe-uninitialized -fno-stack-protector -O1 -ggdb -fno-omit-frame-pointer -DMVEE_USE_TOTALPARTIAL_AGENT" ../configure --enable-stackguard-randomization --enable-obsolete-rpc --enable-pt_chown --with-selinux --enable-lock-elision=no --enable-addons=nptl --prefix=$HOME/glibc-build  --sysconfdir=/etc/
