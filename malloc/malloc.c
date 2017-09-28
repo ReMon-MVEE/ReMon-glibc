@@ -1,4 +1,4 @@
-/* -*- Mode:C++; c-file-style: "linux"; c-basic-offset: 2; indent-tabs-mode: nil; -*- */
+/* -*- Mode:C++; c-file-style: "gnu"; c-basic-offset: 2; tab-width: 8; indent-tabs-mode: nil; -*- */
 /* Malloc implementation for multiple threads without lock contention.
    Copyright (C) 1996-2017 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
@@ -1713,17 +1713,28 @@ struct malloc_state
   INTERNAL_SIZE_T max_system_mem;
 };
 
+/* 
+ * stijn: This data structure is a huge pain if it is modified at run time.
+ * Run-time updates of any of these fields have radical implications on the
+ * allocation behavior, many of which result in divergences in the MVEE.
+ *
+ * Some fields are generally only modified by mallopt, which -- I assume -- 
+ * people will only use in a single-threaded context.
+ * Other fields (e.g., trim_threshold and mmap_threshold) are also modified
+ * on regular code paths, which means we have to wrap and order accesses
+ * to said fields.
+ */
 struct malloc_par
 {
   /* Tunable parameters */
-  unsigned long trim_threshold;
+  unsigned long trim_threshold; /* stijn: racy access on regular code paths */
   INTERNAL_SIZE_T top_pad;
-  INTERNAL_SIZE_T mmap_threshold;
+  INTERNAL_SIZE_T mmap_threshold; /* stijn: racy access on regular code paths */
   INTERNAL_SIZE_T arena_test;
   INTERNAL_SIZE_T arena_max;
 
   /* Memory map support */
-  int n_mmaps;
+  int n_mmaps; /* stijn: racy access on regular code paths */
   int n_mmaps_max;
   int max_n_mmaps;
   /* the mmap_threshold is dynamic, until the user sets
@@ -1732,11 +1743,11 @@ struct malloc_par
   int no_dyn_threshold;
 
   /* Statistics */
-  INTERNAL_SIZE_T mmapped_mem;
-  INTERNAL_SIZE_T max_mmapped_mem;
+  INTERNAL_SIZE_T mmapped_mem; /* stijn: racy access on regular code paths */
+  INTERNAL_SIZE_T max_mmapped_mem; /* stijn: racy access on regular code paths */
 
   /* First address handed out by MORECORE/sbrk.  */
-  char *sbrk_base;
+  char *sbrk_base; /* stijn: racy - but probably impossible to trigger the race... */
 
 #if USE_TCACHE
   /* Maximum number of buckets to use.  */
@@ -2303,7 +2314,7 @@ sysmalloc (INTERNAL_SIZE_T nb, mstate av)
    */
 
   if (av == NULL
-      || ((unsigned long) (nb) >= (unsigned long) (mp_.mmap_threshold)
+      || ((unsigned long) (nb) >= (unsigned long) (atomic_load_relaxed(&mp_.mmap_threshold))
 		  && (atomic_load_acquire(&mp_.n_mmaps) < mp_.n_mmaps_max)))
     {
       char *mm;           /* return value from mmap call*/
@@ -3087,13 +3098,14 @@ __libc_free (void *mem)
     {
       /* See if the dynamic brk/mmap threshold needs adjusting.
 	 Dumped fake mmapped chunks do not affect the threshold.  */
-      if (!mp_.no_dyn_threshold
-          && chunksize_nomask (p) > mp_.mmap_threshold
+      if (!atomic_load_relaxed(&mp_.no_dyn_threshold)
+          && chunksize_nomask (p) > atomic_load_relaxed(&mp_.mmap_threshold)
           && chunksize_nomask (p) <= DEFAULT_MMAP_THRESHOLD_MAX
 	  && !DUMPED_MAIN_ARENA_CHUNK (p))
         {
-          mp_.mmap_threshold = chunksize (p);
-          mp_.trim_threshold = 2 * mp_.mmap_threshold;
+          atomic_store_relaxed(&mp_.mmap_threshold, chunksize (p));
+          unsigned long new_trim_threshold = 2 * atomic_load_relaxed(&mp_.mmap_threshold);
+          atomic_store_relaxed(&mp_.trim_threshold, new_trim_threshold);
           LIBC_PROBE (memory_mallopt_free_dyn_thresholds, 2,
                       mp_.mmap_threshold, mp_.trim_threshold);
         }
@@ -3474,7 +3486,6 @@ __libc_calloc (size_t n, size_t elem_size)
 /*
    ------------------------------ malloc ------------------------------
  */
-
 static void *
 _int_malloc (mstate av, size_t bytes)
 {
@@ -4298,7 +4309,7 @@ _int_free (mstate av, mchunkptr p, int have_lock)
       if (av == &main_arena) {
 #ifndef MORECORE_CANNOT_TRIM
 	if ((unsigned long)(chunksize(av->top)) >=
-	    (unsigned long)(mp_.trim_threshold))
+	    (unsigned long)(atomic_load_relaxed(&mp_.trim_threshold)))
 	  systrim(mp_.top_pad, av);
 #endif
       } else {

@@ -645,7 +645,7 @@ heap_trim (heap_info *heap, size_t pad)
      page.  */
   top_size = chunksize (top_chunk);
   if ((unsigned long)(top_size) <
-      (unsigned long)(mp_.trim_threshold))
+      (unsigned long)(atomic_load_relaxed(&mp_.trim_threshold)))
     return 0;
 
   top_area = top_size - MINSIZE - 1;
@@ -665,6 +665,7 @@ heap_trim (heap_info *heap, size_t pad)
 
   /* Success. Adjust top accordingly. */
   set_head (top_chunk, (top_size - extra) | PREV_INUSE);
+
   /*check_chunk(ar_ptr, top_chunk);*/
   return 1;
 }
