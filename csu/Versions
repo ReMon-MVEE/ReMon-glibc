@@ -10,6 +10,7 @@ libc {
     mvee_all_heaps_aligned;
     mvee_should_sync_tid;
     mvee_should_futex_unlock;
+	mvee_xcheck;
   }
   GLIBC_2.1 {
     # New special glibc functions.

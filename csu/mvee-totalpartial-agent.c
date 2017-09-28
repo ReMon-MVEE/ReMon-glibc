@@ -22,10 +22,6 @@ static __thread unsigned long  mvee_original_call_site       = 0;
 #define likely(x)       __builtin_expect((x),1)
 #define unlikely(x)     __builtin_expect((x),0)
 
-#ifdef MVEE_DEBUG_MALLOC
-DEFINE_MVEE_QUEUE(malloc, 1);
-#endif
-
 extern void mvee_infinite_loop(void);
 
 /* MVEE PATCH:
@@ -144,10 +140,6 @@ static void mvee_check_buffer(void)
 			INIT_MVEE_QUEUE(lock, MVEE_LOCK_QUEUE_SLOT_SIZE, MVEE_LIBC_LOCK_BUFFER_PARTIAL);
 #else
 			INIT_MVEE_QUEUE(lock, MVEE_LOCK_QUEUE_SLOT_SIZE, MVEE_LIBC_LOCK_BUFFER);
-#endif
-
-#ifdef MVEE_DEBUG_MALLOC
-			INIT_MVEE_QUEUE(malloc, 4*sizeof(int) + 3*sizeof(long), MVEE_LIBC_MALLOC_DEBUG_BUFFER);
 #endif
 		}
     }
@@ -420,6 +412,14 @@ static inline void mvee_read_lock_result_wait(void)
 			unsigned short master_op_type;
 			MVEE_READ_QUEUE_DATA(lock, temppos, sizeof(long) + sizeof(short), master_op_type);
 
+			if (master_word_ptr != ((unsigned long)word_ptr & ~(sizeof(long) - 1)) && mvee_pos_still_valid())
+			{
+#  ifdef MVEE_LOG_EIPS
+				MVEE_LOG_STACK(lock, 1, &temppos);
+#  endif
+				syscall(__NR_gettid, 1337, 10000001, 61, word_ptr, temppos);
+			}
+
 			if (master_op_type != op_type && mvee_pos_still_valid())
 			{
 #  ifdef MVEE_LOG_EIPS
@@ -430,16 +430,7 @@ static inline void mvee_read_lock_result_wait(void)
 				syscall(__NR_gettid, 1337, 10000001, 59, master_op_type, op_type);
 				return;
 			}
-/*
-			if ((master_word_ptr & 0xfff) != (((unsigned long)word_ptr & ~(sizeof(long) - 1) & 0xfff)) && mvee_pos_still_valid())
-			{
-#  ifdef MVEE_LOG_EIPS
-				MVEE_LOG_STACK(lock, 1, &temppos);
-#  endif
 
-				syscall(__NR_gettid, 1337, 10000001, 61, word_ptr, temppos);
-			}
-*/
 #endif
 
 			break;
@@ -718,120 +709,8 @@ void mvee_atomic_postop(unsigned char preop_result)
 	mvee_atomic_postop_internal(preop_result);
 }
 
-
-#ifdef MVEE_DEBUG_MALLOC
-void mvee_malloc_hook(int alloc_type, int msg, long chunksize, void* ar_ptr, void* chunk_ptr)
+void mvee_xcheck(unsigned long item)
 {
-	if (mvee_num_childs)
-    {
-		mvee_check_buffer();
-		if (mvee_master_variant)
-			mvee_write_malloc_info(alloc_type, msg, chunksize, ar_ptr, chunk_ptr);
-		else
-			mvee_verify_malloc_info(alloc_type, msg, chunksize, ar_ptr, chunk_ptr);
-    }
+	unsigned char tmp = mvee_atomic_preop(ATOMIC_STORE, (void*) item);
+	mvee_atomic_postop(tmp);
 }
-
-void mvee_write_malloc_info(int alloc_type, int msg, long chunksize, void* ar_ptr, void* chunk_ptr)
-{
-	while (1)
-    {
-		if (orig_atomic_decrement_and_test(mvee_malloc_buffer_lock))
-			break;
-      
-		while (*mvee_lock_buffer_lock <= 0)
-			cpu_relax();
-    }
-
-	unsigned int pos = *mvee_malloc_buffer_pos;
-
-	MVEE_LOG_QUEUE_DATA(malloc, pos, 4*sizeof(int) + 2 * sizeof(long), (unsigned long)chunk_ptr);
-	MVEE_LOG_QUEUE_DATA(malloc, pos, 4*sizeof(int) +     sizeof(long), (unsigned long)ar_ptr);
-	MVEE_LOG_QUEUE_DATA(malloc, pos, 4*sizeof(int)                   , chunksize);
-	MVEE_LOG_QUEUE_DATA(malloc, pos, 3*sizeof(int)                   , msg);
-	MVEE_LOG_QUEUE_DATA(malloc, pos, 2*sizeof(int)                   , alloc_type);
-
-	MVEE_LOG_STACK(malloc, 1, mvee_malloc_buffer_pos);
-
-	MVEE_LOG_QUEUE_DATA(malloc, pos, 0, mvee_master_thread_id);
-
-	gcc_barrier();
-	if (++(*mvee_malloc_buffer_pos) >= mvee_malloc_buffer_slots)
-    {
-		syscall(MVEE_FLUSH_SHARED_BUFFER, MVEE_LIBC_MALLOC_DEBUG_BUFFER);
-		*mvee_malloc_buffer_pos = 0;
-    }
-
-	*mvee_malloc_buffer_lock = 1;
-}
-
-struct mvee_malloc_error
-{
-  int alloc_type, msg;
-  long chunksize;
-  void* ar_ptr, * chunk_ptr;
-};
-
-void mvee_verify_malloc_info(int alloc_type, int msg, long chunksize, void* ar_ptr, void* chunk_ptr)
-{
-	unsigned int prevpos = 0;
-	int master_alloc_type, master_msg;
-	long master_chunksize;
-	void* master_ar_ptr, * master_chunk_ptr;
-
-	while (true)
-    {
-		volatile unsigned int temppos = *mvee_malloc_buffer_pos;
-
-		if (temppos < mvee_malloc_buffer_slots)
-		{
-			int tid;
-			MVEE_READ_QUEUE_DATA(malloc, temppos, 0, tid);
-			if (tid == mvee_master_thread_id)
-			{
-				MVEE_READ_QUEUE_DATA(malloc, temppos, 2*sizeof(int), master_alloc_type);
-				MVEE_READ_QUEUE_DATA(malloc, temppos, 3*sizeof(int), master_msg);
-				MVEE_READ_QUEUE_DATA(malloc, temppos, 4*sizeof(int), master_chunksize);
-				MVEE_READ_QUEUE_DATA(malloc, temppos, 4*sizeof(int)+sizeof(long), master_ar_ptr);
-				MVEE_READ_QUEUE_DATA(malloc, temppos, 4*sizeof(int)+2*sizeof(long), master_chunk_ptr);
-				MVEE_LOG_STACK(malloc, 1, mvee_malloc_buffer_pos);
-	      
-				if (alloc_type != master_alloc_type
-					|| msg != master_msg
-					|| chunksize != master_chunksize
-#ifndef MVEE_MALLOC_IGNORE_ASLR
-					|| ar_ptr != master_ar_ptr
-					|| chunk_ptr != master_chunk_ptr
-#endif
-					)
-				{
-					struct mvee_malloc_error err;
-					err.alloc_type = master_alloc_type;
-					err.msg = master_msg;
-					err.chunksize = master_chunksize;
-					err.ar_ptr = master_ar_ptr;
-					err.chunk_ptr = master_chunk_ptr;
-					syscall(__NR_gettid, 1337, 10000001, 74, &err);
-		  
-					err.alloc_type = alloc_type;
-					err.msg = msg;
-					err.chunksize = chunksize;
-					err.ar_ptr = ar_ptr;
-					err.chunk_ptr = chunk_ptr;
-					syscall(__NR_gettid, 1337, 10000001, 75, &err);
-				}
-				break;
-			}
-		}
-    }
-
-	if (*mvee_malloc_buffer_pos +1 >= mvee_malloc_buffer_slots)
-    {
-		syscall(MVEE_FLUSH_SHARED_BUFFER, MVEE_LIBC_MALLOC_DEBUG_BUFFER);
-		*mvee_malloc_buffer_pos = 0;
-    }
-	else
-		(*mvee_malloc_buffer_pos)++;
-}
-
-#endif // !MVEE_DEBUG_MALLOC

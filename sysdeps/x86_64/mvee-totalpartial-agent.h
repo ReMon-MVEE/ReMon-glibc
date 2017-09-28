@@ -36,12 +36,7 @@
 // MVEE_DEBUG_MALLOC: if this is defined, the slaves will check whether
 // their malloc behavior is synced with the master
 //
-// #define MVEE_DEBUG_MALLOC
-//
-// MVEE_MALLOC_IGNORE_ASLR: if this is defined, the malloc debugger will
-// only compare allocation types, messages and chunk sizes
-// arena and chunk pointers are ignored.
-// #define MVEE_MALLOC_IGNORE_ASLR
+#define MVEE_DEBUG_MALLOC
 
 #define DEFINE_MVEE_QUEUE(name, has_eip_queue)				\
   static unsigned long             mvee_##name##_buffer_data_start  = 0; \
@@ -104,21 +99,12 @@
 #define MVEE_LOG_STACK(name, start_depth, pos)				\
   mvee_log_stack(mvee_##name##_eip_buffer, sizeof(long) * mvee_num_childs * MVEE_STACK_DEPTH, pos, start_depth);
 
-#ifdef MVEE_DEBUG_MALLOC
-extern void mvee_malloc_hook(int alloc_type, int msg, long chunksize, void* ar_ptr, void* chunk_ptr);
-#define MVEE_MALLOC_HOOK(type, msg, sz, ar_ptr, chunk_ptr)		\
-  mvee_malloc_hook(type, msg, sz, ar_ptr, chunk_ptr)
-#else
-#define MVEE_MALLOC_HOOK(type, msg, sz, ar_ptr, chunk_ptr)
-#endif // !MVEE_DEBUG_MALLOC
 
 extern void mvee_invalidate_buffer      (void);
 extern void mvee_atomic_postop_internal (unsigned char preop_result);
 extern int  mvee_should_sync_tid        (void);
 extern int  mvee_all_heaps_aligned      (char* heap, unsigned long alloc_size); 
-extern void mvee_malloc_hook(int alloc_type, int msg, long chunksize, void* ar_ptr, void* chunk_ptr);
-extern void mvee_write_malloc_info(int alloc_type, int msg, long chunksize, void* ar_ptr, void* chunk_ptr);
-extern void mvee_verify_malloc_info(int alloc_type, int msg, long chunksize, void* ar_ptr, void* chunk_ptr);
+extern void mvee_xcheck                 (unsigned long item);
 
 #define MVEE_POSTOP() \
   mvee_atomic_postop_internal(__tmp_mvee_preop);
