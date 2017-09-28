@@ -1,3 +1,4 @@
+/* -*- Mode:C++; c-file-style: "linux"; c-basic-offset: 2; indent-tabs-mode: nil; -*- */
 /* Malloc implementation for multiple threads without lock contention.
    Copyright (C) 1996-2017 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
@@ -4767,7 +4768,7 @@ __malloc_trim (size_t s)
       result |= mtrim (ar_ptr, s);
       __libc_lock_unlock (ar_ptr->mutex);
 
-      ar_ptr = ar_ptr->next;
+      ar_ptr = atomic_load_relaxed(&ar_ptr->next);
     }
   while (ar_ptr != &main_arena);
 
@@ -4898,7 +4899,7 @@ __libc_mallinfo (void)
       int_mallinfo (ar_ptr, &m);
       __libc_lock_unlock (ar_ptr->mutex);
 
-      ar_ptr = ar_ptr->next;
+      ar_ptr = atomic_load_relaxed(&ar_ptr->next);
     }
   while (ar_ptr != &main_arena);
 
@@ -4938,7 +4939,7 @@ __malloc_stats (void)
       system_b += mi.arena;
       in_use_b += mi.uordblks;
       __libc_lock_unlock (ar_ptr->mutex);
-      ar_ptr = ar_ptr->next;
+      ar_ptr = atomic_load_relaxed(&ar_ptr->next);
       if (ar_ptr == &main_arena)
         break;
     }
@@ -5471,7 +5472,7 @@ __malloc_info (int options, FILE *fp)
 	}
 
       fputs ("</heap>\n", fp);
-      ar_ptr = ar_ptr->next;
+      ar_ptr = atomic_load_relaxed(&ar_ptr->next);
     }
   while (ar_ptr != &main_arena);
 

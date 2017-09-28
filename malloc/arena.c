@@ -154,7 +154,7 @@ __malloc_fork_lock_parent (void)
   for (mstate ar_ptr = &main_arena;; )
     {
       __libc_lock_lock (ar_ptr->mutex);
-      ar_ptr = ar_ptr->next;
+      ar_ptr = atomic_load_relaxed(&ar_ptr->next);
       if (ar_ptr == &main_arena)
         break;
     }
@@ -169,7 +169,7 @@ __malloc_fork_unlock_parent (void)
   for (mstate ar_ptr = &main_arena;; )
     {
       __libc_lock_unlock (ar_ptr->mutex);
-      ar_ptr = ar_ptr->next;
+      ar_ptr = atomic_load_relaxed(&ar_ptr->next);
       if (ar_ptr == &main_arena)
         break;
     }
@@ -195,10 +195,10 @@ __malloc_fork_unlock_child (void)
         {
 	  /* This arena is no longer attached to any thread.  */
 	  ar_ptr->attached_threads = 0;
-          ar_ptr->next_free = free_list;
+	  ar_ptr->next_free = free_list;
           free_list = ar_ptr;
         }
-      ar_ptr = ar_ptr->next;
+      ar_ptr = atomic_load_relaxed(&ar_ptr->next);
       if (ar_ptr == &main_arena)
         break;
     }
@@ -728,12 +728,13 @@ _int_new_arena (size_t size)
   __libc_lock_lock (list_lock);
 
   /* Add the new arena to the global list.  */
-  a->next = main_arena.next;
+  struct malloc_state* tmp = atomic_load_relaxed(&main_arena.next);
+  atomic_store_relaxed(&a->next, tmp);
   /* FIXME: The barrier is an attempt to synchronize with read access
      in reused_arena, which does not acquire list_lock while
      traversing the list.  */
   atomic_write_barrier ();
-  main_arena.next = a;
+  atomic_store_relaxed(&main_arena.next, a);
 
   __libc_lock_unlock (list_lock);
 
@@ -816,26 +817,26 @@ reused_arena (mstate avoid_arena)
   mstate result;
   /* FIXME: Access to next_to_use suffers from data races.  */
   static mstate next_to_use;
-  if (next_to_use == NULL)
-    next_to_use = &main_arena;
+  if (atomic_load_relaxed(&next_to_use) == NULL)
+    atomic_store_relaxed(&next_to_use, &main_arena);
 
   /* Iterate over all arenas (including those linked from
      free_list).  */
-  result = next_to_use;
+  result = atomic_load_relaxed(&next_to_use);
   do
     {
       if (!__libc_lock_trylock (result->mutex))
         goto out;
 
       /* FIXME: This is a data race, see _int_new_arena.  */
-      result = result->next;
+      result = atomic_load_relaxed(&result->next);
     }
-  while (result != next_to_use);
+  while (result != atomic_load_relaxed(&next_to_use));
 
   /* Avoid AVOID_ARENA as we have already failed to allocate memory
      in that arena and it is currently locked.   */
   if (result == avoid_arena)
-    result = result->next;
+    result = atomic_load_relaxed(&result->next);
 
   /* No arena available without contention.  Wait for the next in line.  */
   LIBC_PROBE (memory_arena_reuse_wait, 3, &result->mutex, result, avoid_arena);
@@ -866,7 +867,8 @@ out:
 
   LIBC_PROBE (memory_arena_reuse, 2, result, avoid_arena);
   thread_arena = result;
-  next_to_use = result->next;
+  mstate tmp = atomic_load_relaxed(&result->next);
+  atomic_store_relaxed(&next_to_use, tmp);
 
   return result;
 }
