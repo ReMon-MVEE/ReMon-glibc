@@ -1,5 +1,6 @@
 ifeq ($(subdir),csu)
 tests += test-multiarch
+sysdep_routines += mvee_infinite_loop
 endif
 
 ifeq ($(subdir),string)

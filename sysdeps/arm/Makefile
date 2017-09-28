@@ -47,7 +47,7 @@ aeabi_routines = aeabi_assert aeabi_localeconv aeabi_errno_addr \
 		 aeabi_memmove aeabi_memset \
 		 aeabi_read_tp libc-aeabi_read_tp
 
-sysdep_routines += $(aeabi_constants) $(aeabi_routines)
+sysdep_routines += $(aeabi_constants) $(aeabi_routines) mvee_infinite_loop
 static-only-routines += $(aeabi_constants) aeabi_read_tp
 shared-only-routines += libc-aeabi_read_tp
 
