@@ -29,6 +29,9 @@ __new_sem_init (sem_t *sem, int pshared, unsigned int value)
 {
   ASSERT_PTHREAD_INTERNAL_SIZE (sem_t, struct new_sem);
 
+	if (mvee_should_sync_tid())
+		return (int) INLINE_SYSCALL(MVEE_SEM_INIT, sem, pshared, value);
+	
   /* Parameter sanity check.  */
   if (__glibc_unlikely (value > SEM_VALUE_MAX))
     {
@@ -71,6 +74,8 @@ attribute_compat_text_section
 __old_sem_init (sem_t *sem, int pshared, unsigned int value)
 {
   ASSERT_PTHREAD_INTERNAL_SIZE (sem_t, struct new_sem);
+	if (mvee_should_sync_tid())
+		return (int) INLINE_SYSCALL(MVEE_SEM_INIT, sem, pshared, value);
 
   /* Parameter sanity check.  */
   if (__glibc_unlikely (value > SEM_VALUE_MAX))

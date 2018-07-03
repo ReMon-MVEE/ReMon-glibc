@@ -23,10 +23,22 @@
 #include <unistd.h>
 #include "semaphoreP.h"
 #include <shm-directory.h>
+#include <sys/syscall.h>
 
 int
 sem_unlink (const char *name)
 {
+	if (mvee_should_sync_tid())
+	{
+		int result = (int) syscall(MVEE_SEM_UNLINK, name);
+		if (result < 0 && result > -4096)
+		{
+			__set_errno(-result);
+			result = -1;
+		}
+		return result;
+	}
+	
   /* Construct the filename.  */
   SHM_GET_NAME (ENOENT, -1, SEM_SHM_PREFIX);
 

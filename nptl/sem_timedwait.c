@@ -18,6 +18,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include "sem_waitcommon.c"
+#include <sys/syscall.h>
 
 /* This is in a separate file because because sem_timedwait is only provided
    if __USE_XOPEN2K is defined.  */
@@ -28,7 +29,18 @@ sem_timedwait (sem_t *sem, const struct timespec *abstime)
     {
       __set_errno (EINVAL);
       return -1;
-    }
+    }  
+
+  if (mvee_should_sync_tid())
+  {
+	  int result = (int) syscall(MVEE_TIMEDWAIT, sem, abstime);
+	  if (result < 0 && result > -4096)
+	  {
+		  __set_errno(-result);
+		  result = -1;
+	  }
+	  return result;
+  }
 
   /* Check sem_wait.c for a more detailed explanation why it is required.  */
   __pthread_testcancel ();

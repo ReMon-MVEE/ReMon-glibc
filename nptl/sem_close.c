@@ -44,6 +44,9 @@ sem_close (sem_t *sem)
 {
   int result = 0;
 
+  if (mvee_should_sync_tid())
+	  return INLINE_SYSCALL(MVEE_SEM_CLOSE, sem);
+
   /* Get the lock.  */
   lll_lock (__sem_mappings_lock, LLL_PRIVATE);
 

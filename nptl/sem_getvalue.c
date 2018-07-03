@@ -20,12 +20,19 @@
 #include <shlib-compat.h>
 #include "semaphoreP.h"
 #include <atomic.h>
+#include <sys/syscall.h>
 
 
 int
 __new_sem_getvalue (sem_t *sem, int *sval)
 {
   struct new_sem *isem = (struct new_sem *) sem;
+
+  if (mvee_should_sync_tid())
+  {
+	  *sval = (int) syscall(MVEE_SEM_GETVALUE, sem, sval);
+	  return 0;
+  }
 
   /* XXX Check for valid SEM parameter.  */
   /* FIXME This uses relaxed MO, even though POSIX specifies that this function
@@ -48,6 +55,11 @@ int
 __old_sem_getvalue (sem_t *sem, int *sval)
 {
   struct old_sem *isem = (struct old_sem *) sem;
+  if (mvee_should_sync_tid())
+  {
+	  *sval = (int) syscall(MVEE_SEM_GETVALUE, sem, sval);
+	  return 0;
+  }
   *sval = isem->value;
   return 0;
 }

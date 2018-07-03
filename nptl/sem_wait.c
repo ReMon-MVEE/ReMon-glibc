@@ -19,10 +19,22 @@
 
 #include <lowlevellock.h>	/* lll_futex* used by the old code.  */
 #include "sem_waitcommon.c"
+#include <sys/syscall.h>
 
 int
 __new_sem_wait (sem_t *sem)
 {
+	if (mvee_should_sync_tid())
+	{
+		int result = (int) syscall(MVEE_SEM_WAIT, sem);
+		if (result < 0 && result > -4096)
+		{
+			__set_errno(-result);
+			result = -1;
+		}
+		return result;
+	}
+	
   /* We need to check whether we need to act upon a cancellation request here
      because POSIX specifies that cancellation points "shall occur" in
      sem_wait and sem_timedwait, which also means that they need to check
@@ -51,6 +63,17 @@ __old_sem_wait (sem_t *sem)
   int *futex = (int *) sem;
   int err;
 
+  if (mvee_should_sync_tid())
+  {
+	  int result = (int) syscall(MVEE_SEM_WAIT, sem);
+	  if (result < 0 && result > -4096)
+	  {
+		  __set_errno(-result);
+		  result = -1;
+	  }
+	  return result;
+  }
+
   do
     {
       if (atomic_decrement_if_positive (futex) > 0)
@@ -77,6 +100,17 @@ compat_symbol (libpthread, __old_sem_wait, sem_wait, GLIBC_2_0);
 int
 __new_sem_trywait (sem_t *sem)
 {
+	if (mvee_should_sync_tid())
+	{
+		int result = (int) syscall(MVEE_SEM_TRYWAIT, sem);
+		if (result < 0 && result > -4096)
+		{
+			__set_errno(-result);
+			result = -1;
+		}
+		return result;
+	}
+
   /* We must not fail spuriously, so require a definitive result even if this
      may lead to a long execution time.  */
   if (__new_sem_wait_fast ((struct new_sem *) sem, 1) == 0)
@@ -92,6 +126,17 @@ __old_sem_trywait (sem_t *sem)
   int *futex = (int *) sem;
   int val;
 
+  if (mvee_should_sync_tid())
+  {
+	  int result = (int) syscall(MVEE_SEM_TRYWAIT, sem);
+	  if (result < 0 && result > -4096)
+	  {
+		  __set_errno(-result);
+		  result = -1;
+	  }
+	  return result;
+  }
+  
   if (*futex > 0)
     {
       val = atomic_decrement_if_positive (futex);

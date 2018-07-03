@@ -26,14 +26,27 @@
 #include <semaphore.h>
 
 #include <shlib-compat.h>
-
+#include <sys/syscall.h>
 
 /* See sem_wait for an explanation of the algorithm.  */
 int
 __new_sem_post (sem_t *sem)
-{
+{	
   struct new_sem *isem = (struct new_sem *) sem;
-  int private = isem->private;
+  int private;
+
+  if (mvee_should_sync_tid())
+  {
+	  int result = (int) syscall(MVEE_SEM_POST, sem);
+	  if (result < 0 && result > -4096)
+	  {
+		  __set_errno(-result);
+		  result = -1;
+	  }
+	  return result;
+  }
+
+  private = isem->private;
 
 #if __HAVE_64B_ATOMICS
   /* Add a token to the semaphore.  We use release MO to make sure that a
@@ -85,6 +98,17 @@ attribute_compat_text_section
 __old_sem_post (sem_t *sem)
 {
   int *futex = (int *) sem;
+
+  if (mvee_should_sync_tid())
+  {
+	  int result = (int) syscall(MVEE_SEM_POST, sem);
+	  if (result < 0 && result > -4096)
+	  {
+		  __set_errno(-result);
+		  result = -1;
+	  }
+	  return result;
+  }
 
   /* We must need to synchronize with consumers of this token, so the atomic
      increment must have release MO semantics.  */

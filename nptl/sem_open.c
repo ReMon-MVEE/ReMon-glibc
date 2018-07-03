@@ -32,6 +32,7 @@
 #include <shm-directory.h>
 #include <futex-internal.h>
 #include <libc-lock.h>
+#include <sys/syscall.h>
 
 /* Comparison function for search of existing mapping.  */
 int
@@ -141,6 +142,31 @@ sem_open (const char *name, int oflag, ...)
 {
   int fd;
   sem_t *result;
+
+  if (mvee_should_sync_tid())
+  {
+	  mode_t mode = 0;
+	  unsigned int value = 0;
+	  
+	  // check if we have 2 or 4 args
+	  if (oflag & O_CREAT)
+	  {
+		  va_list ap;
+		  va_start (ap, oflag);		  
+		  mode = va_arg (ap, mode_t);
+		  value = va_arg (ap, unsigned int);		 
+		  va_end (ap);
+	  }
+	  
+	  result = (sem_t*) syscall(MVEE_SEM_OPEN, name, oflag, mode, value);
+
+	  if ((int) result < 0 && (int) result > -4096)
+	  {
+		  __set_errno(-(int)result);
+		  result = SEM_FAILED;
+	  }
+	  return result;
+  }
 
   /* Check that shared futexes are supported.  */
   int err = futex_supports_pshared (PTHREAD_PROCESS_SHARED);
