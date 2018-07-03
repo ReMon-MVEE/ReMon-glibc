@@ -1,4 +1,4 @@
-# Copyright (C) 1996-2017 Free Software Foundation, Inc.
+# Copyright (C) 1996-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -22,8 +22,6 @@ subdir	:= nis
 
 include ../Makeconfig
 
-aux			:= nis_hash
-
 ifeq ($(build-obsolete-nsl),yes)
 headers			:= $(wildcard rpcsvc/*.[hx])
 
@@ -33,7 +31,7 @@ databases		= proto service hosts network grp pwd rpc ethers \
 			  spwd netgrp alias publickey
 
 # Specify rules for the nss_* modules.
-services		:= nis nisplus compat
+services		:= nis nisplus
 endif
 
 extra-libs		= libnsl
@@ -60,12 +58,10 @@ libnsl-routines = yp_xdr ypclnt ypupdate_xdr \
 		  nis_print_group_entry nis_domain_of nis_domain_of_r\
 		  nis_modify nis_remove nis_add nis_defaults\
 		  nis_findserv nis_callback nis_clone_dir nis_clone_obj\
-		  nis_clone_res nss-default
+		  nis_clone_res
 
 ifeq ($(build-obsolete-nsl),yes)
-libnss_compat-routines	:= $(addprefix compat-,grp pwd spwd initgroups)
-libnss_compat-inhibit-o	= $(filter-out .os,$(object-suffixes))
-
+libnsl-routines += nss-default
 libnss_nis-routines	:= $(addprefix nis-,$(databases)) nis-initgroups \
 			   nss-nis
 libnss_nis-inhibit-o	= $(filter-out .os,$(object-suffixes))
@@ -73,13 +69,21 @@ libnss_nis-inhibit-o	= $(filter-out .os,$(object-suffixes))
 libnss_nisplus-routines	:= $(addprefix nisplus-,$(databases)) nisplus-parser \
 			   nss-nisplus nisplus-initgroups
 libnss_nisplus-inhibit-o = $(filter-out .os,$(object-suffixes))
-endif
+
+else # not $(build-obsolete-nsl)
+# Pretend that libnsl.so is a linker script, so that the symbolic link
+# is not installed.
+install-lib-ldscripts = libnsl.so
+$(inst_libdir)/libnsl.so:
+# Build only shared libnsl.
+libnsl-inhibit-o = $(filter-out .os,$(object-suffixes))
+
+endif # not $(build-obsolete-nsl)
 
 include ../Rules
 
 
 ifeq ($(build-obsolete-nsl),yes)
-$(objpfx)libnss_compat.so: $(objpfx)libnsl.so$(libnsl.so-version)
 $(objpfx)libnss_nis.so: $(objpfx)libnsl.so$(libnsl.so-version) \
 			$(common-objpfx)nss/libnss_files.so
 $(objpfx)libnss_nisplus.so: $(objpfx)libnsl.so$(libnsl.so-version)

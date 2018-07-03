@@ -1,6 +1,6 @@
 /* Initialize CPU feature data.  AArch64 version.
    This file is part of the GNU C Library.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -41,12 +41,18 @@
 #define IS_THUNDERX(midr) (MIDR_IMPLEMENTOR(midr) == 'C'	\
 			   && MIDR_PARTNUM(midr) == 0x0a1)
 
+#define IS_THUNDERX2PA(midr) (MIDR_IMPLEMENTOR(midr) == 'B'     \
+			   && MIDR_PARTNUM(midr) == 0x516)
+#define IS_THUNDERX2(midr) (MIDR_IMPLEMENTOR(midr) == 'C'       \
+			   && MIDR_PARTNUM(midr) == 0xaf)
+
 #define IS_FALKOR(midr) (MIDR_IMPLEMENTOR(midr) == 'Q'			      \
                         && MIDR_PARTNUM(midr) == 0xc00)
 
 struct cpu_features
 {
   uint64_t midr_el1;
+  unsigned zva_size;
 };
 
 #endif /* _CPU_FEATURES_AARCH64_H  */

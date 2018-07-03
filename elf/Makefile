@@ -1,4 +1,4 @@
-# Copyright (C) 1995-2017 Free Software Foundation, Inc.
+# Copyright (C) 1995-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -24,15 +24,16 @@ include ../Makeconfig
 headers		= elf.h bits/elfclass.h link.h bits/link.h
 routines	= $(all-dl-routines) dl-support dl-iteratephdr \
 		  dl-addr dl-addr-obj enbl-secure dl-profstub \
-		  dl-origin dl-libc dl-sym dl-sysdep dl-error
+		  dl-origin dl-libc dl-sym dl-sysdep dl-error \
+		  dl-reloc-static-pie
 
 # The core dynamic linking functions are in libc for the static and
 # profiled libraries.
 dl-routines	= $(addprefix dl-,load lookup object reloc deps hwcaps \
 				  runtime init fini debug misc \
 				  version profile tls origin scope \
-				  execstack caller open close trampoline \
-				  exception)
+				  execstack open close trampoline \
+				  exception sort-maps)
 ifeq (yes,$(use-ldconfig))
 dl-routines += dl-cache
 endif
@@ -40,20 +41,19 @@ endif
 ifneq (no,$(have-tunables))
 dl-routines += dl-tunables
 tunables-type = $(addprefix TUNABLES_FRONTEND_,$(have-tunables))
-CPPFLAGS-dl-tunables.c = -DTUNABLES_FRONTEND=$(tunables-type)
+CPPFLAGS-dl-tunables.c += -DTUNABLES_FRONTEND=$(tunables-type)
 
 # Make sure that the compiler does not insert any library calls in tunables
 # code paths.
 ifeq (yes,$(have-loop-to-function))
-CFLAGS-dl-tunables.c = -fno-tree-loop-distribute-patterns
+CFLAGS-dl-tunables.c += -fno-tree-loop-distribute-patterns
 endif
 endif
 
 all-dl-routines = $(dl-routines) $(sysdep-dl-routines)
 # But they are absent from the shared libc, because that code is in ld.so.
 elide-routines.os = $(all-dl-routines) dl-support enbl-secure dl-origin \
-		    dl-sysdep dl-exception
-shared-only-routines += dl-caller
+		    dl-sysdep dl-exception dl-reloc-static-pie
 
 # ld.so uses those routines, plus some special stuff for being the program
 # interpreter and operating independent of libc.
@@ -61,9 +61,9 @@ rtld-routines	= rtld $(all-dl-routines) dl-sysdep dl-environ dl-minimal \
   dl-error-minimal dl-conflict
 all-rtld-routines = $(rtld-routines) $(sysdep-rtld-routines)
 
-CFLAGS-dl-runtime.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-dl-lookup.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-dl-iterate-phdr.c = $(uses-callbacks)
+CFLAGS-dl-runtime.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-dl-lookup.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-dl-iterate-phdr.c += $(uses-callbacks)
 
 # Compile rtld itself without stack protection.
 # Also compile all routines in the static library that are elided from
@@ -149,7 +149,11 @@ tests-static-normal := tst-leaks1-static tst-array1-static tst-array5-static \
 	       tst-tlsalign-static tst-tlsalign-extern-static \
 	       tst-linkall-static tst-env-setuid tst-env-setuid-tunables
 tests-static-internal := tst-tls1-static tst-tls2-static \
-	       tst-ptrguard1-static tst-stackguard1-static
+	       tst-ptrguard1-static tst-stackguard1-static \
+	       tst-tls1-static-non-pie tst-libc_dlvsym-static
+
+CRT-tst-tls1-static-non-pie := $(csu-objpfx)crt1.o
+tst-tls1-static-non-pie-no-pie = yes
 
 tests := tst-tls9 tst-leaks1 \
 	tst-array1 tst-array2 tst-array3 tst-array4 tst-array5 \
@@ -170,7 +174,7 @@ tests += restest1 preloadtest loadfail multiload origtest resolvfail \
 	 tst-tls4 tst-tls5 \
 	 tst-tls10 tst-tls11 tst-tls12 tst-tls13 tst-tls14 tst-tls15 \
 	 tst-tls16 tst-tls17 tst-tls18 tst-tls19 tst-tls-dlinfo \
-	 tst-align tst-align2 $(tests-execstack-$(have-z-execstack)) \
+	 tst-align tst-align2 \
 	 tst-dlmodcount tst-dlopenrpath tst-deep1 \
 	 tst-dlmopen1 tst-dlmopen3 \
 	 unload3 unload4 unload5 unload6 unload7 unload8 tst-global1 order2 \
@@ -181,15 +185,16 @@ tests += restest1 preloadtest loadfail multiload origtest resolvfail \
 	 tst-initorder tst-initorder2 tst-relsort1 tst-null-argv \
 	 tst-tlsalign tst-tlsalign-extern tst-nodelete-opened \
 	 tst-nodelete2 tst-audit11 tst-audit12 tst-dlsym-error tst-noload \
-	 tst-latepthread tst-tls-manydynamic tst-nodelete-dlclose
+	 tst-latepthread tst-tls-manydynamic tst-nodelete-dlclose \
+	 tst-debug1 tst-main1 tst-absolute-sym tst-big-note
 #	 reldep9
 tests-internal += loadtest unload unload2 circleload1 \
 	 neededtest neededtest2 neededtest3 neededtest4 \
 	 tst-tls3 tst-tls6 tst-tls7 tst-tls8 tst-dlmopen2 \
-	 tst-ptrguard1 tst-stackguard1
+	 tst-ptrguard1 tst-stackguard1 tst-libc_dlvsym
 ifeq ($(build-hardcoded-path-in-tests),yes)
 tests += tst-dlopen-aout
-LDFLAGS-tst-dlopen-aout = $(no-pie-ldflag)
+tst-dlopen-aout-no-pie = yes
 endif
 test-srcs = tst-pathopt
 selinux-enabled := $(shell cat /selinux/enforce 2> /dev/null)
@@ -197,6 +202,7 @@ ifneq ($(selinux-enabled),1)
 tests-execstack-yes = tst-execstack tst-execstack-needed tst-execstack-prog
 endif
 endif
+tests += $(tests-execstack-$(have-z-execstack))
 ifeq ($(run-built-tests),yes)
 tests-special += $(objpfx)tst-leaks1-mem.out \
 		 $(objpfx)tst-leaks1-static-mem.out $(objpfx)noload-mem.out \
@@ -265,7 +271,10 @@ modules-names = testobj1 testobj2 testobj3 testobj4 testobj5 testobj6 \
 		tst-audit11mod1 tst-audit11mod2 tst-auditmod11 \
 		tst-audit12mod1 tst-audit12mod2 tst-audit12mod3 tst-auditmod12 \
 		tst-latepthreadmod $(tst-tls-many-dynamic-modules) \
-		tst-nodelete-dlclose-dso tst-nodelete-dlclose-plugin
+		tst-nodelete-dlclose-dso tst-nodelete-dlclose-plugin \
+		tst-main1mod tst-libc_dlvsym-dso tst-absolute-sym-lib \
+		tst-big-note-lib
+
 ifeq (yes,$(have-mtls-dialect-gnu2))
 tests += tst-gnu2-tls1
 modules-names += tst-gnu2-tls1mod
@@ -294,7 +303,7 @@ tests-pie += tst-pie1 tst-pie2
 ifeq (yes,$(have-protected-data))
 tests += vismain
 tests-pie += vismain
-CFLAGS-vismain.c = $(PIE-ccflag)
+CFLAGS-vismain.c += $(PIE-ccflag)
 endif
 endif
 modules-execstack-yes = tst-execstack-mod
@@ -362,7 +371,7 @@ ifeq ($(have-glob-dat-reloc),yes)
 tests += tst-prelink
 # Don't compile tst-prelink.c with PIE for GLOB_DAT relocation.
 CFLAGS-tst-prelink.c += -fno-pie
-LDFLAGS-tst-prelink = $(no-pie-ldflag)
+tst-prelink-no-pie = yes
 ifeq ($(run-built-tests),yes)
 tests-special += $(objpfx)tst-prelink-cmp.out
 endif
@@ -380,12 +389,12 @@ endif
 
 # By default tst-linkall-static should try to use crypt routines to test
 # static libcrypt use.
-CFLAGS-tst-linkall-static.c = -DUSE_CRYPT=1
+CFLAGS-tst-linkall-static.c += -DUSE_CRYPT=1
 # However, if we are using NSS crypto and we don't have a static
 # library, then we exclude the use of crypt functions in the test.
 # We similarly exclude libcrypt.a from the static link (see below).
 ifeq (yesno,$(nss-crypt)$(static-nss-crypt))
-CFLAGS-tst-linkall-static.c = -DUSE_CRYPT=0
+CFLAGS-tst-linkall-static.c += -UUSE_CRYPT -DUSE_CRYPT=0
 endif
 
 include ../Rules
@@ -503,7 +512,7 @@ $(objpfx)trusted-dirs.st: Makefile $(..)Makeconfig
 	echo '#define DL_DST_LIB "$(notdir $(slibdir))"' >> ${@:st=T}
 	$(move-if-change) ${@:st=T} ${@:st=h}
 	touch $@
-CPPFLAGS-dl-load.c = -I$(objpfx). -I$(csu-objpfx).
+CPPFLAGS-dl-load.c += -I$(objpfx). -I$(csu-objpfx).
 
 ifeq (yes,$(build-shared))
 $(inst_slibdir)/$(rtld-version-installed-name): $(objpfx)ld.so $(+force)
@@ -553,12 +562,12 @@ $(objpfx)sln: $(sln-modules:%=$(objpfx)%.o)
 $(objpfx)ldconfig: $(ldconfig-modules:%=$(objpfx)%.o)
 
 SYSCONF-FLAGS := -D'SYSCONFDIR="$(sysconfdir)"'
-CFLAGS-ldconfig.c = $(SYSCONF-FLAGS) -D'LIBDIR="$(libdir)"' \
+CFLAGS-ldconfig.c += $(SYSCONF-FLAGS) -D'LIBDIR="$(libdir)"' \
 		    -D'SLIBDIR="$(slibdir)"'
 libof-ldconfig = ldconfig
-CFLAGS-dl-cache.c = $(SYSCONF-FLAGS)
-CFLAGS-cache.c = $(SYSCONF-FLAGS)
-CFLAGS-rtld.c = $(SYSCONF-FLAGS)
+CFLAGS-dl-cache.c += $(SYSCONF-FLAGS)
+CFLAGS-cache.c += $(SYSCONF-FLAGS)
+CFLAGS-rtld.c += $(SYSCONF-FLAGS)
 
 cpp-srcs-left := $(all-rtld-routines:=.os)
 lib := rtld
@@ -753,7 +762,7 @@ $(objpfx)loadfail.out: $(objpfx)failobj.so
 
 $(objpfx)multiload: $(libdl)
 LDFLAGS-multiload = -rdynamic
-CFLAGS-multiload.c = -DOBJDIR=\"$(elf-objpfx)\"
+CFLAGS-multiload.c += -DOBJDIR=\"$(elf-objpfx)\"
 
 $(objpfx)multiload.out: $(objpfx)testobj1.so
 
@@ -821,7 +830,7 @@ $(objpfx)filtmod1.so: $(objpfx)filtmod1.os $(objpfx)filtmod2.so
 $(objpfx)filter: $(objpfx)filtmod1.so
 
 # This does not link against libc.
-CFLAGS-filtmod1.c = $(no-stack-protector)
+CFLAGS-filtmod1.c += $(no-stack-protector)
 
 $(objpfx)unload: $(libdl)
 $(objpfx)unload.out: $(objpfx)unloadmod.so
@@ -948,10 +957,10 @@ $(patsubst %,$(objpfx)%.so,$(tlsmod18a-modules)): $(objpfx)tst-tlsmod18a%.so: $(
 $(objpfx)tst-tls19: $(libdl)
 $(objpfx)tst-tls19.out: $(objpfx)tst-tls19mod1.so
 
-CFLAGS-tst-align.c = $(stack-align-test-flags)
-CFLAGS-tst-align2.c = $(stack-align-test-flags)
-CFLAGS-tst-alignmod.c = $(stack-align-test-flags)
-CFLAGS-tst-alignmod2.c = $(stack-align-test-flags)
+CFLAGS-tst-align.c += $(stack-align-test-flags)
+CFLAGS-tst-align2.c += $(stack-align-test-flags)
+CFLAGS-tst-alignmod.c += $(stack-align-test-flags)
+CFLAGS-tst-alignmod2.c += $(stack-align-test-flags)
 $(objpfx)tst-align: $(libdl)
 $(objpfx)tst-align.out: $(objpfx)tst-alignmod.so
 $(objpfx)tst-align2: $(objpfx)tst-alignmod2.so
@@ -986,7 +995,7 @@ endif
 ifeq ($(have-z-execstack),yes)
 $(objpfx)tst-execstack: $(libdl)
 $(objpfx)tst-execstack.out: $(objpfx)tst-execstack-mod.so
-CPPFLAGS-tst-execstack.c = -DUSE_PTHREADS=0
+CPPFLAGS-tst-execstack.c += -DUSE_PTHREADS=0
 LDFLAGS-tst-execstack = -Wl,-z,noexecstack
 LDFLAGS-tst-execstack-mod = -Wl,-z,execstack
 
@@ -1187,7 +1196,7 @@ tst-stackguard1-static-ARGS = --command "$(objpfx)tst-stackguard1-static --child
 tst-ptrguard1-ARGS = --command "$(host-test-program-cmd) --child"
 # When built statically, the pointer guard interface uses
 # __pointer_chk_guard_local.
-CFLAGS-tst-ptrguard1-static.c = -DPTRGUARD_LOCAL
+CFLAGS-tst-ptrguard1-static.c += -DPTRGUARD_LOCAL
 tst-ptrguard1-static-ARGS = --command "$(objpfx)tst-ptrguard1-static --child"
 
 $(objpfx)tst-leaks1: $(libdl)
@@ -1345,7 +1354,7 @@ LDFLAGS-tst-latepthreadmod.so = \
   -Wl,-z,lazy -Wl,--unresolved-symbols=ignore-all
 # Do not optimize sibling calls as the test relies on a JMP_SLOT relocation for
 # function this_function_is_not_defined.
-CFLAGS-tst-latepthreadmod.c = -fno-optimize-sibling-calls
+CFLAGS-tst-latepthreadmod.c += -fno-optimize-sibling-calls
 $(objpfx)tst-latepthreadmod.so: $(shared-thread-library)
 $(objpfx)tst-latepthread: $(libdl)
 $(objpfx)tst-latepthread.out: $(objpfx)tst-latepthreadmod.so
@@ -1417,3 +1426,31 @@ tst-env-setuid-ENV = MALLOC_CHECK_=2 MALLOC_MMAP_THRESHOLD_=4096 \
 		     LD_HWCAP_MASK=0x1
 tst-env-setuid-tunables-ENV = \
 	GLIBC_TUNABLES=glibc.malloc.check=2:glibc.malloc.mmap_threshold=4096
+
+$(objpfx)tst-debug1: $(libdl)
+$(objpfx)tst-debug1.out: $(objpfx)tst-debug1mod1.so
+
+$(objpfx)tst-debug1mod1.so: $(objpfx)testobj1.so
+	$(OBJCOPY) --only-keep-debug $< $@
+
+$(objpfx)tst-main1: $(objpfx)tst-main1mod.so
+CRT-tst-main1 := $(csu-objpfx)crt1.o
+tst-main1-no-pie = yes
+LDLIBS-tst-main1 = $(libsupport)
+tst-main1mod.so-no-z-defs = yes
+
+LDLIBS-tst-absolute-sym-lib.so = tst-absolute-sym-lib.lds
+$(objpfx)tst-absolute-sym-lib.so: $(LDLIBS-tst-absolute-sym-lib.so)
+$(objpfx)tst-absolute-sym: $(objpfx)tst-absolute-sym-lib.so
+
+# Both the main program and the DSO for tst-libc_dlvsym need to link
+# against libdl.
+$(objpfx)tst-libc_dlvsym: $(libdl)
+$(objpfx)tst-libc_dlvsym-dso.so: $(libsupport) $(libdl)
+$(objpfx)tst-libc_dlvsym.out: $(objpfx)tst-libc_dlvsym-dso.so
+$(objpfx)tst-libc_dlvsym-static: $(common-objpfx)dlfcn/libdl.a
+tst-libc_dlvsym-static-ENV = \
+  LD_LIBRARY_PATH=$(objpfx):$(common-objpfx):$(common-objpfx)dlfcn
+$(objpfx)tst-libc_dlvsym-static.out: $(objpfx)tst-libc_dlvsym-dso.so
+
+$(objpfx)tst-big-note: $(objpfx)tst-big-note-lib.so

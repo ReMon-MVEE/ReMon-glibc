@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gmail.com>, 2011.
 
@@ -20,12 +20,13 @@
 #include <math.h>
 #include <math_private.h>
 #include <math-svid-compat.h>
+#include <libm-alias-float.h>
 
 
 #if LIBM_SVID_COMPAT
 /* wrapper j1f */
 float
-j1f (float x)
+__j1f (float x)
 {
   if (__builtin_expect (isgreater (fabsf (x), X_TLOSS), 0)
       && _LIB_VERSION != _IEEE_ && _LIB_VERSION != _POSIX_)
@@ -34,11 +35,12 @@ j1f (float x)
 
   return __ieee754_j1f (x);
 }
+libm_alias_float (__j1, j1)
 
 
 /* wrapper y1f */
 float
-y1f (float x)
+__y1f (float x)
 {
   if (__builtin_expect (islessequal (x, 0.0f)
 			|| isgreater (x, (float) X_TLOSS), 0)
@@ -63,4 +65,5 @@ y1f (float x)
 
   return __ieee754_y1f (x);
 }
+libm_alias_float (__y1, y1)
 #endif

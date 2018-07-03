@@ -41,6 +41,7 @@ directly.)
 * Stream/Descriptor Precautions::       Precautions needed if you use both
                                          descriptors and streams.
 * Scatter-Gather::                      Fast I/O to discontinuous buffers.
+* Copying File Data::                   Copying data between files.
 * Memory-mapped I/O::                   Using files like memory.
 * Waiting for I/O::                     How to check for input or output
 					 on multiple file descriptors.
@@ -654,210 +655,6 @@ When the source file is compiled using @code{_FILE_OFFSET_BITS == 64} on a
 @code{pwrite} and so transparently replaces the 32 bit interface.
 @end deftypefun
 
-@deftypefun ssize_t preadv (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off_t @var{offset})
-@standards{BSD, sys/uio.h}
-@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
-@c This is a syscall for Linux 3.2 for all architectures but microblaze
-@c (which was added on 3.15).  The sysdeps/posix fallback emulation
-@c is also MT-Safe since it calls pread, and it is now a syscall on all
-@c targets.
-
-This function is similar to the @code{readv} function, with the difference
-it adds an extra @var{offset} parameter of type @code{off_t} similar to
-@code{pread}.  The data is written to the file starting at position
-@var{offset}.  The position of the file descriptor itself is not affected
-by the operation.  The value is the same as before the call.
-
-When the source file is compiled with @code{_FILE_OFFSET_BITS == 64} the
-@code{preadv} function is in fact @code{preadv64} and the type
-@code{off_t} has 64 bits, which makes it possible to handle files up to
-@twoexp{63} bytes in length.
-
-The return value is a count of bytes (@emph{not} buffers) read, @math{0}
-indicating end-of-file, or @math{-1} indicating an error.  The possible
-errors are the same as in @code{readv} and @code{pread}.
-@end deftypefun
-
-@deftypefun ssize_t preadv64 (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off64_t @var{offset})
-@standards{BSD, unistd.h}
-@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
-@c This is a syscall for Linux 3.2 for all architectures but microblaze
-@c (which was added on 3.15).  The sysdeps/posix fallback emulation
-@c is also MT-Safe since it calls pread64, and it is now a syscall on all
-@c targets.
-
-This function is similar to the @code{preadv} function with the difference
-is that the @var{offset} parameter is of type @code{off64_t} instead of
-@code{off_t}.  It makes it possible on 32 bit machines to address
-files larger than @twoexp{31} bytes and up to @twoexp{63} bytes.  The
-file descriptor @code{filedes} must be opened using @code{open64} since
-otherwise the large offsets possible with @code{off64_t} will lead to
-errors with a descriptor in small file mode.
-
-When the source file is compiled using @code{_FILE_OFFSET_BITS == 64} on a
-32 bit machine this function is actually available under the name
-@code{preadv} and so transparently replaces the 32 bit interface.
-@end deftypefun
-
-@deftypefun ssize_t pwritev (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off_t @var{offset})
-@standards{BSD, sys/uio.h}
-@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
-@c This is a syscall for Linux 3.2 for all architectures but microblaze
-@c (which was added on 3.15).  The sysdeps/posix fallback emulation
-@c is also MT-Safe since it calls pwrite, and it is now a syscall on all
-@c targets.
-
-This function is similar to the @code{writev} function, with the difference
-it adds an extra @var{offset} parameter of type @code{off_t} similar to
-@code{pwrite}.  The data is written to the file starting at position
-@var{offset}.  The position of the file descriptor itself is not affected
-by the operation.  The value is the same as before the call.
-
-However, on Linux, if a file is opened with @code{O_APPEND},  @code{pwrite}
-appends data to the end of the file, regardless of the value of
-@code{offset}.
-
-When the source file is compiled with @code{_FILE_OFFSET_BITS == 64} the
-@code{pwritev} function is in fact @code{pwritev64} and the type
-@code{off_t} has 64 bits, which makes it possible to handle files up to
-@twoexp{63} bytes in length.
-
-The return value is a count of bytes (@emph{not} buffers) written, @math{0}
-indicating end-of-file, or @math{-1} indicating an error.  The possible
-errors are the same as in @code{writev} and @code{pwrite}.
-@end deftypefun
-
-@deftypefun ssize_t pwritev64 (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off64_t @var{offset})
-@standards{BSD, unistd.h}
-@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
-@c This is a syscall for Linux 3.2 for all architectures but microblaze
-@c (which was added on 3.15).  The sysdeps/posix fallback emulation
-@c is also MT-Safe since it calls pwrite64, and it is now a syscall on all
-@c targets.
-
-This function is similar to the @code{pwritev} function with the difference
-is that the @var{offset} parameter is of type @code{off64_t} instead of
-@code{off_t}.  It makes it possible on 32 bit machines to address
-files larger than @twoexp{31} bytes and up to @twoexp{63} bytes.  The
-file descriptor @code{filedes} must be opened using @code{open64} since
-otherwise the large offsets possible with @code{off64_t} will lead to
-errors with a descriptor in small file mode.
-
-When the source file is compiled using @code{_FILE_OFFSET_BITS == 64} on a
-32 bit machine this function is actually available under the name
-@code{pwritev} and so transparently replaces the 32 bit interface.
-@end deftypefun
-
-@deftypefun ssize_t preadv2 (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off_t @var{offset}, int @var{flags})
-@standards{GNU, sys/uio.h}
-@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
-@c This is a syscall for Linux v4.6.  The sysdeps/posix fallback emulation
-@c is also MT-Safe since it calls preadv.
-
-This function is similar to the @code{preadv} function, with the difference
-it adds an extra @var{flags} parameter of type @code{int}.  The supported
-@var{flags} are dependent of the underlying system.  For Linux it supports:
-
-@vtable @code
-@item RWF_HIPRI
-High priority request.  This adds a flag that tells the file system that
-this is a high priority request for which it is worth to poll the hardware.
-The flag is purely advisory and can be ignored if not supported.  The
-@var{fd} must be opened using @code{O_DIRECT}.
-
-@item RWF_DSYNC
-Per-IO synchronization as if the file was opened with @code{O_DSYNC} flag.
-
-@item RWF_SYNC
-Per-IO synchronization as if the file was opened with @code{O_SYNC} flag.
-
-@item RWF_NOWAIT
-Use nonblocking mode for this operation; that is, this call to @code{preadv2}
-will fail and set @code{errno} to @code{EAGAIN} if the operation would block.
-@end vtable
-
-When the source file is compiled with @code{_FILE_OFFSET_BITS == 64} the
-@code{preadv2} function is in fact @code{preadv64v2} and the type
-@code{off_t} has 64 bits, which makes it possible to handle files up to
-@twoexp{63} bytes in length.
-
-The return value is a count of bytes (@emph{not} buffers) read, @math{0}
-indicating end-of-file, or @math{-1} indicating an error.  The possible
-errors are the same as in @code{preadv} with the addition of:
-
-@table @code
-
-@item EOPNOTSUPP
-
-@c The default sysdeps/posix code will return it for any flags value
-@c different than 0.
-An unsupported @var{flags} was used.
-
-@end table
-
-@end deftypefun
-
-@deftypefun ssize_t preadv64v2 (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off64_t @var{offset}, int @var{flags})
-@standards{GNU, unistd.h}
-@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
-@c This is a syscall for Linux v4.6.  The sysdeps/posix fallback emulation
-@c is also MT-Safe since it calls preadv.
-
-This function is similar to the @code{preadv2} function with the difference
-is that the @var{offset} parameter is of type @code{off64_t} instead of
-@code{off_t}.  It makes it possible on 32 bit machines to address
-files larger than @twoexp{31} bytes and up to @twoexp{63} bytes.  The
-file descriptor @code{filedes} must be opened using @code{open64} since
-otherwise the large offsets possible with @code{off64_t} will lead to
-errors with a descriptor in small file mode.
-
-When the source file is compiled using @code{_FILE_OFFSET_BITS == 64} on a
-32 bit machine this function is actually available under the name
-@code{preadv2} and so transparently replaces the 32 bit interface.
-@end deftypefun
-
-
-@deftypefun ssize_t pwritev2 (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off_t @var{offset}, int @var{flags})
-@standards{GNU, sys/uio.h}
-@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
-@c This is a syscall for Linux v4.6.  The sysdeps/posix fallback emulation
-@c is also MT-Safe since it calls pwritev.
-
-This function is similar to the @code{pwritev} function, with the difference
-it adds an extra @var{flags} parameter of type @code{int}.  The supported
-@var{flags} are dependent of the underlying system and for Linux it supports
-the same ones as for @code{preadv2}.
-
-When the source file is compiled with @code{_FILE_OFFSET_BITS == 64} the
-@code{pwritev2} function is in fact @code{pwritev64v2} and the type
-@code{off_t} has 64 bits, which makes it possible to handle files up to
-@twoexp{63} bytes in length.
-
-The return value is a count of bytes (@emph{not} buffers) write, @math{0}
-indicating end-of-file, or @math{-1} indicating an error.  The possible
-errors are the same as in @code{preadv2}.
-@end deftypefun
-
-@deftypefun ssize_t pwritev64v2 (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off64_t @var{offset}, int @var{flags})
-@standards{GNU, unistd.h}
-@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
-@c This is a syscall for Linux v4.6.  The sysdeps/posix fallback emulation
-@c is also MT-Safe since it calls pwritev.
-
-This function is similar to the @code{pwritev2} function with the difference
-is that the @var{offset} parameter is of type @code{off64_t} instead of
-@code{off_t}.  It makes it possible on 32 bit machines to address
-files larger than @twoexp{31} bytes and up to @twoexp{63} bytes.  The
-file descriptor @code{filedes} must be opened using @code{open64} since
-otherwise the large offsets possible with @code{off64_t} will lead to
-errors with a descriptor in small file mode.
-
-When the source file is compiled using @code{_FILE_OFFSET_BITS == 64} on a
-32 bit machine this function is actually available under the name
-@code{pwritev2} and so transparently replaces the 32 bit interface.
-@end deftypefun
-
-
 @node File Position Primitive
 @section Setting the File Position of a Descriptor
 
@@ -1354,14 +1151,305 @@ error.  The possible errors are the same as in @code{write}.
 
 @end deftypefun
 
-@c Note - I haven't read this anywhere.  I surmised it from my knowledge
-@c of computer science.  Thus, there could be subtleties I'm missing.
+@deftypefun ssize_t preadv (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off_t @var{offset})
+@standards{BSD, sys/uio.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+@c This is a syscall for Linux 3.2 for all architectures but microblaze
+@c (which was added on 3.15).  The sysdeps/posix fallback emulation
+@c is also MT-Safe since it calls pread, and it is now a syscall on all
+@c targets.
 
-Note that if the buffers are small (under about 1kB), high-level streams
-may be easier to use than these functions.  However, @code{readv} and
-@code{writev} are more efficient when the individual buffers themselves
-(as opposed to the total output), are large.  In that case, a high-level
-stream would not be able to cache the data efficiently.
+This function is similar to the @code{readv} function, with the difference
+it adds an extra @var{offset} parameter of type @code{off_t} similar to
+@code{pread}.  The data is written to the file starting at position
+@var{offset}.  The position of the file descriptor itself is not affected
+by the operation.  The value is the same as before the call.
+
+When the source file is compiled with @code{_FILE_OFFSET_BITS == 64} the
+@code{preadv} function is in fact @code{preadv64} and the type
+@code{off_t} has 64 bits, which makes it possible to handle files up to
+@twoexp{63} bytes in length.
+
+The return value is a count of bytes (@emph{not} buffers) read, @math{0}
+indicating end-of-file, or @math{-1} indicating an error.  The possible
+errors are the same as in @code{readv} and @code{pread}.
+@end deftypefun
+
+@deftypefun ssize_t preadv64 (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off64_t @var{offset})
+@standards{BSD, unistd.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+@c This is a syscall for Linux 3.2 for all architectures but microblaze
+@c (which was added on 3.15).  The sysdeps/posix fallback emulation
+@c is also MT-Safe since it calls pread64, and it is now a syscall on all
+@c targets.
+
+This function is similar to the @code{preadv} function with the difference
+is that the @var{offset} parameter is of type @code{off64_t} instead of
+@code{off_t}.  It makes it possible on 32 bit machines to address
+files larger than @twoexp{31} bytes and up to @twoexp{63} bytes.  The
+file descriptor @code{filedes} must be opened using @code{open64} since
+otherwise the large offsets possible with @code{off64_t} will lead to
+errors with a descriptor in small file mode.
+
+When the source file is compiled using @code{_FILE_OFFSET_BITS == 64} on a
+32 bit machine this function is actually available under the name
+@code{preadv} and so transparently replaces the 32 bit interface.
+@end deftypefun
+
+@deftypefun ssize_t pwritev (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off_t @var{offset})
+@standards{BSD, sys/uio.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+@c This is a syscall for Linux 3.2 for all architectures but microblaze
+@c (which was added on 3.15).  The sysdeps/posix fallback emulation
+@c is also MT-Safe since it calls pwrite, and it is now a syscall on all
+@c targets.
+
+This function is similar to the @code{writev} function, with the difference
+it adds an extra @var{offset} parameter of type @code{off_t} similar to
+@code{pwrite}.  The data is written to the file starting at position
+@var{offset}.  The position of the file descriptor itself is not affected
+by the operation.  The value is the same as before the call.
+
+However, on Linux, if a file is opened with @code{O_APPEND},  @code{pwrite}
+appends data to the end of the file, regardless of the value of
+@code{offset}.
+
+When the source file is compiled with @code{_FILE_OFFSET_BITS == 64} the
+@code{pwritev} function is in fact @code{pwritev64} and the type
+@code{off_t} has 64 bits, which makes it possible to handle files up to
+@twoexp{63} bytes in length.
+
+The return value is a count of bytes (@emph{not} buffers) written, @math{0}
+indicating end-of-file, or @math{-1} indicating an error.  The possible
+errors are the same as in @code{writev} and @code{pwrite}.
+@end deftypefun
+
+@deftypefun ssize_t pwritev64 (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off64_t @var{offset})
+@standards{BSD, unistd.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+@c This is a syscall for Linux 3.2 for all architectures but microblaze
+@c (which was added on 3.15).  The sysdeps/posix fallback emulation
+@c is also MT-Safe since it calls pwrite64, and it is now a syscall on all
+@c targets.
+
+This function is similar to the @code{pwritev} function with the difference
+is that the @var{offset} parameter is of type @code{off64_t} instead of
+@code{off_t}.  It makes it possible on 32 bit machines to address
+files larger than @twoexp{31} bytes and up to @twoexp{63} bytes.  The
+file descriptor @code{filedes} must be opened using @code{open64} since
+otherwise the large offsets possible with @code{off64_t} will lead to
+errors with a descriptor in small file mode.
+
+When the source file is compiled using @code{_FILE_OFFSET_BITS == 64} on a
+32 bit machine this function is actually available under the name
+@code{pwritev} and so transparently replaces the 32 bit interface.
+@end deftypefun
+
+@deftypefun ssize_t preadv2 (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off_t @var{offset}, int @var{flags})
+@standards{GNU, sys/uio.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+@c This is a syscall for Linux v4.6.  The sysdeps/posix fallback emulation
+@c is also MT-Safe since it calls preadv.
+
+This function is similar to the @code{preadv} function, with the
+difference it adds an extra @var{flags} parameter of type @code{int}.
+Additionally, if @var{offset} is @math{-1}, the current file position
+is used and updated (like the @code{readv} function).
+
+The supported @var{flags} are dependent of the underlying system.  For
+Linux it supports:
+
+@vtable @code
+@item RWF_HIPRI
+High priority request.  This adds a flag that tells the file system that
+this is a high priority request for which it is worth to poll the hardware.
+The flag is purely advisory and can be ignored if not supported.  The
+@var{fd} must be opened using @code{O_DIRECT}.
+
+@item RWF_DSYNC
+Per-IO synchronization as if the file was opened with @code{O_DSYNC} flag.
+
+@item RWF_SYNC
+Per-IO synchronization as if the file was opened with @code{O_SYNC} flag.
+
+@item RWF_NOWAIT
+Use nonblocking mode for this operation; that is, this call to @code{preadv2}
+will fail and set @code{errno} to @code{EAGAIN} if the operation would block.
+
+@item RWF_APPEND
+Per-IO synchronization as if the file was opened with @code{O_APPEND} flag.
+@end vtable
+
+When the source file is compiled with @code{_FILE_OFFSET_BITS == 64} the
+@code{preadv2} function is in fact @code{preadv64v2} and the type
+@code{off_t} has 64 bits, which makes it possible to handle files up to
+@twoexp{63} bytes in length.
+
+The return value is a count of bytes (@emph{not} buffers) read, @math{0}
+indicating end-of-file, or @math{-1} indicating an error.  The possible
+errors are the same as in @code{preadv} with the addition of:
+
+@table @code
+
+@item EOPNOTSUPP
+
+@c The default sysdeps/posix code will return it for any flags value
+@c different than 0.
+An unsupported @var{flags} was used.
+
+@end table
+
+@end deftypefun
+
+@deftypefun ssize_t preadv64v2 (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off64_t @var{offset}, int @var{flags})
+@standards{GNU, unistd.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+@c This is a syscall for Linux v4.6.  The sysdeps/posix fallback emulation
+@c is also MT-Safe since it calls preadv.
+
+This function is similar to the @code{preadv2} function with the difference
+is that the @var{offset} parameter is of type @code{off64_t} instead of
+@code{off_t}.  It makes it possible on 32 bit machines to address
+files larger than @twoexp{31} bytes and up to @twoexp{63} bytes.  The
+file descriptor @code{filedes} must be opened using @code{open64} since
+otherwise the large offsets possible with @code{off64_t} will lead to
+errors with a descriptor in small file mode.
+
+When the source file is compiled using @code{_FILE_OFFSET_BITS == 64} on a
+32 bit machine this function is actually available under the name
+@code{preadv2} and so transparently replaces the 32 bit interface.
+@end deftypefun
+
+
+@deftypefun ssize_t pwritev2 (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off_t @var{offset}, int @var{flags})
+@standards{GNU, sys/uio.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+@c This is a syscall for Linux v4.6.  The sysdeps/posix fallback emulation
+@c is also MT-Safe since it calls pwritev.
+
+This function is similar to the @code{pwritev} function, with the
+difference it adds an extra @var{flags} parameter of type @code{int}.
+Additionally, if @var{offset} is @math{-1}, the current file position
+should is used and updated (like the @code{writev} function).
+
+The supported @var{flags} are dependent of the underlying system.  For
+Linux, the supported flags are the same as those for @code{preadv2}.
+
+When the source file is compiled with @code{_FILE_OFFSET_BITS == 64} the
+@code{pwritev2} function is in fact @code{pwritev64v2} and the type
+@code{off_t} has 64 bits, which makes it possible to handle files up to
+@twoexp{63} bytes in length.
+
+The return value is a count of bytes (@emph{not} buffers) write, @math{0}
+indicating end-of-file, or @math{-1} indicating an error.  The possible
+errors are the same as in @code{preadv2}.
+@end deftypefun
+
+@deftypefun ssize_t pwritev64v2 (int @var{fd}, const struct iovec *@var{iov}, int @var{iovcnt}, off64_t @var{offset}, int @var{flags})
+@standards{GNU, unistd.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+@c This is a syscall for Linux v4.6.  The sysdeps/posix fallback emulation
+@c is also MT-Safe since it calls pwritev.
+
+This function is similar to the @code{pwritev2} function with the difference
+is that the @var{offset} parameter is of type @code{off64_t} instead of
+@code{off_t}.  It makes it possible on 32 bit machines to address
+files larger than @twoexp{31} bytes and up to @twoexp{63} bytes.  The
+file descriptor @code{filedes} must be opened using @code{open64} since
+otherwise the large offsets possible with @code{off64_t} will lead to
+errors with a descriptor in small file mode.
+
+When the source file is compiled using @code{_FILE_OFFSET_BITS == 64} on a
+32 bit machine this function is actually available under the name
+@code{pwritev2} and so transparently replaces the 32 bit interface.
+@end deftypefun
+
+@node Copying File Data
+@section Copying data between two files
+@cindex copying files
+@cindex file copy
+
+A special function is provided to copy data between two files on the
+same file system.  The system can optimize such copy operations.  This
+is particularly important on network file systems, where the data would
+otherwise have to be transferred twice over the network.
+
+Note that this function only copies file data, but not metadata such as
+file permissions or extended attributes.
+
+@deftypefun ssize_t copy_file_range (int @var{inputfd}, off64_t *@var{inputpos}, int @var{outputfd}, off64_t *@var{outputpos}, ssize_t @var{length}, unsigned int @var{flags})
+@standards{GNU, unistd.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+
+This function copies up to @var{length} bytes from the file descriptor
+@var{inputfd} to the file descriptor @var{outputfd}.
+
+The function can operate on both the current file position (like
+@code{read} and @code{write}) and an explicit offset (like @code{pread}
+and @code{pwrite}).  If the @var{inputpos} pointer is null, the file
+position of @var{inputfd} is used as the starting point of the copy
+operation, and the file position is advanced during it.  If
+@var{inputpos} is not null, then @code{*@var{inputpos}} is used as the
+starting point of the copy operation, and @code{*@var{inputpos}} is
+incremented by the number of copied bytes, but the file position remains
+unchanged.  Similar rules apply to @var{outputfd} and @var{outputpos}
+for the output file position.
+
+The @var{flags} argument is currently reserved and must be zero.
+
+The @code{copy_file_range} function returns the number of bytes copied.
+This can be less than the specified @var{length} in case the input file
+contains fewer remaining bytes than @var{length}, or if a read or write
+failure occurs.  The return value is zero if the end of the input file
+is encountered immediately.
+
+If no bytes can be copied, to report an error, @code{copy_file_range}
+returns the value @math{-1} and sets @code{errno}.  The following
+@code{errno} error conditions are specific to this function:
+
+@table @code
+@item EISDIR
+At least one of the descriptors @var{inputfd} or @var{outputfd} refers
+to a directory.
+
+@item EINVAL
+At least one of the descriptors @var{inputfd} or @var{outputfd} refers
+to a non-regular, non-directory file (such as a socket or a FIFO).
+
+The input or output positions before are after the copy operations are
+outside of an implementation-defined limit.
+
+The @var{flags} argument is not zero.
+
+@item EFBIG
+The new file size would exceed the process file size limit.
+@xref{Limits on Resources}.
+
+The input or output positions before are after the copy operations are
+outside of an implementation-defined limit.  This can happen if the file
+was not opened with large file support (LFS) on 32-bit machines, and the
+copy operation would create a file which is larger than what
+@code{off_t} could represent.
+
+@item EBADF
+The argument @var{inputfd} is not a valid file descriptor open for
+reading.
+
+The argument @var{outputfd} is not a valid file descriptor open for
+writing, or @var{outputfd} has been opened with @code{O_APPEND}.
+
+@item EXDEV
+The input and output files reside on different file systems.
+@end table
+
+In addition, @code{copy_file_range} can fail with the error codes
+which are used by @code{read}, @code{pread}, @code{write}, and
+@code{pwrite}.
+
+The @code{copy_file_range} function is a cancellation point.  In case of
+cancellation, the input location (the file position or the value at
+@code{*@var{inputpos}}) is indeterminate.
+@end deftypefun
 
 @node Memory-mapped I/O
 @section Memory-mapped I/O
@@ -1387,15 +1475,18 @@ available.
 
 Memory mapping only works on entire pages of memory.  Thus, addresses
 for mapping must be page-aligned, and length values will be rounded up.
-To determine the size of a page the machine uses one should use
+To determine the default size of a page the machine uses one should use:
 
 @vindex _SC_PAGESIZE
 @smallexample
 size_t page_size = (size_t) sysconf (_SC_PAGESIZE);
 @end smallexample
 
-@noindent
-These functions are declared in @file{sys/mman.h}.
+On some systems, mappings can use larger page sizes
+for certain files, and applications can request larger page sizes for
+anonymous mappings as well (see the @code{MAP_HUGETLB} flag below).
+
+The following functions are declared in @file{sys/mman.h}:
 
 @deftypefun {void *} mmap (void *@var{address}, size_t @var{length}, int @var{protect}, int @var{flags}, int @var{filedes}, off_t @var{offset})
 @standards{POSIX, sys/mman.h}
@@ -1411,19 +1502,11 @@ is created, which is not removed by closing the file.
 address is automatically removed.  The address you give may still be
 changed, unless you use the @code{MAP_FIXED} flag.
 
-@vindex PROT_READ
-@vindex PROT_WRITE
-@vindex PROT_EXEC
 @var{protect} contains flags that control what kind of access is
 permitted.  They include @code{PROT_READ}, @code{PROT_WRITE}, and
-@code{PROT_EXEC}, which permit reading, writing, and execution,
-respectively.  Inappropriate access will cause a segfault (@pxref{Program
-Error Signals}).
-
-Note that most hardware designs cannot support write permission without
-read permission, and many do not distinguish read and execute permission.
-Thus, you may receive wider permissions than you ask for, and mappings of
-write-only files may be denied even if you do not use @code{PROT_READ}.
+@code{PROT_EXEC}.  The special flag @code{PROT_NONE} reserves a region
+of address space for future use.  The @code{mprotect} function can be
+used to change the protection flags.  @xref{Memory Protection}.
 
 @var{flags} contains flags that control the nature of the map.
 One of @code{MAP_SHARED} or @code{MAP_PRIVATE} must be specified.
@@ -1470,6 +1553,29 @@ On some systems using private anonymous mmaps is more efficient than using
 @code{malloc} for large blocks.  This is not an issue with @theglibc{},
 as the included @code{malloc} automatically uses @code{mmap} where appropriate.
 
+@item MAP_HUGETLB
+@standards{Linux, sys/mman.h}
+This requests that the system uses an alternative page size which is
+larger than the default page size for the mapping.  For some workloads,
+increasing the page size for large mappings improves performance because
+the system needs to handle far fewer pages.  For other workloads which
+require frequent transfer of pages between storage or different nodes,
+the decreased page granularity may cause performance problems due to the
+increased page size and larger transfers.
+
+In order to create the mapping, the system needs physically contiguous
+memory of the size of the increased page size.  As a result,
+@code{MAP_HUGETLB} mappings are affected by memory fragmentation, and
+their creation can fail even if plenty of memory is available in the
+system.
+
+Not all file systems support mappings with an increased page size.
+
+The @code{MAP_HUGETLB} flag is specific to Linux.
+
+@c There is a mechanism to select different hugepage sizes; see
+@c include/uapi/asm-generic/hugetlb_encode.h in the kernel sources.
+
 @c Linux has some other MAP_ options, which I have not discussed here.
 @c MAP_DENYWRITE, MAP_EXECUTABLE and MAP_GROWSDOWN don't seem applicable to
 @c user programs (and I don't understand the last two).  MAP_LOCKED does
@@ -1486,8 +1592,11 @@ Possible errors include:
 
 @item EINVAL
 
-Either @var{address} was unusable, or inconsistent @var{flags} were
-given.
+Either @var{address} was unusable (because it is not a multiple of the
+applicable page size), or inconsistent @var{flags} were given.
+
+If @code{MAP_HUGETLB} was specified, the file or system does not support
+large page sizes.
 
 @item EACCES
 
@@ -1688,6 +1797,21 @@ The region is no longer needed.  The kernel may free these pages,
 causing any changes to the pages to be lost, as well as swapped
 out pages to be discarded.
 
+@item MADV_HUGEPAGE
+@standards{Linux, sys/mman.h}
+Indicate that it is beneficial to increase the page size for this
+mapping.  This can improve performance for larger mappings because the
+system needs to handle far fewer pages.  However, if parts of the
+mapping are frequently transferred between storage or different nodes,
+performance may suffer because individual transfers can become
+substantially larger due to the increased page size.
+
+This flag is specific to Linux.
+
+@item MADV_NOHUGEPAGE
+Undo the effect of a previous @code{MADV_HUGEPAGE} advice.  This flag
+is specific to Linux.
+
 @end vtable
 
 The POSIX names are slightly different, but with the same meanings:
@@ -1774,6 +1898,69 @@ the given @var{name} previously created by @code{shm_open}.
 @code{shm_unlink} returns @math{0} on success or @math{-1} on error.
 On failure @code{errno} is set.
 @end deftypefn
+
+@deftypefun int memfd_create (const char *@var{name}, unsigned int @var{flags})
+@standards{Linux, sys/mman.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{@acsfd{}}}
+The @code{memfd_create} function returns a file descriptor which can be
+used to create memory mappings using the @code{mmap} function.  It is
+similar to the @code{shm_open} function in the sense that these mappings
+are not backed by actual files.  However, the descriptor returned by
+@code{memfd_create} does not correspond to a named object; the
+@var{name} argument is used for debugging purposes only (e.g., will
+appear in @file{/proc}), and separate invocations of @code{memfd_create}
+with the same @var{name} will not return descriptors for the same region
+of memory.  The descriptor can also be used to create alias mappings
+within the same process.
+
+The descriptor initially refers to a zero-length file.  Before mappings
+can be created which are backed by memory, the file size needs to be
+increased with the @code{ftruncate} function.  @xref{File Size}.
+
+The @var{flags} argument can be a combination of the following flags:
+
+@vtable @code
+@item MFD_CLOEXEC
+@standards{Linux, sys/mman.h}
+The descriptor is created with the @code{O_CLOEXEC} flag.
+
+@item MFD_ALLOW_SEALING
+@standards{Linux, sys/mman.h}
+The descriptor supports the addition of seals using the @code{fcntl}
+function.
+
+@item MFD_HUGETLB
+@standards{Linux, sys/mman.h}
+This requests that mappings created using the returned file descriptor
+use a larger page size.  See @code{MAP_HUGETLB} above for details.
+
+This flag is incompatible with @code{MFD_ALLOW_SEALING}.
+@end vtable
+
+@code{memfd_create} returns a file descriptor on success, and @math{-1}
+on failure.
+
+The following @code{errno} error conditions are defined for this
+function:
+
+@table @code
+@item EINVAL
+An invalid combination is specified in @var{flags}, or @var{name} is
+too long.
+
+@item EFAULT
+The @var{name} argument does not point to a string.
+
+@item EMFILE
+The operation would exceed the file descriptor limit for this process.
+
+@item ENFILE
+The operation would exceed the system-wide file descriptor limit.
+
+@item ENOMEM
+There is not enough memory for the operation.
+@end table
+@end deftypefun
 
 @node Waiting for I/O
 @section Waiting for Input or Output
@@ -3478,6 +3665,34 @@ If set, the file will be created if it doesn't already exist.
 If both @code{O_CREAT} and @code{O_EXCL} are set, then @code{open} fails
 if the specified file already exists.  This is guaranteed to never
 clobber an existing file.
+
+The @code{O_EXCL} flag has a special meaning in combination with
+@code{O_TMPFILE}; see below.
+@end deftypevr
+
+@deftypevr Macro int O_TMPFILE
+@standards{GNU, fcntl.h}
+If this flag is specified, functions in the @code{open} family create an
+unnamed temporary file.  In this case, the pathname argument to the
+@code{open} family of functions (@pxref{Opening and Closing Files}) is
+interpreted as the directory in which the temporary file is created
+(thus determining the file system which provides the storage for the
+file).  The @code{O_TMPFILE} flag must be combined with @code{O_WRONLY}
+or @code{O_RDWR}, and the @var{mode} argument is required.
+
+The temporary file can later be given a name using @code{linkat},
+turning it into a regular file.  This allows the atomic creation of a
+file with the specific file attributes (mode and extended attributes)
+and file contents.  If, for security reasons, it is not desirable that a
+name can be given to the file, the @code{O_EXCL} flag can be specified
+along with @code{O_TMPFILE}.
+
+Not all kernels support this open flag.  If this flag is unsupported, an
+attempt to create an unnamed temporary file fails with an error of
+@code{EINVAL}.  If the underlying file system does not support the
+@code{O_TMPFILE} flag, an @code{EOPNOTSUPP} error is the result.
+
+The @code{O_TMPFILE} flag is a GNU extension.
 @end deftypevr
 
 @deftypevr Macro int O_NONBLOCK

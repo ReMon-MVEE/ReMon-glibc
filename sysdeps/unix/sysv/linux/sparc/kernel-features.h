@@ -1,6 +1,6 @@
 /* Set flags signalling availability of kernel features based on given
    kernel version number.  SPARC version.
-   Copyright (C) 1999-2017 Free Software Foundation, Inc.
+   Copyright (C) 1999-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -40,3 +40,17 @@
 
 /* sparc only supports ipc syscall.  */
 #undef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+
+/* SPARC kernel Kconfig does not define CONFIG_CLONE_BACKWARDS, however it
+   has the same ABI as if it did, implemented by sparc-specific code
+   (sparc_do_fork).
+
+   It also has a unique return value convention:
+
+     Parent -->  %o0 == child's  pid, %o1 == 0
+     Child  -->  %o0 == parent's pid, %o1 == 1
+
+   Which required a special macro to correct issue the syscall
+   (INLINE_CLONE_SYSCALL).  */
+#undef __ASSUME_CLONE_DEFAULT
+#define __ASSUME_CLONE_BACKWARDS	1

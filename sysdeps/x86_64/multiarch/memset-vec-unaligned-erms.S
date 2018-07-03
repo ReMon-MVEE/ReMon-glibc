@@ -1,5 +1,5 @@
 /* memset/bzero with unaligned store and rep stosb
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -129,7 +129,8 @@ END (__memset_chk_erms)
 /* Only used to measure performance of REP STOSB.  */
 ENTRY (__memset_erms)
 # else
-/* Provide a symbol to debugger.  */
+/* Provide a hidden symbol to debugger.  */
+	.hidden	MEMSET_SYMBOL (__memset, erms)
 ENTRY (MEMSET_SYMBOL (__memset, erms))
 # endif
 L(stosb):

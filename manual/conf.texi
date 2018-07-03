@@ -678,6 +678,79 @@ Inquire about the number of available physical pages in the system.
 Inquire about the number of functions which can be registered as termination
 functions for @code{atexit}; @pxref{Cleanups on Exit}.
 
+@item _SC_LEVEL1_ICACHE_SIZE
+@standards{GNU, unistd.h}
+Inquire about the size of the Level 1 instruction cache.
+
+@item _SC_LEVEL1_ICACHE_ASSOC
+@standards{GNU, unistd.h}
+Inquire about the associativity of the Level 1 instruction cache.
+
+@item _SC_LEVEL1_ICACHE_LINESIZE
+@standards{GNU, unistd.h}
+Inquire about the line length of the Level 1 instruction cache.
+
+On aarch64, the cache line size returned is the minimum instruction cache line
+size observable by userspace.  This is typically the same as the L1 icache
+size but on some cores it may not be so.  However, it is specified in the
+architecture that operations such as cache line invalidation are consistent
+with the size reported with this variable.
+
+@item _SC_LEVEL1_DCACHE_SIZE
+@standards{GNU, unistd.h}
+Inquire about the size of the Level 1 data cache.
+
+@item _SC_LEVEL1_DCACHE_ASSOC
+@standards{GNU, unistd.h}
+Inquire about the associativity of the Level 1 data cache.
+
+@item _SC_LEVEL1_DCACHE_LINESIZE
+@standards{GNU, unistd.h}
+Inquire about the line length of the Level 1 data cache.
+
+On aarch64, the cache line size returned is the minimum data cache line size
+observable by userspace.  This is typically the same as the L1 dcache size but
+on some cores it may not be so.  However, it is specified in the architecture
+that operations such as cache line invalidation are consistent with the size
+reported with this variable.
+
+@item _SC_LEVEL2_CACHE_SIZE
+@standards{GNU, unistd.h}
+Inquire about the size of the Level 2 cache.
+
+@item _SC_LEVEL2_CACHE_ASSOC
+@standards{GNU, unistd.h}
+Inquire about the associativity of the Level 2 cache.
+
+@item _SC_LEVEL2_CACHE_LINESIZE
+@standards{GNU, unistd.h}
+Inquire about the line length of the Level 2 cache.
+
+@item _SC_LEVEL3_CACHE_SIZE
+@standards{GNU, unistd.h}
+Inquire about the size of the Level 3 cache.
+
+@item _SC_LEVEL3_CACHE_ASSOC
+@standards{GNU, unistd.h}
+Inquire about the associativity of the Level 3 cache.
+
+@item _SC_LEVEL3_CACHE_LINESIZE
+@standards{GNU, unistd.h}
+Inquire about the line length of the Level 3 cache.
+
+@item _SC_LEVEL4_CACHE_SIZE
+@standards{GNU, unistd.h}
+Inquire about the size of the Level 4 cache.
+
+@item _SC_LEVEL4_CACHE_ASSOC
+@standards{GNU, unistd.h}
+Inquire about the associativity of the Level 4 cache.
+
+@item _SC_LEVEL4_CACHE_LINESIZE
+@standards{GNU, unistd.h}
+Inquire about the line length of the Level 4 cache.
+
+
 @item _SC_XOPEN_VERSION
 @standards{X/Open, unistd.h}
 Inquire about the parameter corresponding to @code{_XOPEN_VERSION}.
@@ -768,7 +841,7 @@ character value.
 Inquire about the value used to internally represent the zero priority level for
 the process execution.
 
-@item SC_SSIZE_MAX
+@item _SC_SSIZE_MAX
 @standards{X/Open, unistd.h}
 Inquire about the maximum value which can be stored in a variable of type
 @code{ssize_t}.

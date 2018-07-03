@@ -30,6 +30,29 @@ LIBC_COMPILER_BUILTIN_INLINED(
 *** Please use host i786, i686, i586, or i486.
 *** For example: /source/glibc/configure CFLAGS='-O2 -march=i686' ...])])
 
+dnl Check if linker can convert "movl main@GOT(%ebx), %eax" to
+dnl "leal main@GOTOFF(%ebx), %eax" for static PIE.
+if test "$static_pie" = yes; then
+  AC_CACHE_CHECK(for linker static PIE support, libc_cv_ld_static_pie, [dnl
+cat > conftest.s <<\EOF
+	.text
+	.global _start
+_start:
+	movl	_start@GOT(%ebx), %eax
+EOF
+  libc_cv_pie_option="-Wl,-pie"
+  libc_cv_ld_static_pie=no
+  if AC_TRY_COMMAND(${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS -nostartfiles -nostdlib $no_ssp $libc_cv_pie_option -o conftest conftest.s 1>&AS_MESSAGE_LOG_FD); then
+    if $READELF -r conftest | grep 'There are no relocations in this file.' > /dev/null; then
+      libc_cv_ld_static_pie=yes
+    fi
+  fi
+rm -f conftest*])
+  if test "$libc_cv_ld_static_pie" != yes; then
+    AC_MSG_ERROR([linker support for static PIE needed])
+  fi
+fi
+
 dnl Check whether asm supports Intel MPX
 AC_CACHE_CHECK(for Intel MPX support, libc_cv_asm_mpx, [dnl
 cat > conftest.s <<\EOF
@@ -48,3 +71,9 @@ fi
 dnl It is always possible to access static and hidden symbols in an
 dnl position independent way.
 AC_DEFINE(PI_STATIC_AND_HIDDEN)
+
+dnl When multi-arch is enabled, all external functions must be called
+dnl via PIC PLT in PIE, which requires setting up EBX register.
+if test x"$multi_arch" != xno; then
+  AC_DEFINE(NO_HIDDEN_EXTERN_FUNC_IN_PIE)
+fi

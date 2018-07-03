@@ -1,5 +1,5 @@
 /* Round double to integer away from zero.
-   Copyright (C) 2011-2017 Free Software Foundation, Inc.
+   Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 2011.
 
@@ -33,6 +33,7 @@
 #include <math.h>
 #include <math_private.h>
 #include <stdint.h>
+#include <libm-alias-double.h>
 
 /*
  * floor(x)
@@ -66,9 +67,5 @@ __floor (double x)
 	return x;
 }
 #ifndef __floor
-weak_alias (__floor, floor)
-# ifdef NO_LONG_DOUBLE
-strong_alias (__floor, __floorl)
-weak_alias (__floor, floorl)
-# endif
+libm_alias_double (__floor, floor)
 #endif

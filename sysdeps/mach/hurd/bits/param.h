@@ -1,5 +1,5 @@
 /* Old-style Unix parameters and limits.  Hurd version.
-   Copyright (C) 1993-2017 Free Software Foundation, Inc.
+   Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,6 +19,8 @@
 #ifndef _SYS_PARAM_H
 # error "Never use <bits/param.h> directly; include <sys/param.h> instead."
 #endif
+
+#include <bits/mach/param.h>
 
 /* This file is deprecated and is provided only for compatibility with
    Unix systems.  It is unwise to include this file on programs which

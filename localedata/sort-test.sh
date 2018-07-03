@@ -1,6 +1,6 @@
 #!/bin/sh
 # Test collation using xfrm-test.
-# Copyright (C) 1997-2017 Free Software Foundation, Inc.
+# Copyright (C) 1997-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -32,7 +32,8 @@ here=`pwd`
 status=0
 for l in $lang; do
   here=0
-  cns=`echo $l | sed 's/\(.*\)[.][^.]*/\1/'`
+  # Locale name matches test filename (without in).
+  cns=$l
   ${test_program_prefix_before_env} \
    ${run_program_env} \
    LC_ALL=$l ${test_program_prefix_after_env} \

@@ -1,5 +1,5 @@
 /* Set thread_state for sighandler, and sigcontext to recover.  i386 version.
-   Copyright (C) 1994-2017 Free Software Foundation, Inc.
+   Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -62,7 +62,7 @@ _hurd_setup_sighandler (struct hurd_sigstate *ss, __sighandler_t handler,
 		  sizeof (state->basic));
 	  memcpy (&state->fpu, &ss->context->sc_i386_float_state,
 		  sizeof (state->fpu));
-	  state->set |= (1 << i386_THREAD_STATE) | (1 << i386_FLOAT_STATE);
+	  state->set |= (1 << i386_REGS_SEGS_STATE) | (1 << i386_FLOAT_STATE);
 	}
     }
 
@@ -79,8 +79,6 @@ _hurd_setup_sighandler (struct hurd_sigstate *ss, __sighandler_t handler,
     {
       sigsp = ss->sigaltstack.ss_sp + ss->sigaltstack.ss_size;
       ss->sigaltstack.ss_flags |= SS_ONSTACK;
-      /* XXX need to set up base of new stack for
-	 per-thread variables, cthreads.  */
     }
   /* This code has intimate knowledge of the special mach_msg system call
      done in intr-msg.c; that code does (see intr-msg.h):

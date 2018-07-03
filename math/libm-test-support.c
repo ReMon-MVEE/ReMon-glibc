@@ -1,5 +1,5 @@
 /* Support code for testing libm functions (compiled once per type).
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -44,6 +44,9 @@
    DBL, or FLT).
 
    TYPE_STR: The name of the type as used in ulps files, as a string.
+
+   ULP_IDX, ULP_I_IDX: The array indexes for ulps values for this
+   function.
 
    LIT: Append the correct suffix to a literal.
 
@@ -132,6 +135,7 @@ static int verbose;
 static int output_max_error;	/* Should the maximal errors printed?  */
 static int output_points;	/* Should the single function results printed?  */
 static int ignore_max_ulp;	/* Should we ignore max_ulp?  */
+static int test_ibm128;		/* Is argument or result IBM long double?  */
 
 static FLOAT max_error, real_max_error, imag_max_error;
 
@@ -191,8 +195,8 @@ compare_ulp_data (const void *key, const void *ulp)
   return strcmp (keystr, ulpdat->name);
 }
 
-static const int ulp_i_idx = __CONCATX (ULP_I_, PREFIX);
-static const int ulp_idx = __CONCATX (ULP_, PREFIX);
+static const int ulp_i_idx = ULP_I_IDX;
+static const int ulp_idx = ULP_IDX;
 
 /* Return the ulps for NAME in array DATA with NMEMB elements, or 0 if
    no ulps listed.  */
@@ -209,11 +213,12 @@ find_ulps (const char *name, const struct ulp_data *data, size_t nmemb)
 }
 
 void
-init_max_error (const char *name, int exact)
+init_max_error (const char *name, int exact, int testing_ibm128)
 {
   max_error = 0;
   real_max_error = 0;
   imag_max_error = 0;
+  test_ibm128 = testing_ibm128;
   prev_max_error = find_ulps (name, func_ulps,
 			      sizeof (func_ulps) / sizeof (func_ulps[0]));
   prev_real_max_error = find_ulps (name, func_real_ulps,
@@ -222,15 +227,14 @@ init_max_error (const char *name, int exact)
   prev_imag_max_error = find_ulps (name, func_imag_ulps,
 				   (sizeof (func_imag_ulps)
 				    / sizeof (func_imag_ulps[0])));
-#if TEST_COND_ibm128
-  /* The documented accuracy of IBM long double division is 3ulp (see
-     libgcc/config/rs6000/ibm-ldouble-format), so do not require
-     better accuracy for libm functions that are exactly defined for
-     other formats.  */
-  max_valid_error = exact ? 3 : 16;
-#else
-  max_valid_error = exact ? 0 : 9;
-#endif
+  if (testing_ibm128)
+    /* The documented accuracy of IBM long double division is 3ulp
+       (see libgcc/config/rs6000/ibm-ldouble-format), so do not
+       require better accuracy for libm functions that are exactly
+       defined for other formats.  */
+    max_valid_error = exact ? 3 : 16;
+  else
+    max_valid_error = exact ? 0 : 9;
   prev_max_error = (prev_max_error <= max_valid_error
 		    ? prev_max_error
 		    : max_valid_error);
@@ -515,14 +519,14 @@ test_exceptions (const char *test_name, int exception)
 	 arithmetic.  */
 #ifdef FE_UNDERFLOW
       if ((exception & UNDERFLOW_EXCEPTION_OK) == 0
-	  && !(TEST_COND_ibm128
+	  && !(test_ibm128
 	       && (exception & UNDERFLOW_EXCEPTION) == 0))
 	test_single_exception (test_name, exception, UNDERFLOW_EXCEPTION,
 			       FE_UNDERFLOW, "Underflow");
 #endif
 #ifdef FE_INEXACT
       if ((exception & (INEXACT_EXCEPTION | NO_INEXACT_EXCEPTION)) != 0
-	  && !(TEST_COND_ibm128
+	  && !(test_ibm128
 	       && (exception & NO_INEXACT_EXCEPTION) != 0))
 	test_single_exception (test_name, exception, INEXACT_EXCEPTION,
 			       FE_INEXACT, "Inexact");
@@ -981,7 +985,8 @@ enable_test (int exceptions)
     return 0;
   if (flag_test_finite && (exceptions & NON_FINITE) != 0)
     return 0;
-  if (!SNAN_TESTS (FLOAT) && (exceptions & TEST_SNAN) != 0)
+  if ((!SNAN_TESTS (FLOAT) || !snan_tests_arg)
+      && (exceptions & TEST_SNAN) != 0)
     return 0;
   if (flag_test_mathvec && (exceptions & NO_TEST_MATHVEC) != 0)
     return 0;

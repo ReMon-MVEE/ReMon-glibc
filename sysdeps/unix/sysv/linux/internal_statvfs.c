@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1998.
 
@@ -26,7 +26,7 @@
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
-#include <sys/statvfs.h>
+#include "internal_statvfs.h"
 #include "linux_fsinfo.h"
 #include <kernel-features.h>
 

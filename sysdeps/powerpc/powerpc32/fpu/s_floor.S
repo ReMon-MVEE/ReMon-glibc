@@ -1,5 +1,5 @@
 /* Floor function.  PowerPC32 version.
-   Copyright (C) 2004-2017 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,7 @@
 
 #include <sysdep.h>
 #include <math_ldbl_opt.h>
+#include <libm-alias-double.h>
 
 	.section	.rodata.cst4,"aM",@progbits,4
 	.align	2
@@ -72,12 +73,4 @@ ENTRY (__floor)
 	blr
 	END (__floor)
 
-weak_alias (__floor, floor)
-
-#ifdef NO_LONG_DOUBLE
-weak_alias (__floor, floorl)
-strong_alias (__floor, __floorl)
-#endif
-#if LONG_DOUBLE_COMPAT(libm, GLIBC_2_0)
-compat_symbol (libm, __floor, floorl, GLIBC_2_0)
-#endif
+libm_alias_double (__floor, floor)

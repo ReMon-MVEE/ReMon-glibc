@@ -1,5 +1,5 @@
 /* ceil function.  PowerPC64/power5+ version.
-   Copyright (C) 2006-2017 Free Software Foundation, Inc.
+   Copyright (C) 2006-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,7 @@
 
 #include <sysdep.h>
 #include <math_ldbl_opt.h>
+#include <libm-alias-double.h>
 
 	.machine	"power5"
 ENTRY_TOCLESS (__ceil, 4)
@@ -26,12 +27,4 @@ ENTRY_TOCLESS (__ceil, 4)
 	blr
 	END (__ceil)
 
-weak_alias (__ceil, ceil)
-
-#ifdef NO_LONG_DOUBLE
-weak_alias (__ceil, ceill)
-strong_alias (__ceil, __ceill)
-#endif
-#if LONG_DOUBLE_COMPAT(libm, GLIBC_2_0)
-compat_symbol (libm, __ceil, ceill, GLIBC_2_0)
-#endif
+libm_alias_double (__ceil, ceil)

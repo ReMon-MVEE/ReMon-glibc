@@ -1,6 +1,4 @@
 #define SIG 0
-#define FUNC setpayload
+#define FUNC __setpayload
 #include <s_setpayload_main.c>
-#ifdef NO_LONG_DOUBLE
-weak_alias (setpayload, setpayloadl)
-#endif
+libm_alias_double (__setpayload, setpayload)

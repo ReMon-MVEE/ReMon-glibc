@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -532,6 +532,10 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
       /* Make sure the size of the stack is enough for the guard and
 	 eventually the thread descriptor.  */
       guardsize = (attr->guardsize + pagesize_m1) & ~pagesize_m1;
+      if (guardsize < attr->guardsize || size + guardsize < guardsize)
+	/* Arithmetic overflow.  */
+	return EINVAL;
+      size += guardsize;
       if (__builtin_expect (size < ((guardsize + __static_tls_size
 				     + MINIMAL_REST_STACK + pagesize_m1)
 				    & ~pagesize_m1),
@@ -753,7 +757,7 @@ allocate_stack (const struct pthread_attr *attr, struct pthread **pdp,
 				  - offsetof (pthread_mutex_t,
 					      __data.__list.__next));
   pd->robust_head.list_op_pending = NULL;
-#ifdef __PTHREAD_MUTEX_HAVE_PREV
+#if __PTHREAD_MUTEX_HAVE_PREV
   pd->robust_prev = &pd->robust_head;
 #endif
   pd->robust_head.list = &pd->robust_head;
@@ -1105,8 +1109,13 @@ __nptl_setxid_error (struct xid_command *cmdp, int error)
       if (olderror == error)
 	break;
       if (olderror != -1)
-	/* Mismatch between current and previous results.  */
-	abort ();
+	{
+	  /* Mismatch between current and previous results.  Save the
+	     error value to memory so that is not clobbered by the
+	     abort function and preserved in coredumps.  */
+	  volatile int xid_err __attribute__((unused)) = error;
+	  abort ();
+	}
     }
   while (atomic_compare_and_exchange_bool_acq (&cmdp->error, error, -1));
 }

@@ -1,5 +1,5 @@
 /* Common definitions for libm tests for float.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -22,9 +22,12 @@
 #define BUILD_COMPLEX(real, imag) (CMPLXF ((real), (imag)))
 #define PREFIX FLT
 #define TYPE_STR "float"
+#define ULP_IDX ULP_FLT
+#define ULP_I_IDX ULP_I_FLT
 #define LIT(x) (x ## f)
 /* Use the double variants of macro constants.  */
 #define LITM(x) x
 #define FTOSTR strfromf
 #define snan_value_MACRO SNANF
 #define TEST_FLOATN 0
+#define FUNC_NARROW_PREFIX f

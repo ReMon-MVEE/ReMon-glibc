@@ -1,5 +1,5 @@
 /* lround function.  PowerPC32 version.
-   Copyright (C) 2004-2017 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,8 @@
 
 #include <sysdep.h>
 #include <math_ldbl_opt.h>
+#include <libm-alias-float.h>
+#include <libm-alias-double.h>
 
 	.section	.rodata.cst4,"aM",@progbits,4
 	.align	2
@@ -115,15 +117,7 @@ ENTRY (__lround)
 	b	.Lconvert
 	END (__lround)
 
-weak_alias (__lround, lround)
+libm_alias_double (__lround, lround)
 
 strong_alias (__lround, __lroundf)
-weak_alias (__lround, lroundf)
-
-#ifdef NO_LONG_DOUBLE
-weak_alias (__lround, lroundl)
-strong_alias (__lround, __lroundl)
-#endif
-#if LONG_DOUBLE_COMPAT(libm, GLIBC_2_1)
-compat_symbol (libm, __lround, lroundl, GLIBC_2_1)
-#endif
+libm_alias_float (__lround, lround)

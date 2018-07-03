@@ -1,4 +1,4 @@
-# Copyright (C) 1998-2017 Free Software Foundation, Inc.
+# Copyright (C) 1998-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -73,11 +73,11 @@ LDLIBS-nscd = $(selinux-LIBS)
 
 include ../Rules
 
-CFLAGS-nscd_getpw_r.c = -fexceptions
-CFLAGS-nscd_getgr_r.c = -fexceptions
-CFLAGS-nscd_gethst_r.c = -fexceptions
-CFLAGS-nscd_getai.c = -fexceptions
-CFLAGS-nscd_initgroups.c = -fexceptions
+CFLAGS-nscd_getpw_r.c += -fexceptions
+CFLAGS-nscd_getgr_r.c += -fexceptions
+CFLAGS-nscd_gethst_r.c += -fexceptions
+CFLAGS-nscd_getai.c += -fexceptions
+CFLAGS-nscd_initgroups.c += -fexceptions
 
 CPPFLAGS-nscd += -D_FORTIFY_SOURCE=2
 
@@ -97,7 +97,7 @@ include $(patsubst %,$(..)libof-iterator.mk,$(cpp-srcs-left))
 $(objpfx)nscd: $(nscd-modules:%=$(objpfx)%.o)
 
 ifeq ($(build-shared),yes)
-$(objpfx)nscd: $(shared-thread-library) $(common-objpfx)nis/libnsl.so
+$(objpfx)nscd: $(shared-thread-library)
 else
-$(objpfx)nscd: $(static-thread-library) $(common-objpfx)nis/libnsl.a
+$(objpfx)nscd: $(static-thread-library)
 endif

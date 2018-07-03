@@ -32,6 +32,8 @@ static char rcsid[] = "$NetBSD: $";
 #include <float.h>
 #include <math.h>
 #include <math_private.h>
+#include <math-underflow.h>
+#include <libm-alias-ldouble.h>
 
 static const _Float128
   one = 1,
@@ -64,16 +66,16 @@ __asinhl (_Float128 x)
   else if (ix >0x40000000)
     {				/* 2^ 54 > |x| > 2.0 */
       t = u.value;
-      w = __ieee754_logl (2.0 * t + one / (__ieee754_sqrtl (x * x + one) + t));
+      w = __ieee754_logl (2.0 * t + one / (sqrtl (x * x + one) + t));
     }
   else
     {				/* 2.0 > |x| > 2 ^ -56 */
       t = x * x;
-      w = __log1pl (u.value + t / (one + __ieee754_sqrtl (one + t)));
+      w = __log1pl (u.value + t / (one + sqrtl (one + t)));
     }
   if (sign & 0x80000000)
     return -w;
   else
     return w;
 }
-weak_alias (__asinhl, asinhl)
+libm_alias_ldouble (__asinh, asinh)

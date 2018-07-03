@@ -1,5 +1,5 @@
 /* PowerPC definitions for libc main startup.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@
 /* IREL{,A} must happen after TCB initialization in order to allow IFUNC
    resolvers to read TCB fields, e.g. hwcap and at_platform.  */
 #define ARCH_SETUP_IREL()
+#define ARCH_SETUP_TLS() __libc_setup_tls ()
 #define ARCH_APPLY_IREL() apply_irel ()
 #endif /* ! SHARED  */
 

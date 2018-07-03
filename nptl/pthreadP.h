@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -32,7 +32,7 @@
 #include <atomic.h>
 #include <kernel-features.h>
 #include <errno.h>
-#include <nptl-signals.h>
+#include <internal-signals.h>
 
 
 /* Atomic operations on TLS memory.  */
@@ -506,6 +506,8 @@ extern int __pthread_setcanceltype (int type, int *oldtype);
 extern int __pthread_enable_asynccancel (void) attribute_hidden;
 extern void __pthread_disable_asynccancel (int oldtype) attribute_hidden;
 extern void __pthread_testcancel (void);
+extern int __pthread_timedjoin_ex (pthread_t, void **, const struct timespec *,
+				   bool);
 
 #if IS_IN (libpthread)
 hidden_proto (__pthread_mutex_init)
@@ -524,6 +526,7 @@ hidden_proto (__pthread_setcancelstate)
 hidden_proto (__pthread_testcancel)
 hidden_proto (__pthread_mutexattr_init)
 hidden_proto (__pthread_mutexattr_settype)
+hidden_proto (__pthread_timedjoin_ex)
 #endif
 
 extern int __pthread_cond_broadcast_2_0 (pthread_cond_2_0_t *cond);
@@ -638,5 +641,19 @@ check_stacksize_attr (size_t st)
 
   return EINVAL;
 }
+
+#define ASSERT_TYPE_SIZE(type, size) 					\
+  _Static_assert (sizeof (type) == size,				\
+		  "sizeof (" #type ") != " #size)
+
+#define ASSERT_PTHREAD_INTERNAL_SIZE(type, internal) 			\
+  _Static_assert (sizeof ((type) { { 0 } }).__size >= sizeof (internal),\
+		  "sizeof (" #type ".__size) < sizeof (" #internal ")")
+
+#define ASSERT_PTHREAD_STRING(x) __STRING (x)
+#define ASSERT_PTHREAD_INTERNAL_OFFSET(type, member, offset)		\
+  _Static_assert (offsetof (type, member) == offset,			\
+		  "offset of " #member " field of " #type " != "	\
+		  ASSERT_PTHREAD_STRING (offset))
 
 #endif	/* pthreadP.h */

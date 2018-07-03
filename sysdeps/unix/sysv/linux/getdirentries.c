@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,26 +16,21 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <dirent.h>
-#include <unistd.h>
 
-#ifndef GETDIRENTRIES
-# define GETDIRENTRIES getdirentries
-# define __GETDENTS __getdents
-#else
-# define off_t off64_t
-# define __lseek __lseek64
-#endif
+#if !_DIRENT_MATCHES_DIRENT64
+# include <unistd.h>
 
 ssize_t
-GETDIRENTRIES (int fd, char *buf, size_t nbytes, off_t *basep)
+getdirentries (int fd, char *buf, size_t nbytes, off_t *basep)
 {
-  off_t base = __lseek (fd, (off_t) 0, SEEK_CUR);
-  ssize_t result;
+  off_t base = __lseek (fd, 0, SEEK_CUR);
 
-  result = __GETDENTS (fd, buf, nbytes);
+  ssize_t result = __getdents (fd, buf, nbytes);
 
   if (result != -1)
     *basep = base;
 
   return result;
 }
+
+#endif

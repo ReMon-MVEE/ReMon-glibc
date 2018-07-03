@@ -1,5 +1,5 @@
 /* ix87 specific frexp implementation for double.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -18,6 +18,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <machine/asm.h>
+#include <libm-alias-double.h>
 
 	.section .rodata
 
@@ -80,4 +81,4 @@ ENTRY (__frexp)
 
 	ret
 END (__frexp)
-weak_alias (__frexp, frexp)
+libm_alias_double (__frexp, frexp)

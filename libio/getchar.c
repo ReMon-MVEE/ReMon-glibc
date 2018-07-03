@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -41,7 +41,7 @@ getchar (void)
   return result;
 }
 
-#if defined weak_alias && !defined _IO_MTSAFE_IO
+#ifndef _IO_MTSAFE_IO
 #undef getchar_unlocked
 weak_alias (getchar, getchar_unlocked)
 #endif

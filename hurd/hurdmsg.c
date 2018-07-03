@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -344,7 +344,7 @@ _S_msg_set_env_variable (mach_port_t msgport, mach_port_t auth,
 {
   AUTHCHECK;
 
-  if (setenv (variable, value, replace)) /* XXX name space */
+  if (__setenv (variable, value, replace)) /* XXX name space */
     return errno;
   return 0;
 }

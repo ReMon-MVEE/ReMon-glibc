@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gnu.org>, 1995.
 
@@ -30,7 +30,7 @@ const struct __locale_data _nl_C_LC_TIME attribute_hidden =
   { NULL, },			/* no cached data */
   UNDELETABLE,
   0,
-  111,
+  159,
   {
     { .string = "Sun" },
     { .string = "Mon" },
@@ -142,6 +142,54 @@ const struct __locale_data _nl_C_LC_TIME attribute_hidden =
     { .string = "" },
     { .string = "%a %b %e %H:%M:%S %Z %Y" },
     { .wstr = (const uint32_t *) L"%a %b %e %H:%M:%S %Z %Y" },
-    { .string = _nl_C_codeset }
+    { .string = _nl_C_codeset },
+    { .string = "January" },
+    { .string = "February" },
+    { .string = "March" },
+    { .string = "April" },
+    { .string = "May" },
+    { .string = "June" },
+    { .string = "July" },
+    { .string = "August" },
+    { .string = "September" },
+    { .string = "October" },
+    { .string = "November" },
+    { .string = "December" },
+    { .wstr = (const uint32_t *) L"January" },
+    { .wstr = (const uint32_t *) L"February" },
+    { .wstr = (const uint32_t *) L"March" },
+    { .wstr = (const uint32_t *) L"April" },
+    { .wstr = (const uint32_t *) L"May" },
+    { .wstr = (const uint32_t *) L"June" },
+    { .wstr = (const uint32_t *) L"July" },
+    { .wstr = (const uint32_t *) L"August" },
+    { .wstr = (const uint32_t *) L"September" },
+    { .wstr = (const uint32_t *) L"October" },
+    { .wstr = (const uint32_t *) L"November" },
+    { .wstr = (const uint32_t *) L"December" },
+    { .string = "Jan" },
+    { .string = "Feb" },
+    { .string = "Mar" },
+    { .string = "Apr" },
+    { .string = "May" },
+    { .string = "Jun" },
+    { .string = "Jul" },
+    { .string = "Aug" },
+    { .string = "Sep" },
+    { .string = "Oct" },
+    { .string = "Nov" },
+    { .string = "Dec" },
+    { .wstr = (const uint32_t *) L"Jan" },
+    { .wstr = (const uint32_t *) L"Feb" },
+    { .wstr = (const uint32_t *) L"Mar" },
+    { .wstr = (const uint32_t *) L"Apr" },
+    { .wstr = (const uint32_t *) L"May" },
+    { .wstr = (const uint32_t *) L"Jun" },
+    { .wstr = (const uint32_t *) L"Jul" },
+    { .wstr = (const uint32_t *) L"Aug" },
+    { .wstr = (const uint32_t *) L"Sep" },
+    { .wstr = (const uint32_t *) L"Oct" },
+    { .wstr = (const uint32_t *) L"Nov" },
+    { .wstr = (const uint32_t *) L"Dec" }
   }
 };

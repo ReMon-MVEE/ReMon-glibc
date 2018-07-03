@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -62,8 +62,6 @@ static int __pthread_mutex_lock_full (pthread_mutex_t *mutex)
 int
 __pthread_mutex_lock (pthread_mutex_t *mutex)
 {
-  assert (sizeof (mutex->__size) >= sizeof (mutex->__data));
-
   unsigned int type = PTHREAD_MUTEX_TYPE_ELISION (mutex);
 
   LIBC_PROBE (mutex_entry, 1, mutex);

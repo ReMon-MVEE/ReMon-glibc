@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -31,7 +31,7 @@
 #ifndef __OFF_T_MATCHES_OFF64_T
 
 int
-_IO_new_fsetpos64 (_IO_FILE *fp, const _IO_fpos64_t *posp)
+_IO_new_fsetpos64 (FILE *fp, const fpos64_t *posp)
 {
   int result;
   CHECK_FILE (fp, EOF);

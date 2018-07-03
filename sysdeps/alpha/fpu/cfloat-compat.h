@@ -1,5 +1,5 @@
 /* Compatibility macros for old and new Alpha complex float ABI.
-   Copyright (C) 2004-2017 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -43,6 +43,7 @@ typedef union { double d; _Complex float cf; } c1_compat;
 /* Get the proper symbol versions defined for each function.  */
 
 #include <shlib-compat.h>
+#include <libm-alias-float.h>
 
 #if SHLIB_COMPAT (libm, GLIBC_2_1, GLIBC_2_3_4)
 #define cfloat_versions_compat(func) \
@@ -52,7 +53,8 @@ typedef union { double d; _Complex float cf; } c1_compat;
 #endif
 
 #define cfloat_versions(func) \
-  cfloat_versions_compat(func); \
-  versioned_symbol (libm, __c2_##func, func, GLIBC_2_3_4); \
-  extern typeof(__c2_##func) __##func attribute_hidden; \
-  strong_alias (__c2_##func, __##func)
+  cfloat_versions_compat(func##f); \
+  versioned_symbol (libm, __c2_##func##f, func##f, GLIBC_2_3_4); \
+  extern typeof(__c2_##func##f) __##func##f attribute_hidden; \
+  strong_alias (__c2_##func##f, __##func##f); \
+  libm_alias_float_other (__##func, func)

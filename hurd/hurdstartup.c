@@ -1,5 +1,5 @@
 /* Initial program startup for running under the GNU Hurd.
-   Copyright (C) 1991-2017 Free Software Foundation, Inc.
+   Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -23,7 +23,6 @@
 #include <hurd.h>
 #include <hurd/exec_startup.h>
 #include <sysdep.h>
-#include <hurd/threadvar.h>
 #include <unistd.h>
 #include <elf.h>
 #include <set-hooks.h>

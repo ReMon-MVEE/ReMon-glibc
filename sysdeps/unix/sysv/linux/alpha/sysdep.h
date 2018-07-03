@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper, <drepper@gnu.ai.mit.edu>, August 1995.
 
@@ -69,6 +69,8 @@
 #if !defined __NR_pwrite && defined __NR_pwrite64
 # define __NR_pwrite __NR_pwrite64
 #endif
+
+#define SINGLE_THREAD_BY_GLOBAL 1
 
 /*
  * In order to get the hidden arguments for rt_sigaction set up

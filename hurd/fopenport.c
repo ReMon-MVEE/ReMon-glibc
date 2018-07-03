@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -62,7 +62,7 @@ writeio (void *cookie, const char *buf, size_t n)
    Returns zero if successful, nonzero if not.  */
 static int
 seekio (void *cookie,
-	_IO_off64_t *pos,
+	off64_t *pos,
 	int whence)
 {
   error_t err = __io_seek ((file_t) cookie, *pos, whence, pos);

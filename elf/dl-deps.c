@@ -1,5 +1,5 @@
 /* Load the dependencies of a mapped object.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -100,7 +100,7 @@ struct list
   ({									      \
     const char *__str = (str);						      \
     const char *__result = __str;					      \
-    size_t __dst_cnt = DL_DST_COUNT (__str, 0);				      \
+    size_t __dst_cnt = DL_DST_COUNT (__str);				      \
 									      \
     if (__dst_cnt != 0)							      \
       {									      \
@@ -114,7 +114,7 @@ DST not allowed in SUID/SGID programs"));				      \
 	__newp = (char *) alloca (DL_DST_REQUIRED (l, __str, strlen (__str),  \
 						   __dst_cnt));		      \
 									      \
-	__result = _dl_dst_substitute (l, __str, __newp, 0);		      \
+	__result = _dl_dst_substitute (l, __str, __newp);		      \
 									      \
 	if (*__result == '\0')						      \
 	  {								      \
@@ -585,62 +585,9 @@ Filters not supported with LD_TRACE_PRELINKING"));
      itself will always be initialize last.  */
   memcpy (l_initfini, map->l_searchlist.r_list,
 	  nlist * sizeof (struct link_map *));
-  if (__glibc_likely (nlist > 1))
-    {
-      /* We can skip looking for the binary itself which is at the front
-	 of the search list.  */
-      i = 1;
-      uint16_t seen[nlist];
-      memset (seen, 0, nlist * sizeof (seen[0]));
-      while (1)
-	{
-	  /* Keep track of which object we looked at this round.  */
-	  ++seen[i];
-	  struct link_map *thisp = l_initfini[i];
-
-	  /* Find the last object in the list for which the current one is
-	     a dependency and move the current object behind the object
-	     with the dependency.  */
-	  unsigned int k = nlist - 1;
-	  while (k > i)
-	    {
-	      struct link_map **runp = l_initfini[k]->l_initfini;
-	      if (runp != NULL)
-		/* Look through the dependencies of the object.  */
-		while (*runp != NULL)
-		  if (__glibc_unlikely (*runp++ == thisp))
-		    {
-		      /* Move the current object to the back past the last
-			 object with it as the dependency.  */
-		      memmove (&l_initfini[i], &l_initfini[i + 1],
-			       (k - i) * sizeof (l_initfini[0]));
-		      l_initfini[k] = thisp;
-
-		      if (seen[i + 1] > nlist - i)
-			{
-			  ++i;
-			  goto next_clear;
-			}
-
-		      uint16_t this_seen = seen[i];
-		      memmove (&seen[i], &seen[i + 1],
-			       (k - i) * sizeof (seen[0]));
-		      seen[k] = this_seen;
-
-		      goto next;
-		    }
-
-	      --k;
-	    }
-
-	  if (++i == nlist)
-	    break;
-	next_clear:
-	  memset (&seen[i], 0, (nlist - i) * sizeof (seen[0]));
-
-	next:;
-	}
-    }
+  /* We can skip looking for the binary itself which is at the front of
+     the search list.  */
+  _dl_sort_maps (&l_initfini[1], nlist - 1, NULL, false);
 
   /* Terminate the list of dependencies.  */
   l_initfini[nlist] = NULL;

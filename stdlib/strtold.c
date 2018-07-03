@@ -1,6 +1,6 @@
 /* Read decimal floating point numbers.
    This file is part of the GNU C Library.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
    Contributed by Ulrich Drepper <drepper@gnu.org>, 1995.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -20,7 +20,17 @@
 /* The actual implementation for all floating point sizes is in strtod.c.
    These macros tell it to produce the `float' version, `strtof'.  */
 
+#include <bits/floatn.h>
 #include <bits/long-double.h>
+
+#if __HAVE_FLOAT128 && !__HAVE_DISTINCT_FLOAT128
+# define strtof128 __hide_strtof128
+# define wcstof128 __hide_wcstof128
+#endif
+#if __HAVE_FLOAT64X_LONG_DOUBLE
+# define strtof64x __hide_strtof64x
+# define wcstof64x __hide_wcstof64x
+#endif
 
 #ifdef __LONG_DOUBLE_MATH_OPTIONAL
 # include <wchar.h>
@@ -60,5 +70,25 @@ libc_hidden_ver (____new_wcstold_internal, __wcstold_internal)
 long_double_symbol (libc, __new_strtold, strtold);
 long_double_symbol (libc, ____new_strtold_internal, __strtold_internal);
 libc_hidden_ver (____new_strtold_internal, __strtold_internal)
+# endif
+#endif
+
+#if __HAVE_FLOAT128 && !__HAVE_DISTINCT_FLOAT128
+# undef strtof128
+# undef wcstof128
+# ifdef USE_WIDE_CHAR
+weak_alias (NEW (wcstold), wcstof128)
+# else
+weak_alias (NEW (strtold), strtof128)
+# endif
+#endif
+
+#if __HAVE_FLOAT64X_LONG_DOUBLE
+# undef strtof64x
+# undef wcstof64x
+# ifdef USE_WIDE_CHAR
+weak_alias (NEW (wcstold), wcstof64x)
+# else
+weak_alias (NEW (strtold), strtof64x)
 # endif
 #endif

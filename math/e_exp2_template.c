@@ -1,5 +1,5 @@
 /* Compute 2^x.
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,7 @@
 
 #include <math.h>
 #include <math_private.h>
+#include <math-underflow.h>
 #include <float.h>
 
 #define declare_mgen_finite_alias_x(from, to) \
@@ -41,7 +42,7 @@ M_DECL_FUNC (__ieee754_exp2) (FLOAT x)
 	  if (M_FABS (fractx) < M_EPSILON / 4)
 	    result = M_SCALBN (1 + fractx, intx);
 	  else
-	    result = M_SCALBN (M_EXP (M_SUF (M_LN2) * fractx), intx);
+	    result = M_SCALBN (M_EXP (M_MLIT (M_LN2) * fractx), intx);
 	  math_check_force_underflow_nonneg (result);
 	  return result;
 	}

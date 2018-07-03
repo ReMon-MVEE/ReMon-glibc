@@ -1,5 +1,5 @@
 /* Extended regular expression matching and search library.
-   Copyright (C) 2002-2017 Free Software Foundation, Inc.
+   Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Isamu Hasegawa <isamu@yamato.ibm.com>.
 
@@ -517,6 +517,7 @@ regcomp (regex_t *__restrict preg, const char *__restrict pattern, int cflags)
   return (int) ret;
 }
 #ifdef _LIBC
+libc_hidden_def (__regcomp)
 weak_alias (__regcomp, regcomp)
 #endif
 
@@ -644,6 +645,7 @@ regfree (regex_t *preg)
   preg->translate = NULL;
 }
 #ifdef _LIBC
+libc_hidden_def (__regfree)
 weak_alias (__regfree, regfree)
 #endif
 
@@ -923,26 +925,29 @@ init_word_char (re_dfa_t *dfa)
   int ch = 0;
   if (BE (dfa->map_notascii == 0, 1))
     {
-      if (sizeof (dfa->word_char[0]) == 8)
+      /* Avoid uint32_t and uint64_t as some non-GCC platforms lack
+	 them, an issue when this code is used in Gnulib.  */
+      bitset_word_t bits0 = 0x00000000;
+      bitset_word_t bits1 = 0x03ff0000;
+      bitset_word_t bits2 = 0x87fffffe;
+      bitset_word_t bits3 = 0x07fffffe;
+      if (BITSET_WORD_BITS == 64)
 	{
-          /* The extra temporaries here avoid "implicitly truncated"
-             warnings in the case when this is dead code, i.e. 32-bit.  */
-          const uint64_t wc0 = UINT64_C (0x03ff000000000000);
-          const uint64_t wc1 = UINT64_C (0x07fffffe87fffffe);
-	  dfa->word_char[0] = wc0;
-	  dfa->word_char[1] = wc1;
+	  /* Pacify gcc -Woverflow on 32-bit platformns.  */
+	  dfa->word_char[0] = bits1 << 31 << 1 | bits0;
+	  dfa->word_char[1] = bits3 << 31 << 1 | bits2;
 	  i = 2;
 	}
-      else if (sizeof (dfa->word_char[0]) == 4)
+      else if (BITSET_WORD_BITS == 32)
 	{
-	  dfa->word_char[0] = UINT32_C (0x00000000);
-	  dfa->word_char[1] = UINT32_C (0x03ff0000);
-	  dfa->word_char[2] = UINT32_C (0x87fffffe);
-	  dfa->word_char[3] = UINT32_C (0x07fffffe);
+	  dfa->word_char[0] = bits0;
+	  dfa->word_char[1] = bits1;
+	  dfa->word_char[2] = bits2;
+	  dfa->word_char[3] = bits3;
 	  i = 4;
 	}
       else
-	abort ();
+        goto general_case;
       ch = 128;
 
       if (BE (dfa->is_utf8, 1))
@@ -952,6 +957,7 @@ init_word_char (re_dfa_t *dfa)
 	}
     }
 
+ general_case:
   for (; i < BITSET_WORDS; ++i)
     for (int j = 0; j < BITSET_WORD_BITS; ++j, ++ch)
       if (isalnum (ch) || ch == '_')
@@ -3427,7 +3433,7 @@ build_equiv_class (bitset_t sbcset, const unsigned char *name)
 	/* This isn't a valid character.  */
 	return REG_ECOLLATE;
 
-      /* Build single byte matcing table for this equivalence class.  */
+      /* Build single byte matching table for this equivalence class.  */
       len = weights[idx1 & 0xffffff];
       for (ch = 0; ch < SBC_MAX; ++ch)
 	{

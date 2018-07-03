@@ -1,5 +1,5 @@
 /* Linux setrlimit implementation (32 bits off_t).
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -48,6 +48,7 @@ __setrlimit (enum __rlimit_resource resource, const struct rlimit *rlim)
   return INLINE_SYSCALL_CALL (prlimit64, 0, resource, &rlim64, NULL);
 }
 
+libc_hidden_def (__setrlimit)
 # if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_2)
 strong_alias (__setrlimit, __setrlimit_1)
 compat_symbol (libc, __setrlimit, setrlimit, GLIBC_2_0);

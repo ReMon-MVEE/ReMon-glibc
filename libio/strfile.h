@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -24,12 +24,10 @@
    This exception applies to code released by its copyright holders
    in files containing the exception.  */
 
-#include <libio.h>
-#ifdef TODO
-Merge into  libio.h ?
-#endif
+#include <stdio.h>
+#include "libioP.h"
 
-typedef void *(*_IO_alloc_type) (_IO_size_t);
+typedef void *(*_IO_alloc_type) (size_t);
 typedef void (*_IO_free_type) (void*);
 
 struct _IO_str_fields
@@ -45,7 +43,7 @@ struct _IO_str_fields
 
 struct _IO_streambuf
 {
-  struct _IO_FILE _f;
+  FILE _f;
   const struct _IO_jump_t *vtable;
 };
 
@@ -61,7 +59,7 @@ typedef struct _IO_strfile_
 
 /* frozen: set when the program has requested that the array object not
    be altered, reallocated, or freed. */
-#define _IO_STR_FROZEN(FP) ((FP)->_f._IO_file_flags & _IO_USER_BUF)
+#define _IO_STR_FROZEN(FP) ((FP)->_f._flags & _IO_USER_BUF)
 
 typedef struct
 {

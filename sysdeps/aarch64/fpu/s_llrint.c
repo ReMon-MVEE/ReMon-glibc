@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -16,7 +16,21 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#define FUNC llrint
-#define OTYPE long long int
-#define OREG_SIZE 64
-#include <s_lrint.c>
+#include <math.h>
+#include <math-barriers.h>
+#include <math_private.h>
+#include <libm-alias-double.h>
+
+long long int
+__llrint (double x)
+{
+  double r = __builtin_rint (x);
+
+  /* Prevent gcc from calling llrint directly when compiled with
+     -fno-math-errno by inserting a barrier.  */
+
+  math_opt_barrier (r);
+  return r;
+}
+
+libm_alias_double (__llrint, llrint)

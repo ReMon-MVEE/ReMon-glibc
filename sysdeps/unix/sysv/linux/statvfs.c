@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1998.
 
@@ -19,11 +19,7 @@
 #include <stddef.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
-#include <sys/statvfs.h>
-
-extern void __internal_statvfs (const char *name, struct statvfs *buf,
-				struct statfs *fsbuf, int fd);
-
+#include "internal_statvfs.h"
 
 int
 __statvfs (const char *file, struct statvfs *buf)

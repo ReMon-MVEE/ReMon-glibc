@@ -1,5 +1,5 @@
 /* Return real part of complex float value.
-   Copyright (C) 2004-2017 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -37,4 +37,4 @@ __c2_crealf (c2_cfloat_decl (z))
   return c2_cfloat_real (z);
 }
 
-cfloat_versions (crealf);
+cfloat_versions (creal);

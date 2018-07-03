@@ -166,12 +166,18 @@ libc {
   GLIBC_2.15 {
     process_vm_readv; process_vm_writev;
   }
+  GLIBC_2.27 {
+    memfd_create;
+    mlock2;
+    pkey_alloc; pkey_free; pkey_set; pkey_get; pkey_mprotect;
+  }
   GLIBC_PRIVATE {
     # functions used in other libraries
     __syscall_rt_sigqueueinfo;
     __open_nocancel;
     __read_nocancel;
     __close_nocancel;
+    __sigtimedwait;
     # functions used by nscd
     __netlink_assert_response;
   }

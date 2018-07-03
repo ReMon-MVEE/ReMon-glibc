@@ -1,6 +1,6 @@
 #!/bin/sh
 # Bug 18125: Test the exit functionality of setcontext().
-# Copyright (C) 2015-2017 Free Software Foundation, Inc.
+# Copyright (C) 2015-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@ cleanup() {
 }
 trap cleanup 0
 
-tempfile=$(mktemp "tst-setcontext3.XXXXXXXXXX")
+tempfile=$(mktemp "${objpfx}tst-setcontext3.XXXXXXXXXX")
 
 # We want to run the test program and see if secontext called
 # exit() and wrote out the test file we specified.  If the

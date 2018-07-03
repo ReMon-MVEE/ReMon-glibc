@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,7 +16,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <stddef.h>
-#include <setjmp.h>
+#include <setjmpP.h>
 #include <signal.h>
 
 
@@ -31,7 +31,8 @@ __libc_siglongjmp (sigjmp_buf env, int val)
 
   if (env[0].__mask_was_saved)
     /* Restore the saved signal mask.  */
-    (void) __sigprocmask (SIG_SETMASK, &env[0].__saved_mask,
+    (void) __sigprocmask (SIG_SETMASK,
+			  (sigset_t *) &env[0].__saved_mask,
 			  (sigset_t *) NULL);
 
   /* Call the machine-dependent function to restore machine state.  */
@@ -39,8 +40,11 @@ __libc_siglongjmp (sigjmp_buf env, int val)
 }
 
 #ifndef __libc_siglongjmp
+# ifndef __libc_longjmp
+/* __libc_longjmp is a private interface for cancellation implementation
+   in libpthread.  */
 strong_alias (__libc_siglongjmp, __libc_longjmp)
-libc_hidden_def (__libc_longjmp)
+# endif
 weak_alias (__libc_siglongjmp, _longjmp)
 weak_alias (__libc_siglongjmp, longjmp)
 weak_alias (__libc_siglongjmp, siglongjmp)

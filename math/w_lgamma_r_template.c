@@ -1,5 +1,5 @@
 /* Wrapper to set errno for lgamma_r.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -33,12 +33,6 @@
 #define M_CALL_FUNC_R_X(x) x ## _r
 #define M_CALL_FUNC_R_S(x) M_CALL_FUNC_R_X (x)
 #define M_CALL_FUNC_R(x) M_CALL_FUNC_R_S (M_SUF (x))
-
-#define declare_mgen_alias_r_x(from, to) weak_alias (from ## _r, to ## _r)
-#define declare_mgen_alias_r_s(from, to) \
-	declare_mgen_alias_r_x (from, to)
-#define declare_mgen_alias_r(from, to) \
-	declare_mgen_alias_r_s (M_SUF (from), M_SUF (to))
 
 FLOAT
 M_DECL_FUNC_R (__lgamma) (FLOAT x, int *signgamp)

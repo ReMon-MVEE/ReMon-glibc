@@ -1,5 +1,5 @@
 /* Helper macros for _Float128 variants of type generic functions of libm.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,9 +19,6 @@
 #ifndef _MATH_TYPE_MACROS_FLOAT128
 #define _MATH_TYPE_MACROS_FLOAT128
 
-#include <math.h>
-#include <complex.h>
-
 #define M_LIT(c) __f128 (c)
 #define M_PFX FLT128
 #define M_SUF(c) c ## f128
@@ -36,6 +33,10 @@
 
 #ifndef declare_mgen_alias
 # define declare_mgen_alias(from, to) libm_alias_float128 (from, to)
+#endif
+
+#ifndef declare_mgen_alias_r
+# define declare_mgen_alias_r(from, to) libm_alias_float128_r (from, to, _r)
 #endif
 
 /* Supply the generic macros.  */

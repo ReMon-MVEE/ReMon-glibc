@@ -1,6 +1,6 @@
 /* Common definitions for libm tests for _Float128.
 
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -28,8 +28,17 @@
 #define CFLOAT __CFLOAT128
 #define BUILD_COMPLEX(real, imag) (CMPLXF128 ((real), (imag)))
 #define PREFIX FLT128
-#define TYPE_STR "float128"
+#if FLT128_MANT_DIG == LDBL_MANT_DIG
+# define TYPE_STR "ldouble"
+# define ULP_IDX ULP_LDBL
+# define ULP_I_IDX ULP_I_LDBL
+#else
+# define TYPE_STR "float128"
+# define ULP_IDX ULP_FLT128
+# define ULP_I_IDX ULP_I_FLT128
+#endif
 #define LIT(x) __f128 (x)
 #define LITM(x) x ## f128
 #define FTOSTR strfromf128
 #define snan_value_MACRO SNANF128
+#define FUNC_NARROW_PREFIX f128

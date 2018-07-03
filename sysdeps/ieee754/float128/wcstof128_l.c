@@ -1,5 +1,5 @@
 /* Convert string representing a number to integer value, using given locale.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -23,8 +23,5 @@
 #define	USE_WIDE_CHAR	1
 
 #include <bits/floatn.h>
-
-extern _Float128 ____wcstof128_l_internal (const wchar_t *, wchar_t **, int,
-					   locale_t);
 
 #include "strtof128_l.c"

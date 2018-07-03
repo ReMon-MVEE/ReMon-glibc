@@ -1,5 +1,5 @@
 /* Definition for thread-local data handling.  nptl/i386 version.
-   Copyright (C) 2002-2017 Free Software Foundation, Inc.
+   Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -411,6 +411,7 @@ tls_fill_user_desc (union user_desc_init *desc,
 
 
 /* Get and set the global scope generation counter in the TCB head.  */
+#define THREAD_GSCOPE_IN_TCB      1
 #define THREAD_GSCOPE_FLAG_UNUSED 0
 #define THREAD_GSCOPE_FLAG_USED   1
 #define THREAD_GSCOPE_FLAG_WAIT   2

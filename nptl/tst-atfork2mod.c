@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
 
@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <dso_handle.h>
 
 
 extern int val;
@@ -46,7 +47,6 @@ static void
 __attribute__ ((constructor))
 init (void)
 {
-  extern void *__dso_handle;
   printf ("dsohandle = %p\n", __dso_handle);
 
   if (pthread_atfork (prepare, parent, child) != 0)

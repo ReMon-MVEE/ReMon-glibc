@@ -1,5 +1,5 @@
 /* Double-precision floating point 2^x.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Geoffrey Keating <geoffk@ozemail.com.au>
 
@@ -29,7 +29,9 @@
 #include <math.h>
 #include <fenv.h>
 #include <inttypes.h>
+#include <math-barriers.h>
 #include <math_private.h>
+#include <math-underflow.h>
 
 #include "t_exp2.h"
 

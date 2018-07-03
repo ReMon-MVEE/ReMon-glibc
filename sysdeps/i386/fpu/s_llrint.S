@@ -1,6 +1,6 @@
 /* Round argument to nearest integral value according to current rounding
    direction.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -19,6 +19,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-double.h>
 
 	.text
 ENTRY(__llrint)
@@ -33,4 +34,4 @@ ENTRY(__llrint)
 	cfi_adjust_cfa_offset (-4)
 	ret
 END(__llrint)
-weak_alias (__llrint, llrint)
+libm_alias_double (__llrint, llrint)

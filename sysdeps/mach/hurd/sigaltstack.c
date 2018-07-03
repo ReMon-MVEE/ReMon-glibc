@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -57,4 +57,5 @@ __sigaltstack (const stack_t *argss, stack_t *oss)
 
   return 0;
 }
+libc_hidden_def (__sigaltstack)
 weak_alias (__sigaltstack, sigaltstack)

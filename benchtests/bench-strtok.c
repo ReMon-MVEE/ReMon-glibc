@@ -1,5 +1,5 @@
 /* Measure strtok functions.
-   Copyright (C) 2013-2017 Free Software Foundation, Inc.
+   Copyright (C) 2013-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -42,7 +42,7 @@ oldstrtok (char *s, const char *delim)
   s = strpbrk (token, delim);
   if (s == NULL)
     /* This token finishes the string.  */
-    olds = __rawmemchr (token, '\0');
+    olds = rawmemchr (token, '\0');
   else
     {
       /* Terminate the token and make OLDS point past it.  */

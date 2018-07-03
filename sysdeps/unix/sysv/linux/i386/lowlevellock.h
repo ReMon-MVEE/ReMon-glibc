@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -26,7 +26,14 @@
 # include <sys/param.h>
 # include <bits/pthreadtypes.h>
 # include <kernel-features.h>
-# include <tcb-offsets.h>
+/* <tcb-offsets.h> is generated from tcb-offsets.sym to define offsets
+   and sizes of types in <tls.h> as well as <pthread.h> which includes
+   <lowlevellock.h> via nptl/descr.h.  Don't include <tcb-offsets.h>
+   when generating <tcb-offsets.h> to avoid circular dependency which
+   may lead to build hang on a many-core machine.  */
+# ifndef GEN_AS_CONST_HEADERS
+#  include <tcb-offsets.h>
+# endif
 
 # ifndef LOCK_INSTR
 #  ifdef UP
@@ -237,12 +244,7 @@ extern int __lll_timedwait_tid (int *tid, const struct timespec *abstime)
   ({									      \
     int __result = 0;							      \
     if ((tid) != 0)							      \
-      {									      \
-	if ((abstime)->tv_nsec < 0 || (abstime)->tv_nsec >= 1000000000)	      \
-	  __result = EINVAL;						      \
-	else								      \
-	  __result = __lll_timedwait_tid (&(tid), (abstime));		      \
-      }									      \
+      __result = __lll_timedwait_tid (&(tid), (abstime));		      \
     __result; })
 
 

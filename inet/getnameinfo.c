@@ -1,5 +1,5 @@
 /* Convert socket address to string using Name Service Switch modules.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -73,9 +73,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <scratch_buffer.h>
 
 #ifdef HAVE_LIBIDN
-# include <libidn/idna.h>
-extern int __idna_to_unicode_lzlz (const char *input, char **output,
-				   int flags);
+# include <idna.h>
 #endif
 
 #ifndef min

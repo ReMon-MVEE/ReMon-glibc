@@ -1,5 +1,5 @@
 /* O_*, F_*, FD_* bit values. 4.4BSD/Generic version.
-   Copyright (C) 1991-2017 Free Software Foundation, Inc.
+   Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -63,10 +63,7 @@
 #endif
 
 #ifdef __USE_MISC
-/* Bits in the file status flags returned by F_GETFL.
-   These are all the O_* flags, plus FREAD and FWRITE, which are
-   independent bits set by which of O_RDONLY, O_WRONLY, and O_RDWR, was
-   given to `open'.  */
+/* Flags for TIOCFLUSH.  */
 # define FREAD		1
 # define FWRITE		2
 

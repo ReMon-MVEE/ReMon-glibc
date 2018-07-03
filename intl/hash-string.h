@@ -1,5 +1,5 @@
 /* Description of GNU message catalog format: string hashing function.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -31,4 +31,5 @@
 /* Defines the so called `hashpjw' function by P.J. Weinberger
    [see Aho/Sethi/Ullman, COMPILERS: Principles, Techniques and Tools,
    1986, 1987 Bell Telephone Laboratories, Inc.]  */
-extern unsigned long int __hash_string (const char *str_param);
+extern unsigned long int __hash_string (const char *str_param)
+     attribute_hidden;

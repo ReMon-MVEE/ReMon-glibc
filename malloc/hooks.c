@@ -1,5 +1,5 @@
 /* Malloc implementation for multiple threads without lock contention.
-   Copyright (C) 2001-2017 Free Software Foundation, Inc.
+   Copyright (C) 2001-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Wolfram Gloger <wg@malloc.de>, 2001.
 
@@ -345,11 +345,18 @@ realloc_check (void *oldmem, size_t bytes, const void *caller)
       newmem = _int_realloc (&main_arena, oldp, oldsize, nb);
     }
 
+  DIAG_PUSH_NEEDS_COMMENT;
+#if __GNUC_PREREQ (7, 0)
+  /* GCC 7 warns about magic_p may be used uninitialized.  But we never
+     reach here if magic_p is uninitialized.  */
+  DIAG_IGNORE_NEEDS_COMMENT (7, "-Wmaybe-uninitialized");
+#endif
   /* mem2chunk_check changed the magic byte in the old chunk.
      If newmem is NULL, then the old chunk will still be used though,
      so we need to invert that change here.  */
   if (newmem == NULL)
     *magic_p ^= 0xFF;
+  DIAG_POP_NEEDS_COMMENT;
 
   __libc_lock_unlock (main_arena.mutex);
 

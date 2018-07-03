@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Martin Schwidefsky <schwidefsky@de.ibm.com>, 2003.
 
@@ -22,7 +22,6 @@
 #include <sysdeps/nptl/lowlevellock.h>
 
 /* Transactional lock elision definitions.  */
-# ifdef ENABLE_LOCK_ELISION
 extern int __lll_timedlock_elision
   (int *futex, short *adapt_count, const struct timespec *timeout, int private)
   attribute_hidden;
@@ -45,6 +44,5 @@ extern int __lll_trylock_elision(int *futex, short *adapt_count)
   __lll_unlock_elision (&(futex), &(adapt_count), private)
 #  define lll_trylock_elision(futex, adapt_count) \
   __lll_trylock_elision(&(futex), &(adapt_count))
-# endif  /* ENABLE_LOCK_ELISION */
 
 #endif	/* lowlevellock.h */

@@ -1,4 +1,4 @@
-/* Copyright (C) 1999-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1999-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jj@ultra.linux.cz>, 1999.
 
@@ -20,12 +20,4 @@
 #define STACK_BIAS 2047
 #endif
 #define SIGCONTEXT struct sigcontext *
-#define SIGCONTEXT_EXTRA_ARGS
 #define GET_PC(__ctx)	((void *) ((__ctx)->sigc_regs.tpc))
-#define ADVANCE_STACK_FRAME(__next) \
-	((void *) (((unsigned long *) (((unsigned long int) (__next))     \
-					   + STACK_BIAS))+14))
-#define GET_STACK(__ctx)	((void *) ((__ctx)->sigc_regs.u_regs[14]))
-#define GET_FRAME(__ctx)	ADVANCE_STACK_FRAME (GET_STACK (__ctx))
-#define CALL_SIGHANDLER(handler, signo, ctx) \
-  (handler)((signo), SIGCONTEXT_EXTRA_ARGS (ctx))

@@ -1,5 +1,5 @@
 /* copysign().  PowerPC64 default version.
-   Copyright (C) 2010-2017 Free Software Foundation, Inc.
+   Copyright (C) 2010-2018 Free Software Foundation, Inc.
    Contributed by Luis Machado <luisgpm@br.ibm.com>.
    This file is part of the GNU C Library.
 
@@ -17,8 +17,7 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#include <sysdep.h>
-#include <math_ldbl_opt.h>
+#include <shlib-compat.h>
 
 #undef weak_alias
 #define weak_alias(a,b)

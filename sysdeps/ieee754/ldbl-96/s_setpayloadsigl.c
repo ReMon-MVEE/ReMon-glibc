@@ -1,3 +1,4 @@
 #define SIG 1
-#define FUNC setpayloadsigl
+#define FUNC __setpayloadsigl
 #include <s_setpayloadl_main.c>
+libm_alias_ldouble (__setpayloadsig, setpayloadsig)

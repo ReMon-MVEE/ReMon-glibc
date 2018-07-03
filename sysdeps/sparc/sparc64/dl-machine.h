@@ -1,5 +1,5 @@
 /* Machine-dependent ELF dynamic relocation inline functions.  Sparc64 version.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -403,12 +403,13 @@ elf_machine_rela (struct link_map *map, const Elf64_Rela *reloc,
   if (__builtin_expect (ELF64_ST_BIND (sym->st_info) == STB_LOCAL, 0)
       && sym->st_shndx != SHN_UNDEF)
     {
+      sym_map = map;
       value = map->l_addr;
     }
   else
     {
       sym_map = RESOLVE_MAP (&sym, version, r_type);
-      value = sym_map == NULL ? 0 : sym_map->l_addr + sym->st_value;
+      value = SYMBOL_ADDRESS (sym_map, sym, true);
     }
 #else
   value = 0;

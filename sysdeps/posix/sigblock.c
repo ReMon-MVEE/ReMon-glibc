@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -35,4 +35,5 @@ __sigblock (int mask)
   return sigset_get_old_mask (&oset);
 }
 
+libc_hidden_def (__sigblock)
 weak_alias (__sigblock, sigblock)

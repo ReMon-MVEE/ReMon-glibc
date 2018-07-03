@@ -1,5 +1,5 @@
 /* Truncate double value.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -18,6 +18,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <machine/asm.h>
+#include <libm-alias-double.h>
 
 ENTRY(__trunc)
 	fldl	4(%esp)
@@ -34,4 +35,4 @@ ENTRY(__trunc)
 	cfi_adjust_cfa_offset (-32)
 	ret
 END(__trunc)
-weak_alias (__trunc, trunc)
+libm_alias_double (__trunc, trunc)

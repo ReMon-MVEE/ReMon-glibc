@@ -1,6 +1,6 @@
 /* Data structure for communication from the run-time dynamic linker for
    loaded ELF shared objects.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -203,6 +203,8 @@ struct link_map
 				       freed, ie. not allocated with
 				       the dummy malloc in ld.so.  */
 
+#include <link_map.h>
+
     /* Collected information about own RPATH directories.  */
     struct r_search_path_struct l_rpath_dirs;
 
@@ -341,6 +343,7 @@ struct link_map
 extern int __dl_iterate_phdr (int (*callback) (struct dl_phdr_info *info,
 					       size_t size, void *data),
 			      void *data);
+hidden_proto (__dl_iterate_phdr)
 
 /* We use this macro to refer to ELF macros independent of the native
    wordsize.  `ELFW(R_TYPE)' is used in place of `ELF32_R_TYPE' or

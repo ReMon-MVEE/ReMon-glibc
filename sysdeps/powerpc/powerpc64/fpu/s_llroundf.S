@@ -1,5 +1,5 @@
 /* llroundf function.  PowerPC64 version.
-   Copyright (C) 2004-2017 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,6 +17,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-float.h>
 
 	.section	".toc","aw"
 .LC0:	/* 2^23 */
@@ -83,6 +84,6 @@ ENTRY (__llroundf)
 	END (__llroundf)
 
 strong_alias (__llroundf, __lroundf)
-weak_alias (__llroundf, llroundf)
-weak_alias (__lroundf, lroundf)
+libm_alias_float (__llround, llround)
+libm_alias_float (__lround, lround)
 

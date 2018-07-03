@@ -1,5 +1,5 @@
 /* Wrapper to set errno for sqrt.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,6 +21,7 @@
    for each floating-point type.  */
 #if __USE_WRAPPER_TEMPLATE
 
+# define NO_MATH_REDIRECT
 # include <errno.h>
 # include <fenv.h>
 # include <math.h>

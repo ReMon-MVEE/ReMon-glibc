@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -36,16 +36,16 @@
    necessary.  Returns the number of characters read (not including the
    null terminator), or -1 on error or EOF.  */
 
-_IO_ssize_t
-_IO_getdelim (char **lineptr, _IO_size_t *n, int delimiter, _IO_FILE *fp)
+ssize_t
+_IO_getdelim (char **lineptr, size_t *n, int delimiter, FILE *fp)
 {
-  _IO_ssize_t result;
-  _IO_ssize_t cur_len = 0;
-  _IO_ssize_t len;
+  ssize_t result;
+  ssize_t cur_len = 0;
+  ssize_t len;
 
   if (lineptr == NULL || n == NULL)
     {
-      MAYBE_SET_EINVAL;
+      __set_errno (EINVAL);
       return -1;
     }
   CHECK_FILE (fp, -1);
@@ -80,7 +80,7 @@ _IO_getdelim (char **lineptr, _IO_size_t *n, int delimiter, _IO_FILE *fp)
 
   for (;;)
     {
-      _IO_size_t needed;
+      size_t needed;
       char *t;
       t = (char *) memchr ((void *) fp->_IO_read_ptr, delimiter, len);
       if (t != NULL)

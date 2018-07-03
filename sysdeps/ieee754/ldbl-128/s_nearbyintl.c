@@ -25,7 +25,9 @@
 
 #include <fenv.h>
 #include <math.h>
+#include <math-barriers.h>
 #include <math_private.h>
+#include <libm-alias-ldouble.h>
 
 static const _Float128
 TWO112[2]={
@@ -45,7 +47,7 @@ _Float128 __nearbyintl(_Float128 x)
 	if(j0<112) {
 	    if(j0<0) {
 		feholdexcept (&env);
-	        w = TWO112[sx]+x;
+	        w = TWO112[sx] + math_opt_barrier (x);
 	        t = w-TWO112[sx];
 		math_force_eval (t);
 	        fesetenv (&env);
@@ -58,10 +60,10 @@ _Float128 __nearbyintl(_Float128 x)
 	    else return x;		/* x is integral */
 	}
 	feholdexcept (&env);
-	w = TWO112[sx]+x;
+	w = TWO112[sx] + math_opt_barrier (x);
 	t = w-TWO112[sx];
 	math_force_eval (t);
 	fesetenv (&env);
 	return t;
 }
-weak_alias (__nearbyintl, nearbyintl)
+libm_alias_ldouble (__nearbyint, nearbyint)

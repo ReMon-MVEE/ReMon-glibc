@@ -1,5 +1,5 @@
 /* Multiple versions of __rintf.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,6 +16,8 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include <libm-alias-float.h>
+
 #define rintf __redirect_rintf
 #define __rintf __redirect___rintf
 #include <math.h>
@@ -26,4 +28,4 @@
 #include "ifunc-sse4_1.h"
 
 libc_ifunc_redirected (__redirect_rintf, __rintf, IFUNC_SELECTOR ());
-weak_alias (__rintf, rintf)
+libm_alias_float (__rint, rint)

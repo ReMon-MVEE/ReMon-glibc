@@ -65,6 +65,7 @@
  */
 
 #include <math.h>
+#include <math-barriers.h>
 #include <math_private.h>
 
 static const _Float128 bp[] = {
@@ -233,7 +234,7 @@ __ieee754_powl (_Float128 x, _Float128 y)
       if (hy == 0x3ffe0000)
 	{			/* y is  0.5 */
 	  if (hx >= 0)		/* x >= +0 */
-	    return __ieee754_sqrtl (x);
+	    return sqrtl (x);
 	}
     }
 

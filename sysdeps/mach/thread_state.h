@@ -1,5 +1,5 @@
 /* Generic definitions for dealing with Mach thread states.
-   Copyright (C) 1994-2017 Free Software Foundation, Inc.
+   Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -36,6 +36,12 @@
 #define MACHINE_THREAD_STATE_SET_SP(ts, stack, size) \
   ((ts)->SP = (unsigned long int) (stack) + (size))
 #endif
+#endif
+
+/* This copies architecture-specific bits from the current thread to the new
+   thread state.  */
+#ifndef MACHINE_THREAD_STATE_FIX_NEW
+# define MACHINE_THREAD_STATE_FIX_NEW(ts)
 #endif
 
 /* These functions are of use in machine-dependent signal trampoline

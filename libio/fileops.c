@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Per Bothner <bothner@cygnus.com>.
 
@@ -109,7 +109,7 @@ _IO_new_file_init_internal (struct _IO_FILE_plus *fp)
      of our file descriptor.  Hence we actually don't know the actual
      position before we do the first fseek (and until a following fflush). */
   fp->file._offset = _IO_pos_BAD;
-  fp->file._IO_file_flags |= CLOSED_FILEBUF_FLAGS;
+  fp->file._flags |= CLOSED_FILEBUF_FLAGS;
 
   _IO_link_in (fp);
   fp->file._fileno = -1;
@@ -125,7 +125,7 @@ _IO_new_file_init (struct _IO_FILE_plus *fp)
 }
 
 int
-_IO_new_file_close_it (_IO_FILE *fp)
+_IO_new_file_close_it (FILE *fp)
 {
   int write_status;
   if (!_IO_file_is_open (fp))
@@ -165,7 +165,7 @@ _IO_new_file_close_it (_IO_FILE *fp)
 libc_hidden_ver (_IO_new_file_close_it, _IO_file_close_it)
 
 void
-_IO_new_file_finish (_IO_FILE *fp, int dummy)
+_IO_new_file_finish (FILE *fp, int dummy)
 {
   if (_IO_file_is_open (fp))
     {
@@ -177,8 +177,8 @@ _IO_new_file_finish (_IO_FILE *fp, int dummy)
 }
 libc_hidden_ver (_IO_new_file_finish, _IO_file_finish)
 
-_IO_FILE *
-_IO_file_open (_IO_FILE *fp, const char *filename, int posix_mode, int prot,
+FILE *
+_IO_file_open (FILE *fp, const char *filename, int posix_mode, int prot,
 	       int read_write, int is32not64)
 {
   int fdesc;
@@ -196,7 +196,7 @@ _IO_file_open (_IO_FILE *fp, const char *filename, int posix_mode, int prot,
   if ((read_write & (_IO_IS_APPENDING | _IO_NO_READS))
       == (_IO_IS_APPENDING | _IO_NO_READS))
     {
-      _IO_off64_t new_pos = _IO_SYSSEEK (fp, 0, _IO_seek_end);
+      off64_t new_pos = _IO_SYSSEEK (fp, 0, _IO_seek_end);
       if (new_pos == _IO_pos_BAD && errno != ESPIPE)
 	{
 	  __close_nocancel (fdesc);
@@ -208,15 +208,15 @@ _IO_file_open (_IO_FILE *fp, const char *filename, int posix_mode, int prot,
 }
 libc_hidden_def (_IO_file_open)
 
-_IO_FILE *
-_IO_new_file_fopen (_IO_FILE *fp, const char *filename, const char *mode,
+FILE *
+_IO_new_file_fopen (FILE *fp, const char *filename, const char *mode,
 		    int is32not64)
 {
   int oflags = 0, omode;
   int read_write;
   int oprot = 0666;
   int i;
-  _IO_FILE *result;
+  FILE *result;
   const char *cs;
   const char *last_recognized;
 
@@ -364,8 +364,8 @@ _IO_new_file_fopen (_IO_FILE *fp, const char *filename, const char *mode,
 }
 libc_hidden_ver (_IO_new_file_fopen, _IO_file_fopen)
 
-_IO_FILE *
-_IO_new_file_attach (_IO_FILE *fp, int fd)
+FILE *
+_IO_new_file_attach (FILE *fp, int fd)
 {
   if (_IO_file_is_open (fp))
     return NULL;
@@ -376,7 +376,7 @@ _IO_new_file_attach (_IO_FILE *fp, int fd)
   /* We have to do that since that may be junk. */
   fp->_offset = _IO_pos_BAD;
   int save_errno = errno;
-  if (_IO_SEEKOFF (fp, (_IO_off64_t)0, _IO_seek_cur, _IOS_INPUT|_IOS_OUTPUT)
+  if (_IO_SEEKOFF (fp, (off64_t)0, _IO_seek_cur, _IOS_INPUT|_IOS_OUTPUT)
       == _IO_pos_BAD && errno != ESPIPE)
     return NULL;
   __set_errno (save_errno);
@@ -384,8 +384,8 @@ _IO_new_file_attach (_IO_FILE *fp, int fd)
 }
 libc_hidden_ver (_IO_new_file_attach, _IO_file_attach)
 
-_IO_FILE *
-_IO_new_file_setbuf (_IO_FILE *fp, char *p, _IO_ssize_t len)
+FILE *
+_IO_new_file_setbuf (FILE *fp, char *p, ssize_t len)
 {
   if (_IO_default_setbuf (fp, p, len) == NULL)
     return NULL;
@@ -399,10 +399,10 @@ _IO_new_file_setbuf (_IO_FILE *fp, char *p, _IO_ssize_t len)
 libc_hidden_ver (_IO_new_file_setbuf, _IO_file_setbuf)
 
 
-_IO_FILE *
-_IO_file_setbuf_mmap (_IO_FILE *fp, char *p, _IO_ssize_t len)
+FILE *
+_IO_file_setbuf_mmap (FILE *fp, char *p, ssize_t len)
 {
-  _IO_FILE *result;
+  FILE *result;
 
   /* Change the function table.  */
   _IO_JUMPS_FILE_plus (fp) = &_IO_file_jumps;
@@ -421,24 +421,23 @@ _IO_file_setbuf_mmap (_IO_FILE *fp, char *p, _IO_ssize_t len)
   return result;
 }
 
-static _IO_size_t new_do_write (_IO_FILE *, const char *, _IO_size_t);
+static size_t new_do_write (FILE *, const char *, size_t);
 
 /* Write TO_DO bytes from DATA to FP.
    Then mark FP as having empty buffers. */
 
 int
-_IO_new_do_write (_IO_FILE *fp, const char *data, _IO_size_t to_do)
+_IO_new_do_write (FILE *fp, const char *data, size_t to_do)
 {
   return (to_do == 0
-	  || (_IO_size_t) new_do_write (fp, data, to_do) == to_do) ? 0 : EOF;
+	  || (size_t) new_do_write (fp, data, to_do) == to_do) ? 0 : EOF;
 }
 libc_hidden_ver (_IO_new_do_write, _IO_do_write)
 
-static
-_IO_size_t
-new_do_write (_IO_FILE *fp, const char *data, _IO_size_t to_do)
+static size_t
+new_do_write (FILE *fp, const char *data, size_t to_do)
 {
-  _IO_size_t count;
+  size_t count;
   if (fp->_flags & _IO_IS_APPENDING)
     /* On a system without a proper O_APPEND implementation,
        you would need to sys_seek(0, SEEK_END) here, but is
@@ -448,7 +447,7 @@ new_do_write (_IO_FILE *fp, const char *data, _IO_size_t to_do)
     fp->_offset = _IO_pos_BAD;
   else if (fp->_IO_read_end != fp->_IO_write_base)
     {
-      _IO_off64_t new_pos
+      off64_t new_pos
 	= _IO_SYSSEEK (fp, fp->_IO_write_base - fp->_IO_read_end, 1);
       if (new_pos == _IO_pos_BAD)
 	return 0;
@@ -466,14 +465,13 @@ new_do_write (_IO_FILE *fp, const char *data, _IO_size_t to_do)
 }
 
 int
-_IO_new_file_underflow (_IO_FILE *fp)
+_IO_new_file_underflow (FILE *fp)
 {
-  _IO_ssize_t count;
-#if 0
-  /* SysV does not make this test; take it out for compatibility */
+  ssize_t count;
+
+  /* C99 requires EOF to be "sticky".  */
   if (fp->_flags & _IO_EOF_SEEN)
-    return (EOF);
-#endif
+    return EOF;
 
   if (fp->_flags & _IO_NO_READS)
     {
@@ -495,13 +493,9 @@ _IO_new_file_underflow (_IO_FILE *fp)
       _IO_doallocbuf (fp);
     }
 
-  /* Flush all line buffered files before reading. */
   /* FIXME This can/should be moved to genops ?? */
   if (fp->_flags & (_IO_LINE_BUF|_IO_UNBUFFERED))
     {
-#if 0
-      _IO_flush_all_linebuffered ();
-#else
       /* We used to flush all line-buffered stream.  This really isn't
 	 required by any standard.  My recollection is that
 	 traditional Unix systems did this for stdout.  stderr better
@@ -514,7 +508,6 @@ _IO_new_file_underflow (_IO_FILE *fp)
 	_IO_OVERFLOW (_IO_stdout, EOF);
 
       _IO_release_lock (_IO_stdout);
-#endif
     }
 
   _IO_switch_to_get_mode (fp);
@@ -557,7 +550,7 @@ libc_hidden_ver (_IO_new_file_underflow, _IO_file_underflow)
    If the file is no longer eligible for mmap, its jump tables are reset to
    the vanilla ones and we return nonzero.  */
 static int
-mmap_remap_check (_IO_FILE *fp)
+mmap_remap_check (FILE *fp)
 {
   struct stat64 st;
 
@@ -582,7 +575,7 @@ mmap_remap_check (_IO_FILE *fp)
 	{
 	  /* The file added some pages.  We need to remap it.  */
 	  void *p;
-#ifdef _G_HAVE_MREMAP
+#if _G_HAVE_MREMAP
 	  p = __mremap (fp->_IO_buf_base, ROUNDED (fp->_IO_buf_end
 						   - fp->_IO_buf_base),
 			ROUNDED (st.st_size), MREMAP_MAYMOVE);
@@ -653,7 +646,7 @@ mmap_remap_check (_IO_FILE *fp)
 
 /* Special callback replacing the underflow callbacks if we mmap the file.  */
 int
-_IO_file_underflow_mmap (_IO_FILE *fp)
+_IO_file_underflow_mmap (FILE *fp)
 {
   if (fp->_IO_read_ptr < fp->_IO_read_end)
     return *(unsigned char *) fp->_IO_read_ptr;
@@ -670,7 +663,7 @@ _IO_file_underflow_mmap (_IO_FILE *fp)
 }
 
 static void
-decide_maybe_mmap (_IO_FILE *fp)
+decide_maybe_mmap (FILE *fp)
 {
   /* We use the file in read-only mode.  This could mean we can
      mmap the file and use it without any copying.  But not all
@@ -732,7 +725,7 @@ decide_maybe_mmap (_IO_FILE *fp)
 }
 
 int
-_IO_file_underflow_maybe_mmap (_IO_FILE *fp)
+_IO_file_underflow_maybe_mmap (FILE *fp)
 {
   /* This is the first read attempt.  Choose mmap or vanilla operations
      and then punt to the chosen underflow routine.  */
@@ -742,7 +735,7 @@ _IO_file_underflow_maybe_mmap (_IO_FILE *fp)
 
 
 int
-_IO_new_file_overflow (_IO_FILE *f, int ch)
+_IO_new_file_overflow (FILE *f, int ch)
 {
   if (f->_flags & _IO_NO_WRITES) /* SET ERROR */
     {
@@ -803,9 +796,9 @@ _IO_new_file_overflow (_IO_FILE *f, int ch)
 libc_hidden_ver (_IO_new_file_overflow, _IO_file_overflow)
 
 int
-_IO_new_file_sync (_IO_FILE *fp)
+_IO_new_file_sync (FILE *fp)
 {
-  _IO_ssize_t delta;
+  ssize_t delta;
   int retval = 0;
 
   /*    char* ptr = cur_ptr(); */
@@ -814,12 +807,8 @@ _IO_new_file_sync (_IO_FILE *fp)
   delta = fp->_IO_read_ptr - fp->_IO_read_end;
   if (delta != 0)
     {
-#ifdef TODO
-      if (_IO_in_backup (fp))
-	delta -= eGptr () - Gbase ();
-#endif
-      _IO_off64_t new_pos = _IO_SYSSEEK (fp, delta, 1);
-      if (new_pos != (_IO_off64_t) EOF)
+      off64_t new_pos = _IO_SYSSEEK (fp, delta, 1);
+      if (new_pos != (off64_t) EOF)
 	fp->_IO_read_end = fp->_IO_read_ptr;
       else if (errno == ESPIPE)
 	; /* Ignore error from unseekable devices. */
@@ -835,14 +824,10 @@ _IO_new_file_sync (_IO_FILE *fp)
 libc_hidden_ver (_IO_new_file_sync, _IO_file_sync)
 
 static int
-_IO_file_sync_mmap (_IO_FILE *fp)
+_IO_file_sync_mmap (FILE *fp)
 {
   if (fp->_IO_read_ptr != fp->_IO_read_end)
     {
-#ifdef TODO
-      if (_IO_in_backup (fp))
-	delta -= eGptr () - Gbase ();
-#endif
       if (__lseek64 (fp->_fileno, fp->_IO_read_ptr - fp->_IO_buf_base,
 		     SEEK_SET)
 	  != fp->_IO_read_ptr - fp->_IO_buf_base)
@@ -859,10 +844,10 @@ _IO_file_sync_mmap (_IO_FILE *fp)
 /* ftell{,o} implementation.  The only time we modify the state of the stream
    is when we have unflushed writes.  In that case we seek to the end and
    record that offset in the stream object.  */
-static _IO_off64_t
-do_ftell (_IO_FILE *fp)
+static off64_t
+do_ftell (FILE *fp)
 {
-  _IO_off64_t result, offset = 0;
+  off64_t result, offset = 0;
 
   /* No point looking at unflushed data if we haven't allocated buffers
      yet.  */
@@ -918,11 +903,11 @@ do_ftell (_IO_FILE *fp)
   return result;
 }
 
-_IO_off64_t
-_IO_new_file_seekoff (_IO_FILE *fp, _IO_off64_t offset, int dir, int mode)
+off64_t
+_IO_new_file_seekoff (FILE *fp, off64_t offset, int dir, int mode)
 {
-  _IO_off64_t result;
-  _IO_off64_t delta, new_offset;
+  off64_t result;
+  off64_t delta, new_offset;
   long count;
 
   /* Short-circuit into a separate function.  We don't want to mix any
@@ -994,14 +979,17 @@ _IO_new_file_seekoff (_IO_FILE *fp, _IO_off64_t offset, int dir, int mode)
 	  goto dumb;
       }
     }
+
+  _IO_free_backup_area (fp);
+
   /* At this point, dir==_IO_seek_set. */
 
   /* If destination is within current buffer, optimize: */
   if (fp->_offset != _IO_pos_BAD && fp->_IO_read_base != NULL
       && !_IO_in_backup (fp))
     {
-      _IO_off64_t start_offset = (fp->_offset
-				  - (fp->_IO_read_end - fp->_IO_buf_base));
+      off64_t start_offset = (fp->_offset
+                              - (fp->_IO_read_end - fp->_IO_buf_base));
       if (offset >= start_offset && offset < fp->_offset)
 	{
 	  _IO_setg (fp, fp->_IO_buf_base,
@@ -1074,10 +1062,10 @@ resync:
 }
 libc_hidden_ver (_IO_new_file_seekoff, _IO_file_seekoff)
 
-_IO_off64_t
-_IO_file_seekoff_mmap (_IO_FILE *fp, _IO_off64_t offset, int dir, int mode)
+off64_t
+_IO_file_seekoff_mmap (FILE *fp, off64_t offset, int dir, int mode)
 {
-  _IO_off64_t result;
+  off64_t result;
 
   /* If we are only interested in the current position, calculate it and
      return right now.  This calculation does the right thing when we are
@@ -1129,15 +1117,15 @@ _IO_file_seekoff_mmap (_IO_FILE *fp, _IO_off64_t offset, int dir, int mode)
   return offset;
 }
 
-static _IO_off64_t
-_IO_file_seekoff_maybe_mmap (_IO_FILE *fp, _IO_off64_t offset, int dir,
+static off64_t
+_IO_file_seekoff_maybe_mmap (FILE *fp, off64_t offset, int dir,
 			     int mode)
 {
   /* We only get here when we haven't tried to read anything yet.
      So there is nothing more useful for us to do here than just
      the underlying lseek call.  */
 
-  _IO_off64_t result = _IO_SYSSEEK (fp, offset, dir);
+  off64_t result = _IO_SYSSEEK (fp, offset, dir);
   if (result < 0)
     return EOF;
 
@@ -1145,8 +1133,8 @@ _IO_file_seekoff_maybe_mmap (_IO_FILE *fp, _IO_off64_t offset, int dir,
   return result;
 }
 
-_IO_ssize_t
-_IO_file_read (_IO_FILE *fp, void *buf, _IO_ssize_t size)
+ssize_t
+_IO_file_read (FILE *fp, void *buf, ssize_t size)
 {
   return (__builtin_expect (fp->_flags2 & _IO_FLAGS2_NOTCANCEL, 0)
 	  ? __read_nocancel (fp->_fileno, buf, size)
@@ -1154,22 +1142,22 @@ _IO_file_read (_IO_FILE *fp, void *buf, _IO_ssize_t size)
 }
 libc_hidden_def (_IO_file_read)
 
-_IO_off64_t
-_IO_file_seek (_IO_FILE *fp, _IO_off64_t offset, int dir)
+off64_t
+_IO_file_seek (FILE *fp, off64_t offset, int dir)
 {
   return __lseek64 (fp->_fileno, offset, dir);
 }
 libc_hidden_def (_IO_file_seek)
 
 int
-_IO_file_stat (_IO_FILE *fp, void *st)
+_IO_file_stat (FILE *fp, void *st)
 {
   return __fxstat64 (_STAT_VER, fp->_fileno, (struct stat64 *) st);
 }
 libc_hidden_def (_IO_file_stat)
 
 int
-_IO_file_close_mmap (_IO_FILE *fp)
+_IO_file_close_mmap (FILE *fp)
 {
   /* In addition to closing the file descriptor we have to unmap the file.  */
   (void) __munmap (fp->_IO_buf_base, fp->_IO_buf_end - fp->_IO_buf_base);
@@ -1180,7 +1168,7 @@ _IO_file_close_mmap (_IO_FILE *fp)
 }
 
 int
-_IO_file_close (_IO_FILE *fp)
+_IO_file_close (FILE *fp)
 {
   /* Cancelling close should be avoided if possible since it leaves an
      unrecoverable state behind.  */
@@ -1188,14 +1176,14 @@ _IO_file_close (_IO_FILE *fp)
 }
 libc_hidden_def (_IO_file_close)
 
-_IO_ssize_t
-_IO_new_file_write (_IO_FILE *f, const void *data, _IO_ssize_t n)
+ssize_t
+_IO_new_file_write (FILE *f, const void *data, ssize_t n)
 {
-  _IO_ssize_t to_do = n;
+  ssize_t to_do = n;
   while (to_do > 0)
     {
-      _IO_ssize_t count = (__builtin_expect (f->_flags2
-					     & _IO_FLAGS2_NOTCANCEL, 0)
+      ssize_t count = (__builtin_expect (f->_flags2
+                                         & _IO_FLAGS2_NOTCANCEL, 0)
 			   ? __write_nocancel (f->_fileno, data, to_do)
 			   : __write (f->_fileno, data, to_do));
       if (count < 0)
@@ -1212,13 +1200,13 @@ _IO_new_file_write (_IO_FILE *f, const void *data, _IO_ssize_t n)
   return n;
 }
 
-_IO_size_t
-_IO_new_file_xsputn (_IO_FILE *f, const void *data, _IO_size_t n)
+size_t
+_IO_new_file_xsputn (FILE *f, const void *data, size_t n)
 {
   const char *s = (const char *) data;
-  _IO_size_t to_do = n;
+  size_t to_do = n;
   int must_flush = 0;
-  _IO_size_t count = 0;
+  size_t count = 0;
 
   if (n <= 0)
     return 0;
@@ -1258,7 +1246,7 @@ _IO_new_file_xsputn (_IO_FILE *f, const void *data, _IO_size_t n)
     }
   if (to_do + must_flush > 0)
     {
-      _IO_size_t block_size, do_write;
+      size_t block_size, do_write;
       /* Next flush the (full) buffer. */
       if (_IO_OVERFLOW (f, EOF) == EOF)
 	/* If nothing else has to be written we must not signal the
@@ -1287,11 +1275,11 @@ _IO_new_file_xsputn (_IO_FILE *f, const void *data, _IO_size_t n)
 }
 libc_hidden_ver (_IO_new_file_xsputn, _IO_file_xsputn)
 
-_IO_size_t
-_IO_file_xsgetn (_IO_FILE *fp, void *data, _IO_size_t n)
+size_t
+_IO_file_xsgetn (FILE *fp, void *data, size_t n)
 {
-  _IO_size_t want, have;
-  _IO_ssize_t count;
+  size_t want, have;
+  ssize_t count;
   char *s = data;
 
   want = n;
@@ -1353,7 +1341,7 @@ _IO_file_xsgetn (_IO_FILE *fp, void *data, _IO_size_t n)
 	  count = want;
 	  if (fp->_IO_buf_base)
 	    {
-	      _IO_size_t block_size = fp->_IO_buf_end - fp->_IO_buf_base;
+	      size_t block_size = fp->_IO_buf_end - fp->_IO_buf_base;
 	      if (block_size >= 128)
 		count -= want % block_size;
 	    }
@@ -1380,10 +1368,10 @@ _IO_file_xsgetn (_IO_FILE *fp, void *data, _IO_size_t n)
 }
 libc_hidden_def (_IO_file_xsgetn)
 
-static _IO_size_t
-_IO_file_xsgetn_mmap (_IO_FILE *fp, void *data, _IO_size_t n)
+static size_t
+_IO_file_xsgetn_mmap (FILE *fp, void *data, size_t n)
 {
-  _IO_size_t have;
+  size_t have;
   char *read_ptr = fp->_IO_read_ptr;
   char *s = (char *) data;
 
@@ -1425,8 +1413,8 @@ _IO_file_xsgetn_mmap (_IO_FILE *fp, void *data, _IO_size_t n)
   return s - (char *) data;
 }
 
-static _IO_size_t
-_IO_file_xsgetn_maybe_mmap (_IO_FILE *fp, void *data, _IO_size_t n)
+static size_t
+_IO_file_xsgetn_maybe_mmap (FILE *fp, void *data, size_t n)
 {
   /* We only get here if this is the first attempt to read something.
      Decide which operations to use and then punt to the chosen one.  */

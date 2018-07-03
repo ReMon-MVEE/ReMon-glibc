@@ -1,5 +1,5 @@
 /* elision-lock.c: Elided pthread mutex lock.
-   Copyright (C) 2015-2017 Free Software Foundation, Inc.
+   Copyright (C) 2015-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -45,6 +45,7 @@
 int
 __lll_lock_elision (int *lock, short *adapt_count, EXTRAARG int pshared)
 {
+#ifndef __SPE__
   /* adapt_count is accessed concurrently but is just a hint.  Thus,
      use atomic accesses but relaxed MO is sufficient.  */
   if (atomic_load_relaxed (adapt_count) > 0)
@@ -82,5 +83,6 @@ __lll_lock_elision (int *lock, short *adapt_count, EXTRAARG int pshared)
 			  aconf.skip_lock_out_of_tbegin_retries);
 
 use_lock:
+#endif
   return LLL_LOCK ((*lock), pshared);
 }

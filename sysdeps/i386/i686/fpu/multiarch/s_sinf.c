@@ -1,5 +1,5 @@
 /* Multiple versions of sinf
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,12 +17,13 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <init-arch.h>
+#include <libm-alias-float.h>
 
 extern float __sinf_sse2 (float);
 extern float __sinf_ia32 (float);
 float __sinf (float);
 
 libm_ifunc (__sinf, HAS_CPU_FEATURE (SSE2) ? __sinf_sse2 : __sinf_ia32);
-weak_alias (__sinf, sinf);
+libm_alias_float (__sin, sin);
 #define SINF __sinf_ia32
 #include <sysdeps/ieee754/flt-32/s_sinf.c>

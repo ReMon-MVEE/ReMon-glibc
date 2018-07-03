@@ -1,5 +1,5 @@
 /* s_sinf.c -- float version of s_sin.c.
-   Copyright (C) 2011-2017 Free Software Foundation, Inc.
+   Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Adhemerval Zanella <azanella@br.ibm.com>, 2011
 
@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <math.h>
 #include <math_private.h>
+#include <libm-alias-float.h>
 
 static const float pio4 = 7.8539801e-1;
 
@@ -66,4 +67,4 @@ __sinf (float x)
     }
 }
 
-weak_alias (__sinf, sinf)
+libm_alias_float (__sin, sin)

@@ -1,5 +1,5 @@
 /* Get NaN payload.  dbl-64/wordsize-64 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,16 +18,15 @@
 
 #include <math.h>
 #include <math_private.h>
+#include <libm-alias-double.h>
 #include <stdint.h>
 
 double
-getpayload (const double *x)
+__getpayload (const double *x)
 {
   uint64_t ix;
   EXTRACT_WORDS64 (ix, *x);
   ix &= 0x7ffffffffffffULL;
   return (double) ix;
 }
-#ifdef NO_LONG_DOUBLE
-weak_alias (getpayload, getpayloadl)
-#endif
+libm_alias_double (__getpayload, getpayload)

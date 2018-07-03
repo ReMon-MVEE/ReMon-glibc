@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Zack Weinberg <zack@rabi.phys.columbia.edu>, 1998.
 
@@ -31,7 +31,7 @@
 #define _PATH_DEVPTS _PATH_DEV "pts"
 
 /* Prototype for function that opens BSD-style master pseudo-terminals.  */
-int __bsd_getpt (void);
+extern int __bsd_getpt (void) attribute_hidden;
 
 /* Open a master pseudo terminal and return its file descriptor.  */
 int

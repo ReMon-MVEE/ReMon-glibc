@@ -1,5 +1,5 @@
 /* Prototypes for compatibility double == long double entry points.
-   Copyright (C) 2006-2017 Free Software Foundation, Inc.
+   Copyright (C) 2006-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@cygnus.com>, 2006.
 
@@ -82,23 +82,28 @@ extern ssize_t __nldbl___vstrfmon (char *, size_t, const char *, va_list)
 /* These don't use __typeof because they were not declared by the headers,
    since we don't compile with _FORTIFY_SOURCE.  */
 extern int __nldbl___vfprintf_chk (FILE *__restrict, int,
-				   const char *__restrict, _G_va_list);
+				   const char *__restrict, __gnuc_va_list);
 extern int __nldbl___vfwprintf_chk (FILE *__restrict, int,
 				    const wchar_t *__restrict, __gnuc_va_list);
 extern int __nldbl___vsprintf_chk (char *__restrict, int, size_t,
-				   const char *__restrict, _G_va_list) __THROW;
+				   const char *__restrict, __gnuc_va_list)
+  __THROW;
 extern int __nldbl___vsnprintf_chk (char *__restrict, size_t, int, size_t,
-				    const char *__restrict, _G_va_list)
+				    const char *__restrict, __gnuc_va_list)
   __THROW;
 extern int __nldbl___vswprintf_chk (wchar_t *__restrict, size_t, int, size_t,
 				    const wchar_t *__restrict, __gnuc_va_list)
   __THROW;
-extern int __nldbl___vasprintf_chk (char **, int, const char *, _G_va_list)
+extern int __nldbl___vasprintf_chk (char **, int, const char *, __gnuc_va_list)
   __THROW;
-extern int __nldbl___vdprintf_chk (int, int, const char *, _G_va_list);
+extern int __nldbl___vdprintf_chk (int, int, const char *, __gnuc_va_list);
 extern int __nldbl___obstack_vprintf_chk (struct obstack *, int, const char *,
-					  _G_va_list) __THROW;
+					  __gnuc_va_list) __THROW;
 extern void __nldbl___vsyslog_chk (int, int, const char *, va_list);
 
+/* The original declarations of these were hidden by the including
+   file.  */
+extern double __nldbl_daddl (double, double) __THROW;
+extern double __nldbl_dsubl (double, double) __THROW;
 
 #endif /* __NLDBL_COMPAT_H */

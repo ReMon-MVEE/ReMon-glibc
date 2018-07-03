@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl Note we do not use AC_PREREQ here!  See aclocal.m4 for what we use instead.
-AC_INIT([GNU C Library], [(see version.h)], [http://sourceware.org/bugzilla/], [glibc])
+AC_INIT([GNU C Library], [(see version.h)], [https://sourceware.org/bugzilla/], [glibc])
 AC_CONFIG_SRCDIR([include/features.h])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR([scripts])
@@ -19,7 +19,7 @@ AC_DEFUN([_AC_INCLUDES_DEFAULT_REQUIREMENTS],
 
 # We require GCC, and by default use its preprocessor.  Override AC_PROG_CPP
 # here to work around the Autoconf issue discussed in
-# <http://sourceware.org/ml/libc-alpha/2013-01/msg00721.html>.
+# <https://sourceware.org/ml/libc-alpha/2013-01/msg00721.html>.
 AC_DEFUN([AC_PROG_CPP],
 [AC_REQUIRE([AC_PROG_CC])dnl
 AC_ARG_VAR([CPP],      [C preprocessor])dnl
@@ -36,7 +36,7 @@ AC_SUBST(CPP)dnl
 
 # We require GCC.  Override _AC_PROG_CC_C89 here to work around the Autoconf
 # issue discussed in
-# <http://sourceware.org/ml/libc-alpha/2013-01/msg00757.html>.
+# <https://sourceware.org/ml/libc-alpha/2013-01/msg00757.html>.
 AC_DEFUN([_AC_PROG_CC_C89], [[$1]])
 
 dnl This is here so we can set $subdirs directly based on configure fragments.
@@ -127,12 +127,6 @@ libgd-LDFLAGS = $libgd_ldflags"
 fi
 
 dnl Arguments to specify presence of other packages/features.
-AC_ARG_WITH([fp],
-	    AC_HELP_STRING([--with-fp],
-			   [if using floating-point hardware @<:@default=yes@:>@]),
-	    [with_fp=$withval],
-	    [with_fp=yes])
-AC_SUBST(with_fp)
 AC_ARG_WITH([binutils],
 	    AC_HELP_STRING([--with-binutils=PATH],
 			   [specify location of binutils (as and ld)]),
@@ -176,6 +170,11 @@ AC_ARG_ENABLE([profile],
 			     [build profiled library @<:@default=no@:>@]),
 	      [profile=$enableval],
 	      [profile=no])
+AC_ARG_ENABLE([static-pie],
+	      AC_HELP_STRING([--enable-static-pie],
+			     [enable static PIE support and use it in the testsuite @<:@default=no@:>@]),
+	      [static_pie=$enableval],
+	      [static_pie=no])
 AC_ARG_ENABLE([timezone-tools],
 	      AC_HELP_STRING([--disable-timezone-tools],
 			     [do not install timezone tools @<:@default=install@:>@]),
@@ -198,23 +197,6 @@ AC_ARG_ENABLE([stackguard-randomization],
 if test "$enable_stackguard_randomize" = yes; then
   AC_DEFINE(ENABLE_STACKGUARD_RANDOMIZE)
 fi
-
-AC_ARG_ENABLE([lock-elision],
-	      AC_HELP_STRING([--enable-lock-elision[=yes/no]],
-			     [Enable lock elision for pthread mutexes by default]),
-	      [enable_lock_elision=$enableval],
-	      [enable_lock_elision=no])
-AC_SUBST(enable_lock_elision)
-if test "$enable_lock_elision" = yes ; then
-  AC_DEFINE(ENABLE_LOCK_ELISION)
-fi
-
-dnl Generic infrastructure for drop-in additions to libc.
-AC_ARG_ENABLE([add-ons],
-	      AC_HELP_STRING([--enable-add-ons@<:@=DIRS...@:>@],
-			     [configure and build add-ons in DIR1,DIR2,...
-			      search for add-ons if no parameter given]),
-			     , [enable_add_ons=yes])
 
 AC_ARG_ENABLE([hidden-plt],
 	      AC_HELP_STRING([--disable-hidden-plt],
@@ -330,8 +312,12 @@ if test x$nss_crypt = xyes; then
   if test $? -ne 0; then
     AC_MSG_ERROR([cannot find include directory with nss-config])
   fi
+  nspr_includes=-I$(nspr-config --includedir 2>/dev/null)
+  if test $? -ne 0; then
+    AC_MSG_ERROR([cannot find include directory with nspr-config])
+  fi
   old_CFLAGS="$CFLAGS"
-  CFLAGS="$CFLAGS $nss_includes"
+  CFLAGS="$CFLAGS $nss_includes $nspr_includes"
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([typedef int PRBool;
 #include <hasht.h>
 #include <nsslowhash.h>
@@ -479,7 +465,7 @@ config_os="`echo $config_os | sed 's/^unknown-//'`"
 # Some configurations imply other options.
 elf=yes
 
-# The configure fragment of an add-on port can modify these to supplement
+# The configure fragment of a port can modify these to supplement
 # or override the table in the case statement below.  No fragment should
 # ever change the config_* variables, however.
 machine=$config_machine
@@ -502,137 +488,13 @@ AC_ARG_WITH([cpu],
 # check below.
 libc_config_ok=no
 
-dnl Let sysdeps/*/preconfigure act here, like they can in add-ons.
+# A preconfigure script for a system that may or may not use fpu
+# sysdeps directories sets this to a preprocessor conditional for
+# whether to use such directories.
+with_fp_cond=1
+
+dnl Let sysdeps/*/preconfigure act here.
 LIBC_PRECONFIGURE([$srcdir], [for sysdeps])
-
-dnl Having this here, though empty, makes sure that if add-ons' fragments
-dnl do AC_CONFIG_SUBDIRS([some-dir]), which just sets $subdirs, then
-dnl our AC_OUTPUT will actually use it.
-AC_CONFIG_SUBDIRS()
-
-case "$enable_add_ons" in
-''|no) add_ons= ;;
-yes|'*')
- add_ons=`cd $srcdir && ls -d 2> /dev/null */configure */sysdeps |
-	  sed 's@/[[^/]]*$@@' | sort | uniq`
-	 add_ons_automatic=yes
-	 ;;
-*) add_ons=`echo "$enable_add_ons" | sed 's/,/ /g'`
-       add_ons_automatic=no ;;
-esac
-
-configured_add_ons=
-add_ons_sfx=
-add_ons_pfx=
-if test x"$add_ons" != x; then
-  for f in $add_ons; do
-    # Some sanity checks
-    case "$f" in
-    crypt)
-      AC_MSG_ERROR([
-*** It seems that you're using an old \`crypt' add-on.  crypt is now
-*** part of glibc and using the old add-on will not work with this
-*** release.  Start again with fresh sources and without the old
-*** \`crypt' add-on.])
-    ;;
-    localedata)
-      AC_MSG_ERROR([
-*** It seems that you're using an old \`localedata' add-on.  localedata
-*** is now part of glibc and using the old add-on will not work with
-*** this release.  Start again with fresh sources and without the old
-*** \`localedata' add-on.])
-    ;;
-    esac
-  done
-
-  # Now source each add-on's configure fragment.
-  # The fragments can use $srcdir/$libc_add_on to find themselves,
-  # and test $add_ons_automatic to see if they were explicitly requested.
-  # A fragment can clear (or even change) $libc_add_on to affect
-  # whether it goes into the list to be actually used in the build.
-  use_add_ons=
-  for libc_add_on in $add_ons; do
-    # Test whether such a directory really exists.
-    # It can be absolute, or relative to $srcdir, or relative to the build dir.
-    case "$libc_add_on" in
-    /*)
-      libc_add_on_srcdir=$libc_add_on
-      ;;
-    *)
-      test -d "$srcdir/$libc_add_on" || {
-	if test -d "$libc_add_on"; then
-	  libc_add_on="`pwd`/$libc_add_on"
-	else
-	  AC_MSG_ERROR(add-on directory \"$libc_add_on\" does not exist)
-	fi
-      }
-      libc_add_on_srcdir=$srcdir/$libc_add_on
-      ;;
-    esac
-
-    libc_add_on_frag=$libc_add_on_srcdir/configure
-    libc_add_on_canonical=
-    libc_add_on_config_subdirs=
-    if test -r "$libc_add_on_frag"; then
-      AC_MSG_NOTICE(running configure fragment for add-on $libc_add_on)
-      libc_add_on_canonical=unknown
-      libc_add_on_subdirs=
-      . "$libc_add_on_frag"
-      test -z "$libc_add_on" || {
-	configured_add_ons="$configured_add_ons $libc_add_on"
-	if test "x$libc_add_on_canonical" = xunknown; then
-	  AC_MSG_ERROR(fragment must set \$libc_add_on_canonical)
-	fi
-	for d in $libc_add_on_subdirs; do
-	  case "$libc_add_on" in
-	  /*) subdir_srcdir="$libc_add_on" ;;
-	  *) subdir_srcdir="\$(..)$libc_add_on" ;;
-	  esac
-	  case "$d" in
-	  .)
-	    d="${libc_add_on_canonical:-$libc_add_on}"
-	    ;;
-	  /*)
-	    subdir_srcdir="$d"
-	    ;;
-	  *)
-	    subdir_srcdir="$subdir_srcdir/$d"
-	    ;;
-	  esac
-	  d=`echo "$d" | sed 's@/*$@@;s@^.*/@@'`
-	  add_on_subdirs="$add_on_subdirs $d"
-	  test "$subdir_srcdir" = "\$(..)$d" || config_vars="$config_vars
-$d-srcdir = $subdir_srcdir"
-	done
-	for d in $libc_add_on_config_subdirs; do
-	  case "$d" in
-	  /*) AC_MSG_ERROR(dnl
-fragment uses absolute path in \$libc_add_on_config_subdirs) ;;
-	  esac
-	  if test ! -d "$libc_add_on_srcdir/$d"; then
-	    AC_MSG_ERROR(fragment wants to configure missing directory $d)
-	  fi
-	  case "$libc_add_on" in
-	  /*) AC_MSG_ERROR(dnl
-relative path required for add-on using \$libc_add_on_config_subdirs) ;;
-	  esac
-	  subdirs="$subdirs $libc_add_on/$d"
-	done
-      }
-    fi
-    if test -n "$libc_add_on"; then
-      LIBC_PRECONFIGURE([$libc_add_on_srcdir], [add-on $libc_add_on for])
-      use_add_ons="$use_add_ons $libc_add_on"
-      add_ons_pfx="$add_ons_pfx $libc_add_on/"
-      test -z "$libc_add_on_canonical" ||
-      add_ons_sfx="$add_ons_sfx /$libc_add_on_canonical"
-    fi
-  done
-  # Use echo to strip excess whitespace.
-  add_ons="`echo $use_add_ons`"
-fi
-AC_SUBST(add_ons)
-AC_SUBST(add_on_subdirs)
 
 
 ###
@@ -658,6 +520,24 @@ fi
 # Set base_machine if not set by a preconfigure fragment.
 test -n "$base_machine" || base_machine=$machine
 AC_SUBST(base_machine)
+
+# Determine whether to use fpu or nofpu sysdeps directories.
+AC_CACHE_CHECK([for use of fpu sysdeps directories],
+	       libc_cv_with_fp, [dnl
+cat > conftest.c <<EOF
+#if $with_fp_cond
+int dummy;
+#else
+# error "no hardware floating point"
+#endif
+EOF
+libc_cv_with_fp=no
+if ${CC-cc} $CFLAGS $CPPFLAGS -S conftest.c -o conftest.s \
+   1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD ; then
+  libc_cv_with_fp=yes
+fi
+rm -f conftest*])
+AC_SUBST(libc_cv_with_fp)
 
 AC_CACHE_CHECK(for -fstack-protector, libc_cv_ssp, [dnl
 LIBC_TRY_CC_OPTION([$CFLAGS $CPPFLAGS -Werror -fstack-protector],
@@ -766,6 +646,26 @@ if ${CC-cc} -c conftest.c -o conftest.o 1>&AS_MESSAGE_LOG_FD \
 fi
 rm -f conftest*])
 
+# Check if gcc warns about alias for function with incompatible types.
+AC_CACHE_CHECK([if compiler warns about alias for function with incompatible types],
+	       libc_cv_gcc_incompatible_alias, [dnl
+cat > conftest.c <<EOF
+int __redirect_foo (const void *s, int c);
+
+__typeof (__redirect_foo) *foo_impl (void) __asm__ ("foo");
+__typeof (__redirect_foo) *foo_impl (void)
+{
+  return 0;
+}
+
+extern __typeof (__redirect_foo) foo_alias __attribute__ ((alias ("foo")));
+EOF
+libc_cv_gcc_incompatible_alias=yes
+if ${CC-cc} -Werror -c conftest.c -o conftest.o 1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD ; then
+  libc_cv_gcc_incompatible_alias=no
+fi
+rm -f conftest*])
+
 if test x"$libc_cv_ld_gnu_indirect_function" != xyes; then
   if test x"$multi_arch" = xyes; then
     AC_MSG_ERROR([--enable-multi-arch support requires assembler and linker support])
@@ -773,10 +673,21 @@ if test x"$libc_cv_ld_gnu_indirect_function" != xyes; then
     multi_arch=no
   fi
 fi
-if test x"$libc_cv_gcc_indirect_function" != xyes &&
-   test x"$multi_arch" = xyes; then
-  AC_MSG_WARN([--enable-multi-arch support recommends a gcc with gnu-indirect-function support.
+if test x"$libc_cv_gcc_indirect_function" != xyes; then
+  # GCC 8+ emits a warning for alias with incompatible types and it might
+  # fail to build ifunc resolvers aliases to either weak or internal
+  # symbols.  Disables multiarch build in this case.
+  if test x"$libc_cv_gcc_incompatible_alias" == xyes; then
+    AC_MSG_WARN([gcc emits a warning for alias between functions of incompatible types])
+    if test x"$multi_arch" = xyes; then
+      AC_MSG_ERROR([--enable-multi-arch support requires a gcc with gnu-indirect-function support])
+    fi
+    AC_MSG_WARN([Multi-arch is disabled.])
+    multi_arch=no
+  elif test x"$multi_arch" = xyes; then
+    AC_MSG_WARN([--enable-multi-arch support recommends a gcc with gnu-indirect-function support.
 Please use a gcc which supports it by default or configure gcc with --enable-gnu-indirect-function])
+  fi
 fi
 multi_arch_d=
 if test x"$multi_arch" != xno; then
@@ -831,7 +742,7 @@ tail=$machine${submachine:+/$submachine}
 while m=`echo $tail | sed 's@^\(.*\)/\([^/]*\)$@& \1@'`; test -n "$m"; do
   set $m
   # Prepend the machine's FPU directory unless --without-fp.
-  if test "$with_fp" = yes; then
+  if test "$libc_cv_with_fp" = yes; then
     maybe_fpu=/fpu
   else
     maybe_fpu=/nofpu
@@ -849,7 +760,6 @@ dnl We are done with glob and regexp uses of [ and ]; return to autoconf.
 changequote([,])dnl
 
 # Find what sysdep directories exist.
-sysnames_add_ons=
 sysnames=
 for b in $base ''; do
   for m0 in $mach ''; do
@@ -858,34 +768,21 @@ for b in $base ''; do
       for o in /$ostry ''; do
 	test "$o" = / && continue
 	for m in $mach ''; do
-	  for d in $add_ons_pfx ''; do
-	    for a in $add_ons_sfx ''; do
-	      try_suffix="$m0$b$v$o$m"
-	      if test -n "$try_suffix"; then
-		try_srcdir="${srcdir}/"
-		case "$d" in
-		/*) try_srcdir= ;;
-		esac
-		try="${d}sysdeps$try_suffix$a"
-		test -n "$enable_debug_configure" &&
-		echo "$0 [DEBUG]: try $try" >&2
-		if test -d "$try_srcdir$try"; then
-		  sysnames="$sysnames $try"
-		  { test -n "$o" || test -n "$b"; } && os_used=t
-		  { test -n "$m" || test -n "$m0"; } && machine_used=t
-		  case x${m0:-$m} in
-		  x*/$submachine) submachine_used=t ;;
-		  esac
-		  if test -n "$d"; then
-		    case "$sysnames_add_ons" in
-		    *" $d "*) ;;
-		    *|'') sysnames_add_ons="$sysnames_add_ons $d" ;;
-		    esac
-		  fi
-		fi
-	      fi
-	    done
-	  done
+	  try_suffix="$m0$b$v$o$m"
+	  if test -n "$try_suffix"; then
+	    try_srcdir="${srcdir}/"
+	    try="sysdeps$try_suffix"
+	    test -n "$enable_debug_configure" &&
+	    echo "$0 [DEBUG]: try $try" >&2
+	    if test -d "$try_srcdir$try"; then
+	      sysnames="$sysnames $try"
+	      { test -n "$o" || test -n "$b"; } && os_used=t
+	      { test -n "$m" || test -n "$m0"; } && machine_used=t
+	      case x${m0:-$m} in
+	      x*/$submachine) submachine_used=t ;;
+	      esac
+	    fi
+	  fi
 	done
       done
     done
@@ -894,7 +791,7 @@ done
 
 # If the assembler supports gnu_indirect_function symbol type and the
 # architecture supports multi-arch, we enable multi-arch by default.
-case $sysnames_add_ons$sysnames in
+case $sysnames in
 *"$multi_arch_d"*)
   ;;
 *)
@@ -956,24 +853,15 @@ while test $# -gt 0; do
 	  eval "${implies_type}=\"\$${implies_type} \$name_base/\$x\""
 	  found=yes
 	fi
-	for d in $add_ons_pfx ''; do
-	  try="${d}sysdeps/$x"
-	  case $d in
-	   /*) try_srcdir= ;;
-	   *) try_srcdir=$srcdir/ ;;
-	  esac
-	  test -n "$enable_debug_configure" &&
-	   echo "[DEBUG]: $name $implies_file $x try($d) {$try_srcdir}$try" >&2
-	  if test $try != $xsrcdir$name_base/$x && test -d $try_srcdir$try;
-	  then
-	    eval "${implies_type}=\"\$${implies_type} \$try\""
-	    found=yes
-	    case "$sysnames_add_ons" in
-	    *" $d "*) ;;
-	    *|'') sysnames_add_ons="$sysnames_add_ons $d" ;;
-	    esac
-	  fi
-	done
+	try="sysdeps/$x"
+	try_srcdir=$srcdir/
+	test -n "$enable_debug_configure" &&
+	 echo "[DEBUG]: $name $implies_file $x try() {$try_srcdir}$try" >&2
+	if test $try != $xsrcdir$name_base/$x && test -d $try_srcdir$try;
+	then
+	  eval "${implies_type}=\"\$${implies_type} \$try\""
+	  found=yes
+	fi
 	if test $found = no; then
 	  AC_MSG_WARN($name/$implies_file specifies nonexistent $x)
 	fi
@@ -1011,61 +899,6 @@ AC_SUBST(sysnames)
 # The other names were emitted during the scan.
 AC_MSG_RESULT($default_sysnames)
 
-# Collect the list of add-ons that supply partial sysdeps trees.
-sysdeps_add_ons=
-for add_on in $add_ons; do
-  case "$add_on" in
-  /*) xsrcdir= ;;
-  *) xsrcdir="$srcdir/" ;;
-  esac
-
-  test -d "$xsrcdir$add_on/sysdeps" || {
-    case "$configured_add_ons " in
-    *" $add_on "*) ;;
-    *|'')
-      AC_MSG_ERROR(add-on $add_on has no configure fragment or sysdeps tree)
-      ;;
-    esac
-    continue
-  }
-
-  sysdeps_add_ons="$sysdeps_add_ons $add_on"
-  case "$sysnames_add_ons" in
-  *" $add_on/ "*) ;;
-  *|'')
-    AC_MSG_WARN(add-on $add_on contributed no sysdeps directories)
-    continue ;;
-  esac
-
-  found=no
-  for d in $sysnames; do
-    case "$d" in
-    $add_on/sysdeps/*) ;;
-    *) continue ;;
-    esac
-    (cd "$xsrcdir$d" && for f in *[[!~]]; do
-       case "$f" in
-       sys|bits)
-	 for ff in $f/*.h; do
-	   test -d "$ff" || { test -e "$ff" && exit 88; }
-	 done
-	 ;;
-       *)
-	 test -d "$f" || { test -e "$f" && exit 88; }
-	 ;;
-       esac
-     done)
-    if test $? -eq 88; then
-      found=yes
-      break
-    fi
-  done
-  if test $found = no; then
-    AC_MSG_WARN(add-on $add_on contributed no useful sysdeps directories)
-  fi
-done
-AC_SUBST(sysdeps_add_ons)
-
 
 ### Locate tools.
 
@@ -1078,10 +911,10 @@ AC_PROG_LN_S
 
 LIBC_PROG_BINUTILS
 
-# Accept binutils 2.22 or newer.
+# Accept binutils 2.25 or newer.
 AC_CHECK_PROG_VER(AS, $AS, --version,
 		  [GNU assembler.* \([0-9]*\.[0-9.]*\)],
-		  [2.1[0-9][0-9]*|2.2[2-9]*|2.[3-9][0-9]*|[3-9].*|[1-9][0-9]*],
+		  [2.1[0-9][0-9]*|2.2[5-9]*|2.[3-9][0-9]*|[3-9].*|[1-9][0-9]*],
 		  AS=: critic_missing="$critic_missing as")
 
 if test -n "`$LD --version | sed -n 's/^GNU \(gold\).*$/\1/p'`"; then
@@ -1118,6 +951,9 @@ AC_CHECK_PROG_VER(SED, sed, --version,
 AC_CHECK_PROG_VER(AWK, gawk, --version,
   [GNU Awk[^0-9]*\([0-9][0-9.]*\)],
   [3.1.[2-9]*|3.[2-9]*|[4-9]*], critic_missing="$critic_missing gawk")
+AC_CHECK_PROG_VER(BISON, bison, --version,
+  [bison (GNU Bison) \([0-9]*\.[0-9.]*\)],
+  [2.7*|[3-9].*|[1-9][0-9]*], critic_missing="$critic_missing bison")
 
 AC_CACHE_CHECK([if $CC is sufficient to build libc], libc_cv_compiler_ok, [
 AC_TRY_COMPILE([], [
@@ -1249,10 +1085,6 @@ if test "$PERL" != no &&
 fi
 AC_PATH_PROG(INSTALL_INFO, install-info, no,
 	     $PATH:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin)
-AC_CHECK_PROG_VER(BISON, bison, --version,
-		  [bison (GNU Bison) \([0-9]*\.[0-9.]*\)],
-		  [2.7*|[3-9].*|[1-9][0-9]*],
-		  BISON=no)
 
 AC_CACHE_CHECK(for .set assembler directive, libc_cv_asm_set_directive, [dnl
 cat > conftest.s <<EOF
@@ -1459,6 +1291,19 @@ AC_SUBST(libc_cv_z_combreloc)
 LIBC_LINKER_FEATURE([-z execstack], [-Wl,-z,execstack],
 		    [libc_cv_z_execstack=yes], [libc_cv_z_execstack=no])
 AC_SUBST(libc_cv_z_execstack)
+
+LIBC_LINKER_FEATURE([--no-dynamic-linker],
+		    [-Wl,--no-dynamic-linker],
+		    [libc_cv_no_dynamic_linker=yes],
+		    [libc_cv_no_dynamic_linker=no])
+LIBC_CONFIG_VAR([have-no-dynamic-linker], [$libc_cv_no_dynamic_linker])
+
+AC_CACHE_CHECK(for -static-pie, libc_cv_static_pie, [dnl
+LIBC_TRY_CC_OPTION([-static-pie],
+		   [libc_cv_static_pie=yes],
+		   [libc_cv_static_pie=no])
+])
+LIBC_CONFIG_VAR([have-static-pie], [$libc_cv_static_pie])
 
 AC_CACHE_CHECK(for -fpie, libc_cv_fpie, [dnl
 LIBC_TRY_CC_OPTION([-fpie], [libc_cv_fpie=yes], [libc_cv_fpie=no])
@@ -1949,18 +1794,36 @@ fi
 rm -f conftest.*])
 AC_SUBST(libc_cv_pic_default)
 
-AC_CACHE_CHECK([whether -fPIE is default], libc_cv_pie_default,
-[libc_cv_pie_default=yes
+AC_CACHE_CHECK([whether -fPIE is default], libc_cv_cc_pie_default,
+[libc_cv_cc_pie_default=yes
 cat > conftest.c <<EOF
 #if defined __PIE__ || defined __pie__ || defined PIE || defined pie
 # error PIE is default.
 #endif
 EOF
 if eval "${CC-cc} -S conftest.c 2>&AS_MESSAGE_LOG_FD 1>&AS_MESSAGE_LOG_FD"; then
-  libc_cv_pie_default=no
+  libc_cv_cc_pie_default=no
 fi
 rm -f conftest.*])
+libc_cv_pie_default=$libc_cv_cc_pie_default
+AC_SUBST(libc_cv_cc_pie_default)
 AC_SUBST(libc_cv_pie_default)
+
+# Set the `multidir' variable by grabbing the variable from the compiler.
+# We do it once and save the result in a generated makefile.
+libc_cv_multidir=`${CC-cc} $CFLAGS $CPPFLAGS -print-multi-directory`
+AC_SUBST(libc_cv_multidir)
+
+if test "$static_pie" = yes; then
+  # The linker must support --no-dynamic-linker.
+  if test "$libc_cv_no_dynamic_linker" != yes; then
+    AC_MSG_ERROR([linker support for --no-dynamic-linker needed])
+  fi
+  # Default to PIE.
+  libc_cv_pie_default=yes
+  AC_DEFINE(ENABLE_STATIC_PIE)
+fi
+LIBC_CONFIG_VAR([enable-static-pie], [$static_pie])
 
 AC_SUBST(profile)
 AC_SUBST(static_nss)

@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2001-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -35,9 +35,7 @@ dummy (void)
 void
 foo (void *p)
 {
-  extern void *__dso_handle __attribute__ ((__weak__));
   printf ("This is %s\n", __FUNCTION__);
   atexit (dummy);
-  if (&__dso_handle) puts ("have dso handle"); else puts ("no dso handle");
   ip = p;
 }

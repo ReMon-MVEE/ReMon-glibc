@@ -1,5 +1,5 @@
 /* User-registered handlers for specific `ioctl' requests.
-   Copyright (C) 1993-2017 Free Software Foundation, Inc.
+   Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -22,6 +22,7 @@
 #define	__need___va_list
 #include <stdarg.h>
 #include <bits/ioctls.h>
+#include <mach/port.h>
 
 
 /* Type of handler function, called like ioctl to do its entire job.  */

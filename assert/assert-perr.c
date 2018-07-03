@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -32,7 +32,7 @@ __assert_perror_fail (int errnum,
   char errbuf[1024];
 
   char *e = __strerror_r (errnum, errbuf, sizeof errbuf);
-  __assert_fail_base (_("%s%s%s:%u: %s%sUnexpected error: %s.\n"),
+  __assert_fail_base (_("%s%s%s:%u: %s%sUnexpected error: %s.\n%n"),
 		      e, file, line, function);
 }
 libc_hidden_def (__assert_perror_fail)

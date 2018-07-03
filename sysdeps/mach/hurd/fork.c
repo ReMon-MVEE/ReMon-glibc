@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <hurd.h>
 #include <hurd/signal.h>
+#include <hurd/threadvar.h>
 #include <setjmp.h>
 #include <thread_state.h>
 #include <sysdep.h>		/* For stack growth direction.  */
@@ -213,38 +214,9 @@ __fork (void)
 	    {
 	      /* This is a receive right.  We want to give the child task
 		 its own new receive right under the same name.  */
-	      err = __mach_port_allocate_name (newtask,
-					       MACH_PORT_RIGHT_RECEIVE,
-					       portnames[i]);
-	      if (err == KERN_NAME_EXISTS)
-		{
-		  /* It already has a right under this name (?!).  Well,
-		     there is this bizarre old Mach IPC feature (in #ifdef
-		     MACH_IPC_COMPAT in the ukernel) which results in new
-		     tasks getting a new receive right for task special
-		     port number 2.  What else might be going on I'm not
-		     sure.  So let's check.  */
-#if !MACH_IPC_COMPAT
-#define TASK_NOTIFY_PORT 2
-#endif
-		  assert (({ mach_port_t thisport, notify_port;
-			     mach_msg_type_name_t poly;
-			     (__task_get_special_port (newtask,
-						       TASK_NOTIFY_PORT,
-						       &notify_port) == 0 &&
-			      __mach_port_extract_right
-			      (newtask,
-			       portnames[i],
-			       MACH_MSG_TYPE_MAKE_SEND,
-			       &thisport, &poly) == 0 &&
-			      (thisport == notify_port) &&
-			      __mach_port_deallocate (__mach_task_self (),
-						      thisport) == 0 &&
-			      __mach_port_deallocate (__mach_task_self (),
-						      notify_port) == 0);
-			   }));
-		}
-	      else if (err)
+	      if (err = __mach_port_allocate_name (newtask,
+						   MACH_PORT_RIGHT_RECEIVE,
+						   portnames[i]))
 		LOSE;
 	      if (porttypes[i] & MACH_PORT_TYPE_SEND)
 		{
@@ -512,19 +484,17 @@ __fork (void)
 				    (natural_t *) &state, &statecount))
 	LOSE;
 #ifdef STACK_GROWTH_UP
-#define THREADVAR_SPACE (__hurd_threadvar_max \
-			 * sizeof *__hurd_sightread_variables)
       if (__hurd_sigthread_stack_base == 0)
 	{
 	  state.SP &= __hurd_threadvar_stack_mask;
-	  state.SP += __hurd_threadvar_stack_offset + THREADVAR_SPACE;
+	  state.SP += __hurd_threadvar_stack_offset;
 	}
       else
 	state.SP = __hurd_sigthread_stack_base;
 #else
       if (__hurd_sigthread_stack_end == 0)
 	{
-	  /* The signal thread has a normal stack assigned by cthreads.
+	  /* The signal thread has a stack assigned by cthreads.
 	     The threadvar_stack variables conveniently tell us how
 	     to get to the highest address in the stack, just below
 	     the per-thread variables.  */
@@ -536,6 +506,11 @@ __fork (void)
 #endif
       MACHINE_THREAD_STATE_SET_PC (&state,
 				   (unsigned long int) _hurd_msgport_receive);
+
+      /* Do special signal thread setup for TLS if needed.  */
+      if (err = _hurd_tls_fork (sigthread, _hurd_msgport_thread, &state))
+	LOSE;
+
       if (err = __thread_set_state (sigthread, MACHINE_THREAD_STATE_FLAVOR,
 				    (natural_t *) &state, statecount))
 	LOSE;
@@ -546,7 +521,7 @@ __fork (void)
       _hurd_longjmp_thread_state (&state, env, 1);
 
       /* Do special thread setup for TLS if needed.  */
-      if (err = _hurd_tls_fork (thread, &state))
+      if (err = _hurd_tls_fork (thread, ss->thread, &state))
 	LOSE;
 
       if (err = __thread_set_state (thread, MACHINE_THREAD_STATE_FLAVOR,

@@ -1,7 +1,7 @@
 /* Return arc hyperbolic sine for a complex float type, with the
    imaginary part of the result possibly adjusted for use in
    computing other functions.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,6 +21,7 @@
 #include <complex.h>
 #include <math.h>
 #include <math_private.h>
+#include <math-underflow.h>
 #include <float.h>
 
 /* Return the complex inverse hyperbolic sine of finite nonzero Z,

@@ -1,53 +1,58 @@
 #ifndef _STDIO_H
+# if !defined _ISOMAC && defined _IO_MTSAFE_IO
+#  include <stdio-lock.h>
+# endif
 # include <libio/stdio.h>
 # ifndef _ISOMAC
+#  define _LIBC_STDIO_H 1
+#  include <libio/libio.h>
 
 /* Now define the internal interfaces.  */
 
-extern int __fcloseall (void);
+extern int __fcloseall (void) attribute_hidden;
 extern int __snprintf (char *__restrict __s, size_t __maxlen,
 		       const char *__restrict __format, ...)
      __attribute__ ((__format__ (__printf__, 3, 4)));
 libc_hidden_proto (__snprintf)
 extern int __vsnprintf (char *__restrict __s, size_t __maxlen,
-			const char *__restrict __format, _G_va_list __arg)
+			const char *__restrict __format, __gnuc_va_list __arg)
      __attribute__ ((__format__ (__printf__, 3, 0)));
 extern int __vfscanf (FILE *__restrict __s,
 		      const char *__restrict __format,
-		      _G_va_list __arg)
+		      __gnuc_va_list __arg)
      __attribute__ ((__format__ (__scanf__, 2, 0)));
 libc_hidden_proto (__vfscanf)
 extern int __vscanf (const char *__restrict __format,
-		     _G_va_list __arg)
+		     __gnuc_va_list __arg)
      __attribute__ ((__format__ (__scanf__, 1, 0)));
-extern _IO_ssize_t __getline (char **__lineptr, size_t *__n,
-			      FILE *__stream);
+extern __ssize_t __getline (char **__lineptr, size_t *__n,
+                            FILE *__stream) attribute_hidden;
 extern int __vsscanf (const char *__restrict __s,
 		      const char *__restrict __format,
-		      _G_va_list __arg)
+		      __gnuc_va_list __arg)
      __attribute__ ((__format__ (__scanf__, 2, 0)));
 
 extern int __sprintf_chk (char *, int, size_t, const char *, ...) __THROW;
 extern int __snprintf_chk (char *, size_t, int, size_t, const char *, ...)
      __THROW;
 extern int __vsprintf_chk (char *, int, size_t, const char *,
-			   _G_va_list) __THROW;
+			   __gnuc_va_list) __THROW;
 extern int __vsnprintf_chk (char *, size_t, int, size_t, const char *,
-			    _G_va_list) __THROW;
+			    __gnuc_va_list) __THROW;
 extern int __printf_chk (int, const char *, ...);
 extern int __fprintf_chk (FILE *, int, const char *, ...);
-extern int __vprintf_chk (int, const char *, _G_va_list);
-extern int __vfprintf_chk (FILE *, int, const char *, _G_va_list);
+extern int __vprintf_chk (int, const char *, __gnuc_va_list);
+extern int __vfprintf_chk (FILE *, int, const char *, __gnuc_va_list);
 extern char *__fgets_unlocked_chk (char *buf, size_t size, int n, FILE *fp);
 extern char *__fgets_chk (char *buf, size_t size, int n, FILE *fp);
 extern int __asprintf_chk (char **, int, const char *, ...) __THROW;
-extern int __vasprintf_chk (char **, int, const char *, _G_va_list) __THROW;
+extern int __vasprintf_chk (char **, int, const char *, __gnuc_va_list) __THROW;
 extern int __dprintf_chk (int, int, const char *, ...);
-extern int __vdprintf_chk (int, int, const char *, _G_va_list);
+extern int __vdprintf_chk (int, int, const char *, __gnuc_va_list);
 extern int __obstack_printf_chk (struct obstack *, int, const char *, ...)
      __THROW;
 extern int __obstack_vprintf_chk (struct obstack *, int, const char *,
-				  _G_va_list) __THROW;
+				  __gnuc_va_list) __THROW;
 
 extern int __isoc99_fscanf (FILE *__restrict __stream,
 			    const char *__restrict __format, ...) __wur;
@@ -56,12 +61,12 @@ extern int __isoc99_sscanf (const char *__restrict __s,
 			    const char *__restrict __format, ...) __THROW;
 extern int __isoc99_vfscanf (FILE *__restrict __s,
 			     const char *__restrict __format,
-			     _G_va_list __arg) __wur;
+			     __gnuc_va_list __arg) __wur;
 extern int __isoc99_vscanf (const char *__restrict __format,
-			    _G_va_list __arg) __wur;
+			    __gnuc_va_list __arg) __wur;
 extern int __isoc99_vsscanf (const char *__restrict __s,
 			     const char *__restrict __format,
-			     _G_va_list __arg) __THROW;
+			     __gnuc_va_list __arg) __THROW;
 libc_hidden_proto (__isoc99_vsscanf)
 libc_hidden_proto (__isoc99_vfscanf)
 
@@ -77,10 +82,10 @@ extern FILE *__old_tmpfile (void);
 /* Generate a unique file name (and possibly open it).  */
 extern int __path_search (char *__tmpl, size_t __tmpl_len,
 			  const char *__dir, const char *__pfx,
-			  int __try_tempdir);
+			  int __try_tempdir) attribute_hidden;
 
 extern int __gen_tempname (char *__tmpl, int __suffixlen, int __flags,
-			   int __kind);
+			   int __kind) attribute_hidden;
 /* The __kind argument to __gen_tempname may be one of: */
 #  define __GT_FILE	0	/* create a file */
 #  define __GT_DIR	1	/* create a directory */
@@ -97,48 +102,52 @@ enum __libc_message_action
 extern void __libc_fatal (const char *__message)
      __attribute__ ((__noreturn__));
 extern void __libc_message (enum __libc_message_action action,
-			    const char *__fnt, ...);
+			    const char *__fnt, ...) attribute_hidden;
 extern void __fortify_fail (const char *msg) __attribute__ ((__noreturn__));
 extern void __fortify_fail_abort (_Bool, const char *msg)
-  __attribute__ ((__noreturn__));
+  __attribute__ ((__noreturn__)) attribute_hidden;
 libc_hidden_proto (__fortify_fail)
 libc_hidden_proto (__fortify_fail_abort)
 
 /* Acquire ownership of STREAM.  */
-extern void __flockfile (FILE *__stream);
+extern void __flockfile (FILE *__stream) attribute_hidden;
 
 /* Relinquish the ownership granted for STREAM.  */
-extern void __funlockfile (FILE *__stream);
+extern void __funlockfile (FILE *__stream) attribute_hidden;
 
 /* Try to acquire ownership of STREAM but do not block if it is not
    possible.  */
 extern int __ftrylockfile (FILE *__stream);
 
-extern int __getc_unlocked (FILE *__fp);
+extern int __getc_unlocked (FILE *__fp) attribute_hidden;
 extern wint_t __getwc_unlocked (FILE *__fp);
 
 extern int __fxprintf (FILE *__fp, const char *__fmt, ...)
-     __attribute__ ((__format__ (__printf__, 2, 3)));
+     __attribute__ ((__format__ (__printf__, 2, 3))) attribute_hidden;
 extern int __fxprintf_nocancel (FILE *__fp, const char *__fmt, ...)
-     __attribute__ ((__format__ (__printf__, 2, 3)));
+     __attribute__ ((__format__ (__printf__, 2, 3))) attribute_hidden;
 
 extern const char *const _sys_errlist_internal[] attribute_hidden;
 extern int _sys_nerr_internal attribute_hidden;
 
 libc_hidden_proto (__asprintf)
 #  if IS_IN (libc)
-extern _IO_FILE *_IO_new_fopen (const char*, const char*);
+extern FILE *_IO_new_fopen (const char*, const char*);
 #   define fopen(fname, mode) _IO_new_fopen (fname, mode)
-extern _IO_FILE *_IO_new_fdopen (int, const char*);
+extern FILE *_IO_new_fdopen (int, const char*);
 #   define fdopen(fd, mode) _IO_new_fdopen (fd, mode)
-extern int _IO_new_fclose (_IO_FILE*);
+extern int _IO_new_fclose (FILE*);
 #   define fclose(fp) _IO_new_fclose (fp)
-extern int _IO_fputs (const char*, _IO_FILE*);
+extern int _IO_fputs (const char*, FILE*);
 libc_hidden_proto (_IO_fputs)
+/* The compiler may optimize calls to fprintf into calls to fputs.
+   Use libc_hidden_proto to ensure that those calls, not redirected by
+   the fputs macro, also do not go through the PLT.  */
+libc_hidden_proto (fputs)
 #   define fputs(str, fp) _IO_fputs (str, fp)
-extern int _IO_new_fsetpos (_IO_FILE *, const _IO_fpos_t *);
+extern int _IO_new_fsetpos (FILE *, const __fpos_t *);
 #   define fsetpos(fp, posp) _IO_new_fsetpos (fp, posp)
-extern int _IO_new_fgetpos (_IO_FILE *, _IO_fpos_t *);
+extern int _IO_new_fgetpos (FILE *, __fpos_t *);
 #   define fgetpos(fp, posp) _IO_new_fgetpos (fp, posp)
 #  endif
 
@@ -174,6 +183,14 @@ libc_hidden_proto (__fgets_unlocked)
 libc_hidden_proto (fputs_unlocked)
 extern __typeof (fputs_unlocked) __fputs_unlocked;
 libc_hidden_proto (__fputs_unlocked)
+libc_hidden_proto (feof_unlocked)
+extern __typeof (feof_unlocked) __feof_unlocked attribute_hidden;
+libc_hidden_proto (ferror_unlocked)
+extern __typeof (ferror_unlocked) __ferror_unlocked attribute_hidden;
+libc_hidden_proto (getc_unlocked)
+libc_hidden_proto (fputc_unlocked)
+libc_hidden_proto (putc_unlocked)
+extern __typeof (putc_unlocked) __putc_unlocked attribute_hidden;
 libc_hidden_proto (fmemopen)
 /* The prototype needs repeating instead of using __typeof to use
    __THROW in C++ tests.  */
@@ -193,6 +210,32 @@ libc_hidden_proto (__fmemopen)
 
 extern int __gen_tempfd (int flags);
 libc_hidden_proto (__gen_tempfd)
+
+#  ifdef __USE_EXTERN_INLINES
+__extern_inline int
+__NTH (__feof_unlocked (FILE *__stream))
+{
+  return __feof_unlocked_body (__stream);
+}
+
+__extern_inline int
+__NTH (__ferror_unlocked (FILE *__stream))
+{
+  return __ferror_unlocked_body (__stream);
+}
+
+__extern_inline int
+__getc_unlocked (FILE *__fp)
+{
+  return __getc_unlocked_body (__fp);
+}
+
+__extern_inline int
+__putc_unlocked (int __c, FILE *__stream)
+{
+  return __putc_unlocked_body (__c, __stream);
+}
+#  endif
 
 # endif /* not _ISOMAC */
 #endif /* stdio.h */

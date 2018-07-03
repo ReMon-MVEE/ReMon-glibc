@@ -1,5 +1,5 @@
 /* Definition for thread-local data handling.  NPTL/m68k version.
-   Copyright (C) 2010-2017 Free Software Foundation, Inc.
+   Copyright (C) 2010-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Maxim Kuvyrkov <maxim@codesourcery.com>, 2010.
 
@@ -134,6 +134,7 @@ extern void * __m68k_read_tp (void);
 # define NO_TLS_OFFSET		-1
 
 /* Get and set the global scope generation counter in struct pthread.  */
+#define THREAD_GSCOPE_IN_TCB      1
 #define THREAD_GSCOPE_FLAG_UNUSED 0
 #define THREAD_GSCOPE_FLAG_USED   1
 #define THREAD_GSCOPE_FLAG_WAIT   2

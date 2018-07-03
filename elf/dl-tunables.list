@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2017 Free Software Foundation, Inc.
+# Copyright (C) 2016-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -78,15 +78,12 @@ glibc {
     }
     tcache_max {
       type: SIZE_T
-      security_level: SXID_ERASE
     }
     tcache_count {
       type: SIZE_T
-      security_level: SXID_ERASE
     }
     tcache_unsorted_limit {
       type: SIZE_T
-      security_level: SXID_ERASE
     }
   }
   tune {
@@ -94,6 +91,34 @@ glibc {
       type: UINT_64
       env_alias: LD_HWCAP_MASK
       default: HWCAP_IMPORTANT
-      }
+    }
+  }
+
+  elision {
+    enable {
+      type: INT_32
+      minval: 0
+      maxval: 1
+    }
+    skip_lock_busy {
+      type: INT_32
+      default: 3
+    }
+    skip_lock_internal_abort {
+      type: INT_32
+      default: 3
+    }
+    skip_lock_after_retries {
+      type: INT_32
+      default: 3
+    }
+    tries {
+      type: INT_32
+      default: 3
+    }
+    skip_trylock_internal_abort {
+      type: INT_32
+      default: 3
+    }
   }
 }

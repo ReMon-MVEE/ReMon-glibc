@@ -1,5 +1,5 @@
 /* *printf* family compatibility routines for IEEE double as long double
-   Copyright (C) 2006-2017 Free Software Foundation, Inc.
+   Copyright (C) 2006-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@cygnus.com>, 2006.
 
@@ -20,6 +20,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <libioP.h>
+#include <math.h>
 #include <wchar.h>
 #include <printf.h>
 #include <monetary.h>
@@ -333,8 +334,7 @@ __nldbl_wprintf (const wchar_t *fmt, ...)
 
 int
 attribute_compat_text_section
-__nldbl__IO_vfscanf (FILE *s, const char *fmt, _IO_va_list ap,
-		    int *errp)
+__nldbl__IO_vfscanf (FILE *s, const char *fmt, va_list ap, int *errp)
 {
   int res;
   set_no_long_double ();

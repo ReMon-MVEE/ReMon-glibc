@@ -1,5 +1,5 @@
 /* Floating-point absolute value.  e500 version.
-   Copyright (C) 2004-2017 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,6 +17,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-float.h>
 
 ENTRY (__fabsf)
 /* float [r3] fabsf (float [r3] x) ;  */
@@ -24,4 +25,4 @@ ENTRY (__fabsf)
 	blr
 END (__fabsf)
 
-weak_alias (__fabsf, fabsf)
+libm_alias_float (__fabs, fabs)

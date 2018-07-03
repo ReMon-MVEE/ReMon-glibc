@@ -1,4 +1,4 @@
-/* Copyright (C) 2012-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2012-2018 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -28,4 +28,5 @@ ENTRY(__ioctl)
 	ret
 PSEUDO_END (__ioctl)
 
+libc_hidden_def (__ioctl)
 weak_alias (__ioctl, ioctl)

@@ -1,5 +1,5 @@
 /* Operating system-specific extensions to sys/uio.h - Linux version.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -41,12 +41,12 @@ extern ssize_t process_vm_writev (pid_t __pid, const struct iovec *__lvec,
 				  unsigned long int __flags)
   __THROW;
 
-
-/* Flags for preadv2/pwritev2: */
+/* Flags for preadv2/pwritev2.  */
 #define RWF_HIPRI	0x00000001 /* High priority request.  */
 #define RWF_DSYNC	0x00000002 /* per-IO O_DSYNC.  */
 #define RWF_SYNC	0x00000004 /* per-IO O_SYNC.  */
 #define RWF_NOWAIT	0x00000008 /* per-IO nonblocking mode.  */
+#define RWF_APPEND	0x00000010 /* per-IO O_APPEND.  */
 
 __END_DECLS
 

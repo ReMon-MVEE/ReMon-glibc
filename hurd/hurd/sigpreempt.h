@@ -1,5 +1,5 @@
 /* Preemption of Hurd signals before POSIX.1 semantics take over.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,8 +19,12 @@
 #ifndef	_HURD_SIGPREEMPT_H
 
 #define	_HURD_SIGPREEMPT_H	1
+#define __need_size_t
+#include <stddef.h>
 #include <errno.h>
-#include <signal.h>		/* For sigset_t, sighandler_t, SIG_ERR.  */
+#include <bits/types/error_t.h>
+#include <signal.h>		/* For sighandler_t, SIG_ERR.  */
+#include <bits/types/sigset_t.h>
 struct hurd_sigstate;		/* <hurd/signal.h> */
 struct hurd_signal_detail;	/* <hurd/signal.h> */
 
@@ -37,11 +41,11 @@ struct hurd_signal_preemptor
        is tried, or the normal handling is done for the signal (which may
        have been changed by the preemptor function).  Otherwise, the signal
        is processed as if the return value were its handler setting.  */
-    sighandler_t (*preemptor) (struct hurd_signal_preemptor *preemptor,
-			       struct hurd_sigstate *ss,
-			       int *signo, struct hurd_signal_detail *detail);
+    __sighandler_t (*preemptor) (struct hurd_signal_preemptor *preemptor,
+			         struct hurd_sigstate *ss,
+			         int *signo, struct hurd_signal_detail *detail);
     /* If PREEMPTOR is null, act as if it returned HANDLER.  */
-    sighandler_t handler;
+    __sighandler_t handler;
 
     struct hurd_signal_preemptor *next;	/* List structure.  */
   };
@@ -78,7 +82,7 @@ void hurd_unpreempt_signals (struct hurd_signal_preemptor *preemptor);
 error_t hurd_catch_signal (sigset_t sigset,
 			   unsigned long int first, unsigned long int last,
 			   error_t (*operate) (struct hurd_signal_preemptor *),
-			   sighandler_t handler);
+			   __sighandler_t handler);
 
 
 /* Convenience functions using `hurd_catch_signal'.  */

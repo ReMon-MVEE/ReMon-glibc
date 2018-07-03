@@ -1,5 +1,5 @@
 /* Startup code compliant to the ELF m68k ABI.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -76,7 +76,7 @@ _start:
 	pea (%a1)		/* Push address of the shared library
 				   termination function.  */
 
-#ifdef SHARED
+#ifdef PIC
 	/* Load PIC register.  */
 	LOAD_GOT (%a5)
 

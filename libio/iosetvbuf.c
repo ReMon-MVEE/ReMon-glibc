@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -31,7 +31,7 @@
 #define _IONBF 2 /* No buffering. */
 
 int
-_IO_setvbuf (_IO_FILE *fp, char *buf, int mode, _IO_size_t size)
+_IO_setvbuf (FILE *fp, char *buf, int mode, size_t size)
 {
   int result;
   CHECK_FILE (fp, EOF);
@@ -39,7 +39,7 @@ _IO_setvbuf (_IO_FILE *fp, char *buf, int mode, _IO_size_t size)
   switch (mode)
     {
     case _IOFBF:
-      fp->_IO_file_flags &= ~(_IO_LINE_BUF|_IO_UNBUFFERED);
+      fp->_flags &= ~(_IO_LINE_BUF|_IO_UNBUFFERED);
       if (buf == NULL)
 	{
 	  if (fp->_IO_buf_base == NULL)
@@ -62,15 +62,15 @@ _IO_setvbuf (_IO_FILE *fp, char *buf, int mode, _IO_size_t size)
 		  result = EOF;
 		  goto unlock_return;
 		}
-	      fp->_IO_file_flags &= ~_IO_LINE_BUF;
+	      fp->_flags &= ~_IO_LINE_BUF;
 	    }
 	  result = 0;
 	  goto unlock_return;
 	}
       break;
     case _IOLBF:
-      fp->_IO_file_flags &= ~_IO_UNBUFFERED;
-      fp->_IO_file_flags |= _IO_LINE_BUF;
+      fp->_flags &= ~_IO_UNBUFFERED;
+      fp->_flags |= _IO_LINE_BUF;
       if (buf == NULL)
 	{
 	  result = 0;
@@ -78,8 +78,8 @@ _IO_setvbuf (_IO_FILE *fp, char *buf, int mode, _IO_size_t size)
 	}
       break;
     case _IONBF:
-      fp->_IO_file_flags &= ~_IO_LINE_BUF;
-      fp->_IO_file_flags |= _IO_UNBUFFERED;
+      fp->_flags &= ~_IO_LINE_BUF;
+      fp->_flags |= _IO_UNBUFFERED;
       buf = NULL;
       size = 0;
       break;

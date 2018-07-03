@@ -1,5 +1,5 @@
 # xopen-msg.awk - Convert Uniforum style .po file to X/Open style .msg file
-# Copyright (C) 2012-2017 Free Software Foundation, Inc.
+# Copyright (C) 2012-2018 Free Software Foundation, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -55,6 +55,11 @@ $1 ~ "msg(id|str)" {
     sub(/^msg(id|str)[ \t]*"/, "", $0)
     sub(/"$/, "", $0)
     msg = $0
+    next
+}
+
+/^"POT-Creation-Date: [0-9-]+ [0-9:+-]+\\n"/ {
+    # Ignore POT-Creation-Date to match what is done in intl/Makefile.
     next
 }
 

@@ -1,5 +1,5 @@
 /* Compute cubic root of float value.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Dirk Alboth <dirka@uni-paderborn.de> and
    Ulrich Drepper <drepper@cygnus.com>, 1997.
@@ -19,6 +19,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <machine/asm.h>
+#include <libm-alias-float.h>
 
         .section .rodata
 
@@ -174,4 +175,4 @@ ENTRY(__cbrtf)
 1:	flds	4(%esp)
 	ret
 END(__cbrtf)
-weak_alias (__cbrtf, cbrtf)
+libm_alias_float (__cbrt, cbrt)

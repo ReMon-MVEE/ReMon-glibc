@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1998.
 
@@ -18,9 +18,4 @@
 
 /* In general we cannot provide any information.  */
 #define SIGCONTEXT struct sigcontext *
-#define SIGCONTEXT_EXTRA_ARGS
 #define GET_PC(ctx)	((void *) 0)
-#define GET_FRAME(ctx)	((void *) 0)
-#define GET_STACK(ctx)	((void *) 0)
-#define CALL_SIGHANDLER(handler, signo, ctx) \
-  (handler)((signo), SIGCONTEXT_EXTRA_ARGS (ctx))

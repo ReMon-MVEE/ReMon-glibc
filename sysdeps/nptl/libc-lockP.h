@@ -1,5 +1,5 @@
 /* Private libc-internal interface for mutex locks.  NPTL version.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -319,8 +319,6 @@ __libc_cleanup_routine (struct __pthread_cleanup_frame *f)
 /* Register handlers to execute before and after `fork'.  Note that the
    last parameter is NULL.  The handlers registered by the libc are
    never removed so this is OK.  */
-#define __libc_atfork(PREPARE, PARENT, CHILD) \
-  __register_atfork (PREPARE, PARENT, CHILD, NULL)
 extern int __register_atfork (void (*__prepare) (void),
 			      void (*__parent) (void),
 			      void (*__child) (void),

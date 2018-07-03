@@ -1,5 +1,5 @@
 /* Pythagorean addition using floats
-   Copyright (C) 2011-2017 Free Software Foundation, Inc.
+   Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Adhemerval Zanella <azanella@br.ibm.com>, 2011
 
@@ -71,6 +71,6 @@ __ieee754_hypotf (float x, float y)
 {
   TEST_INF_NAN (x, y);
 
-  return __ieee754_sqrt ((double) x * x + (double) y * y);
+  return sqrt ((double) x * x + (double) y * y);
 }
 strong_alias (__ieee754_hypotf, __hypotf_finite)

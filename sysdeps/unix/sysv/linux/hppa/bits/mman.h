@@ -1,5 +1,5 @@
 /* Definitions for POSIX memory map interface.  Linux/HPPA version.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -34,6 +34,8 @@
 #define MAP_SHARED	0x01		/* Share changes */
 #define MAP_PRIVATE	0x02		/* Changes are private */
 #ifdef __USE_MISC
+# define MAP_SHARED_VALIDATE	0x03	/* Share changes and validate
+					   extension flags.  */
 # define MAP_TYPE	0x03		/* Mask for type of mapping */
 #endif
 
@@ -85,9 +87,6 @@
 # define MADV_SEQUENTIAL  2	/* Expect sequential page references */
 # define MADV_WILLNEED	  3	/* Will need these pages */
 # define MADV_DONTNEED	  4	/* Dont need these pages */
-# define MADV_SPACEAVAIL  5	/* Insure that resources are reserved */
-# define MADV_VPS_PURGE	  6	/* Purge pages from VM page cache */
-# define MADV_VPS_INHERIT 7	/* Inherit parents page size */
 # define MADV_FREE	  8	/* Free pages only if memory pressure.  */
 # define MADV_REMOVE	  9	/* Remove these pages and resources.  */
 # define MADV_DONTFORK	 10	/* Do not inherit across fork.  */
@@ -99,6 +98,10 @@
 # define MADV_DONTDUMP	 69	/* Explicity exclude from the core dump,
 				   overrides the coredump filter bits */
 # define MADV_DODUMP	 70	/* Clear the MADV_NODUMP flag */
+# define MADV_WIPEONFORK 71	/* Zero memory on fork, child only.  */
+# define MADV_KEEPONFORK 72	/* Undo MADV_WIPEONFORK.  */
+# define MADV_HWPOISON	 100	/* Poison a page for testing.  */
+# define MADV_SOFT_OFFLINE 101	/* Soft offline page for testing.  */
 #endif
 
 /* The POSIX people had to invent similar names for the same things.  */
@@ -109,3 +112,5 @@
 # define POSIX_MADV_WILLNEED	3 /* Will need these pages.  */
 # define POSIX_MADV_DONTNEED	4 /* Don't need these pages.  */
 #endif
+
+#include <bits/mman-shared.h>

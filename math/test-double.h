@@ -1,5 +1,5 @@
 /* Common definitions for libm tests for double.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -23,7 +23,10 @@
 #define PREFIX DBL
 #define LIT(x) (x)
 #define TYPE_STR "double"
+#define ULP_IDX ULP_DBL
+#define ULP_I_IDX ULP_I_DBL
 #define LITM(x) x
 #define FTOSTR strfromd
 #define snan_value_MACRO SNAN
 #define TEST_FLOATN 0
+#define FUNC_NARROW_PREFIX d

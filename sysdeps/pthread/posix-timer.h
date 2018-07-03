@@ -1,5 +1,5 @@
 /* Definitions for POSIX timer implementation on top of NPTL.
-   Copyright (C) 2000-2017 Free Software Foundation, Inc.
+   Copyright (C) 2000-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Kaz Kylheku <kaz@ashi.footprints.net>.
 
@@ -87,7 +87,7 @@ extern struct thread_node __timer_signal_thread_rclk;
 
 /* Return pointer to timer structure corresponding to ID.  */
 #define timer_id2ptr(timerid) ((struct timer_node *) timerid)
-#define timer_ptr2id(timerid) ((void *) timerid)
+#define timer_ptr2id(timerid) ((timer_t) timerid)
 
 /* Check whether timer is valid; global mutex must be held. */
 static inline int

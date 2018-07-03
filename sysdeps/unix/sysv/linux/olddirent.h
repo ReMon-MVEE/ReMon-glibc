@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -34,7 +34,8 @@ extern struct __old_dirent64 *__old_readdir64 (DIR *__dirp);
 libc_hidden_proto (__old_readdir64);
 extern int __old_readdir64_r (DIR *__dirp, struct __old_dirent64 *__entry,
 			  struct __old_dirent64 **__result);
-extern __ssize_t __old_getdents64 (int __fd, char *__buf, size_t __nbytes);
+extern __ssize_t __old_getdents64 (int __fd, char *__buf, size_t __nbytes)
+	attribute_hidden;
 int __old_scandir64 (const char * __dir,
 		     struct __old_dirent64 *** __namelist,
 		     int (*__selector) (const struct __old_dirent64 *),

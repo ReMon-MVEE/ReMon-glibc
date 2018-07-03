@@ -1,5 +1,5 @@
 /* Square root of floating point number.
-   Copyright (C) 2015-2017 Free Software Foundation, Inc.
+   Copyright (C) 2015-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,8 +21,6 @@
 double
 __ieee754_sqrt (double d)
 {
-  double res;
-  asm ("fsqrt   %d0, %d1" : "=w" (res) : "w" (d));
-  return res;
+  return __builtin_sqrt (d);
 }
 strong_alias (__ieee754_sqrt, __sqrt_finite)

@@ -1,7 +1,7 @@
 #!/usr/bin/awk -f
 # Generate sorted list of directories.  The sorting is stable but with
 # dependencies between directories resolved by moving dependees in front.
-# Copyright (C) 1998-2017 Free Software Foundation, Inc.
+# Copyright (C) 1998-2018 Free Software Foundation, Inc.
 # Written by Ulrich Drepper <drepper@cygnus.com>, 1998.
 
 BEGIN {
@@ -46,36 +46,10 @@ type == "Subdirs" && NF == 2 && $1 == "inhibit" {
 type == "Subdirs" && thisdir {
   all[cnt++] = thisdir;
 
-  if (FILENAME ~ (srcpfx ? /^\.\.\/sysdeps\// : /^sysdeps\//) \
-      || system("test -d " srcpfx thisdir) == 0) {
-    # This Subdirs file is in the main source tree,
-    # or this subdirectory exists in the main source tree.
-    this_srcdir = srcpfx thisdir
-  }
-  else {
-    # The Subdirs file comes from an add-on that should have the subdirectory.
-    dir = FILENAME;
-    do
-      sub(/\/[^/]+$/, "", dir);
-    while (dir !~ /\/sysdeps$/);
-    sub(/\/sysdeps$/, "", dir);
-    if (system("test -d " dir "/" thisdir) == 0)
-      dir = dir "/" thisdir;
-    else {
-      sub(/\/[^/]+$/, "", dir);
-      if (system("test -d " dir "/" thisdir) == 0)
-        dir = dir "/" thisdir;
-      else {
-	print FILENAME ":" FNR ":", "cannot find", thisdir > "/dev/stderr";
-	exit 2
-      }
-    }
-    file = dir "/Depend";
-    if (srcpfx)
-      sub(/^\.\.\//, "", dir);
-    if (dir !~ /^\/.*$/)
-      dir = "$(..)" dir;
-    print thisdir "-srcdir", ":=", dir;
+  this_srcdir = srcpfx thisdir
+  if (system("test -d " this_srcdir) != 0) {
+    print FILENAME ":" FNR ":", "cannot find", this_srcdir > "/dev/stderr";
+    exit 2
   }
   file = this_srcdir "/Depend";
   if (system("test -f " file) == 0) {

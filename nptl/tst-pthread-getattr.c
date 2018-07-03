@@ -1,7 +1,7 @@
 /* Make sure that the stackaddr returned by pthread_getattr_np is
    reachable.
 
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -35,8 +35,8 @@
    results in a test case failure.  To avoid these problems, we cap the stack
    size to one less than 8M.  See the following mailing list threads for more
    information about this problem:
-   <http://sourceware.org/ml/libc-alpha/2012-06/msg00599.html>
-   <http://sourceware.org/ml/libc-alpha/2012-06/msg00713.html>.  */
+   <https://sourceware.org/ml/libc-alpha/2012-06/msg00599.html>
+   <https://sourceware.org/ml/libc-alpha/2012-06/msg00713.html>.  */
 #define MAX_STACK_SIZE (8192 * 1024 - 1)
 
 static size_t pagesize;

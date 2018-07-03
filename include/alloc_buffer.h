@@ -1,5 +1,5 @@
 /* Allocation from a fixed-size buffer.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -267,7 +267,7 @@ __alloc_buffer_alloc (struct alloc_buffer *buf, size_t size, size_t align)
 
 /* Obtain a TYPE * pointer to an object in BUF of TYPE.  Consume these
    bytes from the buffer.  Return NULL and mark the buffer as failed
-   if if there is not enough room in the buffer, or if the buffer has
+   if there is not enough room in the buffer, or if the buffer has
    failed before.  */
 #define alloc_buffer_alloc(buf, type)				\
   ((type *) __alloc_buffer_alloc				\
@@ -315,7 +315,7 @@ void * __libc_alloc_buffer_alloc_array (struct alloc_buffer *buf,
 
 /* Obtain a TYPE * pointer to an array of COUNT objects in BUF of
    TYPE.  Consume these bytes from the buffer.  Return NULL and mark
-   the buffer as failed if if there is not enough room in the buffer,
+   the buffer as failed if there is not enough room in the buffer,
    or if the buffer has failed before.  (Zero-length allocations from
    an empty buffer which has not yet failed succeed.)  */
 #define alloc_buffer_alloc_array(buf, type, count)       \

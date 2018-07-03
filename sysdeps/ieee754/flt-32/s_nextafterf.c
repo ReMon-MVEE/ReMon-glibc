@@ -19,7 +19,9 @@ static char rcsid[] = "$NetBSD: s_nextafterf.c,v 1.4 1995/05/10 20:48:01 jtc Exp
 
 #include <errno.h>
 #include <math.h>
+#include <math-barriers.h>
 #include <math_private.h>
+#include <libm-alias-float.h>
 #include <float.h>
 
 float __nextafterf(float x, float y)
@@ -70,4 +72,4 @@ float __nextafterf(float x, float y)
 	SET_FLOAT_WORD(x,hx);
 	return x;
 }
-weak_alias (__nextafterf, nextafterf)
+libm_alias_float (__nextafter, nextafter)

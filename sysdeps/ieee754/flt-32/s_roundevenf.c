@@ -1,6 +1,6 @@
 /* Round to nearest integer value, rounding halfway cases to even.
    flt-32 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
 
 #include <math.h>
 #include <math_private.h>
+#include <libm-alias-float.h>
 #include <stdint.h>
 
 #define BIAS 0x7f
@@ -26,7 +27,7 @@
 #define MAX_EXP (2 * BIAS + 1)
 
 float
-roundevenf (float x)
+__roundevenf (float x)
 {
   uint32_t ix, ux;
   GET_FLOAT_WORD (ix, x);
@@ -66,3 +67,4 @@ roundevenf (float x)
   SET_FLOAT_WORD (x, ix);
   return x;
 }
+libm_alias_float (__roundeven, roundeven)

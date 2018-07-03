@@ -1,5 +1,5 @@
 /* Return arc cosine of complex float value.
-   Copyright (C) 2004-2017 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -54,4 +54,4 @@ __c2_cacosf (c2_cfloat_decl (x))
   return c2_cfloat_return (r);
 }
 
-cfloat_versions (cacosf);
+cfloat_versions (cacos);

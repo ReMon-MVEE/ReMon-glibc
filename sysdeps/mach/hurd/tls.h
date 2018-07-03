@@ -1,5 +1,5 @@
 /* Definitions for thread-local data handling.  Hurd version.
-   Copyright (C) 2003-2017 Free Software Foundation, Inc.
+   Copyright (C) 2003-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -27,6 +27,7 @@
 # include <sysdep.h>
 # include <mach/mig_errors.h>
 # include <mach.h>
+# include <atomic.h>
 
 
 /* This is the size of the initial TCB.  */
@@ -50,6 +51,26 @@
 /* Return dtv of given thread descriptor.  */
 # define GET_DTV(descr) \
   (((tcbhead_t *) (descr))->dtv)
+
+/* Global scope switch support.  */
+#define THREAD_GSCOPE_IN_TCB      0
+#define THREAD_GSCOPE_GLOBAL
+#define THREAD_GSCOPE_SET_FLAG() \
+  atomic_exchange_and_add_acq (&GL(dl_thread_gscope_count), 1)
+#define THREAD_GSCOPE_RESET_FLAG() \
+  do 									      \
+    if (atomic_exchange_and_add_rel (&GL(dl_thread_gscope_count), -1) == 1)   \
+      lll_wake (&GL(dl_thread_gscope_count), 0);			      \
+  while (0)
+#define THREAD_GSCOPE_WAIT() \
+  do 									      \
+    {									      \
+      int count;							      \
+      atomic_write_barrier ();						      \
+      while ((count = GL(dl_thread_gscope_count)))			      \
+        lll_wait (&GL(dl_thread_gscope_count), count, 0);		      \
+    }									      \
+  while (0)
 
 #endif /* !ASSEMBLER */
 

@@ -1,5 +1,5 @@
 /* Define POSIX options for GNU/Hurd.
-   Copyright (C) 1998-2017 Free Software Foundation, Inc.
+   Copyright (C) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -42,8 +42,8 @@
 /* Mapping of files to memory is supported.  */
 #define	_POSIX_MAPPED_FILES	200809L
 
-/* Locking of all memory could be supported in future.  */
-#define	_POSIX_MEMLOCK	0
+/* Locking of all memory is supported.  */
+#define	_POSIX_MEMLOCK	200809L
 
 /* Locking of ranges of memory is supported.  */
 #define	_POSIX_MEMLOCK_RANGE	200809L
@@ -53,13 +53,13 @@
 
 /* Elements of the `c_cc' member of `struct termios' structure
    can be disabled by using the value _POSIX_VDISABLE.  */
-#define _POSIX_VDISABLE			((unsigned char) -1)
+#define _POSIX_VDISABLE			'\0'
 
 
 /* Different Hurd filesystems might do these differently.
    You must query the particular file with `pathconf' or `fpathconf'.  */
-#undef _POSIX_CHOWN_RESTRICTED	/* Only root can change owner of file?  */
-#undef _POSIX_NO_TRUNC		/* Overlong file names get error?  */
+#define _POSIX_CHOWN_RESTRICTED	0	/* Only root can change owner of file?  */
+#define _POSIX_NO_TRUNC		0	/* Overlong file names get error?  */
 #undef _POSIX_SYNC_IO		/* File supports O_SYNC et al?  */
 
 /* X/Open realtime support is not supported.  */
@@ -71,24 +71,38 @@
 /* XPG4.2 shared memory is not supported.  */
 #undef	_XOPEN_SHM
 
-/* We do not have the POSIX threads interface.  */
-#define _POSIX_THREADS	-1
+/* Tell we have POSIX threads.  */
+#define _POSIX_THREADS	200809L
 
 /* We have the reentrant functions described in POSIX.  */
 #define _POSIX_REENTRANT_FUNCTIONS      1
 #define _POSIX_THREAD_SAFE_FUNCTIONS	200809L
 
-/* These are all things that won't be supported when _POSIX_THREADS is not.  */
+/* We do not provide priority scheduling for threads.  */
 #define _POSIX_THREAD_PRIORITY_SCHEDULING	-1
-#define _POSIX_THREAD_ATTR_STACKSIZE		-1
-#define _POSIX_THREAD_ATTR_STACKADDR		-1
+
+/* We support user-defined stack sizes.  */
+#define _POSIX_THREAD_ATTR_STACKSIZE	200809L
+
+/* We support user-defined stacks.  */
+#define _POSIX_THREAD_ATTR_STACKADDR	200809L
+
+/* We do not support priority inheritence.  */
 #define _POSIX_THREAD_PRIO_INHERIT		-1
+
+/* We do not support priority protection.  */
 #define _POSIX_THREAD_PRIO_PROTECT		-1
+
 #ifdef __USE_XOPEN2K8
+/* We do not support priority inheritence for robust mutexes.  */
 # define _POSIX_THREAD_ROBUST_PRIO_INHERIT	-1
+
+/* We do not support priority protection for robust mutexes.  */
 # define _POSIX_THREAD_ROBUST_PRIO_PROTECT	-1
 #endif
-#define _POSIX_SEMAPHORES			-1
+
+/* We support POSIX.1b semaphores.  */
+#define _POSIX_SEMAPHORES			200809L
 
 /* Real-time signals are not yet supported.  */
 #define _POSIX_REALTIME_SIGNALS	-1
@@ -121,17 +135,17 @@
 /* GNU libc provides regular expression handling.  */
 #define _POSIX_REGEXP	1
 
-/* Reader/Writer locks are not available.  */
-#define _POSIX_READER_WRITER_LOCKS	-1
+/* Reader/Writer locks are available.  */
+#define _POSIX_READER_WRITER_LOCKS	200809L
 
 /* We have a POSIX shell.  */
 #define _POSIX_SHELL	1
 
-/* We cannot support the Timeouts option without _POSIX_THREADS.  */
-#define _POSIX_TIMEOUTS	-1
+/* We support the Timeouts option.  */
+#define _POSIX_TIMEOUTS	200809L
 
-/* We do not support spinlocks.  */
-#define _POSIX_SPIN_LOCKS	-1
+/* We support spinlocks.  */
+#define _POSIX_SPIN_LOCKS	200809L
 
 /* The `spawn' function family is supported.  */
 #define _POSIX_SPAWN	200809L
@@ -139,8 +153,8 @@
 /* We do not have POSIX timers, but could in future without ABI change.  */
 #define _POSIX_TIMERS	0
 
-/* The barrier functions are not available.  */
-#define _POSIX_BARRIERS	-1
+/* The barrier functions are available.  */
+#define _POSIX_BARRIERS	200809L
 
 /* POSIX message queues could be available in future.  */
 #define	_POSIX_MESSAGE_PASSING	0

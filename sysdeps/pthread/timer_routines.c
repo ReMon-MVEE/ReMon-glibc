@@ -1,5 +1,5 @@
 /* Helper code for POSIX timer implementation on NPTL.
-   Copyright (C) 2000-2017 Free Software Foundation, Inc.
+   Copyright (C) 2000-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Kaz Kylheku <kaz@ashi.footprints.net>.
 
@@ -29,8 +29,11 @@
 #include <sys/syscall.h>
 
 #include "posix-timer.h"
-#include <nptl/pthreadP.h>
+#include <timer_routines.h>
 
+#ifndef DELAYTIMER_MAX
+# define DELAYTIMER_MAX INT_MAX
+#endif
 
 /* Number of threads used.  */
 #define THREAD_MAXNODES	16
@@ -373,7 +376,7 @@ thread_func (void *arg)
 
 	  /* This assumes that the elements of the list of one thread
 	     are all for the same clock.  */
-	  clock_gettime (timer->clock, &now);
+	  __clock_gettime (timer->clock, &now);
 
 	  while (1)
 	    {
@@ -460,9 +463,13 @@ int
 __timer_thread_start (struct thread_node *thread)
 {
   int retval = 1;
+  sigset_t set, oset;
 
   assert (!thread->exists);
   thread->exists = 1;
+
+  sigfillset (&set);
+  pthread_sigmask (SIG_SETMASK, &set, &oset);
 
   if (pthread_create (&thread->id, &thread->attr,
 		      (void *(*) (void *)) thread_func, thread) != 0)
@@ -470,6 +477,8 @@ __timer_thread_start (struct thread_node *thread)
       thread->exists = 0;
       retval = -1;
     }
+
+  pthread_sigmask (SIG_SETMASK, &oset, NULL);
 
   return retval;
 }
@@ -481,31 +490,6 @@ __timer_thread_wakeup (struct thread_node *thread)
   pthread_cond_broadcast (&thread->cond);
 }
 
-
-/* Compare two pthread_attr_t thread attributes for exact equality.
-   Returns 1 if they are equal, otherwise zero if they are not equal
-   or contain illegal values.  This version is NPTL-specific for
-   performance reason.  One could use the access functions to get the
-   values of all the fields of the attribute structure.  */
-static int
-thread_attr_compare (const pthread_attr_t *left, const pthread_attr_t *right)
-{
-  struct pthread_attr *ileft = (struct pthread_attr *) left;
-  struct pthread_attr *iright = (struct pthread_attr *) right;
-
-  return (ileft->flags == iright->flags
-	  && ileft->schedpolicy == iright->schedpolicy
-	  && (ileft->schedparam.sched_priority
-	      == iright->schedparam.sched_priority)
-	  && ileft->guardsize == iright->guardsize
-	  && ileft->stackaddr == iright->stackaddr
-	  && ileft->stacksize == iright->stacksize
-	  && ((ileft->cpuset == NULL && iright->cpuset == NULL)
-	      || (ileft->cpuset != NULL && iright->cpuset != NULL
-		  && ileft->cpusetsize == iright->cpusetsize
-		  && memcmp (ileft->cpuset, iright->cpuset,
-			     ileft->cpusetsize) == 0)));
-}
 
 
 /* Search the list of active threads and find one which has matching

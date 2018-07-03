@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gmail.com>, 2011.
 
@@ -20,6 +20,7 @@
 #include <math.h>
 #include <math_private.h>
 #include <math-svid-compat.h>
+#include <libm-alias-ldouble.h>
 
 
 #if LIBM_SVID_COMPAT
@@ -43,5 +44,5 @@ __logl (long double x)
 
   return  __ieee754_logl (x);
 }
-weak_alias (__logl, logl)
+libm_alias_ldouble (__log, log)
 #endif

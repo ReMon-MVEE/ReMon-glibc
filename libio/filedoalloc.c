@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -74,13 +74,13 @@ local_isatty (int fd)
 /* Allocate a file buffer, or switch to unbuffered I/O.  Streams for
    TTY devices default to line buffered.  */
 int
-_IO_file_doallocate (_IO_FILE *fp)
+_IO_file_doallocate (FILE *fp)
 {
-  _IO_size_t size;
+  size_t size;
   char *p;
   struct stat64 st;
 
-  size = _IO_BUFSIZ;
+  size = BUFSIZ;
   if (fp->_fileno >= 0 && __builtin_expect (_IO_SYSSTAT (fp, &st), 0) >= 0)
     {
       if (S_ISCHR (st.st_mode))
@@ -93,8 +93,8 @@ _IO_file_doallocate (_IO_FILE *fp)
 	      local_isatty (fp->_fileno))
 	    fp->_flags |= _IO_LINE_BUF;
 	}
-#if _IO_HAVE_ST_BLKSIZE
-      if (st.st_blksize > 0 && st.st_blksize < _IO_BUFSIZ)
+#if defined _STATBUF_ST_BLKSIZE
+      if (st.st_blksize > 0 && st.st_blksize < BUFSIZ)
 	size = st.st_blksize;
 #endif
     }

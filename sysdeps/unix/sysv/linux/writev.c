@@ -1,5 +1,5 @@
 /* Linux writev syscall implementation.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,6 +17,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <unistd.h>
+#include <sys/uio.h>
 #include <sysdep-cancel.h>
 
 ssize_t
@@ -24,4 +25,5 @@ __writev (int fd, const struct iovec *iov, int iovcnt)
 {
   return SYSCALL_CANCEL (writev, fd, iov, iovcnt);
 }
+libc_hidden_def (__writev)
 weak_alias (__writev, writev)

@@ -1,5 +1,5 @@
 /* Startup code compliant to the ELF i386 ABI.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -99,8 +99,11 @@ _start:
 	pushl main@GOT(%ebx)
 # else
 	/* Avoid relocation in static PIE since _start is called before
-	   it is relocated.  */
-	leal main@GOTOFF(%ebx), %eax
+	   it is relocated.  Don't use "leal main@GOTOFF(%ebx), %eax"
+	   since main may be in a shared object.  Linker will convert
+	   "movl main@GOT(%ebx), %eax" to "leal main@GOTOFF(%ebx), %eax"
+	   if main is defined locally.  */
+	movl main@GOT(%ebx), %eax
 	pushl %eax
 # endif
 

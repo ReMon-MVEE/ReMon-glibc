@@ -1,5 +1,5 @@
 /* float ceil function.  PowerPC32 version.
-   Copyright (C) 2004-2017 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,6 +17,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-float.h>
 
 	.section	.rodata.cst4,"aM",@progbits,4
 	.align	2
@@ -71,5 +72,5 @@ ENTRY (__ceilf)
 	blr
 	END (__ceilf)
 
-weak_alias (__ceilf, ceilf)
+libm_alias_float (__ceil, ceil)
 

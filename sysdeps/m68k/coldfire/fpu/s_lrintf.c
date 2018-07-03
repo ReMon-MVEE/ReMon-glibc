@@ -1,4 +1,4 @@
-/* Copyright (C) 2006-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2006-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,6 +15,8 @@
    License along with the GNU C Library.  If not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include <libm-alias-float.h>
+
 long int
 __lrintf (float x)
 {
@@ -22,4 +24,4 @@ __lrintf (float x)
   asm ("fmove.l %1,%0" : "=dm" (result) : "f" (x));
   return result;
 }
-weak_alias (__lrintf, lrintf)
+libm_alias_float (__lrint, lrint)

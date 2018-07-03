@@ -1,5 +1,5 @@
 /* Return arc hyperbolic cosine for a complex type.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -57,7 +57,10 @@ M_DECL_FUNC (__cacosh) (CFLOAT x)
       else
 	{
 	  __real__ res = M_NAN;
-	  __imag__ res = M_NAN;
+	  if (rcls == FP_ZERO)
+	    __imag__ res = M_MLIT (M_PI_2);
+	  else
+	    __imag__ res = M_NAN;
 	}
     }
   else if (rcls == FP_ZERO && icls == FP_ZERO)

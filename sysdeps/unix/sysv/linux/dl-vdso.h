@@ -1,5 +1,5 @@
 /* ELF symbol resolve functions for VDSO objects.
-   Copyright (C) 2005-2017 Free Software Foundation, Inc.
+   Copyright (C) 2005-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -44,6 +44,8 @@
 #define VDSO_HASH_LINUX_2_6_15	123718565
 #define VDSO_NAME_LINUX_2_6_29	"LINUX_2.6.29"
 #define VDSO_HASH_LINUX_2_6_29	123718585
+#define VDSO_NAME_LINUX_4_15	"LINUX_4.15"
+#define VDSO_HASH_LINUX_4_15	182943605
 
 /* Functions for resolving symbols in the VDSO link map.  */
 extern void *_dl_vdso_vsym (const char *name,

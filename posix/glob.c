@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -57,7 +57,9 @@
 # endif
 # define struct_stat64		struct stat64
 # define FLEXIBLE_ARRAY_MEMBER
+# include <shlib-compat.h>
 #else /* !_LIBC */
+# define __glob                 glob
 # define __getlogin_r(buf, len) getlogin_r (buf, len)
 # define __lstat64(fname, buf)  lstat (fname, buf)
 # define __stat64(fname, buf)   stat (fname, buf)
@@ -179,6 +181,29 @@ convert_dirent64 (const struct dirent64 *source)
     ((void) (buf), (void) (len), (void) (newlen), (void) (avar), (void *) 0)
 #endif
 
+static int
+glob_lstat (glob_t *pglob, int flags, const char *fullname)
+{
+/* Use on glob-lstat-compat.c to provide a compat symbol which does not
+   use lstat / gl_lstat.  */
+#ifdef GLOB_NO_LSTAT
+# define GL_LSTAT gl_stat
+# define LSTAT64 __stat64
+#else
+# define GL_LSTAT gl_lstat
+# define LSTAT64 __lstat64
+#endif
+
+  union
+  {
+    struct stat st;
+    struct_stat64 st64;
+  } ust;
+  return (__glibc_unlikely (flags & GLOB_ALTDIRFUNC)
+          ? pglob->GL_LSTAT (fullname, &ust.st)
+          : LSTAT64 (fullname, &ust.st64));
+}
+
 /* Set *R = A + B.  Return true if the answer is mathematically
    incorrect due to overflow; in this case, *R is the low order
    bits of the correct answer.  */
@@ -205,9 +230,6 @@ glob_use_alloca (size_t alloca_used, size_t len)
 static int glob_in_dir (const char *pattern, const char *directory,
 			int flags, int (*errfunc) (const char *, int),
 			glob_t *pglob, size_t alloca_used);
-extern int __glob_pattern_type (const char *pattern, int quote)
-    attribute_hidden;
-
 static int prefix_array (const char *prefix, char **array, size_t n) __THROWNL;
 static int collated_compare (const void *, const void *) __THROWNL;
 
@@ -248,6 +270,9 @@ next_brace_sub (const char *cp, int flags)
   return *cp != '\0' ? cp : NULL;
 }
 
+#ifndef GLOB_ATTRIBUTE
+# define GLOB_ATTRIBUTE
+#endif
 
 /* Do glob searching for PATTERN, placing results in PGLOB.
    The bits defined above may be set in FLAGS.
@@ -258,11 +283,9 @@ next_brace_sub (const char *cp, int flags)
    If memory cannot be allocated for PGLOB, GLOB_NOSPACE is returned.
    Otherwise, 'glob' returns zero.  */
 int
-#ifdef GLOB_ATTRIBUTE
 GLOB_ATTRIBUTE
-#endif
-glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
-      glob_t *pglob)
+__glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
+	glob_t *pglob)
 {
   const char *filename;
   char *dirname = NULL;
@@ -406,9 +429,10 @@ glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
 	      /* Construct the new glob expression.  */
 	      mempcpy (mempcpy (alt_start, p, next - p), rest, rest_len);
 
-	      result = glob (onealt,
-			     ((flags & ~(GLOB_NOCHECK | GLOB_NOMAGIC))
-			      | GLOB_APPEND), errfunc, pglob);
+	      result = __glob (onealt,
+			       ((flags & ~(GLOB_NOCHECK | GLOB_NOMAGIC))
+				| GLOB_APPEND),
+			       errfunc, pglob);
 
 	      /* If we got an error, return it.  */
 	      if (result && result != GLOB_NOMATCH)
@@ -557,7 +581,7 @@ glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
 		  flags &= ~(GLOB_NOCHECK | GLOB_NOMAGIC);
 		}
 	    }
-	  int val = glob (dirname, flags | GLOB_MARK, errfunc, pglob);
+	  int val = __glob (dirname, flags | GLOB_MARK, errfunc, pglob);
 	  if (val == 0)
 	    pglob->gl_flags = ((pglob->gl_flags & ~GLOB_MARK)
 			       | (flags & GLOB_MARK));
@@ -617,7 +641,8 @@ glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
 		    {
 # if defined HAVE_GETPWNAM_R || defined _LIBC
 		      size_t ssize = strlen (s.data) + 1;
-		      err = getpwnam_r (s.data, &pwbuf, s.data + ssize,
+		      char *sdata = s.data;
+		      err = getpwnam_r (sdata, &pwbuf, sdata + ssize,
 					s.length - ssize, &p);
 # else
 		      p = getpwnam (s.data);
@@ -746,11 +771,11 @@ glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
 		  char *p = mempcpy (newp, dirname + 1,
 				     unescape - dirname - 1);
 		  char *q = unescape;
-		  while (*q != '\0')
+		  while (q != end_name)
 		    {
 		      if (*q == '\\')
 			{
-			  if (q[1] == '\0')
+			  if (q + 1 == end_name)
 			    {
 			      /* "~fo\\o\\" unescape to user_name "foo\\",
 				 but "~fo\\o\\/" unescape to user_name
@@ -766,7 +791,7 @@ glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
 		  *p = '\0';
 		}
 	      else
-		*((char *) mempcpy (newp, dirname + 1, end_name - dirname))
+		*((char *) mempcpy (newp, dirname + 1, end_name - dirname - 1))
 		  = '\0';
 	      user_name = newp;
 	    }
@@ -802,6 +827,7 @@ glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
 	      {
 		size_t home_len = strlen (p->pw_dir);
 		size_t rest_len = end_name == NULL ? 0 : strlen (end_name);
+		char *d;
 
 		if (__glibc_unlikely (malloc_dirname))
 		  free (dirname);
@@ -821,8 +847,10 @@ glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
 		      }
 		    malloc_dirname = 1;
 		  }
-		*((char *) mempcpy (mempcpy (dirname, p->pw_dir, home_len),
-				    end_name, rest_len)) = '\0';
+		d = mempcpy (dirname, p->pw_dir, home_len);
+		if (end_name != NULL)
+		  d = mempcpy (d, end_name, rest_len);
+		*d = '\0';
 
 		dirlen = home_len + rest_len;
 		dirname_modified = 1;
@@ -931,11 +959,10 @@ glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
 	  dirs.gl_lstat = pglob->gl_lstat;
 	}
 
-      status = glob (dirname,
-		     ((flags & (GLOB_ERR | GLOB_NOESCAPE
-				| GLOB_ALTDIRFUNC))
-		      | GLOB_NOSORT | GLOB_ONLYDIR),
-		     errfunc, &dirs);
+      status = __glob (dirname,
+		       ((flags & (GLOB_ERR | GLOB_NOESCAPE | GLOB_ALTDIRFUNC))
+			| GLOB_NOSORT | GLOB_ONLYDIR),
+		       errfunc, &dirs);
       if (status != 0)
 	{
 	  if ((flags & GLOB_NOCHECK) == 0 || status != GLOB_NOMATCH)
@@ -1133,8 +1160,9 @@ glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
 
   return retval;
 }
-#if defined _LIBC && !defined glob
-libc_hidden_def (glob)
+#if defined _LIBC && !defined __glob
+versioned_symbol (libc, __glob, glob, GLIBC_2_27);
+libc_hidden_ver (__glob, glob)
 #endif
 
 
@@ -1250,11 +1278,6 @@ glob_in_dir (const char *pattern, const char *directory, int flags,
     }
   else if (meta == GLOBPAT_NONE)
     {
-      union
-      {
-	struct stat st;
-	struct_stat64 st64;
-      } ust;
       size_t patlen = strlen (pattern);
       size_t fullsize;
       bool alloca_fullname
@@ -1273,10 +1296,7 @@ glob_in_dir (const char *pattern, const char *directory, int flags,
       mempcpy (mempcpy (mempcpy (fullname, directory, dirlen),
 			"/", 1),
 	       pattern, patlen + 1);
-      if (((__builtin_expect (flags & GLOB_ALTDIRFUNC, 0)
-	   ? (*pglob->gl_lstat) (fullname, &ust.st)
-	    : __lstat64 (fullname, &ust.st64))
-	   == 0)
+      if (glob_lstat (pglob, flags, fullname) == 0
 	  || errno == EOVERFLOW)
 	/* We found this file to be existing.  Now tell the rest
 	   of the function to copy this name into the result.  */

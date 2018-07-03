@@ -12,6 +12,7 @@ extern size_t __strnlen (const char *__string, size_t __maxlen)
      __attribute_pure__;
 
 extern char *__strsep (char **__stringp, const char *__delim);
+libc_hidden_proto (__strsep)
 
 extern int __strverscmp (const char *__s1, const char *__s2)
      __attribute_pure__;
@@ -142,7 +143,7 @@ libc_hidden_builtin_proto (strspn)
 libc_hidden_builtin_proto (strstr)
 libc_hidden_builtin_proto (ffs)
 
-#if IS_IN (rtld)
+#if IS_IN (rtld) && !defined NO_RTLD_HIDDEN
 extern __typeof (__stpcpy) __stpcpy attribute_hidden;
 extern __typeof (__strdup) __strdup attribute_hidden;
 extern __typeof (__strerror_r) __strerror_r attribute_hidden;

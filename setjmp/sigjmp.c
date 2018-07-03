@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,7 +16,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <stddef.h>
-#include <setjmp.h>
+#include <setjmpP.h>
 #include <signal.h>
 
 /* This function is called by the `sigsetjmp' macro
@@ -28,7 +28,7 @@ __sigjmp_save (sigjmp_buf env, int savemask)
 {
   env[0].__mask_was_saved = (savemask &&
 			     __sigprocmask (SIG_BLOCK, (sigset_t *) NULL,
-					    &env[0].__saved_mask) == 0);
+					    (sigset_t *) &env[0].__saved_mask) == 0);
 
   return 0;
 }

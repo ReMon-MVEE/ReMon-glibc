@@ -1,5 +1,5 @@
 /* Compute x * y + z as ternary operation.
-   Copyright (C) 2010-2017 Free Software Foundation, Inc.
+   Copyright (C) 2010-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>, 2010.
 
@@ -21,7 +21,9 @@
 #include <math.h>
 #include <fenv.h>
 #include <ieee754.h>
+#include <math-barriers.h>
 #include <math_private.h>
+#include <libm-alias-double.h>
 
 /* This implementation uses rounding to odd to avoid problems with
    double rounding.  See a paper by Boldo and Melquiond:
@@ -97,5 +99,5 @@ __fma (double x, double y, double z)
   return u.d;
 }
 #ifndef __fma
-weak_alias (__fma, fma)
+libm_alias_double (__fma, fma)
 #endif

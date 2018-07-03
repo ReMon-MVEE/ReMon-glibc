@@ -1,5 +1,5 @@
 /* fmemopen implementation.
-   Copyright (C) 2015-2017 Free Software Foundation, Inc.
+   Copyright (C) 2015-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -22,7 +22,6 @@
 
 
 #include <errno.h>
-#include <libio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -38,7 +37,7 @@ struct fmemopen_cookie_struct
   int         mybuffer;  /* allocated my buffer?  */
   int         append;    /* buffer open for append?  */
   size_t      size;      /* buffer length in bytes.  */
-  _IO_off64_t pos;       /* current position at the buffer.  */
+  off64_t     pos;       /* current position at the buffer.  */
   size_t      maxpos;    /* max position in buffer.  */
 };
 
@@ -67,7 +66,7 @@ static ssize_t
 fmemopen_write (void *cookie, const char *b, size_t s)
 {
   fmemopen_cookie_t *c = (fmemopen_cookie_t *) cookie;;
-  _IO_off64_t pos = c->append ? c->maxpos : c->pos;
+  off64_t pos = c->append ? c->maxpos : c->pos;
   int addnullc = (s == 0 || b[s - 1] != '\0');
 
   if (pos + s > c->size)
@@ -98,9 +97,9 @@ fmemopen_write (void *cookie, const char *b, size_t s)
 
 
 static int
-fmemopen_seek (void *cookie, _IO_off64_t *p, int w)
+fmemopen_seek (void *cookie, off64_t *p, int w)
 {
-  _IO_off64_t np;
+  off64_t np;
   fmemopen_cookie_t *c = (fmemopen_cookie_t *) cookie;
 
   switch (w)

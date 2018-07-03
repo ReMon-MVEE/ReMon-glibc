@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Kaz Kylheku <kaz@ashi.footprints.net>.
 
@@ -55,7 +55,7 @@ timer_settime (timer_t timerid, int flags, const struct itimerspec *value,
 
   if ((flags & TIMER_ABSTIME) == 0)
     {
-      clock_gettime (timer->clock, &now);
+      __clock_gettime (timer->clock, &now);
       have_now = 1;
     }
 
@@ -80,7 +80,7 @@ timer_settime (timer_t timerid, int flags, const struct itimerspec *value,
 	  if (! have_now)
 	    {
 	      pthread_mutex_unlock (&__timer_mutex);
-	      clock_gettime (timer->clock, &now);
+	      __clock_gettime (timer->clock, &now);
 	      have_now = 1;
 	      pthread_mutex_lock (&__timer_mutex);
 	      timer_addref (timer);

@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -30,7 +30,7 @@
 char *
 _IO_gets (char *buf)
 {
-  _IO_size_t count;
+  size_t count;
   int ch;
   char *retval;
 
@@ -48,17 +48,17 @@ _IO_gets (char *buf)
       /* This is very tricky since a file descriptor may be in the
 	 non-blocking mode. The error flag doesn't mean much in this
 	 case. We return an error only when there is a new error. */
-      int old_error = _IO_stdin->_IO_file_flags & _IO_ERR_SEEN;
-      _IO_stdin->_IO_file_flags &= ~_IO_ERR_SEEN;
+      int old_error = _IO_stdin->_flags & _IO_ERR_SEEN;
+      _IO_stdin->_flags &= ~_IO_ERR_SEEN;
       buf[0] = (char) ch;
       count = _IO_getline (_IO_stdin, buf + 1, INT_MAX, '\n', 0) + 1;
-      if (_IO_stdin->_IO_file_flags & _IO_ERR_SEEN)
+      if (_IO_stdin->_flags & _IO_ERR_SEEN)
 	{
 	  retval = NULL;
 	  goto unlock_return;
 	}
       else
-	_IO_stdin->_IO_file_flags |= old_error;
+	_IO_stdin->_flags |= old_error;
     }
   buf[count] = 0;
   retval = buf;

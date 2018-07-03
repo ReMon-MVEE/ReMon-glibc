@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Per Bothner <bothner@cygnus.com>.
 
@@ -41,7 +41,7 @@ struct _IO_proc_file
 {
   struct _IO_FILE_complete_plus file;
   /* Following fields must match those in class procbuf (procbuf.h) */
-  _IO_pid_t pid;
+  pid_t pid;
   struct _IO_proc_file *next;
 };
 typedef struct _IO_proc_file _IO_proc_file;
@@ -58,14 +58,14 @@ unlock (void *not_used)
 }
 #endif
 
-_IO_FILE *
+FILE *
 attribute_compat_text_section
-_IO_old_proc_open (_IO_FILE *fp, const char *command, const char *mode)
+_IO_old_proc_open (FILE *fp, const char *command, const char *mode)
 {
   volatile int read_or_write;
   volatile int parent_end, child_end;
   int pipe_fds[2];
-  _IO_pid_t child_pid;
+  pid_t child_pid;
   if (_IO_file_is_open (fp))
     return NULL;
   if (__pipe (pipe_fds) < 0)
@@ -105,7 +105,7 @@ _IO_old_proc_open (_IO_FILE *fp, const char *command, const char *mode)
          popen() calls that remain open in the parent process are closed
 	 in the new child process." */
       for (p = old_proc_file_chain; p; p = p->next)
-	__close (_IO_fileno ((_IO_FILE *) p));
+	__close (_IO_fileno ((FILE *) p));
 
       execl ("/bin/sh", "sh", "-c", command, (char *) 0);
       _exit (127);
@@ -134,7 +134,7 @@ _IO_old_proc_open (_IO_FILE *fp, const char *command, const char *mode)
   return fp;
 }
 
-_IO_FILE *
+FILE *
 attribute_compat_text_section
 _IO_old_popen (const char *command, const char *mode)
 {
@@ -145,7 +145,7 @@ _IO_old_popen (const char *command, const char *mode)
     _IO_lock_t lock;
 #endif
   } *new_f;
-  _IO_FILE *fp;
+  FILE *fp;
 
   new_f = (struct locked_FILE *) malloc (sizeof (struct locked_FILE));
   if (new_f == NULL)
@@ -157,9 +157,6 @@ _IO_old_popen (const char *command, const char *mode)
   _IO_old_init (fp, 0);
   _IO_JUMPS_FILE_plus (&new_f->fpx.file) = &_IO_old_proc_jumps;
   _IO_old_file_init_internal ((struct _IO_FILE_plus *) &new_f->fpx.file);
-#if  !_IO_UNIFIED_JUMPTABLES
-  new_f->fpx.file.vtable = NULL;
-#endif
   if (_IO_old_proc_open (fp, command, mode) != NULL)
     return fp;
   _IO_un_link ((struct _IO_FILE_plus *) &new_f->fpx.file);
@@ -169,12 +166,12 @@ _IO_old_popen (const char *command, const char *mode)
 
 int
 attribute_compat_text_section
-_IO_old_proc_close (_IO_FILE *fp)
+_IO_old_proc_close (FILE *fp)
 {
   /* This is not name-space clean. FIXME! */
   int wstatus;
   _IO_proc_file **ptr = &old_proc_file_chain;
-  _IO_pid_t wait_pid;
+  pid_t wait_pid;
   int status = -1;
 
   /* Unlink from old_proc_file_chain. */

@@ -107,12 +107,10 @@ END LC_TELEPHONE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 LC_MESSAGES
-yesexpr "<U005E><U005B><U002B><U0031><U0065><U0045><U0079><U0059><U005D>"
-noexpr  "<U005E><U005B><U002D><U0030><U006D><U004D><U006E><U004E><U005D>"
-% eeyyee
-yesstr  "<U0065><U0065><U0079><U0079><U0065><U0065>"
-% miti
-nostr   "<U006D><U0069><U0074><U0069>"
+yesexpr "^[+1eEyY]"
+noexpr  "^[-0mMnN]"
+yesstr  "eeyyee"
+nostr   "miti"
 END LC_MESSAGES
 
 
@@ -120,12 +118,11 @@ LC_NAME
 %
 % This is the ISO_IEC TR14652 Locale definition for the LC_NAME category.
 %
-name_fmt    "<U0025><U0064><U0025><U0074><U0025><U0067><U0025><U0074>/
-<U0025><U006D><U0025><U0074><U0025><U0066>"
+name_fmt    "%d%t%g%t%m%t%f"
 name_gen    ""
-name_mr     "<U004F><U0062>"
-name_mrs    "<U0041><U0064>"
-name_miss   "<U0044><U0075>"
+name_mr     "Ob"
+name_mrs    "Ad"
+name_miss   "Du"
 name_ms     ""
 %
 END LC_NAME
@@ -141,20 +138,18 @@ LC_ADDRESS
 %
 % This is the ISO_IEC TR14652 Locale definition for the LC_ADDRESS category.
 %
-postal_fmt    "<U0025><U007A><U0025><U0063><U0025><U0054><U0025><U0073>/
-<U0025><U0062><U0025><U0065><U0025><U0072>"
-country_name  "<U0049><U0074><U006F><U006F><U0070><U0068><U0069><U0079><U0061><U0061>"
-country_post  "<U0045><U0054><U0048>"
-country_ab2   "<U0045><U0054>"
-country_ab3   "<U0045><U0054><U0048>"
+postal_fmt    "%z%c%T%s%b%e%r"
+country_name  "Itoophiyaa"
+country_post  "ETH"
+country_ab2   "ET"
+country_ab3   "ETH"
 country_num   231   % 210 found in at least one ISO 3166 doc
-% ETH
-country_car    "<U0045><U0054><U0048>"
+country_car    "ETH"
 % country_isbn  unknown, Need ISO 2108
-lang_name     "<U004F><U0072><U006F><U006D><U006F><U006F>"
-lang_ab       "<U006F><U006D>"
-lang_term     "<U006F><U0072><U006D>"
-lang_lib      "<U006F><U0072><U006D>"
+lang_name     "Oromoo"
+lang_ab       "om"
+lang_term     "orm"
+lang_lib      "orm"
 %
 END LC_ADDRESS
 
@@ -163,13 +158,7 @@ LC_TIME
 %
 % Abbreviated weekday names (%a)
 %
-abday    "Dil";/
-	 "Wix";/
-	 "Qib";/
-	 "Rob";/
-	 "Kam";/
-	 "Jim";/
-	 "San"
+abday    "Dil";"Wix";"Qib";"Rob";"Kam";"Jim";"San"
 %
 % Full weekday names (%A)
 %
@@ -216,7 +205,7 @@ mon      "Amajjii";/
 am_pm    "WD";"WB"
 %
 % Appropriate date representation (%x)
-d_fmt   "%d/%m/%Y"
+d_fmt   "%d//%m//%Y"
 %
 % Appropriate time representation (%X)
 t_fmt "%l:%M:%S"

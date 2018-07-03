@@ -1,4 +1,4 @@
-# Copyright (C) 1995-2017 Free Software Foundation, Inc.
+# Copyright (C) 1995-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -38,14 +38,14 @@ before-compile += $(objpfx)msgs.h
 
 install-others = $(inst_localedir)/locale.alias
 
-generated += msgs.h mtrace-tst-gettext.out tst-gettext.mtrace
+generated += msgs.h mtrace-tst-gettext.out tst-gettext.mtrace plural.c
 generated-dirs += domaindir localedir
 
-ifneq (no,$(BISON))
-plural.c: plural.y
+$(objpfx)plural.c: plural.y
+	$(make-target-directory)
 	$(BISON) $(BISONFLAGS) $@ $^
-endif
-$(objpfx)plural.o: plural.c
+
+$(objpfx)plural.o: $(objpfx)plural.c
 
 ifeq ($(run-built-tests),yes)
 ifeq (yes,$(build-shared))
@@ -120,18 +120,22 @@ $(objpfx)tst-gettext6.out: $(gen-locales)
 $(objpfx)tst-translit.out: $(gen-locales)
 endif
 
-$(objpfx)msgs.h: po2test.awk ../po/de.po
+$(objpfx)tst-gettext-de.po: ../po/de.po
+	$(make-target-directory)
+	LC_ALL=C $(AWK) '!/^"POT-Creation-Date: [0-9-]+ [0-9:+-]+\\n"$$/' $^ > $@
+
+$(objpfx)msgs.h: po2test.awk $(objpfx)tst-gettext-de.po
 	$(make-target-directory)
 	LC_ALL=C $(AWK) -f $^ > $@
 
-CFLAGS-tst-gettext.c = -DTESTSTRS_H=\"$(objpfx)msgs.h\"
-CFLAGS-tst-translit.c = -DOBJPFX=\"$(objpfx)\"
-CFLAGS-tst-gettext2.c = -DOBJPFX=\"$(objpfx)\"
-CFLAGS-tst-codeset.c = -DOBJPFX=\"$(objpfx)\"
-CFLAGS-tst-gettext3.c = -DOBJPFX=\"$(objpfx)\"
-CFLAGS-tst-gettext4.c = -DOBJPFX=\"$(objpfx)\"
-CFLAGS-tst-gettext5.c = -DOBJPFX=\"$(objpfx)\"
-CFLAGS-tst-gettext6.c = -DOBJPFX=\"$(objpfx)\"
+CFLAGS-tst-gettext.c += -DTESTSTRS_H=\"$(objpfx)msgs.h\"
+CFLAGS-tst-translit.c += -DOBJPFX=\"$(objpfx)\"
+CFLAGS-tst-gettext2.c += -DOBJPFX=\"$(objpfx)\"
+CFLAGS-tst-codeset.c += -DOBJPFX=\"$(objpfx)\"
+CFLAGS-tst-gettext3.c += -DOBJPFX=\"$(objpfx)\"
+CFLAGS-tst-gettext4.c += -DOBJPFX=\"$(objpfx)\"
+CFLAGS-tst-gettext5.c += -DOBJPFX=\"$(objpfx)\"
+CFLAGS-tst-gettext6.c += -DOBJPFX=\"$(objpfx)\"
 
 ifeq ($(have-thread-library),yes)
 ifeq (yes,$(build-shared))

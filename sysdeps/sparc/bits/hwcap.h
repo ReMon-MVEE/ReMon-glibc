@@ -1,5 +1,5 @@
 /* Defines for bits in AT_HWCAP.
-   Copyright (C) 2011-2017 Free Software Foundation, Inc.
+   Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -48,3 +48,4 @@
 #define HWCAP_SPARC_PAUSE	0x01000000
 #define HWCAP_SPARC_CBCOND	0x02000000
 #define HWCAP_SPARC_CRYPTO	0x04000000
+#define HWCAP_SPARC_ADP		0x08000000

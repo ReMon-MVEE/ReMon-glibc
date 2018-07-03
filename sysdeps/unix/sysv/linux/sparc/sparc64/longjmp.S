@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Richard Henderson (rth@tamu.edu).
 
@@ -45,7 +45,6 @@ END(__libc_siglongjmp)
 
 strong_alias(__libc_siglongjmp, __longjmp)
 strong_alias(__libc_siglongjmp, __libc_longjmp)
-libc_hidden_def (__libc_longjmp)
 weak_alias (__libc_siglongjmp, longjmp)
 weak_alias (__libc_siglongjmp, _longjmp)
 weak_alias (__libc_siglongjmp, siglongjmp)

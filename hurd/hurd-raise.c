@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -48,3 +48,4 @@ _hurd_raise_signal (struct hurd_sigstate *ss,
      other thread.  */
   return __msg_sig_post (_hurd_msgport, 0, 0, __mach_task_self ());
 }
+libc_hidden_def (_hurd_raise_signal)

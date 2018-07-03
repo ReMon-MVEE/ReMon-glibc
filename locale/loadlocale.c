@@ -1,5 +1,5 @@
 /* Functions to read locale data files.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -44,8 +44,12 @@ static const size_t _nl_category_num_items[] =
 
 #define NO_PAREN(arg, rest...) arg, ##rest
 
+/* The size of the array must be specified explicitly because some of
+   the 'items' may be subarrays, which will cause the compiler to deduce
+   an incorrect size from the initializer.  */
 #define DEFINE_CATEGORY(category, category_name, items, a) \
-static const enum value_type _nl_value_type_##category[] = { NO_PAREN items };
+static const enum value_type _nl_value_type_##category     \
+  [_NL_ITEM_INDEX (_NL_NUM_##category)] = { NO_PAREN items };
 #define DEFINE_ELEMENT(element, element_name, optstd, type, rest...) \
   [_NL_ITEM_INDEX (element)] = type,
 #include "categories.def"

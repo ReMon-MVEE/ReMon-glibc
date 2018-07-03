@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,13 +17,10 @@
 
 #include <errno.h>
 #include <signal.h>
-#include <unistd.h>
 #include <string.h>
-
+#include <unistd.h>
 #include <sysdep.h>
-#include <sys/syscall.h>
 
-#ifdef __NR_rt_sigqueueinfo
 /* Return any pending signal or wait for one for the given time.  */
 int
 __sigqueue (pid_t pid, int sig, const union sigval val)
@@ -40,9 +37,6 @@ __sigqueue (pid_t pid, int sig, const union sigval val)
   info.si_uid = __getuid ();
   info.si_value = val;
 
-  return INLINE_SYSCALL (rt_sigqueueinfo, 3, pid, sig, &info);
+  return INLINE_SYSCALL_CALL (rt_sigqueueinfo, pid, sig, &info);
 }
 weak_alias (__sigqueue, sigqueue)
-#else
-# include <signal/sigqueue.c>
-#endif

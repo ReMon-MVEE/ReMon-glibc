@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -320,8 +320,8 @@ compare_from_file (struct locarhandle *ah, void *p1, uint32_t offset2,
 {
   void *p2 = xmalloc (size);
   if (pread (ah->fd, p2, size, offset2) != size)
-    WITH_CUR_LOCALE (error (4, errno,
-			    _("cannot read data from locale archive")));
+    record_error (4, errno,
+		  _("cannot read data from locale archive"));
 
   int res = memcmp (p1, p2, size);
   free (p2);
@@ -1385,17 +1385,13 @@ add_locales_to_archive (size_t nlist, char *list[], bool replace)
 		     a directory we have to look at a file with the
 		     prefix "SYS_".  Otherwise we have found what we
 		     are looking for.  */
-#ifdef _DIRENT_HAVE_D_TYPE
 		  d_type = d->d_type;
 
 		  if (d_type != DT_REG)
-#endif
 		    {
 		      char fullname[fnamelen + 2 * strlen (d->d_name) + 7];
 
-#ifdef _DIRENT_HAVE_D_TYPE
 		      if (d_type == DT_UNKNOWN)
-#endif
 			{
 			  strcpy (stpcpy (stpcpy (fullname, fname), "/"),
 				  d->d_name);

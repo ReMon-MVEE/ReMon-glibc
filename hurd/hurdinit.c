@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -110,6 +110,7 @@ _hurd_init (int flags, char **argv,
      assume the availability of the POSIX.1 services we provide.  */
   RUN_HOOK (_hurd_subinit, ());
 }
+libc_hidden_def (_hurd_init)
 
 #include <hurd/signal.h>
 

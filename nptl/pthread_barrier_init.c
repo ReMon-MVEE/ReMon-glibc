@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -32,6 +32,10 @@ int
 __pthread_barrier_init (pthread_barrier_t *barrier,
 			const pthread_barrierattr_t *attr, unsigned int count)
 {
+  ASSERT_TYPE_SIZE (pthread_barrier_t, __SIZEOF_PTHREAD_BARRIER_T);
+  ASSERT_PTHREAD_INTERNAL_SIZE (pthread_barrier_t,
+				struct pthread_barrier);
+
   struct pthread_barrier *ibarrier;
 
   /* XXX EINVAL is not specified by POSIX as a possible error code for COUNT

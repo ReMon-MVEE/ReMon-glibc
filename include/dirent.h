@@ -15,12 +15,13 @@ struct scandir_cancel_struct
 };
 
 /* Now define the internal interfaces.  */
-extern DIR *__opendir (const char *__name);
+extern DIR *__opendir (const char *__name) attribute_hidden;
 extern DIR *__opendirat (int dfd, const char *__name) attribute_hidden;
-extern DIR *__fdopendir (int __fd);
-extern int __closedir (DIR *__dirp);
-extern struct dirent *__readdir (DIR *__dirp);
+extern DIR *__fdopendir (int __fd) attribute_hidden;
+extern int __closedir (DIR *__dirp) attribute_hidden;
+extern struct dirent *__readdir (DIR *__dirp) attribute_hidden;
 extern struct dirent64 *__readdir64 (DIR *__dirp);
+libc_hidden_proto (__readdir64)
 extern int __readdir_r (DIR *__dirp, struct dirent *__entry,
 			struct dirent **__result);
 extern int __readdir64_r (DIR *__dirp, struct dirent64 *__entry,
@@ -46,6 +47,9 @@ extern int __versionsort64 (const struct dirent64 **a,
 extern DIR *__alloc_dir (int fd, bool close_fd, int flags,
 			 const struct stat64 *statp) attribute_hidden;
 extern __typeof (rewinddir) __rewinddir;
+extern __typeof (seekdir) __seekdir;
+extern __typeof (dirfd) __dirfd;
+libc_hidden_proto (dirfd);
 
 extern void __scandir_cancel_handler (void *arg) attribute_hidden;
 extern int __scandir_tail (DIR *dp,
@@ -54,31 +58,25 @@ extern int __scandir_tail (DIR *dp,
 			   int (*cmp) (const struct dirent **,
 				       const struct dirent **))
   attribute_hidden;
-#  ifdef _DIRENT_MATCHES_DIRENT64
-#   define __scandir64_tail (dp, namelist, select, cmp)         \
-  __scandir_tail (dp, (struct dirent ***) (namelist),           \
-		  (int (*) (const struct dirent *)) (select),   \
-		  (int (*) (const struct dirent **,             \
-			    const struct dirent **)) (cmp))
-#  else
+#  if !_DIRENT_MATCHES_DIRENT64
+extern int __scandir_tail (DIR *dp,
+			   struct dirent ***namelist,
+			   int (*select) (const struct dirent *),
+			   int (*cmp) (const struct dirent **,
+					 const struct dirent **))
+  attribute_hidden;
+#  endif
 extern int __scandir64_tail (DIR *dp,
 			     struct dirent64 ***namelist,
 			     int (*select) (const struct dirent64 *),
 			     int (*cmp) (const struct dirent64 **,
 					 const struct dirent64 **))
   attribute_hidden;
-#  endif
 
 libc_hidden_proto (__rewinddir)
 extern __typeof (scandirat) __scandirat;
-libc_hidden_proto (__scandirat)
-libc_hidden_proto (scandirat64)
 
-#  if IS_IN (rtld)
-extern __typeof (__closedir) __closedir attribute_hidden;
-extern __typeof (__fdopendir) __fdopendir attribute_hidden;
-extern __typeof (__readdir) __readdir attribute_hidden;
-extern __typeof (__readdir64) __readdir64 attribute_hidden;
+#  if IS_IN (rtld) && !defined NO_RTLD_HIDDEN
 extern __typeof (__rewinddir) __rewinddir attribute_hidden;
 #  endif
 # endif

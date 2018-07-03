@@ -1,4 +1,4 @@
-# Copyright (C) 1995-2017 Free Software Foundation, Inc.
+# Copyright (C) 1995-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -50,7 +50,7 @@ strop-tests :=  wcscmp wcsncmp wmemcmp wcslen wcschr wcsrchr wcscpy wcsnlen \
 tests := tst-wcstof wcsmbs-tst1 tst-wcsnlen tst-btowc tst-mbrtowc \
 	 tst-wcrtomb tst-wcpncpy tst-mbsrtowcs tst-wchar-h tst-mbrtowc2 \
 	 tst-c16c32-1 wcsatcliff tst-wcstol-locale tst-wcstod-nan-locale \
-	 tst-wcstod-round \
+	 tst-wcstod-round test-char-types tst-fgetwc-after-eof \
 	 $(addprefix test-,$(strop-tests))
 
 include ../Rules
@@ -72,27 +72,27 @@ endif
 
 $(objpfx)tst-wcstod-round: $(libm)
 
-CFLAGS-wcwidth.c = -I../wctype
-CFLAGS-wcswidth.c = -I../wctype
+CFLAGS-wcwidth.c += -I../wctype
+CFLAGS-wcswidth.c += -I../wctype
 
 strtox-CFLAGS = -I../include
-CFLAGS-wcstol.c = $(strtox-CFLAGS)
-CFLAGS-wcstoul.c = $(strtox-CFLAGS)
-CFLAGS-wcstoll.c = $(strtox-CFLAGS)
-CFLAGS-wcstoull.c = $(strtox-CFLAGS)
-CFLAGS-wcstod.c = $(strtox-CFLAGS)
-CFLAGS-wcstold.c = $(strtox-CFLAGS)
-CFLAGS-wcstof128.c = $(strtox-CFLAGS)
-CFLAGS-wcstof.c = $(strtox-CFLAGS)
-CFLAGS-wcstol_l.c = $(strtox-CFLAGS)
-CFLAGS-wcstoul_l.c = $(strtox-CFLAGS)
-CFLAGS-wcstoll_l.c = $(strtox-CFLAGS)
-CFLAGS-wcstoull_l.c = $(strtox-CFLAGS)
-CFLAGS-wcstod_l.c = $(strtox-CFLAGS)
-CFLAGS-wcstold_l.c = $(strtox-CFLAGS)
-CFLAGS-wcstof128_l.c = $(strtox-CFLAGS)
-CFLAGS-wcstof_l.c = $(strtox-CFLAGS)
-CPPFLAGS-tst-wchar-h.c = -D_FORTIFY_SOURCE=2
+CFLAGS-wcstol.c += $(strtox-CFLAGS)
+CFLAGS-wcstoul.c += $(strtox-CFLAGS)
+CFLAGS-wcstoll.c += $(strtox-CFLAGS)
+CFLAGS-wcstoull.c += $(strtox-CFLAGS)
+CFLAGS-wcstod.c += $(strtox-CFLAGS)
+CFLAGS-wcstold.c += $(strtox-CFLAGS)
+CFLAGS-wcstof128.c += $(strtox-CFLAGS)
+CFLAGS-wcstof.c += $(strtox-CFLAGS)
+CFLAGS-wcstol_l.c += $(strtox-CFLAGS)
+CFLAGS-wcstoul_l.c += $(strtox-CFLAGS)
+CFLAGS-wcstoll_l.c += $(strtox-CFLAGS)
+CFLAGS-wcstoull_l.c += $(strtox-CFLAGS)
+CFLAGS-wcstod_l.c += $(strtox-CFLAGS)
+CFLAGS-wcstold_l.c += $(strtox-CFLAGS)
+CFLAGS-wcstof128_l.c += $(strtox-CFLAGS)
+CFLAGS-wcstof_l.c += $(strtox-CFLAGS)
+CPPFLAGS-tst-wchar-h.c += -D_FORTIFY_SOURCE=2
 
 CFLAGS-isoc99_wscanf.c += -fexceptions
 CFLAGS-isoc99_fwscanf.c += -fexceptions
@@ -102,6 +102,6 @@ CFLAGS-isoc99_vfwscanf.c += -fexceptions
 CPPFLAGS += $(libio-mtsafe)
 
 # We need to find the default version of strtold_l in stdlib.
-CPPFLAGS-wcstold_l.c = -I../stdlib
+CPPFLAGS-wcstold_l.c += -I../stdlib
 
 $(objpfx)tst-wcstod-nan-locale: $(libm)

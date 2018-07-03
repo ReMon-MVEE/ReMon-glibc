@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,10 +21,10 @@
 #include "../libio/strfile.h"
 
 
-static int _IO_str_chk_overflow (_IO_FILE *fp, int c) __THROW;
+static int _IO_str_chk_overflow (FILE *fp, int c) __THROW;
 
 static int
-_IO_str_chk_overflow (_IO_FILE *fp, int c)
+_IO_str_chk_overflow (FILE *fp, int c)
 {
   /* When we come to here this means the user supplied buffer is
      filled.  */

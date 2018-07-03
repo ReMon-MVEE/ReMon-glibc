@@ -1,5 +1,5 @@
 /* Implement powl for x86 using extra-precision log.
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,7 @@
 
 #include <math.h>
 #include <math_private.h>
+#include <math-underflow.h>
 #include <stdbool.h>
 
 /* High parts and low parts of -log (k/16), for integer k from 12 to

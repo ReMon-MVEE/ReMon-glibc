@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2017 Free Software Foundation, Inc.
+# Copyright (C) 1991-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -25,7 +25,7 @@ include ../Makeconfig
 headers	:= stdlib.h bits/stdlib.h bits/stdlib-ldbl.h bits/stdlib-float.h      \
 	   monetary.h bits/monetary-ldbl.h				      \
 	   inttypes.h stdint.h bits/wordsize.h				      \
-	   errno.h sys/errno.h bits/errno.h				      \
+	   errno.h sys/errno.h bits/errno.h bits/types/error_t.h	      \
 	   ucontext.h sys/ucontext.h					      \
 	   alloca.h fmtmsg.h						      \
 	   bits/stdlib-bsearch.h sys/random.h bits/stdint-intn.h	      \
@@ -81,7 +81,10 @@ tests		:= tst-strtol tst-strtod testmb testrand testsort testdiv   \
 		   tst-quick_exit tst-thread-quick_exit tst-width	    \
 		   tst-width-stdint tst-strfrom tst-strfrom-locale	    \
 		   tst-getrandom tst-atexit tst-at_quick_exit 		    \
-		   tst-cxa_atexit tst-on_exit
+		   tst-cxa_atexit tst-on_exit test-atexit-race 		    \
+		   test-at_quick_exit-race test-cxa_atexit-race             \
+		   test-on_exit-race test-dlclose-exit-race 		    \
+		   tst-makecontext-align test-bz22786
 
 tests-internal	:= tst-strtod1i tst-strtod3 tst-strtod4 tst-strtod5i \
 		   tst-tls-atexit tst-tls-atexit-nodelete
@@ -90,6 +93,15 @@ tests-static	:= tst-secure-getenv
 ifeq ($(build-hardcoded-path-in-tests),yes)
 tests += tst-empty-env
 endif
+
+LDLIBS-test-atexit-race = $(shared-thread-library)
+LDLIBS-test-at_quick_exit-race = $(shared-thread-library)
+LDLIBS-test-cxa_atexit-race = $(shared-thread-library)
+LDLIBS-test-on_exit-race = $(shared-thread-library)
+
+LDLIBS-test-dlclose-exit-race = $(shared-thread-library) $(libdl)
+LDFLAGS-test-dlclose-exit-race = $(LDFLAGS-rdynamic)
+LDLIBS-test-dlclose-exit-race-helper.so = $(libsupport) $(shared-thread-library)
 
 ifeq ($(have-cxx-thread_local),yes)
 CFLAGS-tst-quick_exit.o = -std=c++11
@@ -101,7 +113,7 @@ else
 tests-unsupported += tst-quick_exit tst-thread-quick_exit
 endif
 
-modules-names	= tst-tls-atexit-lib
+modules-names	= tst-tls-atexit-lib test-dlclose-exit-race-helper
 extra-test-objs += $(addsuffix .os, $(modules-names))
 
 ifeq ($(build-shared),yes)
@@ -123,26 +135,26 @@ extra-test-objs += tst-putenvmod.os
 
 generated += isomac isomac.out tst-putenvmod.so
 
-CFLAGS-bsearch.c = $(uses-callbacks)
-CFLAGS-msort.c = $(uses-callbacks)
-CFLAGS-qsort.c = $(uses-callbacks)
-CFLAGS-system.c = -fexceptions
+CFLAGS-bsearch.c += $(uses-callbacks)
+CFLAGS-msort.c += $(uses-callbacks)
+CFLAGS-qsort.c += $(uses-callbacks)
+CFLAGS-system.c += -fexceptions
 CFLAGS-system.os = -fomit-frame-pointer
-CFLAGS-fmtmsg.c = -fexceptions
+CFLAGS-fmtmsg.c += -fexceptions
 
-CFLAGS-strfmon.c = $(libio-mtsafe)
-CFLAGS-strfmon_l.c = $(libio-mtsafe)
+CFLAGS-strfmon.c += $(libio-mtsafe)
+CFLAGS-strfmon_l.c += $(libio-mtsafe)
 
 # The strfrom class of functions call __printf_fp in order to convert the
 # floating-point value to characters.  This requires the value of IO_MTSAFE_IO.
-CFLAGS-strfromd.c = $(libio-mtsafe)
-CFLAGS-strfromf.c = $(libio-mtsafe)
-CFLAGS-strfroml.c = $(libio-mtsafe)
+CFLAGS-strfromd.c += $(libio-mtsafe)
+CFLAGS-strfromf.c += $(libio-mtsafe)
+CFLAGS-strfroml.c += $(libio-mtsafe)
 
-CFLAGS-tst-bsearch.c = $(stack-align-test-flags)
-CFLAGS-tst-qsort.c = $(stack-align-test-flags)
+CFLAGS-tst-bsearch.c += $(stack-align-test-flags)
+CFLAGS-tst-qsort.c += $(stack-align-test-flags)
 CFLAGS-tst-makecontext.c += -funwind-tables
-CFLAGS-tst-makecontext2.c = $(stack-align-test-flags)
+CFLAGS-tst-makecontext2.c += $(stack-align-test-flags)
 
 # Run a test on the header files we use.
 tests-special += $(objpfx)isomac.out
@@ -170,6 +182,7 @@ $(objpfx)tst-strtod-nan-locale.out: $(gen-locales)
 $(objpfx)tst-strfmon_l.out: $(gen-locales)
 $(objpfx)tst-strfrom.out: $(gen-locales)
 $(objpfx)tst-strfrom-locale.out: $(gen-locales)
+$(objpfx)test-dlclose-exit-race.out: $(objpfx)test-dlclose-exit-race-helper.so
 endif
 
 # Testdir has to be named stdlib and needs to be writable
@@ -208,6 +221,7 @@ $(objpfx)tst-strtod6: $(libm)
 $(objpfx)tst-strtod-nan-locale: $(libm)
 
 tst-tls-atexit-lib.so-no-z-defs = yes
+test-dlclose-exit-race-helper.so-no-z-defs = yes
 
 $(objpfx)tst-tls-atexit: $(shared-thread-library) $(libdl)
 $(objpfx)tst-tls-atexit.out: $(objpfx)tst-tls-atexit-lib.so

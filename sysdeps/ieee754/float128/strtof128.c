@@ -1,5 +1,5 @@
 /* strtof128 wrapper of strtof128_l.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,6 +19,13 @@
 /* The actual implementation for all floating point sizes is in strtod.c.
    These macros tell it to produce the `_Float128' version, `strtof128'.  */
 
+#include <bits/floatn.h>
+
+#if __HAVE_FLOAT64X && !__HAVE_FLOAT64X_LONG_DOUBLE
+# define strtof64x __hide_strtof64x
+# define wcstof64x __hide_wcstof64x
+#endif
+
 #define FLOAT		_Float128
 #define FLT		FLT128
 #ifdef USE_WIDE_CHAR
@@ -32,3 +39,13 @@
 #include <float128_private.h>
 
 #include <stdlib/strtod.c>
+
+#if __HAVE_FLOAT64X && !__HAVE_FLOAT64X_LONG_DOUBLE
+# undef strtof64x
+# undef wcstof64x
+# ifdef USE_WIDE_CHAR
+weak_alias (wcstof128, wcstof64x)
+# else
+weak_alias (strtof128, strtof64x)
+# endif
+#endif

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Testing the implementation of localedata.
-# Copyright (C) 1998-2017 Free Software Foundation, Inc.
+# Copyright (C) 1998-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 # Contributed by Andreas Jaeger, <aj@arthur.rhein-neckar.de>, 1998.
 
@@ -34,18 +34,29 @@ test_locale ()
     if test $rep; then
       rep="--repertoire-map $rep"
     fi
+    # We expect the test locales to fail with warnings, they are mostly
+    # incomplete and used for testing purposes, but that is OK.
+    ret=0
     ${localedef_before_env} \
     ${run_program_env} \
     I18NPATH=. \
     ${localedef_after_env} --quiet -c -f $charmap -i $input \
-      ${rep} ${common_objpfx}localedata/$out
-
-    if [ $? -ne 0 ]; then
+      ${rep} ${common_objpfx}localedata/$out || ret=$?
+    # Any error greater than one means we ran into an implementation
+    # defined limit or saw an error that caused the output not to
+    # be written, or lastly saw a fatal error that terminated
+    # localedef.
+    if [ $ret -gt 1 ]; then
 	echo "Charmap: \"${charmap}\" Inputfile: \"${input}\"" \
 	     "Outputdir: \"${out}\" failed"
 	exit 1
     else
-	echo "locale $out generated succesfully"
+	echo -n "locale $out generated succesfully"
+        if [ $ret -eq 1 ]; then
+	    echo " (with warnings)"
+        else
+	    echo " (without warnings)"
+        fi
     fi
 }
 

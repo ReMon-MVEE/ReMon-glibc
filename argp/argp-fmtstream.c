@@ -1,5 +1,5 @@
 /* Word-wrapping and line-truncating streams
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
@@ -30,7 +30,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 
-#include "argp-fmtstream.h"
+#include <argp-fmtstream.h>
 #include "argp-namefrob.h"
 
 #ifndef ARGP_FMTSTREAM_USE_LINEWRAP

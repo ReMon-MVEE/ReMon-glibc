@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,8 +17,7 @@
 
 /* Declare the few Mach system calls (except mach_msg, in <mach/message.h>).
    This does not include the kernel RPC shortcut calls (in <mach-shortcuts.h>).
-
-   This file omits the MACH_IPC_COMPAT functions.  */
+   */
 
 #ifndef	_MACH_MACH_TRAPS_H
 

@@ -1,5 +1,5 @@
 /* Measure strcoll execution time in different locales.
-   Copyright (C) 2015-2017 Free Software Foundation, Inc.
+   Copyright (C) 2015-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <locale.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include "json-lib.h"
 #include "bench-timing.h"
 #include <string.h>

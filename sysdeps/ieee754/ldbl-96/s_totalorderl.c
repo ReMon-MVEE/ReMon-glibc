@@ -1,5 +1,5 @@
 /* Total order operation.  ldbl-96 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,11 +19,12 @@
 #include <float.h>
 #include <math.h>
 #include <math_private.h>
+#include <libm-alias-ldouble.h>
 #include <nan-high-order-bit.h>
 #include <stdint.h>
 
 int
-totalorderl (long double x, long double y)
+__totalorderl (long double x, long double y)
 {
   int16_t expx, expy;
   uint32_t hx, hy;
@@ -55,3 +56,4 @@ totalorderl (long double x, long double y)
   ly ^= y_sign;
   return expx < expy || (expx == expy && (hx < hy || (hx == hy && lx <= ly)));
 }
+libm_alias_ldouble (__totalorder, totalorder)

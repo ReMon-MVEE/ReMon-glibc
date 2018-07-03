@@ -1,5 +1,5 @@
 /* Expression parsing for plural form selection.
-   Copyright (C) 2000-2017 Free Software Foundation, Inc.
+   Copyright (C) 2000-2018 Free Software Foundation, Inc.
    Written by Ulrich Drepper <drepper@cygnus.com>, 2000.
 
    This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "plural-exp.h"
+#include <plural-exp.h>
 
 #if (defined __GNUC__ && !(defined __APPLE_CC_ && __APPLE_CC__ > 1) && \
      !defined __cplusplus)					       \

@@ -1,5 +1,5 @@
 /* Round a 32-bit floating point value to the nearest integer.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,6 +17,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <math.h>
+#include <libm-alias-float.h>
 
 float
 __rintf (float x)
@@ -39,4 +40,4 @@ __rintf (float x)
 
   return x;
 }
-weak_alias (__rintf, rintf)
+libm_alias_float (__rint, rint)

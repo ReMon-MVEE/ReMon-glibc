@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -40,7 +40,7 @@ tcflow (int fd, int action)
 	   `write'.  Is there another way to do this?  */
 	struct termios attr;
 	unsigned char c;
-	if (tcgetattr (fd, &attr) < 0)
+	if (__tcgetattr (fd, &attr) < 0)
 	  return -1;
 	c = attr.c_cc[action == TCIOFF ? VSTOP : VSTART];
 	if (c != _POSIX_VDISABLE && write (fd, &c, 1) < 1)

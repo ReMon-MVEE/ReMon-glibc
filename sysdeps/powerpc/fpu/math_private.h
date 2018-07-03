@@ -1,5 +1,5 @@
 /* Private inline math functions for powerpc.
-   Copyright (C) 2006-2017 Free Software Foundation, Inc.
+   Copyright (C) 2006-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@
 #include <ldsodefs.h>
 #include <dl-procinfo.h>
 #include <fenv_private.h>
+
 #include_next <math_private.h>
 
 #if defined _ARCH_PWR9 && __HAVE_DISTINCT_FLOAT128
@@ -34,36 +35,6 @@ __ieee754_sqrtf128 (_Float128 __x)
   return __z;
 }
 #endif
-
-extern double __slow_ieee754_sqrt (double);
-extern __always_inline double
-__ieee754_sqrt (double __x)
-{
-  double __z;
-
-#ifdef _ARCH_PPCSQ
-   asm ("fsqrt	%0,%1" : "=f" (__z) : "f" (__x));
-#else
-   __z = __slow_ieee754_sqrt(__x);
-#endif
-
-  return __z;
-}
-
-extern float __slow_ieee754_sqrtf (float);
-extern __always_inline float
-__ieee754_sqrtf (float __x)
-{
-  float __z;
-
-#ifdef _ARCH_PPCSQ
-  asm ("fsqrts	%0,%1" : "=f" (__z) : "f" (__x));
-#else
-   __z = __slow_ieee754_sqrtf(__x);
-#endif
-
-  return __z;
-}
 
 #if defined _ARCH_PWR5X
 

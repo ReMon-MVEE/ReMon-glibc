@@ -1,4 +1,4 @@
-/* Copyright (C) 2007-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2007-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,7 @@
 #define __llrintf	not___llrintf
 #define llrintf		not_llrintf
 #include <math.h>
+#include <libm-alias-float.h>
 #undef __llrintf
 #undef llrintf
 
@@ -34,5 +35,5 @@ __lrintf (float x)
 }
 
 strong_alias (__lrintf, __llrintf)
-weak_alias (__lrintf, lrintf)
-weak_alias (__llrintf, llrintf)
+libm_alias_float (__lrint, lrint)
+libm_alias_float (__llrint, llrint)

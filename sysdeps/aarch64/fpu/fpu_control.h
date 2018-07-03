@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -19,19 +19,28 @@
 #ifndef _AARCH64_FPU_CONTROL_H
 #define _AARCH64_FPU_CONTROL_H
 
+#include <features.h>
+
 /* Macros for accessing the FPCR and FPSR.  */
 
-#define _FPU_GETCW(fpcr) \
+#if __GNUC_PREREQ (6,0)
+# define _FPU_GETCW(fpcr) (fpcr = __builtin_aarch64_get_fpcr ())
+# define _FPU_SETCW(fpcr) __builtin_aarch64_set_fpcr (fpcr)
+# define _FPU_GETFPSR(fpsr) (fpsr = __builtin_aarch64_get_fpsr ())
+# define _FPU_SETFPSR(fpsr) __builtin_aarch64_set_fpsr (fpsr)
+#else
+# define _FPU_GETCW(fpcr) \
   __asm__ __volatile__ ("mrs	%0, fpcr" : "=r" (fpcr))
 
-#define _FPU_SETCW(fpcr) \
+# define _FPU_SETCW(fpcr) \
   __asm__ __volatile__ ("msr	fpcr, %0" : : "r" (fpcr))
 
-#define _FPU_GETFPSR(fpsr) \
+# define _FPU_GETFPSR(fpsr) \
   __asm__ __volatile__ ("mrs	%0, fpsr" : "=r" (fpsr))
 
-#define _FPU_SETFPSR(fpsr) \
+# define _FPU_SETFPSR(fpsr) \
   __asm__ __volatile__ ("msr	fpsr, %0" : : "r" (fpsr))
+#endif
 
 /* Reserved bits should be preserved when modifying register
    contents. These two masks indicate which bits in each of FPCR and

@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,11 +18,16 @@
 #include <libc-lock.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <cthreads.h>
+
+/* This serves as stub "self" pointer for libc locks when TLS is not initialized
+   yet.  */
+char __libc_lock_self0[0];
 
 /* Placeholder for key creation routine from Hurd cthreads library.  */
 int
 weak_function
-cthread_keycreate (cthread_key_t *key)
+__cthread_keycreate (cthread_key_t *key)
 {
   __set_errno (ENOSYS);
  *key = -1;
@@ -32,7 +37,7 @@ cthread_keycreate (cthread_key_t *key)
 /* Placeholder for key retrieval routine from Hurd cthreads library.  */
 int
 weak_function
-cthread_getspecific (cthread_key_t key, void **pval)
+__cthread_getspecific (cthread_key_t key, void **pval)
 {
   *pval = NULL;
   __set_errno (ENOSYS);
@@ -42,18 +47,8 @@ cthread_getspecific (cthread_key_t key, void **pval)
 /* Placeholder for key setting routine from Hurd cthreads library.  */
 int
 weak_function
-cthread_setspecific (cthread_key_t key, void *val)
+__cthread_setspecific (cthread_key_t key, void *val)
 {
   __set_errno (ENOSYS);
   return -1;
-}
-
-/* Call cthread_getspecific which gets a pointer to the return value instead
-   of just returning it.  */
-void *
-__libc_getspecific (cthread_key_t key)
-{
-  void *val;
-  cthread_getspecific (key, &val);
-  return val;
 }

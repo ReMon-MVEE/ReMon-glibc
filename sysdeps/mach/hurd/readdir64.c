@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2001-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -98,4 +98,5 @@ __readdir64 (DIR *dirp)
   return dp;
 }
 
+libc_hidden_def (__readdir64)
 weak_alias (__readdir64, readdir64)

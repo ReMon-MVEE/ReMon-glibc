@@ -1,5 +1,5 @@
 /* Optimized strcasecmp_l implementation for POWER7.
-   Copyright (C) 2013-2017 Free Software Foundation, Inc.
+   Copyright (C) 2013-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,9 +16,7 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#include <sysdep.h>
-
-#define __strcasecmp __strcasecmp_l_power7
+#define __strcasecmp_l __strcasecmp_l_power7
 
 #undef weak_alias
 #define weak_alias(name, alias)
@@ -27,5 +25,7 @@
 #define libc_hidden_builtin_def(name)
 
 #define USE_IN_EXTENDED_LOCALE_MODEL
+#define __STRCMP __strcasecmp_l
+#define STRCMP   strcasecmp_l
 
 #include <sysdeps/powerpc/powerpc64/power7/strcasecmp.S>

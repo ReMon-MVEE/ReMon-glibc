@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -20,22 +20,15 @@
 #include <shlib-compat.h>
 
 int __posix_fadvise64_l64 (int fd, off64_t offset, off64_t len, int advise);
+libc_hidden_proto (__posix_fadvise64_l64)
 
 /* Both arm and powerpc implements fadvise64_64 with last 'advise' argument
    just after 'fd' to avoid the requirement of implementing 7-arg syscalls.
    ARM also defines __NR_fadvise64_64 as __NR_arm_fadvise64_64.
 
-   tile requires __ASSUME_ALIGNED_REGISTER_PAIRS but implements the 32-bit
-   fadvise64_64 without the padding 0 after fd.
-
    s390 implements fadvice64_64 using a specific struct with arguments
    packed inside.  This is the only implementation handled in arch-specific
    code.  */
-
-#ifdef __ASSUME_FADVISE64_64_NO_ALIGN
-# undef __ALIGNMENT_ARG
-# define __ALIGNMENT_ARG
-#endif
 
 #ifndef __NR_fadvise64_64
 # define __NR_fadvise64_64 __NR_fadvise64
@@ -83,3 +76,4 @@ weak_alias (__posix_fadvise64_l64, posix_fadvise64);
 weak_alias (__posix_fadvise64_l64, posix_fadvise64);
 strong_alias (__posix_fadvise64_l64, posix_fadvise);
 #endif
+libc_hidden_def (__posix_fadvise64_l64)

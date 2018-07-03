@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    This program is free software; you can redistribute it and/or modify
@@ -16,7 +16,6 @@
 
 #include <dirent.h>
 #include <errno.h>
-#include <error.h>
 #include <fcntl.h>
 #include <libintl.h>
 #include <spawn.h>
@@ -54,8 +53,9 @@ charmap_opendir (const char *directory)
   dir = opendir (directory);
   if (dir == NULL)
     {
-      WITH_CUR_LOCALE (error (1, errno, gettext ("\
-cannot read character map directory `%s'"), directory));
+      record_error (1, errno, gettext ("\
+cannot read character map directory `%s'"),
+		    directory);
       return NULL;
     }
 
@@ -115,11 +115,9 @@ charmap_readdir (CHARMAP_DIR *cdir)
       stpcpy (stpcpy (cdir->pathname, cdir->directory), dirent->d_name);
       filename = cdir->pathname + cdir->directory_len;
 
-#ifdef _DIRENT_HAVE_D_TYPE
       if (dirent->d_type != DT_UNKNOWN && dirent->d_type != DT_LNK)
         mode = DTTOIF (dirent->d_type);
       else
-#endif
         {
           struct stat64 statbuf;
 

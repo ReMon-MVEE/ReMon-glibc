@@ -70,12 +70,35 @@ libc_hidden_proto (wcstoll)
 libc_hidden_proto (wcstoul)
 libc_hidden_proto (wcstoull)
 
+extern float ____wcstof_l_internal (const wchar_t *, wchar_t **, int,
+				    locale_t) attribute_hidden;
+extern double ____wcstod_l_internal (const wchar_t *, wchar_t **, int,
+				     locale_t) attribute_hidden;
+extern long double ____wcstold_l_internal (const wchar_t *, wchar_t **,
+					   int, locale_t) attribute_hidden;
+extern long int ____wcstol_l_internal (const wchar_t *, wchar_t **, int,
+				       int, locale_t) attribute_hidden;
+extern unsigned long int ____wcstoul_l_internal (const wchar_t *,
+						 wchar_t **,
+						 int, int, locale_t)
+     attribute_hidden;
+extern long long int ____wcstoll_l_internal (const wchar_t *, wchar_t **,
+					     int, int, locale_t)
+     attribute_hidden;
+extern unsigned long long int ____wcstoull_l_internal (const wchar_t *,
+						       wchar_t **, int, int,
+						       locale_t)
+     attribute_hidden;
+
 #if __HAVE_DISTINCT_FLOAT128
 extern __typeof (wcstof128_l) __wcstof128_l;
 libc_hidden_proto (__wcstof128_l)
 extern _Float128 __wcstof128_internal (const wchar_t *__restrict __nptr,
 				       wchar_t **__restrict __endptr,
 				       int __group) __THROW;
+
+extern _Float128 ____wcstof128_l_internal (const wchar_t *, wchar_t **, int,
+					   locale_t) attribute_hidden;
 
 libc_hidden_proto (__wcstof128_internal)
 libc_hidden_proto (wcstof128)
@@ -131,7 +154,7 @@ extern size_t __wcslen (const wchar_t *__s) __attribute_pure__;
 extern size_t __wcsnlen (const wchar_t *__s, size_t __maxlen)
      __attribute_pure__;
 extern wchar_t *__wcscat (wchar_t *dest, const wchar_t *src);
-extern wint_t __btowc (int __c);
+extern wint_t __btowc (int __c) attribute_hidden;
 extern int __mbsinit (const __mbstate_t *__ps);
 extern size_t __mbrtowc (wchar_t *__restrict __pwc,
 			 const char *__restrict __s, size_t __n,
@@ -139,32 +162,36 @@ extern size_t __mbrtowc (wchar_t *__restrict __pwc,
 libc_hidden_proto (__mbrtowc)
 libc_hidden_proto (__mbrlen)
 extern size_t __wcrtomb (char *__restrict __s, wchar_t __wc,
-			 __mbstate_t *__restrict __ps);
+			 __mbstate_t *__restrict __ps) attribute_hidden;
 extern size_t __mbsrtowcs (wchar_t *__restrict __dst,
 			   const char **__restrict __src,
-			   size_t __len, __mbstate_t *__restrict __ps);
+			   size_t __len, __mbstate_t *__restrict __ps)
+     attribute_hidden;
 extern size_t __wcsrtombs (char *__restrict __dst,
 			   const wchar_t **__restrict __src,
-			   size_t __len, __mbstate_t *__restrict __ps);
+			   size_t __len, __mbstate_t *__restrict __ps)
+     attribute_hidden;
 extern size_t __mbsnrtowcs (wchar_t *__restrict __dst,
 			    const char **__restrict __src, size_t __nmc,
-			    size_t __len, __mbstate_t *__restrict __ps);
+			    size_t __len, __mbstate_t *__restrict __ps)
+     attribute_hidden;
 extern size_t __wcsnrtombs (char *__restrict __dst,
 			    const wchar_t **__restrict __src,
 			    size_t __nwc, size_t __len,
-			    __mbstate_t *__restrict __ps);
+			    __mbstate_t *__restrict __ps)
+     attribute_hidden;
 extern wchar_t *__wcsncpy (wchar_t *__restrict __dest,
 			   const wchar_t *__restrict __src, size_t __n);
 extern wchar_t *__wcpcpy (wchar_t *__dest, const wchar_t *__src);
 extern wchar_t *__wcpncpy (wchar_t *__dest, const wchar_t *__src,
 			   size_t __n);
 extern wchar_t *__wmemcpy (wchar_t *__s1, const wchar_t *s2,
-			   size_t __n);
+			   size_t __n) attribute_hidden;
 extern wchar_t *__wmempcpy (wchar_t *__restrict __s1,
 			    const wchar_t *__restrict __s2,
-			    size_t __n);
+			    size_t __n) attribute_hidden;
 extern wchar_t *__wmemmove (wchar_t *__s1, const wchar_t *__s2,
-			    size_t __n);
+			    size_t __n) attribute_hidden;
 extern wchar_t *__wcschrnul (const wchar_t *__s, wchar_t __wc)
      __attribute_pure__;
 
@@ -174,17 +201,21 @@ extern wchar_t *__wmemset_chk (wchar_t *__s, wchar_t __c, size_t __n,
 extern int __vfwscanf (__FILE *__restrict __s,
 		       const wchar_t *__restrict __format,
 		       __gnuc_va_list __arg)
+     attribute_hidden
      /* __attribute__ ((__format__ (__wscanf__, 2, 0)) */;
 extern int __vswprintf (wchar_t *__restrict __s, size_t __n,
 			const wchar_t *__restrict __format,
 			__gnuc_va_list __arg)
+     attribute_hidden
      /* __attribute__ ((__format__ (__wprintf__, 3, 0))) */;
 extern int __fwprintf (__FILE *__restrict __s,
 		       const wchar_t *__restrict __format, ...)
+     attribute_hidden
      /* __attribute__ ((__format__ (__wprintf__, 2, 3))) */;
 extern int __vfwprintf (__FILE *__restrict __s,
 			const wchar_t *__restrict __format,
 			__gnuc_va_list __arg)
+     attribute_hidden
      /* __attribute__ ((__format__ (__wprintf__, 2, 0))) */;
 extern int __vfwprintf_chk (FILE *__restrict __s, int __flag,
 			    const wchar_t *__restrict __format,

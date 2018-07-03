@@ -1,5 +1,5 @@
 /* float copysign function, sparc32 version.
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by David S. Miller <davem@davemloft.net>, 2012.
 
@@ -18,6 +18,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-float.h>
 
 ENTRY (__copysignf)
 	sethi	%hi(0x80000000), %g1
@@ -28,4 +29,4 @@ ENTRY (__copysignf)
 	retl
 	 ld	[%sp + 68], %f0
 END (__copysignf)
-weak_alias (__copysignf, copysignf)
+libm_alias_float (__copysign, copysign)

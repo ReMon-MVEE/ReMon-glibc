@@ -1,5 +1,5 @@
 /* Convert string to maximal unsigned integer.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -25,3 +25,4 @@ strtoumax (const char *__restrict nptr, char **__restrict endptr, int base)
 {
   return __strtoull_internal (nptr, endptr, base, 0);
 }
+libc_hidden_def (strtoumax)

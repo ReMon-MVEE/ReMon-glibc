@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@suse.de>, 1996.
 
@@ -813,6 +813,7 @@ yp_maplist (const char *indomain, struct ypmaplist **outmaplist)
 
   return result;
 }
+libnsl_hidden_nolink_def (yp_maplist, GLIBC_2_0)
 
 const char *
 yperr_string (const int error)

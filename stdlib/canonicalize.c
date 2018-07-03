@@ -1,5 +1,5 @@
 /* Return the canonical absolute name of a given file.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -68,7 +68,7 @@ __realpath (const char *name, char *resolved)
 #ifdef PATH_MAX
   path_max = PATH_MAX;
 #else
-  path_max = pathconf (name, _PC_PATH_MAX);
+  path_max = __pathconf (name, _PC_PATH_MAX);
   if (path_max <= 0)
     path_max = 1024;
 #endif
@@ -181,7 +181,7 @@ __realpath (const char *name, char *resolved)
 		extra_buf = __alloca (path_max);
 
 	      len = strlen (end);
-	      if ((long int) (n + len) >= path_max)
+	      if (path_max - n <= len)
 		{
 		  __set_errno (ENAMETOOLONG);
 		  goto error;
@@ -218,6 +218,7 @@ error:
     free (rpath);
   return NULL;
 }
+libc_hidden_def (__realpath)
 versioned_symbol (libc, __realpath, realpath, GLIBC_2_3);
 
 

@@ -1,4 +1,4 @@
-# Copyright (C) 1996-2017 Free Software Foundation, Inc.
+# Copyright (C) 1996-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -44,6 +44,8 @@ mo-installed = $(inst_localedir)/%/LC_MESSAGES/$(domainname).mo
 # Files to install: a $(domainname).mo file for each language.
 install-others = $(LINGUAS:%=$(mo-installed))
 
+generated += $(ALL_LINGUAS:%=%.mo)
+
 
 include ../Rules
 
@@ -80,36 +82,13 @@ libc.pot.files: FORCE
 
 # Compile the binary message object files from the portable object source
 # files of translations for each language.
-%.mo: %.po
+$(objpfx)%.mo: %.po
+	$(make-target-directory)
 	$(MSGFMT) -o $@ $<
 
 # Install the message object files as libc.po in the language directory.
-$(mo-installed): %.mo $(+force); $(do-install) || exit 0
-
-.PHONY: linguas linguas.mo
-linguas: $(ALL_LINGUAS:=.po)
-linguas.mo: $(ALL_LINGUAS:=.mo)
-
-realclean:
-	rm -f $(ALL_LINGUAS:=.mo)
+$(mo-installed): $(objpfx)%.mo $(+force); $(do-install) || exit 0
 
-# Copy the PO files from the translation coordinator's repository.
-
-podir = /com/share/ftp/gnu/po/maint/glibc
-
-pofiles := $(wildcard $(podir)/*.po)
-
-ifneq (,$(pofiles))
-
-%.po: $(podir)/%.po
-	cp -f $< $@
-	chmod 444 $@
-
-linguas: $(pofiles:$(podir)/%=%)
-linguas.mo: $(pofiles:$(podir)/%.po=%.mo)
-
-endif
-
 # Update translations from the translation project.
 TRANSLATIONS_URL = https://translationproject.org/latest/libc
 WGET = wget

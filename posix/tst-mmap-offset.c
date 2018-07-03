@@ -1,6 +1,6 @@
 /* BZ #18877 and #21270 mmap offset test.
 
-   Copyright (C) 2015-2017 Free Software Foundation, Inc.
+   Copyright (C) 2015-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@
 
 static int fd;
 static long int page_shift;
-static char fname[] = "tst-mmap-offset-XXXXXX";
+static char fname[] = "/tmp/tst-mmap-offset-XXXXXX";
 
 static void
 do_prepare (int argc, char **argv)

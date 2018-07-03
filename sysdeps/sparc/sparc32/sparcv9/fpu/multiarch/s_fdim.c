@@ -1,5 +1,5 @@
 /* Compute positive difference, sparc 32-bit.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,23 +16,14 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#ifdef HAVE_AS_VIS3_SUPPORT
-# include <math_ldbl_opt.h>
-# include <first-versions.h>
-# include <sparc-ifunc.h>
-# include <math.h>
+#include <math_ldbl_opt.h>
+#include <first-versions.h>
+#include <sparc-ifunc.h>
+#include <math.h>
+#include <libm-alias-double.h>
 
 extern double __fdim_vis3 (double, double);
 extern double __fdim_generic (double, double);
 
 sparc_libm_ifunc(__fdim, hwcap & HWCAP_SPARC_VIS3 ? __fdim_vis3 : __fdim_generic);
-weak_alias (__fdim, fdim)
-# if LONG_DOUBLE_COMPAT (libm, FIRST_VERSION_libm_fdiml)
-compat_symbol (libm, __fdim, fdiml, FIRST_VERSION_libm_fdiml);
-# endif
-
-# define __fdim __fdim_generic
-# define declare_mgen_alias(t, f)
-#endif
-
-#include <math/s_fdim.c>
+libm_alias_double (__fdim, fdim)

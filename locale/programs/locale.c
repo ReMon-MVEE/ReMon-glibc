@@ -1,5 +1,5 @@
 /* Implementation of the locale program according to POSIX 9945-2.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1995.
 
@@ -40,6 +40,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
+#include "record-status.h"
 #include "localeinfo.h"
 #include "charmap-dir.h"
 #include "../locarchive.h"
@@ -58,9 +59,6 @@ static int do_all;
 
 /* Print names of all available character maps.  */
 static int do_charmaps = 0;
-
-/* Nonzero if verbose output is wanted.  */
-static int verbose;
 
 /* Name and version of program.  */
 static void print_version (FILE *stream, struct argp_state *state);
@@ -295,7 +293,7 @@ print_version (FILE *stream, struct argp_state *state)
 Copyright (C) %s Free Software Foundation, Inc.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\
-"), "2017");
+"), "2018");
   fprintf (stream, gettext ("Written by %s.\n"), "Ulrich Drepper");
 }
 
@@ -318,11 +316,9 @@ select_dirs (const struct dirent *dirent)
     {
       mode_t mode = 0;
 
-#ifdef _DIRENT_HAVE_D_TYPE
       if (dirent->d_type != DT_UNKNOWN && dirent->d_type != DT_LNK)
 	mode = DTTOIF (dirent->d_type);
       else
-#endif
 	{
 	  struct stat64 st;
 	  char buf[sizeof (COMPLOCALEDIR)

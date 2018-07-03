@@ -1,7 +1,7 @@
 /*
  * IBM Accurate Mathematical Library
  * written by International Business Machines Corp.
- * Copyright (C) 2001-2017 Free Software Foundation, Inc.
+ * Copyright (C) 2001-2018 Free Software Foundation, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -41,6 +41,8 @@
 #include "MathLib.h"
 #include <math.h>
 #include <math_private.h>
+#include <math-underflow.h>
+#include <libm-alias-double.h>
 #include <fenv.h>
 #include <stap-probe.h>
 
@@ -53,7 +55,7 @@ void __mptan (double, mp_no *, int);
 
 double
 SECTION
-tan (double x)
+__tan (double x)
 {
 #include "utan.h"
 #include "utan.tbl"
@@ -843,6 +845,6 @@ tanMp (double x)
   return y;
 }
 
-#ifdef NO_LONG_DOUBLE
-weak_alias (tan, tanl)
+#ifndef __tan
+libm_alias_double (__tan, tan)
 #endif

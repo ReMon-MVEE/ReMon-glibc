@@ -1,5 +1,5 @@
 /* Low-level lock implementation.  Generic futex-based version.
-   Copyright (C) 2005-2017 Free Software Foundation, Inc.
+   Copyright (C) 2005-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -184,7 +184,7 @@ extern int __lll_timedlock_wait (int *futex, const struct timespec *,
 #define lll_wait_tid(tid) \
   do {					\
     __typeof (tid) __tid;		\
-    while ((__tid = (tid)) != 0 || mvee_should_sync_tid()) {	\
+    while ((__tid = atomic_load_acquire(&(tid))) != 0 || mvee_should_sync_tid()) { \
 		lll_futex_syscall(4, &(tid), __lll_private_flag(mvee_should_sync_tid() ? MVEE_FUTEX_WAIT_TID : FUTEX_WAIT, LLL_SHARED), __tid, NULL); \
 				   if (tid == 0) break; \
 	}\
@@ -198,7 +198,7 @@ extern int __lll_timedwait_tid (int *, const struct timespec *)
 #define lll_timedwait_tid(tid, abstime) \
   ({							\
     int __res = 0;					\
-    if ((tid) != 0 || mvee_should_sync_tid())			\
+    if (atomic_load_acquire(&(tid)) != 0 || mvee_should_sync_tid())	\
       __res = __lll_timedwait_tid (&(tid), (abstime));	\
     __res;						\
   })

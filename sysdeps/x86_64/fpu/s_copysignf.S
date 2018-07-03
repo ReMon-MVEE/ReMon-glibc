@@ -1,5 +1,5 @@
 /* copy sign, double version.
-   Copyright (C) 2002-2017 Free Software Foundation, Inc.
+   Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Andreas Jaeger <aj@suse.de>, 2002.
 
@@ -18,6 +18,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <machine/asm.h>
+#include <libm-alias-float.h>
 
 	.section .rodata
 
@@ -42,4 +43,4 @@ ENTRY(__copysignf)
 	retq
 END (__copysignf)
 
-weak_alias (__copysignf, copysignf)
+libm_alias_float (__copysign, copysign)

@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -76,6 +76,7 @@
    __USE_ISOC11		Define ISO C11 things.
    __USE_ISOC99		Define ISO C99 things.
    __USE_ISOC95		Define ISO C90 AMD1 (C95) things.
+   __USE_ISOCXX11	Define ISO C++11 things.
    __USE_POSIX		Define IEEE Std 1003.1 things.
    __USE_POSIX2		Define IEEE Std 1003.2 things.
    __USE_POSIX199309	Define IEEE Std 1003.1, and .1b things.
@@ -213,7 +214,7 @@
    define _DEFAULT_SOURCE.  */
 #if (defined _DEFAULT_SOURCE					\
      || (!defined __STRICT_ANSI__				\
-	 && !defined _ISOC99_SOURCE				\
+	 && !defined _ISOC99_SOURCE && !defined _ISOC11_SOURCE	\
 	 && !defined _POSIX_SOURCE && !defined _POSIX_C_SOURCE	\
 	 && !defined _XOPEN_SOURCE))
 # undef  _DEFAULT_SOURCE
@@ -238,13 +239,17 @@
 # define __USE_ISOC95	1
 #endif
 
+#ifdef __cplusplus
+/* This is to enable compatibility for ISO C++17.  */
+# if __cplusplus >= 201703L
+#  define __USE_ISOC11	1
+# endif
 /* This is to enable compatibility for ISO C++11.
-
-   So far g++ does not provide a macro.  Check the temporary macro for
-   now, too.  */
-#if ((defined __cplusplus && __cplusplus >= 201103L)			      \
-     || defined __GXX_EXPERIMENTAL_CXX0X__)
-# define __USE_ISOCXX11	1
+   Check the temporary macro for now, too.  */
+# if __cplusplus >= 201103L || defined __GXX_EXPERIMENTAL_CXX0X__
+#  define __USE_ISOCXX11	1
+#  define __USE_ISOC99	1
+# endif
 #endif
 
 /* If none of the ANSI/POSIX macros are defined, or if _DEFAULT_SOURCE
@@ -412,7 +417,7 @@
 /* Major and minor version number of the GNU C library package.  Use
    these macros to test for features in specific releases.  */
 #define	__GLIBC__	2
-#define	__GLIBC_MINOR__	26
+#define	__GLIBC_MINOR__	27
 
 #define __GLIBC_PREREQ(maj, min) \
 	((__GLIBC__ << 16) + __GLIBC_MINOR__ >= ((maj) << 16) + (min))

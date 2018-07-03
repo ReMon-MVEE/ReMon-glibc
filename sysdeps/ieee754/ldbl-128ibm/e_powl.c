@@ -66,6 +66,7 @@
 
 #include <math.h>
 #include <math_private.h>
+#include <math-underflow.h>
 
 static const long double bp[] = {
   1.0L,
@@ -233,7 +234,7 @@ __ieee754_powl (long double x, long double y)
 	  if (hy == 0x3fe00000)
 	    {			/* y is  0.5 */
 	      if (hx >= 0)		/* x >= +0 */
-		return __ieee754_sqrtl (x);
+		return sqrtl (x);
 	    }
 	}
     }

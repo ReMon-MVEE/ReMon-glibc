@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -23,6 +23,10 @@
 int
 __pthread_condattr_init (pthread_condattr_t *attr)
 {
+  ASSERT_TYPE_SIZE (pthread_condattr_t, __SIZEOF_PTHREAD_CONDATTR_T);
+  ASSERT_PTHREAD_INTERNAL_SIZE (pthread_condattr_t,
+				struct pthread_condattr);
+
   struct pthread_condattr *iattr = (struct pthread_condattr *) attr;
   /* Default is not pshared and CLOCK_REALTIME.  */
   iattr-> value = CLOCK_REALTIME << 1;

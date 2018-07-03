@@ -1,5 +1,5 @@
 /* Print floating point number in hexadecimal notation according to ISO C99.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -17,6 +17,7 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include <array_length.h>
 #include <ctype.h>
 #include <ieee754.h>
 #include <math.h>
@@ -42,18 +43,13 @@
 /* #define NDEBUG 1*/		/* Undefine this for debugging assertions.  */
 #include <assert.h>
 
-/* This defines make it possible to use the same code for GNU C library and
-   the GNU I/O library.	 */
 #include <libioP.h>
 #define PUT(f, s, n) _IO_sputn (f, s, n)
 #define PAD(f, c, n) (wide ? _IO_wpadn (f, c, n) : _IO_padn (f, c, n))
-/* We use this file GNU C library and GNU I/O library.	So make
-   names equal.	 */
 #undef putc
 #define putc(c, f) (wide \
 		     ? (int)_IO_putwc_unlocked (c, f) : _IO_putc_unlocked (c, f))
-#define size_t     _IO_size_t
-#define FILE	     _IO_FILE
+
 
 /* Macros for doing the actual output.  */
 
@@ -320,8 +316,8 @@ __printf_fphex (FILE *fp,
   /* Look for trailing zeroes.  */
   if (! zero_mantissa)
     {
-      wnumend = &wnumbuf[sizeof wnumbuf / sizeof wnumbuf[0]];
-      numend = &numbuf[sizeof numbuf / sizeof numbuf[0]];
+      wnumend = array_end (wnumbuf);
+      numend = array_end (numbuf);
       while (wnumend[-1] == L'0')
 	{
 	  --wnumend;

@@ -1,6 +1,6 @@
 /* Thread-local storage descriptor handling in the ELF dynamic linker.
    AArch64 version.
-   Copyright (C) 2011-2017 Free Software Foundation, Inc.
+   Copyright (C) 2011-2018 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -46,16 +46,7 @@ extern ptrdiff_t attribute_hidden
 _dl_tlsdesc_return (struct tlsdesc *);
 
 extern ptrdiff_t attribute_hidden
-_dl_tlsdesc_return_lazy (struct tlsdesc *);
-
-extern ptrdiff_t attribute_hidden
 _dl_tlsdesc_undefweak (struct tlsdesc *);
-
-extern ptrdiff_t attribute_hidden
-_dl_tlsdesc_resolve_rela (struct tlsdesc *);
-
-extern ptrdiff_t attribute_hidden
-_dl_tlsdesc_resolve_hold (struct tlsdesc *);
 
 # ifdef SHARED
 extern void *_dl_make_tlsdesc_dynamic (struct link_map *, size_t);

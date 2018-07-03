@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Ulrich Drepper <drepper@cygnus.com>.
    Based on the single byte version by Per Bothner <bothner@cygnus.com>.
@@ -36,7 +36,7 @@
 /* Convert TO_DO wide character from DATA to FP.
    Then mark FP as having empty buffers. */
 int
-_IO_wdo_write (_IO_FILE *fp, const wchar_t *data, _IO_size_t to_do)
+_IO_wdo_write (FILE *fp, const wchar_t *data, size_t to_do)
 {
   struct _IO_codecvt *cc = fp->_codecvt;
 
@@ -110,11 +110,15 @@ libc_hidden_def (_IO_wdo_write)
 
 
 wint_t
-_IO_wfile_underflow (_IO_FILE *fp)
+_IO_wfile_underflow (FILE *fp)
 {
   struct _IO_codecvt *cd;
   enum __codecvt_result status;
-  _IO_ssize_t count;
+  ssize_t count;
+
+  /* C99 requires EOF to be "sticky".  */
+  if (fp->_flags & _IO_EOF_SEEN)
+    return WEOF;
 
   if (__glibc_unlikely (fp->_flags & _IO_NO_READS))
     {
@@ -196,13 +200,9 @@ _IO_wfile_underflow (_IO_FILE *fp)
       _IO_wdoallocbuf (fp);
     }
 
-  /* Flush all line buffered files before reading. */
   /* FIXME This can/should be moved to genops ?? */
   if (fp->_flags & (_IO_LINE_BUF | _IO_UNBUFFERED))
     {
-#if 0
-      _IO_flush_all_linebuffered ();
-#else
       /* We used to flush all line-buffered stream.  This really isn't
 	 required by any standard.  My recollection is that
 	 traditional Unix systems did this for stdout.  stderr better
@@ -215,7 +215,6 @@ _IO_wfile_underflow (_IO_FILE *fp)
 	_IO_OVERFLOW (_IO_stdout, EOF);
 
       _IO_release_lock (_IO_stdout);
-#endif
     }
 
   _IO_switch_to_get_mode (fp);
@@ -332,7 +331,7 @@ libc_hidden_def (_IO_wfile_underflow)
 
 
 static wint_t
-_IO_wfile_underflow_mmap (_IO_FILE *fp)
+_IO_wfile_underflow_mmap (FILE *fp)
 {
   struct _IO_codecvt *cd;
   const char *read_stop;
@@ -393,7 +392,7 @@ _IO_wfile_underflow_mmap (_IO_FILE *fp)
 }
 
 static wint_t
-_IO_wfile_underflow_maybe_mmap (_IO_FILE *fp)
+_IO_wfile_underflow_maybe_mmap (FILE *fp)
 {
   /* This is the first read attempt.  Doing the underflow will choose mmap
      or vanilla operations and then punt to the chosen underflow routine.
@@ -406,7 +405,7 @@ _IO_wfile_underflow_maybe_mmap (_IO_FILE *fp)
 
 
 wint_t
-_IO_wfile_overflow (_IO_FILE *f, wint_t wch)
+_IO_wfile_overflow (FILE *f, wint_t wch)
 {
   if (f->_flags & _IO_NO_WRITES) /* SET ERROR */
     {
@@ -421,6 +420,7 @@ _IO_wfile_overflow (_IO_FILE *f, wint_t wch)
       if (f->_wide_data->_IO_write_base == 0)
 	{
 	  _IO_wdoallocbuf (f);
+	  _IO_free_wbackup_area (f);
 	  _IO_wsetg (f, f->_wide_data->_IO_buf_base,
 		     f->_wide_data->_IO_buf_base, f->_wide_data->_IO_buf_base);
 
@@ -478,9 +478,9 @@ _IO_wfile_overflow (_IO_FILE *f, wint_t wch)
 libc_hidden_def (_IO_wfile_overflow)
 
 wint_t
-_IO_wfile_sync (_IO_FILE *fp)
+_IO_wfile_sync (FILE *fp)
 {
-  _IO_ssize_t delta;
+  ssize_t delta;
   wint_t retval = 0;
 
   /*    char* ptr = cur_ptr(); */
@@ -493,7 +493,7 @@ _IO_wfile_sync (_IO_FILE *fp)
       /* We have to find out how many bytes we have to go back in the
 	 external buffer.  */
       struct _IO_codecvt *cv = fp->_codecvt;
-      _IO_off64_t new_pos;
+      off64_t new_pos;
 
       int clen = (*cv->__codecvt_do_encoding) (cv);
 
@@ -518,7 +518,7 @@ _IO_wfile_sync (_IO_FILE *fp)
 	}
 
       new_pos = _IO_SYSSEEK (fp, delta, 1);
-      if (new_pos != (_IO_off64_t) EOF)
+      if (new_pos != (off64_t) EOF)
 	{
 	  fp->_wide_data->_IO_read_end = fp->_wide_data->_IO_read_ptr;
 	  fp->_IO_read_end = fp->_IO_read_ptr;
@@ -543,7 +543,7 @@ libc_hidden_def (_IO_wfile_sync)
 
    Returns 0 on success and -1 on error with the _IO_ERR_SEEN flag set.  */
 static int
-adjust_wide_data (_IO_FILE *fp, bool do_convert)
+adjust_wide_data (FILE *fp, bool do_convert)
 {
   struct _IO_codecvt *cv = fp->_codecvt;
 
@@ -590,10 +590,10 @@ done:
 /* ftell{,o} implementation for wide mode.  Don't modify any state of the file
    pointer while we try to get the current state of the stream except in one
    case, which is when we have unflushed writes in append mode.  */
-static _IO_off64_t
-do_ftell_wide (_IO_FILE *fp)
+static off64_t
+do_ftell_wide (FILE *fp)
 {
-  _IO_off64_t result, offset = 0;
+  off64_t result, offset = 0;
 
   /* No point looking for offsets in the buffer if it hasn't even been
      allocated.  */
@@ -739,11 +739,11 @@ do_ftell_wide (_IO_FILE *fp)
   return result;
 }
 
-_IO_off64_t
-_IO_wfile_seekoff (_IO_FILE *fp, _IO_off64_t offset, int dir, int mode)
+off64_t
+_IO_wfile_seekoff (FILE *fp, off64_t offset, int dir, int mode)
 {
-  _IO_off64_t result;
-  _IO_off64_t delta, new_offset;
+  off64_t result;
+  off64_t delta, new_offset;
   long int count;
 
   /* Short-circuit into a separate function.  We don't want to mix any
@@ -850,14 +850,17 @@ _IO_wfile_seekoff (_IO_FILE *fp, _IO_off64_t offset, int dir, int mode)
 	  goto dumb;
       }
     }
+
+  _IO_free_wbackup_area (fp);
+
   /* At this point, dir==_IO_seek_set. */
 
   /* If destination is within current buffer, optimize: */
   if (fp->_offset != _IO_pos_BAD && fp->_IO_read_base != NULL
       && !_IO_in_backup (fp))
     {
-      _IO_off64_t start_offset = (fp->_offset
-				  - (fp->_IO_read_end - fp->_IO_buf_base));
+      off64_t start_offset = (fp->_offset
+                              - (fp->_IO_read_end - fp->_IO_buf_base));
       if (offset >= start_offset && offset < fp->_offset)
 	{
 	  _IO_setg (fp, fp->_IO_buf_base,
@@ -950,13 +953,13 @@ resync:
 libc_hidden_def (_IO_wfile_seekoff)
 
 
-_IO_size_t
-_IO_wfile_xsputn (_IO_FILE *f, const void *data, _IO_size_t n)
+size_t
+_IO_wfile_xsputn (FILE *f, const void *data, size_t n)
 {
   const wchar_t *s = (const wchar_t *) data;
-  _IO_size_t to_do = n;
+  size_t to_do = n;
   int must_flush = 0;
-  _IO_size_t count;
+  size_t count;
 
   if (n <= 0)
     return 0;

@@ -1,5 +1,5 @@
 /* Multiple versions of copysignf.
-   Copyright (C) 2013-2017 Free Software Foundation, Inc.
+   Copyright (C) 2013-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
 #include <math.h>
 #include <shlib-compat.h>
 #include "init-arch.h"
+#include <libm-alias-float.h>
 
 /* It's safe to use double-precision implementation for single-precision. */
 extern __typeof (__copysignf) __copysign_ppc64 attribute_hidden;
@@ -29,4 +30,4 @@ libc_ifunc (__copysignf,
 	    ? __copysign_power6
             : __copysign_ppc64);
 
-weak_alias (__copysignf, copysignf)
+libm_alias_float (__copysign, copysign)

@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -60,9 +60,9 @@
 
 /* Allocate a file buffer, or switch to unbuffered I/O.  */
 int
-_IO_wfile_doallocate (_IO_FILE *fp)
+_IO_wfile_doallocate (FILE *fp)
 {
-  _IO_size_t size;
+  size_t size;
   wchar_t *p;
 
   /* Allocate room for the external buffer.  */

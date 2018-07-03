@@ -1,5 +1,5 @@
 /* Multiple versions of llround.
-   Copyright (C) 2013-2017 Free Software Foundation, Inc.
+   Copyright (C) 2013-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@
 #include <math_ldbl_opt.h>
 #include <shlib-compat.h>
 #include "init-arch.h"
+#include <libm-alias-double.h>
 
 extern __typeof (__llround) __llround_ppc64 attribute_hidden;
 extern __typeof (__llround) __llround_power5plus attribute_hidden;
@@ -38,26 +39,10 @@ libc_ifunc (__llround,
 		? __llround_power5plus
             : __llround_ppc64);
 
-weak_alias (__llround, llround)
-
-#ifdef NO_LONG_DOUBLE
-weak_alias (__llround, llroundl)
-strong_alias (__llround, __llroundl)
-#endif
-#if LONG_DOUBLE_COMPAT(libm, GLIBC_2_1)
-compat_symbol (libm, __llround, llroundl, GLIBC_2_1);
-compat_symbol (libm, llround, lroundl, GLIBC_2_1);
-#endif
+libm_alias_double (__llround, llround)
 
 /* long has the same width as long long on PPC64.  */
 #undef lround
 #undef __lround
 strong_alias (__llround, __lround)
-weak_alias (__llround, lround)
-#ifdef NO_LONG_DOUBLE
-strong_alias (__llround, __llroundl)
-weak_alias (__llround, llroundl)
-#endif
-#if LONG_DOUBLE_COMPAT(libm, GLIBC_2_1)
-compat_symbol (libm, __lround, lroundl, GLIBC_2_1);
-#endif
+libm_alias_double (__lround, lround)

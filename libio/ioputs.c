@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -32,7 +32,7 @@ int
 _IO_puts (const char *str)
 {
   int result = EOF;
-  _IO_size_t len = strlen (str);
+  size_t len = strlen (str);
   _IO_acquire_lock (_IO_stdout);
 
   if ((_IO_vtable_offset (_IO_stdout) != 0
@@ -46,3 +46,4 @@ _IO_puts (const char *str)
 }
 
 weak_alias (_IO_puts, puts)
+libc_hidden_def (_IO_puts)

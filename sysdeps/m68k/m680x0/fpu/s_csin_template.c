@@ -1,5 +1,5 @@
 /* Complex sine function.  m68k fpu version
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Andreas Schwab <schwab@issan.informatik.uni-dortmund.de>.
 
@@ -56,4 +56,4 @@ s(__csin) (CFLOAT x)
 
   return retval;
 }
-weak_alias (s(__csin), s(csin))
+declare_mgen_alias (__csin, csin)

@@ -1,6 +1,6 @@
 /* Test for correct rounding of results of strtod and related
    functions.
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 /* Defining _LIBC_TEST ensures long double math functions are
    declared in the headers.  */
 #define _LIBC_TEST 1
+#define __STDC_WANT_IEC_60559_TYPES_EXT__
 #include <fenv.h>
 #include <float.h>
 #include <math.h>
@@ -92,9 +93,27 @@
 
 /* Add type specific choosing macros below.  */
 #define CHOOSE_f(f,...) f
+#define CHOOSE_f32(f,...) f
 #define CHOOSE_d(f,d,...) d
+#define CHOOSE_f64(f,d,...) d
+#define CHOOSE_f32x(f,d,...) d
 #define CHOOSE_f128(f,d,ld64i,ld64m,ld106,ld113,...) ld113
-/* long double is special, and handled above.  */
+/* long double is special, and handled above.  _Float16 would require
+   updates to the generator to generate appropriate expectations, and
+   updates to the test inputs to cover difficult rounding cases for
+   _Float16.  */
+
+#if __HAVE_FLOAT64X
+# if FLT64X_MANT_DIG == 113 && FLT64X_MAX_EXP == 16384
+#  define CHOOSE_f64x(f,d,ld64i,ld64m,ld106,ld113,...) ld113
+# elif (FLT64X_MANT_DIG == 64			\
+	&& FLT64X_MAX_EXP == 16384		\
+	&& FLT64X_MIN_EXP == -16381)
+#  define CHOOSE_f64x(f,d,ld64i,...) ld64i
+# else
+#  error "unknown _Float64x format"
+# endif
+#endif
 
 /* Selector for expected result field of a given type.  */
 #define _ENTRY(FSUF, FTYPE, FTOSTR, LSUF, CSUF, ...)  \

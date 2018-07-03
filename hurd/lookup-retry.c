@@ -1,5 +1,5 @@
 /* hairy bits of Hurd file name lookup
-   Copyright (C) 1992-2017 Free Software Foundation, Inc.
+   Copyright (C) 1992-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -47,7 +47,7 @@ __hurd_file_name_lookup_retry (error_t (*use_init_port)
 				 (int which, error_t (*operate) (file_t)),
 			       file_t (*get_dtable_port) (int fd),
 			       error_t (*lookup)
-				 (file_t dir, char *name,
+				 (file_t dir, const char *name,
 				  int flags, mode_t mode,
 				  retry_type *do_retry, string_t retry_name,
 				  mach_port_t *result),
@@ -127,7 +127,7 @@ __hurd_file_name_lookup_retry (error_t (*use_init_port)
 		{
 		  /* In Linux, O_NOFOLLOW means to reject symlinks.  If we
 		     did an O_NOLINK lookup above and io_stat here to check
-		     for S_IFLNK, a translator like firmlink could easily
+		     for S_IFLNK only, a translator like firmlink could easily
 		     spoof this check by not showing S_IFLNK, but in fact
 		     redirecting the lookup to some other name
 		     (i.e. opening the very same holes a symlink would).
@@ -145,23 +145,29 @@ __hurd_file_name_lookup_retry (error_t (*use_init_port)
 		     one exception to our general translator-based rule.  */
 		  struct stat64 st;
 		  err = __io_stat (*result, &st);
-		  if (!err
-		      && (st.st_mode & (S_IPTRANS|S_IATRANS)))
+		  if (!err)
 		    {
-		      if (st.st_uid != 0)
-			err = ENOENT;
-		      else if (st.st_mode & S_IPTRANS)
+		      if (flags & O_DIRECTORY && !S_ISDIR (st.st_mode))
+			err = ENOTDIR;
+		      if (S_ISLNK (st.st_mode))
+			err = ELOOP;
+		      else if (st.st_mode & (S_IPTRANS|S_IATRANS))
 			{
-			  char buf[1024];
-			  char *trans = buf;
-			  size_t translen = sizeof buf;
-			  err = __file_get_translator (*result,
-						       &trans, &translen);
-			  if (!err
-			      && translen > sizeof _HURD_SYMLINK
-			      && !memcmp (trans,
-					  _HURD_SYMLINK, sizeof _HURD_SYMLINK))
-			    err = ENOENT;
+			  if (st.st_uid != 0)
+			    err = ELOOP;
+			  else if (st.st_mode & S_IPTRANS)
+			    {
+			      char buf[1024];
+			      char *trans = buf;
+			      size_t translen = sizeof buf;
+			      err = __file_get_translator (*result,
+							   &trans, &translen);
+			      if (!err
+				  && translen > sizeof _HURD_SYMLINK
+				  && !memcmp (trans,
+					      _HURD_SYMLINK, sizeof _HURD_SYMLINK))
+				err = ELOOP;
+			    }
 			}
 		    }
 		}

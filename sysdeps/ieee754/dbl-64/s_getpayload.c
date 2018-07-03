@@ -1,5 +1,5 @@
 /* Get NaN payload.  dbl-64 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,10 +19,11 @@
 #include <fix-int-fp-convert-zero.h>
 #include <math.h>
 #include <math_private.h>
+#include <libm-alias-double.h>
 #include <stdint.h>
 
 double
-getpayload (const double *x)
+__getpayload (const double *x)
 {
   uint32_t hx, lx;
   EXTRACT_WORDS (hx, lx, *x);
@@ -32,6 +33,4 @@ getpayload (const double *x)
     return 0.0f;
   return (double) ix;
 }
-#ifdef NO_LONG_DOUBLE
-weak_alias (getpayload, getpayloadl)
-#endif
+libm_alias_double (__getpayload, getpayload)

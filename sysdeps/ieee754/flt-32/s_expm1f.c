@@ -16,7 +16,10 @@
 #include <errno.h>
 #include <float.h>
 #include <math.h>
+#include <math-barriers.h>
 #include <math_private.h>
+#include <math-underflow.h>
+#include <libm-alias-float.h>
 
 static const float huge = 1.0e+30;
 static const float tiny = 1.0e-30;
@@ -127,4 +130,4 @@ __expm1f(float x)
 	}
 	return y;
 }
-weak_alias (__expm1f, expm1f)
+libm_alias_float (__expm1, expm1)

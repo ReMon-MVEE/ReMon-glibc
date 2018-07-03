@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -427,12 +427,23 @@ START_THREAD_DEFN
      compilers without that support we do use setjmp.  */
   struct pthread_unwind_buf unwind_buf;
 
-  /* No previous handlers.  */
+  int not_first_call;
+  not_first_call = setjmp ((struct __jmp_buf_tag *) unwind_buf.cancel_jmp_buf);
+
+  /* No previous handlers.  NB: This must be done after setjmp since the
+     private space in the unwind jump buffer may overlap space used by
+     setjmp to store extra architecture-specific information which is
+     never used by the cancellation-specific __libc_unwind_longjmp.
+
+     The private space is allowed to overlap because the unwinder never
+     has to return through any of the jumped-to call frames, and thus
+     only a minimum amount of saved data need be stored, and for example,
+     need not include the process signal mask information. This is all
+     an optimization to reduce stack usage when pushing cancellation
+     handlers.  */
   unwind_buf.priv.data.prev = NULL;
   unwind_buf.priv.data.cleanup = NULL;
 
-  int not_first_call;
-  not_first_call = setjmp ((struct __jmp_buf_tag *) unwind_buf.cancel_jmp_buf);
   if (__glibc_likely (! not_first_call))
     {
       /* Store the new cleanup handler info.  */
@@ -518,7 +529,7 @@ START_THREAD_DEFN
 
 #ifndef __ASSUME_SET_ROBUST_LIST
   /* If this thread has any robust mutexes locked, handle them now.  */
-# ifdef __PTHREAD_MUTEX_HAVE_PREV
+# if __PTHREAD_MUTEX_HAVE_PREV
   void *robust = pd->robust_head.list;
 # else
   __pthread_slist_t *robust = pd->robust_list.__next;
@@ -536,7 +547,7 @@ START_THREAD_DEFN
 					 __list.__next));
 	  robust = *((void **) robust);
 
-# ifdef __PTHREAD_MUTEX_HAVE_PREV
+# if __PTHREAD_MUTEX_HAVE_PREV
 	  this->__list.__prev = NULL;
 # endif
 	  this->__list.__next = NULL;

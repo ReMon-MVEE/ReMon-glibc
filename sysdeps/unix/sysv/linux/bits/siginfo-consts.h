@@ -1,5 +1,5 @@
 /* siginfo constants.  Linux version.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -111,8 +111,12 @@ enum
 {
   SEGV_MAPERR = 1,		/* Address not mapped to object.  */
 #  define SEGV_MAPERR	SEGV_MAPERR
-  SEGV_ACCERR			/* Invalid permissions for mapped object.  */
+  SEGV_ACCERR,			/* Invalid permissions for mapped object.  */
 #  define SEGV_ACCERR	SEGV_ACCERR
+  SEGV_BNDERR,			/* Bounds checking failure.  */
+#  define SEGV_BNDERR	SEGV_BNDERR
+  SEGV_PKUERR			/* Protection key checking failure.  */
+#  define SEGV_PKUERR	SEGV_PKUERR
 };
 
 /* `si_code' values for SIGBUS signal.  */

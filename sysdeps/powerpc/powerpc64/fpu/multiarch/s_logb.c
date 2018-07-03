@@ -1,5 +1,5 @@
 /* Multiple versions of logb.
-   Copyright (C) 2013-2017 Free Software Foundation, Inc.
+   Copyright (C) 2013-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 #include <math_ldbl_opt.h>
 #include <shlib-compat.h>
 #include "init-arch.h"
+#include <libm-alias-double.h>
 
 extern __typeof (__logb) __logb_ppc64 attribute_hidden;
 extern __typeof (__logb) __logb_power7 attribute_hidden;
@@ -29,13 +30,4 @@ libc_ifunc (__logb,
 	    ? __logb_power7
             : __logb_ppc64);
 
-weak_alias (__logb, logb)
-
-#ifdef NO_LONG_DOUBLE
-strong_alias (__logb, __logbl)
-weak_alias (__logb, logbl)
-#endif
-
-#if LONG_DOUBLE_COMPAT (libm, GLIBC_2_0)
-compat_symbol (libm, logb, logbl, GLIBC_2_0);
-#endif
+libm_alias_double (__logb, logb)

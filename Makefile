@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2017 Free Software Foundation, Inc.
+# Copyright (C) 1991-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -351,8 +351,7 @@ files-for-dist := README INSTALL configure ChangeLog NEWS
 
 # Regenerate stuff, then error if these things are not committed yet.
 dist-prepare: $(files-for-dist)
-	conf=`find sysdeps $(addsuffix /sysdeps,$(sysdeps-add-ons)) \
-		   -name configure`; \
+	conf=`find sysdeps -name configure`; \
 	$(MAKE) $$conf && \
 	git diff --stat HEAD -- $^ $$conf \
 	| $(AWK) '{ print; rc=1 } END { exit rc }'

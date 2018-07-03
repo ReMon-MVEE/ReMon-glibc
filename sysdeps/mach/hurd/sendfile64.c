@@ -1,5 +1,5 @@
 /* sendfile -- copy data directly from one file descriptor to another
-   Copyright (C) 2002-2017 Free Software Foundation, Inc.
+   Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -47,7 +47,7 @@ sendfile64 (int out_fd, int in_fd, off64_t *offset, size_t count)
 	return 0;
       err = HURD_DPORT_USE (out_fd, __io_write (port, data, datalen,
 						(off_t) -1, &nwrote));
-      munmap (data, datalen);
+      __munmap (data, datalen);
       if (err == 0)
 	{
 	  if (offset)

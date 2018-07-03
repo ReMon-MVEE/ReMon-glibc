@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>.
 
@@ -35,13 +35,14 @@ __libgcc_s_init (void)
   void *resume, *personality;
   void *handle;
 
+  /* See include/dlfcn.h. Use of __libc_dlopen requires RTLD_NOW.  */
   handle = __libc_dlopen (LIBGCC_S_SO);
 
   if (handle == NULL
       || (resume = __libc_dlsym (handle, "_Unwind_Resume")) == NULL
       || (personality = __libc_dlsym (handle, "__gcc_personality_v0")) == NULL)
     __libc_fatal (LIBGCC_S_SO
-                  " must be installed for pthread_cancel to work\n");
+                  " must be installed for unwinding to work\n");
 
 #ifdef PTR_MANGLE
   PTR_MANGLE (resume);

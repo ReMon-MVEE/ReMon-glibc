@@ -61,7 +61,9 @@
 
 #include <float.h>
 #include <math.h>
+#include <math-barriers.h>
 #include <math_private.h>
+#include <math-underflow.h>
 
 static const _Float128
   one = 1,
@@ -231,7 +233,7 @@ __ieee754_asinl (_Float128 x)
       return x + x * w;
     }
 
-  s = __ieee754_sqrtl (t);
+  s = sqrtl (t);
   if (ix >= 0x3ffef333) /* |x| > 0.975 */
     {
       w = p / q;

@@ -1,5 +1,5 @@
 /* Close a shared object opened by `_dl_open'.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -241,8 +241,10 @@ _dl_close_worker (struct link_map *map, bool force)
 	  }
     }
 
-  /* Sort the entries.  */
-  _dl_sort_fini (maps, nloaded, used, nsid);
+  /* Sort the entries.  We can skip looking for the binary itself which is
+     at the front of the search list for the main namespace.  */
+  _dl_sort_maps (maps + (nsid == LM_ID_BASE), nloaded - (nsid == LM_ID_BASE),
+		 used + (nsid == LM_ID_BASE), true);
 
   /* Call all termination functions at once.  */
 #ifdef SHARED

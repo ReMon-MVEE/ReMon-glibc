@@ -1,5 +1,5 @@
 /* Logic guts of scandir*64.
-   Copyright (C) 2015-2017 Free Software Foundation, Inc.
+   Copyright (C) 2015-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,9 +18,7 @@
 
 #include <dirent.h>
 
-#ifndef _DIRENT_MATCHES_DIRENT64
-# define SCANDIR_TAIL   __scandir64_tail
-# define READDIR        __readdir64
-# define DIRENT_TYPE    struct dirent64
-# include <scandir-tail.c>
-#endif
+#define SCANDIR_TAIL   __scandir64_tail
+#define READDIR        __readdir64
+#define DIRENT_TYPE    struct dirent64
+#include <scandir-tail-common.c>

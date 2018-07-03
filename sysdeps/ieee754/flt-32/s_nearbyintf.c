@@ -17,7 +17,9 @@
 
 #include <fenv.h>
 #include <math.h>
+#include <math-barriers.h>
 #include <math_private.h>
+#include <libm-alias-float.h>
 
 static const float
 TWO23[2]={
@@ -37,7 +39,7 @@ __nearbyintf(float x)
 	if(j0<23) {
 	    if(j0<0) {
 		libc_feholdexceptf (&env);
-		w = TWO23[sx]+x;
+		w = TWO23[sx] + math_opt_barrier (x);
 		t =  w-TWO23[sx];
 		math_force_eval (t);
 		libc_fesetenvf (&env);
@@ -50,10 +52,10 @@ __nearbyintf(float x)
 	    else return x;		/* x is integral */
 	}
 	libc_feholdexceptf (&env);
-	w = TWO23[sx]+x;
+	w = TWO23[sx] + math_opt_barrier (x);
 	t = w-TWO23[sx];
 	math_force_eval (t);
 	libc_fesetenvf (&env);
 	return t;
 }
-weak_alias (__nearbyintf, nearbyintf)
+libm_alias_float (__nearbyint, nearbyint)

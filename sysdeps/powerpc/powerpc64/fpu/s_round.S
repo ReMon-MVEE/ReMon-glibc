@@ -1,5 +1,5 @@
 /* round function.  PowerPC64 version.
-   Copyright (C) 2004-2017 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,7 @@
 
 #include <sysdep.h>
 #include <math_ldbl_opt.h>
+#include <libm-alias-double.h>
 
 	.section	".toc","aw"
 .LC0:	/* 2**52 */
@@ -76,12 +77,4 @@ ENTRY (__round, 4)
 	blr
 	END (__round)
 
-weak_alias (__round, round)
-
-#ifdef NO_LONG_DOUBLE
-weak_alias (__round, roundl)
-strong_alias (__round, __roundl)
-#endif
-#if LONG_DOUBLE_COMPAT(libm, GLIBC_2_1)
-compat_symbol (libm, __round, roundl, GLIBC_2_1)
-#endif
+libm_alias_double (__round, round)

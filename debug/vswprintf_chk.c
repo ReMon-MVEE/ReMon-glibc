@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -59,7 +59,7 @@ __vswprintf_chk (wchar_t *s, size_t maxlen, int flags, size_t slen,
     sf.f._sbf._f._flags2 |= _IO_FLAGS2_FORTIFY;
 
   _IO_wstr_init_static (&sf.f._sbf._f, s, maxlen - 1, s);
-  ret = _IO_vfwprintf ((_IO_FILE *) &sf.f._sbf, format, args);
+  ret = _IO_vfwprintf ((FILE *) &sf.f._sbf, format, args);
 
   if (sf.f._sbf._f._wide_data->_IO_buf_base == sf.overflow_buf)
     /* ISO C99 requires swprintf/vswprintf to return an error if the

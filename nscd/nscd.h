@@ -1,4 +1,4 @@
-/* Copyright (c) 1998-2017 Free Software Foundation, Inc.
+/* Copyright (c) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@suse.de>, 1998.
 
@@ -108,7 +108,7 @@ init_traced_file(struct traced_file *file, const char *fname, int crinit)
        size_t len = (size_t)(dname - fname);
        if (len > sizeof (file->dname))
 	 abort ();
-       strncpy (file->dname, file->fname, len);
+       memcpy (file->dname, file->fname, len);
        file->dname[len] = '\0';
      }
    /* The basename is the name just after the last forward slash.  */

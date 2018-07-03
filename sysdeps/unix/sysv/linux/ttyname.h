@@ -1,4 +1,4 @@
-/* Copyright (C) 2016-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,19 +16,33 @@
    not, see <http://www.gnu.org/licenses/>.  */
 
 #include <unistd.h>
+#include <stdbool.h>
 #include <sys/sysmacros.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 /* Return true if this is a UNIX98 pty device, as defined in
-   linux/Documentation/devices.txt.  */
-static inline int
+   linux/Documentation/devices.txt (on linux < 4.10) or
+   linux/Documentation/admin-guide/devices.txt (on linux >= 4.10).  */
+static inline bool
 is_pty (struct stat64 *sb)
 {
 #ifdef _STATBUF_ST_RDEV
-  int m = major (sb->st_rdev);
+  int m = __gnu_dev_major (sb->st_rdev);
   return (136 <= m && m <= 143);
 #else
   return false;
 #endif
+}
+
+static inline bool
+is_mytty (const struct stat64 *mytty, const struct stat64 *maybe)
+{
+  return (maybe->st_ino == mytty->st_ino
+	  && maybe->st_dev == mytty->st_dev
+#ifdef _STATBUF_ST_RDEV
+	  && S_ISCHR (maybe->st_mode)
+	  && maybe->st_rdev == mytty->st_rdev
+#endif
+	  );
 }

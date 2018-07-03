@@ -1,5 +1,5 @@
 /* Compute x * y + z as ternary operation.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -18,10 +18,11 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <math.h>
+#include <libm-alias-ldouble.h>
 
 long double
 __fmal (long double x, long double y, long double z)
 {
   return (x * y) + z;
 }
-weak_alias (__fmal, fmal)
+libm_alias_ldouble (__fma, fma)

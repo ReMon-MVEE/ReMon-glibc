@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1998.
 
@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <sys/mman.h>
+#include <sys/param.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -34,11 +35,10 @@
 #include <sys/uio.h>
 #include <sys/un.h>
 #include <not-cancel.h>
-#include <nis/rpcsvc/nis.h>
 #include <kernel-features.h>
+#include <nss.h>
 
 #include "nscd-client.h"
-
 
 /* Extra time we wait if the socket is still receiving data.  This
    value is in milliseconds.  Note that the other side is nscd on the
@@ -443,7 +443,6 @@ __nscd_get_map_ref (request_type type, const char *name,
 #define MINIMUM_HASHENTRY_SIZE \
   (offsetof (struct hashentry, dellist) + sizeof (int32_t))
 
-
 /* Don't return const struct datahead *, as eventhough the record
    is normally constant, it can change arbitrarily during nscd
    garbage collection.  */
@@ -451,7 +450,7 @@ struct datahead *
 __nscd_cache_search (request_type type, const char *key, size_t keylen,
 		     const struct mapped_database *mapped, size_t datalen)
 {
-  unsigned long int hash = __nis_hash (key, keylen) % mapped->head->module;
+  unsigned long int hash = __nss_hash (key, keylen) % mapped->head->module;
   size_t datasize = mapped->datasize;
 
   ref_t trail = mapped->head->array[hash];

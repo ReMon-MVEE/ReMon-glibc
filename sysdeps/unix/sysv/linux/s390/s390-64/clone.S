@@ -1,5 +1,5 @@
 /* Wrapper around clone system call.  64 bit S/390 version.
-   Copyright (C) 2001-2017 Free Software Foundation, Inc.
+   Copyright (C) 2001-2018 Free Software Foundation, Inc.
    Contributed by Martin Schwidefsky (schwidefsky@de.ibm.com).
    This file is part of the GNU C Library.
 
@@ -55,12 +55,16 @@ error:
 PSEUDO_END (__clone)
 
 thread_start:
+	cfi_startproc
+	/* Mark r14 as undefined in order to stop unwinding here!  */
+	cfi_undefined (r14)
 	/* fn is in gpr 1, arg in gpr 0 */
 	lgr	%r2,%r0		/* set first parameter to void *arg */
 	aghi	%r15,-160	/* make room on the stack for the save area */
 	xc	0(8,%r15),0(%r15)
 	basr	%r14,%r1	/* jump to fn */
 	DO_CALL	(exit, 1)
+	cfi_endproc
 
 libc_hidden_def (__clone)
 weak_alias (__clone, clone)

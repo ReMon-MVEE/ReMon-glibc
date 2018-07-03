@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2017 Free Software Foundation, Inc.
+# Copyright (C) 1991-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -57,46 +57,46 @@ tests := htontest test_ifindex tst-ntoa tst-ether_aton tst-network \
 # tst-deadline must be linked statically so that we can access
 # internal functions.
 tests-static += tst-deadline
-tests-static-internal := tst-deadline
+tests-internal += tst-deadline
 
 # tst-inet6_scopeid_pton also needs internal functions but does not
 # need to be linked statically.
-tests-internal := tst-inet6_scopeid_pton
+tests-internal += tst-inet6_scopeid_pton
 
 include ../Rules
 
 ifeq ($(have-thread-library),yes)
 
-CFLAGS-gethstbyad_r.c = -fexceptions
-CFLAGS-gethstbyad.c = -fexceptions
-CFLAGS-gethstbynm_r.c = -fexceptions
-CFLAGS-gethstbynm.c = -fexceptions
-CFLAGS-gethstbynm2_r.c = -fexceptions
-CFLAGS-gethstbynm2.c = -fexceptions
-CFLAGS-gethstent_r.c = -fexceptions
-CFLAGS-gethstent.c = -fexceptions
-CFLAGS-rcmd.c = -fexceptions
-CFLAGS-getnetbynm_r.c = -fexceptions
-CFLAGS-getnetbynm.c = -fexceptions
-CFLAGS-getnetbyad_r.c = -fexceptions
-CFLAGS-getnetbyad.c = -fexceptions
-CFLAGS-getnetent_r.c = -fexceptions
-CFLAGS-getnetent.c = -fexceptions
-CFLAGS-getaliasent_r.c = -fexceptions
-CFLAGS-getaliasent.c = -fexceptions
-CFLAGS-getrpcent_r.c = -fexceptions
-CFLAGS-getrpcent.c = -fexceptions
-CFLAGS-getservent_r.c = -fexceptions
-CFLAGS-getservent.c = -fexceptions
-CFLAGS-getprtent_r.c = -fexceptions
-CFLAGS-getprtent.c = -fexceptions
-CFLAGS-either_ntoh.c = -fexceptions
-CFLAGS-either_hton.c = -fexceptions
-CFLAGS-getnetgrent.c = -fexceptions
-CFLAGS-getnetgrent_r.c = -fexceptions
+CFLAGS-gethstbyad_r.c += -fexceptions
+CFLAGS-gethstbyad.c += -fexceptions
+CFLAGS-gethstbynm_r.c += -fexceptions
+CFLAGS-gethstbynm.c += -fexceptions
+CFLAGS-gethstbynm2_r.c += -fexceptions
+CFLAGS-gethstbynm2.c += -fexceptions
+CFLAGS-gethstent_r.c += -fexceptions
+CFLAGS-gethstent.c += -fexceptions
+CFLAGS-rcmd.c += -fexceptions
+CFLAGS-getnetbynm_r.c += -fexceptions
+CFLAGS-getnetbynm.c += -fexceptions
+CFLAGS-getnetbyad_r.c += -fexceptions
+CFLAGS-getnetbyad.c += -fexceptions
+CFLAGS-getnetent_r.c += -fexceptions
+CFLAGS-getnetent.c += -fexceptions
+CFLAGS-getaliasent_r.c += -fexceptions
+CFLAGS-getaliasent.c += -fexceptions
+CFLAGS-getrpcent_r.c += -fexceptions
+CFLAGS-getrpcent.c += -fexceptions
+CFLAGS-getservent_r.c += -fexceptions
+CFLAGS-getservent.c += -fexceptions
+CFLAGS-getprtent_r.c += -fexceptions
+CFLAGS-getprtent.c += -fexceptions
+CFLAGS-either_ntoh.c += -fexceptions
+CFLAGS-either_hton.c += -fexceptions
+CFLAGS-getnetgrent.c += -fexceptions
+CFLAGS-getnetgrent_r.c += -fexceptions
 
-CFLAGS-tst-checks-posix.c = -std=c99
-CFLAGS-tst-sockaddr.c = -fno-strict-aliasing
+CFLAGS-tst-checks-posix.c += -std=c99
+CFLAGS-tst-sockaddr.c += -fno-strict-aliasing
 
 endif
 

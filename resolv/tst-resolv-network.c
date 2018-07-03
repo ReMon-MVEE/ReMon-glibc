@@ -1,5 +1,5 @@
 /* Test getnetbyname and getnetbyaddr.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -214,8 +214,8 @@ check_long_name (void)
   free (mem.buffer);
 }
 
-int
-main (void)
+static int
+do_test (void)
 {
   struct resolv_test *obj = resolv_test_start
     ((struct resolv_redirect_config)
@@ -296,4 +296,8 @@ main (void)
   check_long_name ();
 
   resolv_test_end (obj);
+
+  return 0;
 }
+
+#include <support/test-driver.c>

@@ -1,5 +1,5 @@
 /* Round a 64-bit floating point value to the nearest integer.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,6 +17,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <math.h>
+#include <libm-alias-double.h>
 
 double
 __rint (double x)
@@ -39,8 +40,4 @@ __rint (double x)
 
   return x;
 }
-weak_alias (__rint, rint)
-#ifdef NO_LONG_DOUBLE
-strong_alias (__rint, __rintl)
-weak_alias (__rint, rintl)
-#endif
+libm_alias_double (__rint, rint)

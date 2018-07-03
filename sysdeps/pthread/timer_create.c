@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Kaz Kylheku <kaz@ashi.footprints.net>.
 
@@ -77,7 +77,7 @@ timer_create (clockid_t clock_id, struct sigevent *evp, timer_t *timerid)
     {
       newtimer->event.sigev_notify = SIGEV_SIGNAL;
       newtimer->event.sigev_signo = SIGALRM;
-      newtimer->event.sigev_value.sival_ptr = timer_ptr2id (newtimer);
+      newtimer->event.sigev_value.sival_ptr = newtimer;
       newtimer->event.sigev_notify_function = 0;
     }
 

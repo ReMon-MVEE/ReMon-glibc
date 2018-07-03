@@ -1,5 +1,5 @@
 /* A Generic Optimized memcpy implementation for AARCH64.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -33,9 +33,11 @@
 # undef libc_hidden_builtin_def
 # define libc_hidden_builtin_def(name)
 
+# ifdef SHARED
 /* It doesn't make sense to send libc-internal memcpy calls through a PLT. */
 	.globl __GI_memcpy; __GI_memcpy = __memcpy_generic
 	.globl __GI_memmove; __GI_memmove = __memmove_generic
+# endif
 
 #endif
 

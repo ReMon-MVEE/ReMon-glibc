@@ -1,5 +1,5 @@
 /* Set the default attributes to be used by pthread_create in the process.
-   Copyright (C) 2013-2017 Free Software Foundation, Inc.
+   Copyright (C) 2013-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,7 +19,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <pthreadP.h>
-#include <assert.h>
 #include <string.h>
 
 
@@ -30,7 +29,6 @@ pthread_setattr_default_np (const pthread_attr_t *in)
   struct pthread_attr attrs;
   int ret;
 
-  assert (sizeof (*in) >= sizeof (struct pthread_attr));
   real_in = (struct pthread_attr *) in;
 
   /* Catch invalid values.  */

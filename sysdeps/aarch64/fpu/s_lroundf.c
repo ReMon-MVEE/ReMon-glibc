@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -16,7 +16,13 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#define FUNC lroundf
-#define ITYPE float
-#define IREG_SIZE 32
-#include <s_lround.c>
+#include <math.h>
+#include <libm-alias-float.h>
+
+long int
+__lroundf (float x)
+{
+  return __builtin_lroundf (x);
+}
+
+libm_alias_float (__lround, lround)

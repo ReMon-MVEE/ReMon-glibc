@@ -1,4 +1,4 @@
-/* Copyright (c) 1998-2017 Free Software Foundation, Inc.
+/* Copyright (c) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1998.
 
@@ -25,11 +25,11 @@
 #include <string.h>
 #include <libintl.h>
 #include <arpa/inet.h>
-#include <rpcsvc/nis.h>
 #include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
+#include <nss.h>
 
 #include "nscd.h"
 #include "dbg_log.h"
@@ -74,7 +74,7 @@ struct datahead *
 cache_search (request_type type, const void *key, size_t len,
 	      struct database_dyn *table, uid_t owner)
 {
-  unsigned long int hash = __nis_hash (key, len) % table->head->module;
+  unsigned long int hash = __nss_hash (key, len) % table->head->module;
 
   unsigned long int nsearched = 0;
   struct datahead *result = NULL;
@@ -153,7 +153,7 @@ cache_add (int type, const void *key, size_t len, struct datahead *packet,
 	       first ? _(" (first)") : "");
     }
 
-  unsigned long int hash = __nis_hash (key, len) % table->head->module;
+  unsigned long int hash = __nss_hash (key, len) % table->head->module;
   struct hashentry *newp;
 
   newp = mempool_alloc (table, sizeof (struct hashentry), 0);

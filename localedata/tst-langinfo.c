@@ -1,5 +1,5 @@
 /* Test program for nl_langinfo() function.
-   Copyright (C) 2000-2017 Free Software Foundation, Inc.
+   Copyright (C) 2000-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>.
 
@@ -50,6 +50,18 @@ struct map
   VAL (ABMON_8),
   VAL (ABMON_9),
   VAL (ALT_DIGITS),
+  VAL (ALTMON_1),
+  VAL (ALTMON_10),
+  VAL (ALTMON_11),
+  VAL (ALTMON_12),
+  VAL (ALTMON_2),
+  VAL (ALTMON_3),
+  VAL (ALTMON_4),
+  VAL (ALTMON_5),
+  VAL (ALTMON_6),
+  VAL (ALTMON_7),
+  VAL (ALTMON_8),
+  VAL (ALTMON_9),
   VAL (AM_STR),
   VAL (CRNCYSTR),
   VAL (CURRENCY_SYMBOL),

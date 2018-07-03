@@ -1,4 +1,4 @@
-/* Copyright (c) 1998-2017 Free Software Foundation, Inc.
+/* Copyright (c) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@vt.uni-paderborn.de>, 1998.
 
@@ -67,7 +67,7 @@ dbg_log (const char *fmt,...)
       char buf[256];
       strftime (buf, sizeof (buf), "%c", &now);
 
-      char msg[512];
+      char msg[1024];
       snprintf (msg, sizeof (msg), "%s - %d: %s%s", buf, getpid (), msg2,
 		msg2[strlen (msg2) - 1] == '\n' ? "" : "\n");
       if (dbgout)

@@ -1,5 +1,5 @@
 /* Float ceil function, sparc64 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,17 +16,15 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#ifdef HAVE_AS_VIS3_SUPPORT
-# include <sparc-ifunc.h>
-# include <math.h>
+#include <sparc-ifunc.h>
+#include <math.h>
+#include <libm-alias-float.h>
 
-extern float __ceilf_vis3 (float);
-extern float __ceilf_generic (float);
+extern __typeof (ceilf) __ceilf_vis3 attribute_hidden;
+extern __typeof (ceilf) __ceilf_generic attribute_hidden;
 
-sparc_libm_ifunc(__ceilf, hwcap & HWCAP_SPARC_VIS3 ? __ceilf_vis3 : __ceilf_generic);
-weak_alias (__ceilf, ceilf)
-
-# define __ceilf __ceilf_generic
-#endif
-
-#include <sysdeps/ieee754/flt-32/s_ceilf.c>
+sparc_libm_ifunc (__ceilf,
+		  hwcap & HWCAP_SPARC_VIS3
+		  ? __ceilf_vis3
+		  : __ceilf_generic);
+libm_alias_float (__ceil, ceil)

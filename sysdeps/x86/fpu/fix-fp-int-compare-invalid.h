@@ -1,6 +1,6 @@
 /* Fix for missing "invalid" exceptions from floating-point
    comparisons.  x86 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -20,9 +20,13 @@
 #ifndef FIX_FP_INT_COMPARE_INVALID_H
 #define FIX_FP_INT_COMPARE_INVALID_H	1
 
-/* As of GCC 5, both x87 and SSE comparisons use unordered comparison
+/* Before GCC 8, both x87 and SSE comparisons use unordered comparison
    instructions when they should use ordered comparisons
    <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52451>.  */
-#define FIX_COMPARE_INVALID 1
+#if __GNUC_PREREQ (8, 0)
+# define FIX_COMPARE_INVALID 0
+#else
+# define FIX_COMPARE_INVALID 1
+#endif
 
 #endif /* fix-fp-int-compare-invalid.h */

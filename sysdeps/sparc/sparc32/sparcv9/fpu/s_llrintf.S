@@ -1,5 +1,5 @@
 /* llrintf(), sparc32 v9 version.
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by David S. Miller <davem@davemloft.net>, 2012.
 
@@ -18,6 +18,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-float.h>
 
 	/* We pop constants into the FPU registers using the incoming
 	   argument stack slots, since this avoid having to use any PIC
@@ -59,4 +60,4 @@ ENTRY (__llrintf)
 	retl
 	 ldd	[%sp + 72], %o0
 END (__llrintf)
-weak_alias (__llrintf, llrintf)
+libm_alias_float (__llrint, llrint)

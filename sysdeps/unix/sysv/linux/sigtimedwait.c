@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,39 +18,14 @@
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
-
-#include <nptl/pthreadP.h>
 #include <sysdep-cancel.h>
-#include <sys/syscall.h>
-
-#ifdef __NR_rt_sigtimedwait
 
 int
 __sigtimedwait (const sigset_t *set, siginfo_t *info,
 		const struct timespec *timeout)
 {
-#ifdef SIGCANCEL
-  sigset_t tmpset;
-  if (set != NULL
-      && (__builtin_expect (__sigismember (set, SIGCANCEL), 0)
-# ifdef SIGSETXID
-	  || __builtin_expect (__sigismember (set, SIGSETXID), 0)
-# endif
-	  ))
-    {
-      /* Create a temporary mask without the bit for SIGCANCEL set.  */
-      // We are not copying more than we have to.
-      memcpy (&tmpset, set, _NSIG / 8);
-      __sigdelset (&tmpset, SIGCANCEL);
-# ifdef SIGSETXID
-      __sigdelset (&tmpset, SIGSETXID);
-# endif
-      set = &tmpset;
-    }
-#endif
-
-    /* XXX The size argument hopefully will have to be changed to the
-       real size of the user-level sigset_t.  */
+  /* XXX The size argument hopefully will have to be changed to the
+     real size of the user-level sigset_t.  */
   int result = SYSCALL_CANCEL (rt_sigtimedwait, set, info, timeout, _NSIG / 8);
 
   /* The kernel generates a SI_TKILL code in si_code in case tkill is
@@ -64,6 +39,3 @@ __sigtimedwait (const sigset_t *set, siginfo_t *info,
 }
 libc_hidden_def (__sigtimedwait)
 weak_alias (__sigtimedwait, sigtimedwait)
-#else
-# include <signal/sigtimedwait.c>
-#endif

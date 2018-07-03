@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -20,8 +20,10 @@
 #include <string.h>
 
 #include <cthreads.h>		/* For `struct mutex'.  */
+#include <pthreadP.h>
 #include <mach.h>
 #include <mach/thread_switch.h>
+#include <mach/mig_support.h>
 
 #include <hurd.h>
 #include <hurd/id.h>
@@ -30,6 +32,8 @@
 #include "hurdfault.h"
 #include "hurdmalloc.h"		/* XXX */
 #include "../locale/localeinfo.h"
+
+#include <libc-diag.h>
 
 const char *_hurdsig_getenv (const char *);
 
@@ -48,7 +52,6 @@ thread_t _hurd_sigthread;
 /* These are set up by _hurdsig_init.  */
 unsigned long int __hurd_sigthread_stack_base;
 unsigned long int __hurd_sigthread_stack_end;
-unsigned long int *__hurd_sigthread_variables;
 
 /* Linked-list of per-thread signal state.  */
 struct hurd_sigstate *_hurd_sigstates;
@@ -120,6 +123,7 @@ _hurd_thread_sigstate (thread_t thread)
   __mutex_unlock (&_hurd_siglock);
   return ss;
 }
+libc_hidden_def (_hurd_thread_sigstate)
 
 /* Signal delivery itself is on this page.  */
 
@@ -234,18 +238,24 @@ abort_thread (struct hurd_sigstate *ss, struct machine_thread_all_state *state,
    that this location can be set without faulting, or else return NULL.  */
 
 static mach_port_t *
-interrupted_reply_port_location (struct machine_thread_all_state *thread_state,
+interrupted_reply_port_location (thread_t thread,
+				 struct machine_thread_all_state *thread_state,
 				 int sigthread)
 {
-  mach_port_t *portloc = (mach_port_t *) __hurd_threadvar_location_from_sp
-    (_HURD_THREADVAR_MIG_REPLY, (void *) thread_state->basic.SP);
+  mach_port_t *portloc = &THREAD_TCB(thread, thread_state)->reply_port;
 
   if (sigthread && _hurdsig_catch_memory_fault (portloc))
-    /* Faulted trying to read the stack.  */
+    /* Faulted trying to read the TCB.  */
     return NULL;
 
+  DIAG_PUSH_NEEDS_COMMENT;
+  /* GCC 6 and before seem to be confused by the setjmp call inside
+     _hurdsig_catch_memory_fault and think that we may be returning a second
+     time to here with portloc uninitialized (but we never do). */
+  DIAG_IGNORE_NEEDS_COMMENT (6, "-Wmaybe-uninitialized");
   /* Fault now if this pointer is bogus.  */
   *(volatile mach_port_t *) portloc = *portloc;
+  DIAG_POP_NEEDS_COMMENT;
 
   if (sigthread)
     _hurdsig_end_catch_fault ();
@@ -323,7 +333,8 @@ _hurdsig_abort_rpcs (struct hurd_sigstate *ss, int signo, int sigthread,
 	   our nonzero return tells the trampoline code to finish the message
 	   receive operation before running the handler.  */
 
-	mach_port_t *reply = interrupted_reply_port_location (state,
+	mach_port_t *reply = interrupted_reply_port_location (ss->thread,
+							      state,
 							      sigthread);
 	error_t err = __interrupt_operation (intr_port, _hurdsig_interrupt_timeout);
 
@@ -835,7 +846,8 @@ _hurd_internal_post_signal (struct hurd_sigstate *ss,
 
 	    if (! machine_get_basic_state (ss->thread, &thread_state))
 	      goto sigbomb;
-	    loc = interrupted_reply_port_location (&thread_state, 1);
+	    loc = interrupted_reply_port_location (ss->thread,
+						   &thread_state, 1);
 	    if (loc && *loc != MACH_PORT_NULL)
 	      /* This is the reply port for the context which called
 		 sigreturn.  Since we are abandoning that context entirely
@@ -901,7 +913,8 @@ _hurd_internal_post_signal (struct hurd_sigstate *ss,
 	{
 	  /* Fetch the thread variable for the MiG reply port,
 	     and set it to MACH_PORT_NULL.  */
-	  mach_port_t *loc = interrupted_reply_port_location (&thread_state,
+	  mach_port_t *loc = interrupted_reply_port_location (ss->thread,
+							      &thread_state,
 							      1);
 	  if (loc)
 	    {
@@ -1015,7 +1028,7 @@ _hurd_internal_post_signal (struct hurd_sigstate *ss,
 		      || ss->actions[signo].sa_handler == SIG_IGN
 		      || ss->actions[signo].sa_handler == SIG_DFL))
 		{
-		  mutex_unlock (&_hurd_siglock);
+		  __mutex_unlock (&_hurd_siglock);
 		  goto deliver_pending;
 		}
 	    __spin_unlock (&ss->lock);
@@ -1255,7 +1268,8 @@ _hurdsig_init (const int *intarray, size_t intarraysize)
 
   /* Start the signal thread listening on the message port.  */
 
-  if (__hurd_threadvar_stack_mask == 0)
+#pragma weak __cthread_fork
+  if (!__cthread_fork)
     {
       err = __thread_create (__mach_task_self (), &_hurd_msgport_thread);
       assert_perror (err);
@@ -1268,14 +1282,6 @@ _hurdsig_init (const int *intarray, size_t intarraysize)
       assert_perror (err);
 
       __hurd_sigthread_stack_end = __hurd_sigthread_stack_base + stacksize;
-      __hurd_sigthread_variables =
-	malloc (__hurd_threadvar_max * sizeof (unsigned long int));
-      if (__hurd_sigthread_variables == NULL)
-	__libc_fatal ("hurd: Can't allocate threadvars for signal thread\n");
-      memset (__hurd_sigthread_variables, 0,
-	      __hurd_threadvar_max * sizeof (unsigned long int));
-      __hurd_sigthread_variables[_HURD_THREADVAR_LOCALE]
-	= (unsigned long int) &_nl_global_locale;
 
       /* Reinitialize the MiG support routines so they will use a per-thread
 	 variable for the cached reply port.  */
@@ -1295,9 +1301,25 @@ _hurdsig_init (const int *intarray, size_t intarraysize)
          we'll let the signal thread's per-thread variables be found as for
          any normal cthread, and just leave the magic __hurd_sigthread_*
          values all zero so they'll be ignored.  */
-#pragma weak cthread_fork
-#pragma weak cthread_detach
-      cthread_detach (cthread_fork ((cthread_fn_t) &_hurd_msgport_receive, 0));
+#pragma weak __cthread_detach
+#pragma weak __pthread_getattr_np
+#pragma weak __pthread_attr_getstack
+      __cthread_t thread = __cthread_fork (
+			     (cthread_fn_t) &_hurd_msgport_receive, 0);
+      __cthread_detach (thread);
+
+      if (__pthread_getattr_np)
+	{
+	  /* Record signal thread stack layout for fork() */
+	  pthread_attr_t attr;
+	  void *addr;
+	  size_t size;
+
+	  __pthread_getattr_np ((pthread_t) thread, &attr);
+	  __pthread_attr_getstack (&attr, &addr, &size);
+	  __hurd_sigthread_stack_base = (uintptr_t) addr;
+	  __hurd_sigthread_stack_end = __hurd_sigthread_stack_base + size;
+	}
 
       /* XXX We need the thread port for the signal thread further on
          in this thread (see hurdfault.c:_hurdsigfault_init).
@@ -1350,14 +1372,14 @@ reauth_proc (mach_port_t new)
   __mach_port_destroy (__mach_task_self (), ref);
 
   /* Set the owner of the process here too. */
-  mutex_lock (&_hurd_id.lock);
+  __mutex_lock (&_hurd_id.lock);
   if (!_hurd_check_ids ())
     HURD_PORT_USE (&_hurd_ports[INIT_PORT_PROC],
 		   __proc_setowner (port,
 				    (_hurd_id.gen.nuids
 				     ? _hurd_id.gen.uids[0] : 0),
 				    !_hurd_id.gen.nuids));
-  mutex_unlock (&_hurd_id.lock);
+  __mutex_unlock (&_hurd_id.lock);
 
   (void) &reauth_proc;		/* Silence compiler warning.  */
 }

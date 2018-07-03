@@ -1,5 +1,5 @@
 /* Convert a string representation of time to a time value.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Mark Kettenis <kettenis@phys.uva.nl>, 1997.
 
@@ -198,7 +198,7 @@ __getdate_r (const char *string, struct tm *tp)
       if (result && *result == '\0')
 	break;
     }
-  while (!feof_unlocked (fp));
+  while (!__feof_unlocked (fp));
 
   free (instr);
 
@@ -206,7 +206,7 @@ __getdate_r (const char *string, struct tm *tp)
   free (line);
 
   /* Check for errors. */
-  if (ferror_unlocked (fp))
+  if (__ferror_unlocked (fp))
     {
       fclose (fp);
       return 5;

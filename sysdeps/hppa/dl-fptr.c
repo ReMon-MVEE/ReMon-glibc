@@ -1,5 +1,5 @@
 /* Manage function descriptors.  Generic version.
-   Copyright (C) 1999-2017 Free Software Foundation, Inc.
+   Copyright (C) 1999-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -329,9 +329,8 @@ elf_machine_resolve (void)
   Elf32_Addr addr;
 
   asm ("b,l     1f,%0\n"
-"	depi	0,31,2,%0\n"
-"1:	addil	L'_dl_runtime_resolve - ($PIC_pcrel$0 - 8),%0\n"
-"	ldo	R'_dl_runtime_resolve - ($PIC_pcrel$0 - 12)(%%r1),%0\n"
+"	addil	L'_dl_runtime_resolve - ($PIC_pcrel$0 - 1),%0\n"
+"1:	ldo	R'_dl_runtime_resolve - ($PIC_pcrel$0 - 5)(%%r1),%0\n"
        : "=r" (addr) : : "r1");
 
   return addr;

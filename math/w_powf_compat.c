@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gmail.com>, 2011.
 
@@ -19,12 +19,13 @@
 #include <math.h>
 #include <math_private.h>
 #include <math-svid-compat.h>
+#include <libm-alias-float.h>
 
 
-#if LIBM_SVID_COMPAT
+#if LIBM_SVID_COMPAT && SHLIB_COMPAT (libm, GLIBC_2_0, GLIBC_2_27)
 /* wrapper powf */
 float
-__powf (float x, float y)
+__powf_compat (float x, float y)
 {
   float z = __ieee754_powf (x, y);
   if (__glibc_unlikely (!isfinite (z)))
@@ -59,5 +60,5 @@ __powf (float x, float y)
 
   return z;
 }
-weak_alias (__powf, powf)
+compat_symbol (libm, __powf_compat, powf, GLIBC_2_0);
 #endif

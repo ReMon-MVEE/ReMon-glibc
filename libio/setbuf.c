@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -28,7 +28,7 @@
 #include "stdio.h"
 
 void
-setbuf (_IO_FILE *fp, char *buf)
+setbuf (FILE *fp, char *buf)
 {
-  _IO_setbuffer (fp, buf, _IO_BUFSIZ);
+  _IO_setbuffer (fp, buf, BUFSIZ);
 }

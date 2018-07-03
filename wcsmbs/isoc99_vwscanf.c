@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -22,7 +22,7 @@
 /* Read formatted input from STDIN according to the format string FORMAT.  */
 /* VARARGS2 */
 int
-__isoc99_vwscanf (const wchar_t *format, _IO_va_list args)
+__isoc99_vwscanf (const wchar_t *format, va_list args)
 {
   int done;
 

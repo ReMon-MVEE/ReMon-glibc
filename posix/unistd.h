@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -1105,7 +1105,12 @@ extern int lockf64 (int __fd, int __cmd, __off64_t __len) __wur;
        do __result = (long int) (expression);				      \
        while (__result == -1L && errno == EINTR);			      \
        __result; }))
-#endif
+
+/* Copy LENGTH bytes from INFD to OUTFD.  */
+ssize_t copy_file_range (int __infd, __off64_t *__pinoff,
+			 int __outfd, __off64_t *__poutoff,
+			 size_t __length, unsigned int __flags);
+#endif /* __USE_GNU */
 
 #if defined __USE_POSIX199309 || defined __USE_UNIX98
 /* Synchronize at least the data part of a file with the underlying

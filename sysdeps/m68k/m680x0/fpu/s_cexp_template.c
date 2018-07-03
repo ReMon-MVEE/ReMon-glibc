@@ -1,5 +1,5 @@
 /* Complex exponential function.  m68k fpu version
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Andreas Schwab <schwab@issan.informatik.uni-dortmund.de>
 
@@ -126,4 +126,4 @@ s(__cexp) (CFLOAT x)
 
   return retval;
 }
-weak_alias (s(__cexp), s(cexp))
+declare_mgen_alias (__cexp, cexp)

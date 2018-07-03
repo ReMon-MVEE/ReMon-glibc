@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Mark Kettenis <kettenis@phys.uva.nl>, 1997.
 
@@ -31,4 +31,5 @@ __updwtmp (const char *wtmp_file, const struct utmp *utmp)
 
   (*__libc_utmp_file_functions.updwtmp) (file_name, utmp);
 }
+libc_hidden_def (__updwtmp)
 weak_alias (__updwtmp, updwtmp)

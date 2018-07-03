@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>
    and Paul Janzen <pcj@primenet.com>, 1996.
@@ -151,6 +151,7 @@ __getutent_r (struct utmp *buffer, struct utmp **result)
 
   return retval;
 }
+libc_hidden_def (__getutent_r)
 weak_alias (__getutent_r, getutent_r)
 
 
@@ -167,6 +168,7 @@ __pututline (const struct utmp *data)
 
   return buffer;
 }
+libc_hidden_def (__pututline)
 weak_alias (__pututline, pututline)
 
 

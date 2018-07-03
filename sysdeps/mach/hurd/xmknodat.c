@@ -1,5 +1,5 @@
 /* Create a device file relative to an open directory.  Hurd version.
-   Copyright (C) 1991-2017 Free Software Foundation, Inc.
+   Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@
 #include <_itoa.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/sysmacros.h>
 
 /* Create a device file named PATH relative to FD, with permission and
    special bits MODE and device number DEV (which can be constructed
@@ -80,9 +81,9 @@ __xmknodat (int vers, int fd, const char *path, mode_t mode, dev_t *dev)
 
       bp = buf + sizeof (buf);
       *--bp = '\0';
-      bp = _itoa (minor (*dev), bp, 10, 0);
+      bp = _itoa (__gnu_dev_minor (*dev), bp, 10, 0);
       *--bp = '\0';
-      bp = _itoa (major (*dev), bp, 10, 0);
+      bp = _itoa (__gnu_dev_major (*dev), bp, 10, 0);
       memcpy (bp - len, translator, len);
       translator = bp - len;
       len = buf + sizeof (buf) - translator;

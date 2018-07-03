@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2005-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -48,6 +48,8 @@
    pthread_mutex_t is larger than Linuxthreads.  */
 #define __PTHREAD_COMPAT_PADDING_END  int __reserved[2];
 #define __PTHREAD_MUTEX_LOCK_ELISION    0
+#define __PTHREAD_MUTEX_NUSERS_AFTER_KIND  1
+#define __PTHREAD_MUTEX_USE_UNION          1
 
 #define __LOCK_ALIGNMENT __attribute__ ((__aligned__(16)))
 #define __ONCE_ALIGNMENT

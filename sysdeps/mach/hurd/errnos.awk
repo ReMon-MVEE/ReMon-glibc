@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2017 Free Software Foundation, Inc.
+# Copyright (C) 1991-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -180,14 +180,6 @@ function print_errno_enum(maxseq)
   print "     this enumeration must be a signed type.  */";
   print "  __FORCE_ERROR_T_CODES_SIGNED = -1";
   print "};";
-  print "";
-  print "/* User-visible type of error codes.  It is ok to use 'int' or";
-  print "   'kern_return_t' for these, but with 'error_t' the debugger prints";
-  print "   symbolic values.  */";
-  print "# if !defined __error_t_defined && defined __USE_GNU";
-  print "#  define __error_t_defined 1";
-  print "typedef enum __error_t_codes error_t;"
-  print "# endif";
   print "";
   print "#endif /* not __ASSEMBLER__ */";
 }

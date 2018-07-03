@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -64,7 +64,7 @@ s(__ieee754_pow) (float_type x, float_type y)
   if (y == 2)
     return x * x;
   if (y == 0.5 && !(x_cond & __M81_COND_NEG))
-    return m81(__ieee754_sqrt) (x);
+    return m81(sqrt) (x);
 
   if (x == 10.0)
     {

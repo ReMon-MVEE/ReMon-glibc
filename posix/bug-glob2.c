@@ -1,6 +1,6 @@
 /* Test glob memory management.
    for the filesystem access functions.
-   Copyright (C) 2001-2017 Free Software Foundation, Inc.
+   Copyright (C) 2001-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -207,21 +207,13 @@ my_readdir (void *gdir)
 
   dir->d.d_ino = 1;		/* glob should not skip this entry.  */
 
-#ifdef _DIRENT_HAVE_D_TYPE
   dir->d.d_type = filesystem[dir->idx].type;
-#endif
 
   strcpy (dir->d.d_name, filesystem[dir->idx].name);
 
-#ifdef _DIRENT_HAVE_D_TYPE
   PRINTF ("my_readdir ({ level: %d, idx: %ld }) = { d_ino: %ld, d_type: %d, d_name: \"%s\" }\n",
 	  dir->level, (long int) dir->idx, dir->d.d_ino, dir->d.d_type,
 	  dir->d.d_name);
-#else
-  PRINTF ("my_readdir ({ level: %d, idx: %ld }) = { d_ino: %ld, d_name: \"%s\" }\n",
-	  dir->level, (long int) dir->idx, dir->d.d_ino,
-	  dir->d.d_name);
-#endif
 
   ++dir->idx;
 

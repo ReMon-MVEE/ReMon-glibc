@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style: "gnu"; c-basic-offset: 2; tab-width: 8; indent-tabs-mode: nil; -*- */
 /* Malloc implementation for multiple threads without lock contention.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Wolfram Gloger <wg@malloc.de>
    and Doug Lea <dl@cs.oswego.edu>, 2001.
@@ -224,6 +224,7 @@
 #include <unistd.h>
 #include <stdio.h>    /* needed for malloc_stats */
 #include <errno.h>
+#include <assert.h>
 
 #include <shlib-compat.h>
 
@@ -243,6 +244,9 @@
 #include <libc-diag.h>
 
 #include <malloc/malloc-internal.h>
+
+/* For SINGLE_THREAD_P.  */
+#include <sysdep-cancel.h>
 
 /*
   Debugging:
@@ -276,13 +280,9 @@
 #define MALLOC_DEBUG 0
 #endif
 
-#ifdef NDEBUG
-# define assert(expr) ((void) 0)
-#else
-# define assert(expr) \
-  ((expr)								      \
-   ? ((void) 0)								      \
-   : __malloc_assert (#expr, __FILE__, __LINE__, __func__))
+#ifndef NDEBUG
+# define __assert_fail(assertion, file, line, function)			\
+	 __malloc_assert(assertion, file, line, function)
 
 extern const char *__progname;
 
@@ -1222,14 +1222,21 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    MINSIZE :                                                      \
    ((req) + SIZE_SZ + MALLOC_ALIGN_MASK) & ~MALLOC_ALIGN_MASK)
 
-/*  Same, except also perform argument check */
-
-#define checked_request2size(req, sz)                             \
-  if (REQUEST_OUT_OF_RANGE (req)) {					      \
-      __set_errno (ENOMEM);						      \
-      return 0;								      \
-    }									      \
-  (sz) = request2size (req);
+/* Same, except also perform an argument and result check.  First, we check
+   that the padding done by request2size didn't result in an integer
+   overflow.  Then we check (using REQUEST_OUT_OF_RANGE) that the resulting
+   size isn't so large that a later alignment would lead to another integer
+   overflow.  */
+#define checked_request2size(req, sz) \
+({				    \
+  (sz) = request2size (req);	    \
+  if (((sz) < (req))		    \
+      || REQUEST_OUT_OF_RANGE (sz)) \
+    {				    \
+      __set_errno (ENOMEM);	    \
+      return 0;			    \
+    }				    \
+})
 
 /*
    --------------- Physical chunk operations ---------------
@@ -1281,13 +1288,13 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 /* Ptr to next physical malloc_chunk. */
 #define next_chunk(p) ((mchunkptr) (((char *) (p)) + chunksize (p)))
 
-/* Size of the chunk below P.  Only valid if prev_inuse (P).  */
+/* Size of the chunk below P.  Only valid if !prev_inuse (P).  */
 #define prev_size(p) ((p)->mchunk_prev_size)
 
-/* Set the size of the chunk below P.  Only valid if prev_inuse (P).  */
+/* Set the size of the chunk below P.  Only valid if !prev_inuse (P).  */
 #define set_prev_size(p, sz) ((p)->mchunk_prev_size = (sz))
 
-/* Ptr to previous physical malloc_chunk.  Only valid if prev_inuse (P).  */
+/* Ptr to previous physical malloc_chunk.  Only valid if !prev_inuse (P).  */
 #define prev_chunk(p) ((mchunkptr) (((char *) (p)) - prev_size (p)))
 
 /* Treat space at ptr + offset as a chunk */
@@ -1647,8 +1654,10 @@ static INTERNAL_SIZE_T global_max_fast;
 /*
    Set value of max_fast.
    Use impossibly small value if 0.
-   Precondition: there are no existing fastbin chunks.
-   Setting the value clears fastchunk bit but preserves noncontiguous bit.
+   Precondition: there are no existing fastbin chunks in the main arena.
+   Since do_check_malloc_state () checks this, we call malloc_consolidate ()
+   before changing max_fast.  Note other arenas will leak their fast bin
+   entries if max_fast is reduced.
  */
 
 #define set_max_fast(s) \
@@ -1673,6 +1682,17 @@ get_max_fast (void)
    ----------- Internal state representation and initialization -----------
  */
 
+/*
+   have_fastchunks indicates that there are probably some fastbin chunks.
+   It is set true on entering a chunk into any fastbin, and cleared early in
+   malloc_consolidate.  The value is approximate since it may be set when there
+   are no fastbin chunks, or it may be clear even if there are fastbin chunks
+   available.  Given it's sole purpose is to reduce number of redundant calls to
+   malloc_consolidate, it does not affect correctness.  As a result we can safely
+   use relaxed atomic accesses.
+ */
+
+
 struct malloc_state
 {
   /* Serialize access.  */
@@ -1680,6 +1700,10 @@ struct malloc_state
 
   /* Flags (formerly in max_fast).  */
   int flags;
+
+  /* Set if the fastbin chunks contain recently inserted free blocks.  */
+  /* Note this is a bool but not all targets support atomics on booleans.  */
+  int have_fastchunks;
 
   /* Fastbins */
   mfastbinptr fastbinsY[NFASTBINS];
@@ -1809,11 +1833,8 @@ static struct malloc_par mp_ =
 /*
    Initialize a malloc_state struct.
 
-   This is called only from within malloc_consolidate, which needs
-   be called in the same contexts anyway.  It is never called directly
-   outside of malloc_consolidate because some optimizing compilers try
-   to inline it at all call points, which turns out not to be an
-   optimization at all. (Inlining it in malloc_consolidate is fine though.)
+   This is called from ptmalloc_init () or from _int_new_arena ()
+   when creating a new arena.
  */
 
 static void
@@ -1835,7 +1856,7 @@ malloc_init_state (mstate av)
   set_noncontiguous (av);
   if (av == &main_arena)
     set_max_fast (DEFAULT_MXFAST);
-  av->flags |= FASTCHUNKS_BIT;
+  atomic_store_relaxed (&av->have_fastchunks, false);
 
   av->top = initial_top (av);
 }
@@ -1885,6 +1906,9 @@ void *weak_variable (*__memalign_hook)
   = memalign_hook_ini;
 void weak_variable (*__after_morecore_hook) (void) = NULL;
 
+/* This function is called from the arena shutdown hook, to free the
+   thread cache (if it exists).  */
+static void tcache_thread_shutdown (void);
 
 /* ------------------ Testing support ----------------------------------*/
 
@@ -1991,7 +2015,7 @@ do_check_chunk (mstate av, mchunkptr p)
 static void
 do_check_free_chunk (mstate av, mchunkptr p)
 {
-  INTERNAL_SIZE_T sz = p->size & ~(PREV_INUSE | NON_MAIN_ARENA);
+  INTERNAL_SIZE_T sz = chunksize_nomask (p) & ~(PREV_INUSE | NON_MAIN_ARENA);
   mchunkptr next = chunk_at_offset (p, sz);
 
   do_check_chunk (av, p);
@@ -2006,7 +2030,7 @@ do_check_free_chunk (mstate av, mchunkptr p)
       assert ((sz & MALLOC_ALIGN_MASK) == 0);
       assert (aligned_OK (chunk2mem (p)));
       /* ... matching footer field */
-      assert (prev_size (p) == sz);
+      assert (prev_size (next_chunk (p)) == sz);
       /* ... and is fully consolidated */
       assert (prev_inuse (p));
       assert (next == av->top || inuse (next));
@@ -2066,7 +2090,7 @@ do_check_inuse_chunk (mstate av, mchunkptr p)
 static void
 do_check_remalloced_chunk (mstate av, mchunkptr p, INTERNAL_SIZE_T s)
 {
-  INTERNAL_SIZE_T sz = p->size & ~(PREV_INUSE | NON_MAIN_ARENA);
+  INTERNAL_SIZE_T sz = chunksize_nomask (p) & ~(PREV_INUSE | NON_MAIN_ARENA);
 
   if (!chunk_is_mmapped (p))
     {
@@ -2142,8 +2166,11 @@ do_check_malloc_state (mstate av)
   /* alignment is a power of 2 */
   assert ((MALLOC_ALIGNMENT & (MALLOC_ALIGNMENT - 1)) == 0);
 
-  /* cannot run remaining checks until fully initialized */
-  if (av->top == 0 || av->top == initial_top (av))
+  /* Check the arena is initialized. */
+  assert (av->top != 0);
+
+  /* No memory has been allocated yet, so doing more tests is not possible.  */
+  if (av->top == initial_top (av))
     return;
 
   /* pagesize is a power of 2 */
@@ -2190,11 +2217,6 @@ do_check_malloc_state (mstate av)
           p = p->fd;
         }
     }
-
-  if (total != 0)
-    assert (have_fastchunks (av));
-  else if (!have_fastchunks (av))
-    assert (total == 0);
 
   /* check normal bins */
   for (i = 1; i < NBINS; ++i)
@@ -2928,12 +2950,12 @@ typedef struct tcache_perthread_struct
   tcache_entry *entries[TCACHE_MAX_BINS];
 } tcache_perthread_struct;
 
-static __thread char tcache_shutting_down = 0;
+static __thread bool tcache_shutting_down = false;
 static __thread tcache_perthread_struct *tcache = NULL;
 
 /* Caller must ensure that we know tc_idx is valid and there's room
    for more chunks.  */
-static void
+static __always_inline void
 tcache_put (mchunkptr chunk, size_t tc_idx)
 {
   tcache_entry *e = (tcache_entry *) chunk2mem (chunk);
@@ -2945,7 +2967,7 @@ tcache_put (mchunkptr chunk, size_t tc_idx)
 
 /* Caller must ensure that we know tc_idx is valid and there's
    available chunks to remove.  */
-static void *
+static __always_inline void *
 tcache_get (size_t tc_idx)
 {
   tcache_entry *e = tcache->entries[tc_idx];
@@ -2956,8 +2978,8 @@ tcache_get (size_t tc_idx)
   return (void *) e;
 }
 
-static void __attribute__ ((section ("__libc_thread_freeres_fn")))
-tcache_thread_freeres (void)
+static void
+tcache_thread_shutdown (void)
 {
   int i;
   tcache_perthread_struct *tcache_tmp = tcache;
@@ -2965,8 +2987,12 @@ tcache_thread_freeres (void)
   if (!tcache)
     return;
 
+  /* Disable the tcache and prevent it from being reinitialized.  */
   tcache = NULL;
+  tcache_shutting_down = true;
 
+  /* Free all of the entries and the tcache itself back to the arena
+     heap for coalescing.  */
   for (i = 0; i < TCACHE_MAX_BINS; ++i)
     {
       while (tcache_tmp->entries[i])
@@ -2978,10 +3004,7 @@ tcache_thread_freeres (void)
     }
 
   __libc_free (tcache_tmp);
-
-  tcache_shutting_down = 1;
 }
-text_set_element (__libc_thread_subfreeres, tcache_thread_freeres);
 
 static void
 tcache_init(void)
@@ -3018,13 +3041,20 @@ tcache_init(void)
 
 }
 
-#define MAYBE_INIT_TCACHE() \
+# define MAYBE_INIT_TCACHE() \
   if (__glibc_unlikely (tcache == NULL)) \
     tcache_init();
 
-#else
-#define MAYBE_INIT_TCACHE()
-#endif
+#else  /* !USE_TCACHE */
+# define MAYBE_INIT_TCACHE()
+
+static void
+tcache_thread_shutdown (void)
+{
+  /* Nothing to do if there is no thread cache.  */
+}
+
+#endif /* !USE_TCACHE  */
 
 void *
 __libc_malloc (size_t bytes)
@@ -3038,7 +3068,8 @@ __libc_malloc (size_t bytes)
     return (*hook)(bytes, RETURN_ADDRESS (0));
 #if USE_TCACHE
   /* int_free also calls request2size, be careful to not pad twice.  */
-  size_t tbytes = request2size (bytes);
+  size_t tbytes;
+  checked_request2size (bytes, tbytes);
   size_t tc_idx = csize2tidx (tbytes);
 
   MAYBE_INIT_TCACHE ();
@@ -3053,6 +3084,14 @@ __libc_malloc (size_t bytes)
     }
   DIAG_POP_NEEDS_COMMENT;
 #endif
+
+  if (SINGLE_THREAD_P)
+    {
+      victim = _int_malloc (&main_arena, bytes);
+      assert (!victim || chunk_is_mmapped (mem2chunk (victim)) ||
+	      &main_arena == arena_for_chunk (mem2chunk (victim)));
+      return victim;
+    }
 
   arena_get (ar_ptr, bytes);
 
@@ -3211,6 +3250,15 @@ __libc_realloc (void *oldmem, size_t bytes)
       return newmem;
     }
 
+  if (SINGLE_THREAD_P)
+    {
+      newp = _int_realloc (ar_ptr, oldp, oldsize, nb);
+      assert (!newp || chunk_is_mmapped (mem2chunk (newp)) ||
+	      ar_ptr == arena_for_chunk (mem2chunk (newp)));
+
+      return newp;
+    }
+
   __libc_lock_lock (ar_ptr->mutex);
 
   newp = _int_realloc (ar_ptr, oldp, oldsize, nb);
@@ -3284,6 +3332,15 @@ _mid_memalign (size_t alignment, size_t bytes, void *address)
       while (a < alignment)
         a <<= 1;
       alignment = a;
+    }
+
+  if (SINGLE_THREAD_P)
+    {
+      p = _int_memalign (&main_arena, alignment, bytes);
+      assert (!p || chunk_is_mmapped (mem2chunk (p)) ||
+	      &main_arena == arena_for_chunk (mem2chunk (p)));
+
+      return p;
     }
 
   arena_get (ar_ptr, bytes + alignment + MINSIZE);
@@ -3378,7 +3435,11 @@ __libc_calloc (size_t n, size_t elem_size)
 
   MAYBE_INIT_TCACHE ();
 
-  arena_get (av, sz);
+  if (SINGLE_THREAD_P)
+    av = &main_arena;
+  else
+    arena_get (av, sz);
+
   if (av)
     {
       /* Check if we hand out the top chunk, in which case there may be no
@@ -3408,19 +3469,21 @@ __libc_calloc (size_t n, size_t elem_size)
     }
   mem = _int_malloc (av, sz);
 
-
   assert (!mem || chunk_is_mmapped (mem2chunk (mem)) ||
           av == arena_for_chunk (mem2chunk (mem)));
 
-  if (mem == 0 && av != NULL)
+  if (!SINGLE_THREAD_P)
     {
-      LIBC_PROBE (memory_calloc_retry, 1, sz);
-      av = arena_get_retry (av, sz);
-      mem = _int_malloc (av, sz);
-    }
+      if (mem == 0 && av != NULL)
+	{
+	  LIBC_PROBE (memory_calloc_retry, 1, sz);
+	  av = arena_get_retry (av, sz);
+	  mem = _int_malloc (av, sz);
+	}
 
-  if (av != NULL)
-    __libc_lock_unlock (av->mutex);
+      if (av != NULL)
+	__libc_lock_unlock (av->mutex);
+    }
 
   /* Allocation failed even after a retry.  */
   if (mem == 0)
@@ -3552,37 +3615,50 @@ _int_malloc (mstate av, size_t bytes)
     {
       idx = fastbin_index (nb);
       mfastbinptr *fb = &fastbin (av, idx);
-      mchunkptr pp = atomic_load_acquire(fb);
-      REMOVE_FB (fb, victim, pp);
-      if (victim != 0)
-        {
-          if (__builtin_expect (fastbin_index (chunksize (victim)) != idx, 0))
-	    malloc_printerr ("malloc(): memory corruption (fast)");
-          check_remalloced_chunk (av, victim, nb);
-#if USE_TCACHE
-	  /* While we're here, if we see other chunks of the same size,
-	     stash them in the tcache.  */
-	  size_t tc_idx = csize2tidx (nb);
-	  if (tcache && tc_idx < mp_.tcache_bins)
-	    {
-	      mchunkptr tc_victim;
+      mchunkptr pp;
+      victim = atomic_load_acquire(fb);
 
-	      /* While bin not empty and tcache not full, copy chunks over.  */
-	      while (tcache->counts[tc_idx] < mp_.tcache_count
-				 && (pp = atomic_load_acquire(fb)) != NULL)
+      if (victim != NULL)
+	{
+	  if (SINGLE_THREAD_P)
+	    *fb = victim->fd;
+	  else
+	    REMOVE_FB (fb, pp, victim);
+	  if (__glibc_likely (victim != NULL))
+	    {
+	      size_t victim_idx = fastbin_index (chunksize (victim));
+	      if (__builtin_expect (victim_idx != idx, 0))
+		malloc_printerr ("malloc(): memory corruption (fast)");
+	      check_remalloced_chunk (av, victim, nb);
+#if USE_TCACHE
+	      /* While we're here, if we see other chunks of the same size,
+		 stash them in the tcache.  */
+	      size_t tc_idx = csize2tidx (nb);
+	      if (tcache && tc_idx < mp_.tcache_bins)
 		{
-		  REMOVE_FB (fb, tc_victim, pp);
-		  if (tc_victim != 0)
+		  mchunkptr tc_victim;
+
+		  /* While bin not empty and tcache not full, copy chunks.  */
+		  while (tcache->counts[tc_idx] < mp_.tcache_count
+			 && (tc_victim = atomic_load_acquire(fb)) != NULL)
 		    {
+		      if (SINGLE_THREAD_P)
+			*fb = tc_victim->fd;
+		      else
+			{
+			  REMOVE_FB (fb, pp, tc_victim);
+			  if (__glibc_unlikely (tc_victim == NULL))
+			    break;
+			}
 		      tcache_put (tc_victim, tc_idx);
-	            }
+		    }
 		}
-	    }
 #endif
-          void *p = chunk2mem (victim);
-          alloc_perturb (p, bytes);
-          return p;
-        }
+	      void *p = chunk2mem (victim);
+	      alloc_perturb (p, bytes);
+	      return p;
+	    }
+	}
     }
 
   /*
@@ -3600,21 +3676,16 @@ _int_malloc (mstate av, size_t bytes)
 
       if ((victim = last (bin)) != bin)
         {
-          if (victim == 0) /* initialization check */
-            malloc_consolidate (av);
-          else
-            {
-              bck = victim->bk;
-	      if (__glibc_unlikely (bck->fd != victim))
-		malloc_printerr
-		  ("malloc(): smallbin double linked list corrupted");
-              set_inuse_bit_at_offset (victim, nb);
-              bin->bk = bck;
-              bck->fd = bin;
+          bck = victim->bk;
+	  if (__glibc_unlikely (bck->fd != victim))
+	    malloc_printerr ("malloc(): smallbin double linked list corrupted");
+          set_inuse_bit_at_offset (victim, nb);
+          bin->bk = bck;
+          bck->fd = bin;
 
-              if (av != &main_arena)
-		set_non_main_arena (victim);
-              check_malloced_chunk (av, victim, nb);
+          if (av != &main_arena)
+	    set_non_main_arena (victim);
+          check_malloced_chunk (av, victim, nb);
 #if USE_TCACHE
 	  /* While we're here, if we see other chunks of the same size,
 	     stash them in the tcache.  */
@@ -3641,10 +3712,9 @@ _int_malloc (mstate av, size_t bytes)
 		}
 	    }
 #endif
-              void *p = chunk2mem (victim);
-              alloc_perturb (p, bytes);
-              return p;
-            }
+          void *p = chunk2mem (victim);
+          alloc_perturb (p, bytes);
+          return p;
         }
     }
 
@@ -3662,7 +3732,7 @@ _int_malloc (mstate av, size_t bytes)
   else
     {
       idx = largebin_index (nb);
-      if (have_fastchunks (av))
+      if (atomic_load_relaxed (&av->have_fastchunks))
         malloc_consolidate (av);
     }
 
@@ -3738,6 +3808,8 @@ _int_malloc (mstate av, size_t bytes)
             }
 
           /* remove from unsorted list */
+          if (__glibc_unlikely (bck->fd != victim))
+            malloc_printerr ("malloc(): corrupted unsorted chunks 3");
           unsorted_chunks (av)->bk = bck;
           bck->fd = unsorted_chunks (av);
 
@@ -4070,7 +4142,7 @@ _int_malloc (mstate av, size_t bytes)
 
       /* When we are using atomic ops to free fast chunks we can get
          here for all block sizes.  */
-      else if (have_fastchunks (av))
+      else if (atomic_load_relaxed (&av->have_fastchunks))
         {
           malloc_consolidate (av);
           /* restore original bin index */
@@ -4160,45 +4232,58 @@ _int_free (mstate av, mchunkptr p, int have_lock)
 	|| __builtin_expect (chunksize (chunk_at_offset (p, size))
 			     >= av->system_mem, 0))
       {
+	bool fail = true;
 	/* We might not have a lock at this point and concurrent modifications
-	   of system_mem might have let to a false positive.  Redo the test
-	   after getting the lock.  */
-	if (!have_lock
-	    || ({ __libc_lock_lock (av->mutex);
-		  chunksize_nomask (chunk_at_offset (p, size)) <= 2 * SIZE_SZ
-		  || chunksize (chunk_at_offset (p, size)) >= av->system_mem;
-	        }))
+	   of system_mem might result in a false positive.  Redo the test after
+	   getting the lock.  */
+	if (!have_lock)
+	  {
+	    __libc_lock_lock (av->mutex);
+	    fail = (chunksize_nomask (chunk_at_offset (p, size)) <= 2 * SIZE_SZ
+		    || chunksize (chunk_at_offset (p, size)) >= av->system_mem);
+	    __libc_lock_unlock (av->mutex);
+	  }
+
+	if (fail)
 	  malloc_printerr ("free(): invalid next size (fast)");
-	if (! have_lock)
-	  __libc_lock_unlock (av->mutex);
       }
 
     free_perturb (chunk2mem(p), size - 2 * SIZE_SZ);
 
-    set_fastchunks(av);
+    atomic_store_relaxed (&av->have_fastchunks, true);
     unsigned int idx = fastbin_index(size);
     fb = &fastbin (av, idx);
 
     /* Atomically link P to its fastbin: P->FD = *FB; *FB = P;  */
     mchunkptr old = atomic_load_acquire(fb), old2;
-    unsigned int old_idx = ~0u;
-    do
+
+    if (SINGLE_THREAD_P)
       {
-	/* Check that the top of the bin is not the record we are going to add
-	   (i.e., double free).  */
+	/* Check that the top of the bin is not the record we are going to
+	   add (i.e., double free).  */
 	if (__builtin_expect (old == p, 0))
 	  malloc_printerr ("double free or corruption (fasttop)");
-	/* Check that size of fastbin chunk at the top is the same as
-	   size of the chunk that we are adding.  We can dereference OLD
-	   only if we have the lock, otherwise it might have already been
-	   deallocated.  See use of OLD_IDX below for the actual check.  */
-	if (have_lock && old != NULL)
-	  old_idx = fastbin_index(chunksize(old));
-	p->fd = old2 = old;
+	p->fd = old;
+	*fb = p;
       }
-    while ((old = catomic_compare_and_exchange_val_rel (fb, p, old2)) != old2);
+    else
+      do
+	{
+	  /* Check that the top of the bin is not the record we are going to
+	     add (i.e., double free).  */
+	  if (__builtin_expect (old == p, 0))
+	    malloc_printerr ("double free or corruption (fasttop)");
+	  p->fd = old2 = old;
+	}
+      while ((old = catomic_compare_and_exchange_val_rel (fb, p, old2))
+	     != old2);
 
-    if (have_lock && old != NULL && __builtin_expect (old_idx != idx, 0))
+    /* Check that size of fastbin chunk at the top is the same as
+       size of the chunk that we are adding.  We can dereference OLD
+       only if we have the lock, otherwise it might have already been
+       allocated again.  */
+    if (have_lock && old != NULL
+	&& __builtin_expect (fastbin_index (chunksize (old)) != idx, 0))
       malloc_printerr ("invalid fastbin entry (free)");
   }
 
@@ -4207,6 +4292,11 @@ _int_free (mstate av, mchunkptr p, int have_lock)
   */
 
   else if (!chunk_is_mmapped(p)) {
+
+    /* If we're single-threaded, don't lock the arena.  */
+    if (SINGLE_THREAD_P)
+      have_lock = true;
+
     if (!have_lock)
       __libc_lock_lock (av->mutex);
 
@@ -4303,7 +4393,7 @@ _int_free (mstate av, mchunkptr p, int have_lock)
     */
 
     if ((unsigned long)(size) >= FASTBIN_CONSOLIDATION_THRESHOLD) {
-      if (have_fastchunks(av))
+      if (atomic_load_relaxed (&av->have_fastchunks))
 	malloc_consolidate(av);
 
       if (av == &main_arena) {
@@ -4342,10 +4432,6 @@ _int_free (mstate av, mchunkptr p, int have_lock)
   purpose since, among other things, it might place chunks back onto
   fastbins.  So, instead, we need to use a minor variant of the same
   code.
-
-  Also, because this routine needs to be called the first time through
-  malloc anyway, it turns out to be the perfect place to trigger
-  initialization code.
 */
 
 static void malloc_consolidate(mstate av)
@@ -4366,84 +4452,79 @@ static void malloc_consolidate(mstate av)
   mchunkptr       bck;
   mchunkptr       fwd;
 
+  atomic_store_relaxed (&av->have_fastchunks, false);
+
+  unsorted_bin = unsorted_chunks(av);
+
   /*
-    If max_fast is 0, we know that av hasn't
-    yet been initialized, in which case do so below
+    Remove each chunk from fast bin and consolidate it, placing it
+    then in unsorted bin. Among other reasons for doing this,
+    placing in unsorted bin avoids needing to calculate actual bins
+    until malloc is sure that chunks aren't immediately going to be
+    reused anyway.
   */
 
-  if (get_max_fast () != 0) {
-    clear_fastchunks(av);
+  maxfb = &fastbin (av, NFASTBINS - 1);
+  fb = &fastbin (av, 0);
+  do {
+    p = atomic_exchange_acq (fb, NULL);
+    if (p != 0) {
+      do {
+	{
+	  unsigned int idx = fastbin_index (chunksize (p));
+	  if ((&fastbin (av, idx)) != fb)
+	    malloc_printerr ("malloc_consolidate(): invalid chunk size");
+	}
 
-    unsorted_bin = unsorted_chunks(av);
+	check_inuse_chunk(av, p);
+	nextp = p->fd;
 
-    /*
-      Remove each chunk from fast bin and consolidate it, placing it
-      then in unsorted bin. Among other reasons for doing this,
-      placing in unsorted bin avoids needing to calculate actual bins
-      until malloc is sure that chunks aren't immediately going to be
-      reused anyway.
-    */
+	/* Slightly streamlined version of consolidation code in free() */
+	size = chunksize (p);
+	nextchunk = chunk_at_offset(p, size);
+	nextsize = chunksize(nextchunk);
 
-    maxfb = &fastbin (av, NFASTBINS - 1);
-    fb = &fastbin (av, 0);
-    do {
-      p = atomic_exchange_acq (fb, NULL);
-      if (p != 0) {
-	do {
-	  check_inuse_chunk(av, p);
-	  nextp = p->fd;
+	if (!prev_inuse(p)) {
+	  prevsize = prev_size (p);
+	  size += prevsize;
+	  p = chunk_at_offset(p, -((long) prevsize));
+	  unlink(av, p, bck, fwd);
+	}
 
-	  /* Slightly streamlined version of consolidation code in free() */
-	  size = chunksize (p);
-	  nextchunk = chunk_at_offset(p, size);
-	  nextsize = chunksize(nextchunk);
+	if (nextchunk != av->top) {
+	  nextinuse = inuse_bit_at_offset(nextchunk, nextsize);
 
-	  if (!prev_inuse(p)) {
-	    prevsize = prev_size (p);
-	    size += prevsize;
-	    p = chunk_at_offset(p, -((long) prevsize));
-	    unlink(av, p, bck, fwd);
-	  }
-
-	  if (nextchunk != av->top) {
-	    nextinuse = inuse_bit_at_offset(nextchunk, nextsize);
-
-	    if (!nextinuse) {
-	      size += nextsize;
-	      unlink(av, nextchunk, bck, fwd);
-	    } else
-	      clear_inuse_bit_at_offset(nextchunk, 0);
-
-	    first_unsorted = unsorted_bin->fd;
-	    unsorted_bin->fd = p;
-	    first_unsorted->bk = p;
-
-	    if (!in_smallbin_range (size)) {
-	      p->fd_nextsize = NULL;
-	      p->bk_nextsize = NULL;
-	    }
-
-	    set_head(p, size | PREV_INUSE);
-	    p->bk = unsorted_bin;
-	    p->fd = first_unsorted;
-	    set_foot(p, size);
-	  }
-
-	  else {
+	  if (!nextinuse) {
 	    size += nextsize;
-	    set_head(p, size | PREV_INUSE);
-	    av->top = p;
+	    unlink(av, nextchunk, bck, fwd);
+	  } else
+	    clear_inuse_bit_at_offset(nextchunk, 0);
+
+	  first_unsorted = unsorted_bin->fd;
+	  unsorted_bin->fd = p;
+	  first_unsorted->bk = p;
+
+	  if (!in_smallbin_range (size)) {
+	    p->fd_nextsize = NULL;
+	    p->bk_nextsize = NULL;
 	  }
 
-	} while ( (p = nextp) != 0);
+	  set_head(p, size | PREV_INUSE);
+	  p->bk = unsorted_bin;
+	  p->fd = first_unsorted;
+	  set_foot(p, size);
+	}
 
-      }
-    } while (fb++ != maxfb);
-  }
-  else {
-    malloc_init_state(av);
-    check_malloc_state(av);
-  }
+	else {
+	  size += nextsize;
+	  set_head(p, size | PREV_INUSE);
+	  av->top = p;
+	}
+
+      } while ( (p = nextp) != 0);
+
+    }
+  } while (fb++ != maxfb);
 }
 
 /*
@@ -4636,6 +4717,13 @@ _int_memalign (mstate av, size_t alignment, size_t bytes)
    */
 
 
+  /* Check for overflow.  */
+  if (nb > SIZE_MAX - alignment - MINSIZE)
+    {
+      __set_errno (ENOMEM);
+      return 0;
+    }
+
   /* Call malloc with worst case padding to hit alignment. */
 
   m = (char *) (_int_malloc (av, nb + alignment + MINSIZE));
@@ -4710,7 +4798,7 @@ _int_memalign (mstate av, size_t alignment, size_t bytes)
 static int
 mtrim (mstate av, size_t pad)
 {
-  /* Ensure initialization/consolidation */
+  /* Ensure all blocks are consolidated.  */
   malloc_consolidate (av);
 
   const size_t ps = GLRO (dl_pagesize);
@@ -4841,10 +4929,6 @@ int_mallinfo (mstate av, struct mallinfo *m)
   int nblocks;
   int nfastblocks;
 
-  /* Ensure initialization */
-  if (av->top == 0)
-    malloc_consolidate (av);
-
   check_malloc_state (av);
 
   /* Account for top */
@@ -4931,8 +5015,8 @@ __malloc_stats (void)
   if (__malloc_initialized < 0)
     ptmalloc_init ();
   _IO_flockfile (stderr);
-  int old_flags2 = ((_IO_FILE *) stderr)->_flags2;
-  ((_IO_FILE *) stderr)->_flags2 |= _IO_FLAGS2_NOTCANCEL;
+  int old_flags2 = stderr->_flags2;
+  stderr->_flags2 |= _IO_FLAGS2_NOTCANCEL;
   for (i = 0, ar_ptr = &main_arena;; i++)
     {
       struct mallinfo mi;
@@ -4960,7 +5044,7 @@ __malloc_stats (void)
   fprintf (stderr, "max mmap regions = %10u\n", (unsigned int) atomic_load_relaxed(&mp_.max_n_mmaps));
   fprintf (stderr, "max mmap bytes   = %10lu\n",
            (unsigned long) atomic_load_relaxed(&mp_.max_mmapped_mem));
-  ((_IO_FILE *) stderr)->_flags2 |= old_flags2;
+  stderr->_flags2 = old_flags2;
   _IO_funlockfile (stderr);
 }
 
@@ -5093,10 +5177,12 @@ __libc_mallopt (int param_number, int value)
   if (__malloc_initialized < 0)
     ptmalloc_init ();
   __libc_lock_lock (av->mutex);
-  /* Ensure initialization/consolidation */
-  malloc_consolidate (av);
 
   LIBC_PROBE (memory_mallopt, 2, param_number, value);
+
+  /* We must consolidate main arena before changing max_fast
+     (see definition of set_max_fast).  */
+  malloc_consolidate (av);
 
   switch (param_number)
     {
@@ -5431,6 +5517,23 @@ __malloc_info (int options, FILE *fp)
 	  avail += sizes[NFASTBINS - 1 + i].total;
 	}
 
+      size_t heap_size = 0;
+      size_t heap_mprotect_size = 0;
+      size_t heap_count = 0;
+      if (ar_ptr != &main_arena)
+	{
+	  /* Iterate over the arena heaps from back to front.  */
+	  heap_info *heap = heap_for_ptr (top (ar_ptr));
+	  do
+	    {
+	      heap_size += heap->size;
+	      heap_mprotect_size += heap->mprotect_size;
+	      heap = heap->prev;
+	      ++heap_count;
+	    }
+	  while (heap != NULL);
+	}
+
       __libc_lock_unlock (ar_ptr->mutex);
 
       total_nfastblocks += nfastblocks;
@@ -5464,13 +5567,13 @@ __malloc_info (int options, FILE *fp)
 
       if (ar_ptr != &main_arena)
 	{
-	  heap_info *heap = heap_for_ptr (top (ar_ptr));
 	  fprintf (fp,
 		   "<aspace type=\"total\" size=\"%zu\"/>\n"
-		   "<aspace type=\"mprotect\" size=\"%zu\"/>\n",
-		   heap->size, heap->mprotect_size);
-	  total_aspace += heap->size;
-	  total_aspace_mprotect += heap->mprotect_size;
+		   "<aspace type=\"mprotect\" size=\"%zu\"/>\n"
+		   "<aspace type=\"subheaps\" size=\"%zu\"/>\n",
+		   heap_size, heap_mprotect_size, heap_count);
+	  total_aspace += heap_size;
+	  total_aspace_mprotect += heap_mprotect_size;
 	}
       else
 	{

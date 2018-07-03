@@ -1,5 +1,5 @@
 /* Quad-precision floating point sine on <-pi/4,pi/4>.
-   Copyright (C) 1999-2017 Free Software Foundation, Inc.
+   Copyright (C) 1999-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jj@ultra.linux.cz>
 
@@ -20,6 +20,7 @@
 #include <float.h>
 #include <math.h>
 #include <math_private.h>
+#include <math-underflow.h>
 
 static const long double c[] = {
 #define ONE c[0]

@@ -1,5 +1,5 @@
 /* Compute x * y + z as ternary operation.
-   Copyright (C) 2011-2017 Free Software Foundation, Inc.
+   Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by David Flaherty <flaherty@linux.vnet.ibm.com>.
 
@@ -20,7 +20,9 @@
 #include <fenv.h>
 #include <float.h>
 #include <math.h>
+#include <math-barriers.h>
 #include <math_private.h>
+#include <math-underflow.h>
 #include <math_ldbl_opt.h>
 #include <mul_split.h>
 #include <stdlib.h>

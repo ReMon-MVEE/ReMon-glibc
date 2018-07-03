@@ -12,9 +12,7 @@ implement the operating system behavior seen by user applications.
 In GNU/Hurd systems, it works with a microkernel and Hurd servers.
 
 The GNU C Library implements much of the POSIX.1 functionality in the
-GNU/Hurd system, using configurations i[4567]86-*-gnu.  The current
-GNU/Hurd support requires out-of-tree patches that will eventually be
-incorporated into an official GNU C Library release.
+GNU/Hurd system, using configurations i[4567]86-*-gnu.
 
 When working with Linux kernels, this version of the GNU C Library
 requires Linux kernel version 3.2 or later.
@@ -27,7 +25,7 @@ The GNU C Library supports these configurations for using Linux kernels:
 	aarch64*-*-linux-gnu
 	alpha*-*-linux-gnu
 	arm-*-linux-gnueabi
-	hppa-*-linux-gnu	Not currently functional without patches.
+	hppa-*-linux-gnu
 	i[4567]86-*-linux-gnu
 	x86_64-*-linux-gnu	Can build either x86_64 or x32
 	ia64-*-linux-gnu
@@ -39,11 +37,10 @@ The GNU C Library supports these configurations for using Linux kernels:
 	powerpc64*-*-linux-gnu	Big-endian and little-endian.
 	s390-*-linux-gnu
 	s390x-*-linux-gnu
+	riscv64-*-linux-gnu
 	sh[34]-*-linux-gnu
 	sparc*-*-linux-gnu
 	sparc64*-*-linux-gnu
-	tilegx-*-linux-gnu
-	tilepro-*-linux-gnu
 
 If you are interested in doing a port, please contact the glibc
 maintainers; see http://www.gnu.org/software/libc/ for more

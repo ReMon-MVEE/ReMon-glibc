@@ -1,5 +1,5 @@
 /* Directory entry structure `struct dirent'.  4.4BSD/Generic version.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -56,4 +56,6 @@ struct dirent64
 #ifdef __INO_T_MATCHES_INO64_T
 /* Inform libc code that these two types are effectively identical.  */
 # define _DIRENT_MATCHES_DIRENT64	1
+#else
+# define _DIRENT_MATCHES_DIRENT64	0
 #endif

@@ -1,11 +1,8 @@
 #include <math_ldbl_opt.h>
-#undef weak_alias
-#define weak_alias(n,a)
 #undef compat_symbol
 #define compat_symbol(l,n,a,v)
 #include <math/w_exp10l_compat.c>
 #if LIBM_SVID_COMPAT
-long_double_symbol (libm, __exp10l, exp10l);
 # if SHLIB_COMPAT (libm, GLIBC_2_1, GLIBC_2_27)
 /* compat_symbol was undefined and redefined above to avoid the
    default pow10l compat symbol at version GLIBC_2_1 (as for ldbl-opt

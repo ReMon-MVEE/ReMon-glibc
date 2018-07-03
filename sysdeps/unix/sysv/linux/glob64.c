@@ -1,5 +1,5 @@
 /* Find pathnames matching a pattern.  Linux version.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -28,8 +28,7 @@
 # define __readdir(dirp) __readdir64 (dirp)
 
 # define glob_t glob64_t
-# define glob(pattern, flags, errfunc, pglob) \
-  __glob64 (pattern, flags, errfunc, pglob)
+# define __glob __glob64
 # define globfree(pglob) globfree64 (pglob)
 
 # undef stat
@@ -39,13 +38,14 @@
 
 # include <posix/glob.c>
 
-# include "shlib-compat.h"
+# include <shlib-compat.h>
 
 # ifdef GLOB_NO_OLD_VERSION
 strong_alias (__glob64, glob64)
 libc_hidden_def (glob64)
 # else
-versioned_symbol (libc, __glob64, glob64, GLIBC_2_2);
+libc_hidden_def (__glob64)
+versioned_symbol (libc, __glob64, glob64, GLIBC_2_27);
 libc_hidden_ver (__glob64, glob64)
 # endif
 #endif /* XSTAT_IS_XSTAT64  */

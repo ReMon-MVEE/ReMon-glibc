@@ -1,5 +1,5 @@
 /* Compute x * y + z as ternary operation.  PowerPC version.
-   Copyright (C) 2010-2017 Free Software Foundation, Inc.
+   Copyright (C) 2010-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,6 +17,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-double.h>
 
 ENTRY_TOCLESS(__fma)
 /* double [f1] fma (double [f1] x, double [f2] y, double [f3] z); */
@@ -24,9 +25,4 @@ ENTRY_TOCLESS(__fma)
 	blr
 END(__fma)
 
-weak_alias (__fma,fma)
-
-#ifdef NO_LONG_DOUBLE
-weak_alias (__fma,__fmal)
-weak_alias (__fma,fmal)
-#endif
+libm_alias_double (__fma, fma)

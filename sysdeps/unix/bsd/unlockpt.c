@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Zack Weinberg <zack@rabi.phys.columbia.edu>, 1998.
 
@@ -32,5 +32,5 @@ unlockpt (int fd)
   /* BSD doesn't have a lock, but it does have `revoke'.  */
   if (__ptsname_r (fd, buf, sizeof (buf)))
     return -1;
-  return revoke (buf);
+  return __revoke (buf);
 }

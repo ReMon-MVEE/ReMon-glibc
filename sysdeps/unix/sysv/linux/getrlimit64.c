@@ -1,5 +1,5 @@
 /* Linux getrlimit64 implementation (64 bits rlim_t).
-   Copyright (C) 2010-2017 Free Software Foundation, Inc.
+   Copyright (C) 2010-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@
 #include <shlib-compat.h>
 
 /* Add this redirection so the strong_alias for __RLIM_T_MATCHES_RLIM64_T
-   linking getlimit64 to {__}getrlimit does not throw a type error.  */
+   linking getrlimit64 to {__}getrlimit does not throw a type error.  */
 #undef getrlimit
 #undef __getrlimit
 #define getrlimit getrlimit_redirect
@@ -45,25 +45,25 @@ libc_hidden_def (__getrlimit64)
 strong_alias (__getrlimit64, __GI_getrlimit)
 strong_alias (__getrlimit64, __GI___getrlimit)
 strong_alias (__getrlimit64, __getrlimit)
+/* Alpha defines a versioned getrlimit{64}.  */
+# ifndef USE_VERSIONED_RLIMIT
 weak_alias (__getrlimit64, getrlimit)
-/* And there is no need for compat symbols.  */
-# undef SHLIB_COMPAT
-# define SHLIB_COMPAT(a, b, c) 0
-#endif
+weak_alias (__getrlimit64, getrlimit64)
+libc_hidden_weak (getrlimit64)
+# else
+weak_alias (__getrlimit64, __GI_getrlimit64)
+# endif
 
-#if SHLIB_COMPAT (libc, GLIBC_2_1, GLIBC_2_2)
+#elif SHLIB_COMPAT (libc, GLIBC_2_1, GLIBC_2_2)
 /* Back compatible 2GiB limited rlimit.  */
-extern int __new_getrlimit (enum __rlimit_resource, struct rlimit *);
+extern int __new_getrlimit (enum __rlimit_resource, struct rlimit *)
+  attribute_hidden;
 
 int
 attribute_compat_text_section
 __old_getrlimit64 (enum __rlimit_resource resource, struct rlimit64 *rlimits)
 {
-# if __RLIM_T_MATCHES_RLIM64_T
-#  define rlimits32 (*rlimits)
-# else
   struct rlimit rlimits32;
-# endif
 
   if (__new_getrlimit (resource, &rlimits32) < 0)
     return -1;
@@ -84,4 +84,4 @@ compat_symbol (libc, __old_getrlimit64, getrlimit64, GLIBC_2_1);
 #else
 weak_alias (__getrlimit64, getrlimit64)
 libc_hidden_weak (getrlimit64)
-#endif
+#endif /* __RLIM_T_MATCHES_RLIM64_T  */

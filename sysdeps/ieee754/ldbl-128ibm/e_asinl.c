@@ -61,8 +61,9 @@
 
 #include <float.h>
 #include <math.h>
+#include <math-barriers.h>
 #include <math_private.h>
-long double sqrtl (long double);
+#include <math-underflow.h>
 
 static const long double
   one = 1.0L,
@@ -226,7 +227,7 @@ __ieee754_asinl (long double x)
       return x + x * w;
     }
 
-  s = __ieee754_sqrtl (t);
+  s = sqrtl (t);
   if (a > 0.975L)
     {
       w = p / q;

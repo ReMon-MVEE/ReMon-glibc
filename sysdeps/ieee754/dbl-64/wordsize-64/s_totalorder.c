@@ -1,5 +1,5 @@
 /* Total order operation.  dbl-64/wordsize-64 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,10 +19,11 @@
 #include <math.h>
 #include <math_private.h>
 #include <nan-high-order-bit.h>
+#include <libm-alias-double.h>
 #include <stdint.h>
 
 int
-totalorder (double x, double y)
+__totalorder (double x, double y)
 {
   int64_t ix, iy;
   EXTRACT_WORDS64 (ix, x);
@@ -45,6 +46,4 @@ totalorder (double x, double y)
   iy ^= iy_sign >> 1;
   return ix <= iy;
 }
-#ifdef NO_LONG_DOUBLE
-weak_alias (totalorder, totalorderl)
-#endif
+libm_alias_double (__totalorder, totalorder)

@@ -1,5 +1,5 @@
 /* Utilities for reading/writing fstab, mtab, etc.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -293,4 +293,5 @@ __hasmntopt (const struct mntent *mnt, const char *opt)
 
   return NULL;
 }
+libc_hidden_def (__hasmntopt)
 weak_alias (__hasmntopt, hasmntopt)

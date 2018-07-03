@@ -1,6 +1,6 @@
 /* Round argument to nearest integral value according to current rounding
    direction.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-ldouble.h>
 
 	.text
 ENTRY(__llrintl)
@@ -27,8 +28,8 @@ ENTRY(__llrintl)
 	movq	-8(%rsp),%rax
 	ret
 END(__llrintl)
-weak_alias (__llrintl, llrintl)
+libm_alias_ldouble (__llrint, llrint)
 #ifndef __ILP32__
 strong_alias (__llrintl, __lrintl)
-weak_alias (__llrintl, lrintl)
+libm_alias_ldouble (__llrint, lrint)
 #endif

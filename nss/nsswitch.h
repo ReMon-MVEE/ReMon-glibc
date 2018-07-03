@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -226,10 +226,10 @@ libc_hidden_proto (__nss_hostname_digits_dots)
 #define MAX_NR_ADDRS    48
 
 /* Prototypes for __nss_*_lookup2 functions.  */
-#define DEFINE_DATABASE(arg)				    \
-  service_user *__nss_##arg##_database attribute_hidden;    \
-  int __nss_##arg##_lookup2 (service_user **, const char *, \
-			     const char *, void **);	    \
+#define DEFINE_DATABASE(arg)						      \
+  extern service_user *__nss_##arg##_database attribute_hidden;		      \
+  int __nss_##arg##_lookup2 (service_user **, const char *,		      \
+			     const char *, void **);			      \
   libc_hidden_proto (__nss_##arg##_lookup2)
 #include "databases.def"
 #undef DEFINE_DATABASE

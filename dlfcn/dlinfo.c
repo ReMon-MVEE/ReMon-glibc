@@ -1,5 +1,5 @@
 /* dlinfo -- Get information from the dynamic linker.
-   Copyright (C) 2003-2017 Free Software Foundation, Inc.
+   Copyright (C) 2003-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -111,7 +111,7 @@ int
 __dlinfo (void *handle, int request, void *arg DL_CALLER_DECL)
 {
 # ifdef SHARED
-  if (__glibc_unlikely (_dlfcn_hook != NULL))
+  if (!rtld_active ())
     return _dlfcn_hook->dlinfo (handle, request, arg,
 				DL_CALLER);
 # endif

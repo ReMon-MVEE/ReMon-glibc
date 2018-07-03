@@ -1,5 +1,5 @@
 /* POSIX.2 wordexp implementation.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Tim Waugh <tim@cyberelk.demon.co.uk>.
 
@@ -837,7 +837,7 @@ exec_comm_child (char *comm, int *fildes, int showerr, int noexec)
       if (__builtin_expect (__fxstat64 (_STAT_VER, STDERR_FILENO, &st), 0) != 0
 	  || __builtin_expect (S_ISCHR (st.st_mode), 1) == 0
 #if defined DEV_NULL_MAJOR && defined DEV_NULL_MINOR
-	  || st.st_rdev != makedev (DEV_NULL_MAJOR, DEV_NULL_MINOR)
+	  || st.st_rdev != __gnu_dev_makedev (DEV_NULL_MAJOR, DEV_NULL_MINOR)
 #endif
 	  )
 	/* It's not the /dev/null device.  Stop right here.  The

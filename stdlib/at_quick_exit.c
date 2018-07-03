@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -33,11 +33,8 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <stdlib.h>
+#include <dso_handle.h>
 #include "exit.h"
-
-
-/* This is defined by newer gcc version unique for each module.  */
-extern void *__dso_handle __attribute__ ((__weak__));
 
 
 /* Register FUNC to be executed by `quick_exit'.  */
@@ -45,6 +42,5 @@ int
 attribute_hidden
 at_quick_exit (void (*func) (void))
 {
-  return __cxa_at_quick_exit ((void (*) (void *)) func,
-			      &__dso_handle == NULL ? NULL : __dso_handle);
+  return __cxa_at_quick_exit ((void (*) (void *)) func, __dso_handle);
 }

@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -22,6 +22,10 @@
 int
 pthread_rwlockattr_init (pthread_rwlockattr_t *attr)
 {
+  ASSERT_TYPE_SIZE (pthread_rwlockattr_t, __SIZEOF_PTHREAD_RWLOCKATTR_T);
+  ASSERT_PTHREAD_INTERNAL_SIZE (pthread_rwlockattr_t,
+				struct pthread_rwlockattr);
+
   struct pthread_rwlockattr *iattr;
 
   iattr = (struct pthread_rwlockattr *) attr;

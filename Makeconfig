@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2017 Free Software Foundation, Inc.
+# Copyright (C) 1991-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -59,15 +59,7 @@ stack-align-test-flags =
 # `configure' writes a definition of `config-sysdirs' in `config.make'.
 sysdirs := $(foreach D,$(config-sysdirs),$(firstword $(filter /%,$D) $(..)$D))
 
-# Add-ons that contribute sysdeps trees get added to the include list
-# after sysdeps/generic.  This makes #include <sysdeps/...> work right
-# to find specific add-on files without assuming the add-on directory name.
-# It also means that headers can go into an add-on's base directory
-# instead of the add-on needing a sysdeps/generic of its own.
-sysdeps-srcdirs := $(foreach add-on,$(sysdeps-add-ons),\
-			     $(firstword $(filter /%,$(add-on)) \
-					 $(..)$(add-on)))
-+sysdep_dirs = $(sysdirs) $(sysdeps-srcdirs)
++sysdep_dirs = $(sysdirs)
 ifdef objdir
 +sysdep_dirs := $(objdir) $(+sysdep_dirs)
 endif
@@ -81,8 +73,8 @@ $(common-objpfx)config.make: $(common-objpfx)config.status \
 			     $(..)config.make.in $(..)config.h.in
 	cd $(<D); $(SHELL) $(<F)
 
-# Find all the add-on and sysdeps configure fragments, to make sure we
-# re-run configure when any of them changes.
+# Find all the sysdeps configure fragments, to make sure we re-run
+# configure when any of them changes.
 $(common-objpfx)config.status: $(..)version.h $(..)configure \
 			       $(foreach dir,$(sysdirs),\
 					 $(wildcard $(dir)/Implies) \
@@ -90,14 +82,7 @@ $(common-objpfx)config.status: $(..)version.h $(..)configure \
 						    $(firstword $(wildcard \
  $(addprefix $(dir)/,configure configure.ac))))) \
 			       $(patsubst %.ac,%,\
- $(wildcard $(..)sysdeps/*/preconfigure $(..)sysdeps/*/preconfigure.ac)) \
-			       $(patsubst %.ac,%,\
-					  $(foreach add-on,$(add-ons),\
-						    $(firstword $(wildcard \
- $(addprefix $(firstword $(filter /%,$(add-on)) $(..)$(add-on))/,\
-	     configure configure.ac))) \
- $(wildcard $(addprefix $(firstword $(filter /%,$(add-on)) $(..)$(add-on))/,\
-			sysdeps/*/preconfigure sysdeps/*/preconfigure.ac))))
+ $(wildcard $(..)sysdeps/*/preconfigure $(..)sysdeps/*/preconfigure.ac))
 	@cd $(@D); if test -f $(@F); then exec $(SHELL) $(@F) --recheck; else \
 	 echo The GNU C library has not been configured. >&2; \
 	 echo Run \`configure\' to configure it before building. >&2; \
@@ -367,6 +352,14 @@ ifndef static-start-installed-name
 static-start-installed-name = $(start-installed-name)
 endif
 
+ifeq (yes,$(enable-static-pie))
+# Link with rcrt1.o, instead of crt1.o, to call _dl_relocate_static_pie
+# to relocate static PIE.
+real-static-start-installed-name = r$(static-start-installed-name)
+else
+real-static-start-installed-name = $(static-start-installed-name)
+endif
+
 ifeq (yesyes,$(build-shared)$(have-z-combreloc))
 combreloc-LDFLAGS = -Wl,-z,combreloc
 LDFLAGS.so += $(combreloc-LDFLAGS)
@@ -384,6 +377,20 @@ ifeq (yes,$(have-hash-style))
 hashstyle-LDFLAGS = -Wl,--hash-style=both
 LDFLAGS.so += $(hashstyle-LDFLAGS)
 LDFLAGS-rtld += $(hashstyle-LDFLAGS)
+endif
+
+ifeq (yes,$(enable-static-pie))
+pic-default = -DPIC
+# Compile libc.a and libc_p.a with -fPIE/-fpie for static PIE.
+pie-default = $(pie-ccflag)
+ifeq (yes,$(have-static-pie))
+default-pie-ldflag = -static-pie
+else
+# Static PIE can't have dynamic relocations in read-only segments since
+# static PIE is mapped into memory by kernel.  --eh-frame-hdr is needed
+# for PIE to support exception.
+default-pie-ldflag = -Wl,-pie,--no-dynamic-linker,--eh-frame-hdr,-z,text
+endif
 endif
 
 # If lazy relocations are disabled, add the -z now flag.  Use
@@ -406,7 +413,8 @@ link-extra-libs-tests = $(libsupport)
 
 # Command for linking PIE programs with the C library.
 ifndef +link-pie
-+link-pie-before-libc = $(CC) -pie -Wl,-O1 -nostdlib -nostartfiles -o $@ \
++link-pie-before-libc = $(CC) $(if $($(@F)-no-pie),$(no-pie-ldflag),-pie) \
+	     -Wl,-O1 -nostdlib -nostartfiles -o $@ \
 	     $(sysdep-LDFLAGS) $(LDFLAGS) $(LDFLAGS-$(@F)) \
 	     $(combreloc-LDFLAGS) $(relro-LDFLAGS) $(hashstyle-LDFLAGS) \
 	     $(firstword $(CRT-$(@F)) $(csu-objpfx)S$(start-installed-name)) \
@@ -435,8 +443,9 @@ endif
 # Command for statically linking programs with the C library.
 ifndef +link-static
 +link-static-before-libc = $(CC) -nostdlib -nostartfiles -static -o $@ \
+	      $(if $($(@F)-no-pie),$(no-pie-ldflag),$(default-pie-ldflag)) \
 	      $(sysdep-LDFLAGS) $(LDFLAGS) $(LDFLAGS-$(@F))  \
-	      $(addprefix $(csu-objpfx),$(static-start-installed-name)) \
+	      $(firstword $(CRT-$(@F)) $(csu-objpfx)$(real-static-start-installed-name)) \
 	      $(+preinit) $(+prectorT) \
 	      $(filter-out $(addprefix $(csu-objpfx),start.o \
 						     $(start-installed-name))\
@@ -456,8 +465,10 @@ endif
 # Commands for linking programs with the C library.
 ifndef +link
 ifeq (yes,$(build-shared))
-ifeq (yes,$(build-pie-default))
+ifeq (yes,$(cc-pie-default))
 no-pie-ldflag = -no-pie
+endif
+ifeq (yes,$(build-pie-default))
 +link = $(+link-pie)
 +link-tests = $(+link-pie-tests)
 +link-printers-tests = $(+link-pie-printers-tests)
@@ -651,8 +662,14 @@ endif
 +prectorS = `$(CC) $(sysdep-LDFLAGS) --print-file-name=crtbeginS.o`
 +postctorS = `$(CC) $(sysdep-LDFLAGS) --print-file-name=crtendS.o`
 # Variants of the two previous definitions for statically linking programs.
+ifeq (yes,$(enable-static-pie))
+# Static PIE must use PIE variants.
++prectorT = $(+prectorS)
++postctorT = $(+postctorS)
+else
 +prectorT = `$(CC) $(sysdep-LDFLAGS) --print-file-name=crtbeginT.o`
 +postctorT = `$(CC) $(sysdep-LDFLAGS) --print-file-name=crtend.o`
+endif
 csu-objpfx = $(common-objpfx)csu/
 elf-objpfx = $(common-objpfx)elf/
 
@@ -814,6 +831,9 @@ endif
 # disable any optimization that assume default rounding mode.
 +math-flags = -frounding-math
 
+# Build libc/libm using -fno-math-errno, but run testsuite with -fmath-errno.
++extra-math-flags = $(if $(filter libnldbl nonlib testsuite,$(in-module)),-fmath-errno,-fno-math-errno)
+
 # We might want to compile with some stack-protection flag.
 ifneq ($(stack-protector),)
 +stack-protector=$(stack-protector)
@@ -949,6 +969,7 @@ endif
 
 override CFLAGS	= -std=gnu11 -fgnu89-inline $(config-extra-cflags) \
 		  $(filter-out %frame-pointer,$(+cflags)) $(+gccwarn-c) \
+		  $(+extra-math-flags) \
 		  $(sysdep-CFLAGS) $(CFLAGS-$(suffix $@)) $(CFLAGS-$(<F)) \
 		  $(CFLAGS-$(@F)) $(tls-model) \
 		  $(foreach lib,$(libof-$(basename $(@F))) \
@@ -973,7 +994,8 @@ libtypes = $(foreach o,$(object-suffixes-for-libc),$(libtype$o))
 all-object-suffixes := .o .os .oS
 object-suffixes :=
 CPPFLAGS-.o = $(pic-default)
-CFLAGS-.o = $(filter %frame-pointer,$(+cflags))
+# libc.a must be compiled with -fPIE/-fpie for static PIE.
+CFLAGS-.o = $(filter %frame-pointer,$(+cflags)) $(pie-default)
 libtype.o := lib%.a
 object-suffixes += .o
 ifeq (yes,$(build-shared))
@@ -998,7 +1020,8 @@ ifeq (yes,$(build-profile))
 all-object-suffixes += .op
 object-suffixes += .op
 CPPFLAGS-.op = -DPROF $(pic-default)
-CFLAGS-.op = -pg
+# libc_p.a must be compiled with -fPIE/-fpie for static PIE.
+CFLAGS-.op = -pg $(pie-default)
 libtype.op = lib%_p.a
 endif
 
@@ -1076,8 +1099,6 @@ endif
 ifeq ($(sysd-sorted-done),t)
 -include $(common-objpfx)soversions.mk
 ifndef avoid-generated
-# This lets add-ons give more-specific matches that override defaults
-# in the top-level file.
 $(common-objpfx)shlib-versions.v.i: \
 	$(wildcard $(+sysdep_dirs:=/shlib-versions) \
 		   $(subdir-srcdirs:=/shlib-versions)) \
@@ -1185,7 +1206,7 @@ all-subdirs = csu assert ctype locale intl catgets math setjmp signal	    \
 	      grp pwd posix io termios resource misc socket sysvipc gmon    \
 	      gnulib iconv iconvdata wctype manual shadow gshadow po argp   \
 	      crypt localedata timezone rt conform debug mathvec support    \
-	      $(add-on-subdirs) dlfcn elf
+	      dlfcn elf
 
 ifndef avoid-generated
 # sysd-sorted itself will contain rules making the sysd-sorted target

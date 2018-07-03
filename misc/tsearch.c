@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Bernd Schmidt <crux@Pool.Informatik.RWTH-Aachen.DE>, 1997.
 
@@ -745,4 +745,5 @@ __tdestroy (void *vroot, __free_fn_t freefct)
   if (root != NULL)
     tdestroy_recurse (root, freefct);
 }
+libc_hidden_def (__tdestroy)
 weak_alias (__tdestroy, tdestroy)

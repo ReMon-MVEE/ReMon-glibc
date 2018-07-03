@@ -1,4 +1,4 @@
-# Copyright (C) 1992-2017 Free Software Foundation, Inc.
+# Copyright (C) 1992-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -52,7 +52,7 @@ routines :=								\
 	ftw ftw64 fts fts64 poll ppoll					\
 	posix_fadvise posix_fadvise64					\
 	posix_fallocate posix_fallocate64				\
-	sendfile sendfile64 \
+	sendfile sendfile64 copy_file_range 				\
 	utimensat futimens
 
 # These routines will be omitted from the libc shared object.
@@ -70,7 +70,13 @@ tests		:= test-utime test-stat test-stat2 test-lfs tst-getcwd \
 		   tst-symlinkat tst-linkat tst-readlinkat tst-mkdirat \
 		   tst-mknodat tst-mkfifoat tst-ttyname_r bug-ftw5 \
 		   tst-posix_fallocate tst-posix_fallocate64 \
-		   tst-fts tst-fts-lfs tst-open-tmpfile
+		   tst-fts tst-fts-lfs tst-open-tmpfile \
+		   tst-copy_file_range tst-getcwd-abspath \
+
+# This test includes the compat implementation of copy_file_range,
+# which uses internal, unexported libc functions.
+tests-static += tst-copy_file_range-compat
+tests-internal += tst-copy_file_range-compat
 
 ifeq ($(run-built-tests),yes)
 tests-special += $(objpfx)ftwtest.out
@@ -78,36 +84,38 @@ endif
 
 include ../Rules
 
-CFLAGS-open.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-open64.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-creat.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-creat64.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-fcntl.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-poll.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-ppoll.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-lockf.c = -fexceptions
-CFLAGS-statfs.c = -fexceptions
-CFLAGS-fstatfs.c = -fexceptions
-CFLAGS-statvfs.c = -fexceptions
-CFLAGS-fstatvfs.c = -fexceptions
-CFLAGS-fts.c = -Wno-uninitialized $(uses-callbacks) -fexceptions
-CFLAGS-fts64.c = -Wno-uninitialized $(uses-callbacks) -fexceptions
-CFLAGS-ftw.c = $(uses-callbacks) -fexceptions
-CFLAGS-ftw64.c = $(uses-callbacks) -fexceptions
-CFLAGS-lockf.c = -fexceptions
-CFLAGS-posix_fallocate.c = -fexceptions
-CFLAGS-posix_fallocate64.c = -fexceptions
-CFLAGS-fallocate.c = -fexceptions
-CFLAGS-fallocate64.c = -fexceptions
-CFLAGS-read.c = -fexceptions
-CFLAGS-write.c = -fexceptions
+CFLAGS-open.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-open64.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-creat.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-creat64.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-fcntl.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-poll.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-ppoll.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-lockf.c += -fexceptions
+CFLAGS-statfs.c += -fexceptions
+CFLAGS-fstatfs.c += -fexceptions
+CFLAGS-statvfs.c += -fexceptions
+CFLAGS-fstatvfs.c += -fexceptions
+CFLAGS-fts.c += -Wno-uninitialized $(uses-callbacks) -fexceptions
+CFLAGS-fts64.c += -Wno-uninitialized $(uses-callbacks) -fexceptions
+CFLAGS-ftw.c += $(uses-callbacks) -fexceptions
+CFLAGS-ftw64.c += $(uses-callbacks) -fexceptions
+CFLAGS-lockf.c += -fexceptions
+CFLAGS-posix_fallocate.c += -fexceptions
+CFLAGS-posix_fallocate64.c += -fexceptions
+CFLAGS-fallocate.c += -fexceptions
+CFLAGS-fallocate64.c += -fexceptions
+CFLAGS-read.c += -fexceptions
+CFLAGS-write.c += -fexceptions
 
-CFLAGS-test-stat.c = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
-CFLAGS-test-lfs.c = -D_LARGEFILE64_SOURCE
+CFLAGS-test-stat.c += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
+CFLAGS-test-lfs.c += -D_LARGEFILE64_SOURCE
 
 test-stat2-ARGS = Makefile . $(objpfx)test-stat2
 
 tst-statvfs-ARGS = $(objpfx)tst-statvfs tst-statvfs.c /tmp
+
+tst-open-tmpfile-ARGS = --test-dir=$(objpfx)
 
 ifeq ($(run-built-tests),yes)
 $(objpfx)ftwtest.out: ftwtest-sh $(objpfx)ftwtest

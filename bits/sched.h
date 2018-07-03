@@ -1,6 +1,6 @@
 /* Definitions of constants and data structure for POSIX 1003.1b-1993
    scheduling interface.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -29,10 +29,6 @@
 #define SCHED_FIFO	1
 #define SCHED_RR	2
 
-/* Data structure to describe a process' schedulability.  */
-struct sched_param
-{
-  int sched_priority;
-};
+#include <bits/types/struct_sched_param.h>
 
 #endif /* bits/sched.h */

@@ -1,5 +1,5 @@
 /* truncf function.  PowerPC64 version.
-   Copyright (C) 2004-2017 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,6 +17,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-float.h>
 
 	.section	".toc","aw"
 	.p2align 3
@@ -69,5 +70,5 @@ ENTRY (__truncf, 4)
 	blr
 	END (__truncf)
 
-weak_alias (__truncf, truncf)
+libm_alias_float (__trunc, trunc)
 

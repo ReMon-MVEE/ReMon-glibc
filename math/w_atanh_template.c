@@ -1,5 +1,5 @@
 /* Wrapper to set errno for atanh.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -29,9 +29,9 @@
 FLOAT
 M_DECL_FUNC (__atanh) (FLOAT x)
 {
-  if (__glibc_unlikely (isgreaterequal (M_SUF (fabs) (x), M_LIT (1.0))))
+  if (__glibc_unlikely (isgreaterequal (M_FABS (x), M_LIT (1.0))))
     {
-      if (M_SUF (fabs) (x) == 1)
+      if (M_FABS (x) == 1)
 	/* Pole error: atanh(|x|==1).  */
 	__set_errno (ERANGE);
       else

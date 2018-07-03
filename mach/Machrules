@@ -1,5 +1,5 @@
 # Rules for MiG interfaces that want to go into the C library.
-# Copyright (C) 1991-2017 Free Software Foundation, Inc.
+# Copyright (C) 1991-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -29,6 +29,7 @@
 # _S_rpcname.
 
 # Includers can also add to or modify `migdefines' to set MiG flags.
+# They can also set `migheaderpipe' to mangle the MiG header output.
 
 all:
 
@@ -51,7 +52,7 @@ $(objpfx)dummy.mk:
 	$(make-target-directory)
 	echo '# Empty' > $@
 
-MIGFLAGS = -DMACH_IPC_COMPAT=0 -DSTANDALONE -DTypeCheck=0 \
+MIGFLAGS = -DSTANDALONE -DTypeCheck=0 \
 	   $(+includes) $(migdefines) -subrprefix __
 # Putting CC in the enivronment makes the mig wrapper script
 # use the same compiler setup we are using to run cpp.
@@ -176,7 +177,7 @@ $(patsubst %,$(objpfx)%.h,$(user-interfaces)): $(objpfx)%.h: $(objpfx)%.__h \
 							     $(objpfx)%.uh
 # The last line of foo.__h is "#endif _foo_user_".
 # The first two lines of foo.uh are "#ifndef _foo_user_"/"#define _foo_user_".
-	(sed -e '$$d' $<; sed -e '1,2d' $(word 2,$^)) > $@-new
+	(sed -e '$$d' $<; sed -e '1,2d' $(word 2,$^)) $(migheaderpipe) > $@-new
 	mv -f $@-new $@
 
 interface-routines := $(foreach if,$(user-interfaces),			\

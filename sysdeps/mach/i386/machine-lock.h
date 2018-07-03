@@ -1,5 +1,5 @@
 /* Machine-specific definition for spin locks.  i386 version.
-   Copyright (C) 1994-2017 Free Software Foundation, Inc.
+   Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -34,6 +34,9 @@ typedef volatile int __spin_lock_t;
 
 /* Unlock LOCK.  */
 
+extern void __spin_unlock (__spin_lock_t *__lock);
+
+#if defined __USE_EXTERN_INLINES && defined _LIBC
 _EXTERN_INLINE void
 __spin_unlock (__spin_lock_t *__lock)
 {
@@ -42,9 +45,13 @@ __spin_unlock (__spin_lock_t *__lock)
 		       : "=&r" (__unlocked), "=m" (*__lock) : "0" (0)
 		       : "memory");
 }
+#endif
 
 /* Try to lock LOCK; return nonzero if we locked it, zero if another has.  */
 
+extern int __spin_try_lock (__spin_lock_t *__lock);
+
+#if defined __USE_EXTERN_INLINES && defined _LIBC
 _EXTERN_INLINE int
 __spin_try_lock (__spin_lock_t *__lock)
 {
@@ -54,14 +61,19 @@ __spin_try_lock (__spin_lock_t *__lock)
 		      : "memory");
   return !__locked;
 }
+#endif
 
 /* Return nonzero if LOCK is locked.  */
 
+extern int __spin_lock_locked (__spin_lock_t *__lock);
+
+#if defined __USE_EXTERN_INLINES && defined _LIBC
 _EXTERN_INLINE int
 __spin_lock_locked (__spin_lock_t *__lock)
 {
   return *__lock != 0;
 }
+#endif
 
 
 #endif /* machine-lock.h */

@@ -1,5 +1,5 @@
 /* Compute cubic root of long double value.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Dirk Alboth <dirka@uni-paderborn.de> and
    Ulrich Drepper <drepper@cygnus.com>, 1997.
@@ -18,6 +18,7 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include <libm-alias-ldouble.h>
 #include <machine/asm.h>
 
         .section .rodata
@@ -226,4 +227,4 @@ ENTRY(__cbrtl)
 	fadd	%st
 	ret
 END(__cbrtl)
-weak_alias (__cbrtl, cbrtl)
+libm_alias_ldouble (__cbrt, cbrt)

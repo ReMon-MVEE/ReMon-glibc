@@ -1,5 +1,5 @@
 /* Test program for bad DES salt detection in crypt.
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -60,6 +60,9 @@ do_test (void)
       page[pagesize - 1] = '*';
       tests[n - 1][1] = &page[pagesize - 1];
     }
+
+  /* Mark cd as initialized before first call to crypt_r.  */
+  cd.initialized = 0;
 
   for (size_t i = 0; i < n; i++)
     {

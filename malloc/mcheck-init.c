@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 
 #include <malloc.h>
 #include <mcheck.h>
+#include <shlib-compat.h>
 
 static void
 turn_on_mcheck (void)
@@ -28,3 +29,5 @@ turn_on_mcheck (void)
 }
 
 void (*__malloc_initialize_hook) (void) = turn_on_mcheck;
+compat_symbol_reference (libc, __malloc_initialize_hook,
+                         __malloc_initialize_hook, GLIBC_2_0);

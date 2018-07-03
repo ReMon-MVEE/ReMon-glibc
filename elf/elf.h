@@ -1,5 +1,5 @@
 /* This file defines standard ELF types, structures, and macros.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -739,6 +739,8 @@ typedef struct
 /* Legal values for note segment descriptor types for core files. */
 
 #define NT_PRSTATUS	1		/* Contains copy of prstatus struct */
+#define NT_PRFPREG	2		/* Contains copy of fpregset
+					   struct.  */
 #define NT_FPREGSET	2		/* Contains copy of fpregset struct */
 #define NT_PRPSINFO	3		/* Contains copy of prpsinfo struct */
 #define NT_PRXREG	4		/* Contains copy of prxregset struct */
@@ -778,6 +780,8 @@ typedef struct
 					   Register */
 #define NT_PPC_TM_CDSCR	0x10f		/* TM checkpointed Data Stream Control
 					   Register */
+#define NT_PPC_PKEY	0x110		/* Memory Protection Keys
+					   registers.  */
 #define NT_386_TLS	0x200		/* i386 TLS slots (struct user_desc) */
 #define NT_386_IOPERM	0x201		/* x86 io permission bitmap (1=deny) */
 #define NT_X86_XSTATE	0x202		/* x86 extended state using xsave */
@@ -790,11 +794,20 @@ typedef struct
 #define NT_S390_LAST_BREAK	0x306	/* s390 breaking event address */
 #define NT_S390_SYSTEM_CALL	0x307	/* s390 system call restart data */
 #define NT_S390_TDB	0x308		/* s390 transaction diagnostic block */
+#define NT_S390_VXRS_LOW	0x309	/* s390 vector registers 0-15
+					   upper half.  */
+#define NT_S390_VXRS_HIGH	0x30a	/* s390 vector registers 16-31.  */
+#define NT_S390_GS_CB	0x30b		/* s390 guarded storage registers.  */
+#define NT_S390_GS_BC	0x30c		/* s390 guarded storage
+					   broadcast control block.  */
+#define NT_S390_RI_CB	0x30d		/* s390 runtime instrumentation.  */
 #define NT_ARM_VFP	0x400		/* ARM VFP/NEON registers */
 #define NT_ARM_TLS	0x401		/* ARM TLS register */
 #define NT_ARM_HW_BREAK	0x402		/* ARM hardware breakpoint registers */
 #define NT_ARM_HW_WATCH	0x403		/* ARM hardware watchpoint registers */
 #define NT_ARM_SYSTEM_CALL	0x404	/* ARM system call number */
+#define NT_ARM_SVE	0x405		/* ARM Scalable Vector Extension
+					   registers */
 
 /* Legal values for the note segment descriptor types for object files.  */
 
@@ -859,7 +872,8 @@ typedef struct
 #define DT_ENCODING	32		/* Start of encoded range */
 #define DT_PREINIT_ARRAY 32		/* Array with addresses of preinit fct*/
 #define DT_PREINIT_ARRAYSZ 33		/* size in bytes of DT_PREINIT_ARRAY */
-#define	DT_NUM		34		/* Number used */
+#define DT_SYMTAB_SHNDX	34		/* Address of SYMTAB_SHNDX section */
+#define	DT_NUM		35		/* Number used */
 #define DT_LOOS		0x6000000d	/* Start of OS-specific */
 #define DT_HIOS		0x6ffff000	/* End of OS-specific */
 #define DT_LOPROC	0x70000000	/* Start of processor-specific */
@@ -967,6 +981,8 @@ typedef struct
 #define	DF_1_SYMINTPOSE	0x00800000	/* Object has individual interposers.  */
 #define	DF_1_GLOBAUDIT	0x01000000	/* Global auditing required.  */
 #define	DF_1_SINGLETON	0x02000000	/* Singleton symbols are used.  */
+#define	DF_1_STUB	0x04000000
+#define	DF_1_PIE	0x08000000
 
 /* Flags for the feature selection in DT_FEATURE_1.  */
 #define DTF_1_PARINIT	0x00000001
@@ -3353,6 +3369,9 @@ enum
 					   relaxable.  */
 #define R_X86_64_NUM		43
 
+/* x86-64 sh_type values.  */
+#define SHT_X86_64_UNWIND	0x70000001 /* Unwind information.  */
+
 
 /* AM33 relocations.  */
 #define R_MN10300_NONE		0	/* No reloc.  */
@@ -3761,6 +3780,72 @@ enum
 #define R_TILEGX_GNU_VTENTRY	129	/* GNU C++ vtable member usage */
 
 #define R_TILEGX_NUM		130
+
+/* RISC-V ELF Flags */
+#define EF_RISCV_RVC 			0x0001
+#define EF_RISCV_FLOAT_ABI 		0x0006
+#define EF_RISCV_FLOAT_ABI_SOFT 	0x0000
+#define EF_RISCV_FLOAT_ABI_SINGLE 	0x0002
+#define EF_RISCV_FLOAT_ABI_DOUBLE 	0x0004
+#define EF_RISCV_FLOAT_ABI_QUAD 	0x0006
+
+/* RISC-V relocations.  */
+#define R_RISCV_NONE		 0
+#define R_RISCV_32		 1
+#define R_RISCV_64		 2
+#define R_RISCV_RELATIVE	 3
+#define R_RISCV_COPY		 4
+#define R_RISCV_JUMP_SLOT	 5
+#define R_RISCV_TLS_DTPMOD32	 6
+#define R_RISCV_TLS_DTPMOD64	 7
+#define R_RISCV_TLS_DTPREL32	 8
+#define R_RISCV_TLS_DTPREL64	 9
+#define R_RISCV_TLS_TPREL32	10
+#define R_RISCV_TLS_TPREL64	11
+#define R_RISCV_BRANCH		16
+#define R_RISCV_JAL		17
+#define R_RISCV_CALL		18
+#define R_RISCV_CALL_PLT	19
+#define R_RISCV_GOT_HI20	20
+#define R_RISCV_TLS_GOT_HI20	21
+#define R_RISCV_TLS_GD_HI20	22
+#define R_RISCV_PCREL_HI20	23
+#define R_RISCV_PCREL_LO12_I	24
+#define R_RISCV_PCREL_LO12_S	25
+#define R_RISCV_HI20		26
+#define R_RISCV_LO12_I		27
+#define R_RISCV_LO12_S		28
+#define R_RISCV_TPREL_HI20	29
+#define R_RISCV_TPREL_LO12_I	30
+#define R_RISCV_TPREL_LO12_S	31
+#define R_RISCV_TPREL_ADD	32
+#define R_RISCV_ADD8		33
+#define R_RISCV_ADD16		34
+#define R_RISCV_ADD32		35
+#define R_RISCV_ADD64		36
+#define R_RISCV_SUB8		37
+#define R_RISCV_SUB16		38
+#define R_RISCV_SUB32		39
+#define R_RISCV_SUB64		40
+#define R_RISCV_GNU_VTINHERIT	41
+#define R_RISCV_GNU_VTENTRY	42
+#define R_RISCV_ALIGN		43
+#define R_RISCV_RVC_BRANCH	44
+#define R_RISCV_RVC_JUMP	45
+#define R_RISCV_RVC_LUI		46
+#define R_RISCV_GPREL_I		47
+#define R_RISCV_GPREL_S		48
+#define R_RISCV_TPREL_I		49
+#define R_RISCV_TPREL_S		50
+#define R_RISCV_RELAX		51
+#define R_RISCV_SUB6		52
+#define R_RISCV_SET6		53
+#define R_RISCV_SET8		54
+#define R_RISCV_SET16		55
+#define R_RISCV_SET32		56
+#define R_RISCV_32_PCREL	57
+
+#define R_RISCV_NUM		58
 
 /* BPF specific declarations.  */
 

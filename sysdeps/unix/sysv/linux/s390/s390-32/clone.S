@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Martin Schwidefsky (schwidefsky@de.ibm.com).
 
@@ -54,12 +54,16 @@ error:
 PSEUDO_END (__clone)
 
 thread_start:
+	cfi_startproc
+	/* Mark r14 as undefined in order to stop unwinding here!  */
+	cfi_undefined (r14)
 	/* fn is in gpr 1, arg in gpr 0 */
 	lr      %r2,%r0         /* set first parameter to void *arg */
 	ahi     %r15,-96        /* make room on the stack for the save area */
 	xc	0(4,%r15),0(%r15)
 	basr    %r14,%r1        /* jump to fn */
 	DO_CALL (exit, 1)
+	cfi_endproc
 
 libc_hidden_def (__clone)
 weak_alias (__clone, clone)

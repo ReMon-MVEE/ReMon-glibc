@@ -1,5 +1,5 @@
 /* clock_getres -- Get the resolution of a POSIX clockid_t.
-   Copyright (C) 1999-2017 Free Software Foundation, Inc.
+   Copyright (C) 1999-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -58,7 +58,7 @@ hp_timing_getres (struct timespec *res)
 static inline int
 realtime_getres (struct timespec *res)
 {
-  long int clk_tck = sysconf (_SC_CLK_TCK);
+  long int clk_tck = __sysconf (_SC_CLK_TCK);
 
   if (__glibc_likely (clk_tck != -1))
     {

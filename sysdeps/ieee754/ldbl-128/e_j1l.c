@@ -98,6 +98,7 @@
 #include <errno.h>
 #include <math.h>
 #include <math_private.h>
+#include <math-underflow.h>
 #include <float.h>
 
 /* 1 / sqrt(pi) */
@@ -736,7 +737,7 @@ __ieee754_j1l (_Float128 x)
 
   if (xx > L(0x1p256))
     {
-      z = ONEOSQPI * cc / __ieee754_sqrtl (xx);
+      z = ONEOSQPI * cc / sqrtl (xx);
       if (x < 0)
 	z = -z;
       return z;
@@ -803,7 +804,7 @@ __ieee754_j1l (_Float128 x)
   p = 1 + z * p;
   q = z * q;
   q = q * xinv + L(0.375) * xinv;
-  z = ONEOSQPI * (p * cc - q * ss) / __ieee754_sqrtl (xx);
+  z = ONEOSQPI * (p * cc - q * ss) / sqrtl (xx);
   if (x < 0)
     z = -z;
   return z;
@@ -815,7 +816,7 @@ strong_alias (__ieee754_j1l, __j1l_finite)
    Peak relative error 6.2e-38
    0 <= x <= 2   */
 #define NY0_2N 7
-static _Float128 Y0_2N[NY0_2N + 1] = {
+static const _Float128 Y0_2N[NY0_2N + 1] = {
   L(-6.804415404830253804408698161694720833249E19),
   L(1.805450517967019908027153056150465849237E19),
   L(-8.065747497063694098810419456383006737312E17),
@@ -826,7 +827,7 @@ static _Float128 Y0_2N[NY0_2N + 1] = {
   L(9.541172044989995856117187515882879304461E5),
 };
 #define NY0_2D 7
-static _Float128 Y0_2D[NY0_2D + 1] = {
+static const _Float128 Y0_2D[NY0_2D + 1] = {
   L(3.470629591820267059538637461549677594549E20),
   L(4.120796439009916326855848107545425217219E18),
   L(2.477653371652018249749350657387030814542E16),
@@ -892,7 +893,7 @@ __ieee754_y1l (_Float128 x)
     }
 
   if (xx > L(0x1p256))
-    return ONEOSQPI * ss / __ieee754_sqrtl (xx);
+    return ONEOSQPI * ss / sqrtl (xx);
 
   xinv = 1 / xx;
   z = xinv * xinv;
@@ -955,7 +956,7 @@ __ieee754_y1l (_Float128 x)
   p = 1 + z * p;
   q = z * q;
   q = q * xinv + L(0.375) * xinv;
-  z = ONEOSQPI * (p * ss + q * cc) / __ieee754_sqrtl (xx);
+  z = ONEOSQPI * (p * ss + q * cc) / sqrtl (xx);
   return z;
 }
 strong_alias (__ieee754_y1l, __y1l_finite)

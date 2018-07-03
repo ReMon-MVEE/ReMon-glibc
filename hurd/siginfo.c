@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,10 +17,11 @@
 
 #include <hurd/signal.h>
 #include <stdio.h>
+#include <libioP.h>
 
 void
 _hurd_siginfo_handler (int signo)
 {
   /* XXX */
-  puts ("got a SIGINFO");
+  _IO_puts ("got a SIGINFO");
 }

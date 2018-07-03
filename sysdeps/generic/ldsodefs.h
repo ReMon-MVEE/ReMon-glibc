@@ -1,5 +1,5 @@
 /* Run-time dynamic linker data structures for loaded ELF shared objects.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -66,14 +66,21 @@ __BEGIN_DECLS
 /* Result of the lookup functions and how to retrieve the base address.  */
 typedef struct link_map *lookup_t;
 #define LOOKUP_VALUE(map) map
-#define LOOKUP_VALUE_ADDRESS(map) ((map) ? (map)->l_addr : 0)
+#define LOOKUP_VALUE_ADDRESS(map, set) ((set) || (map) ? (map)->l_addr : 0)
+
+/* Calculate the address of symbol REF using the base address from map MAP,
+   if non-NULL.  Don't check for NULL map if MAP_SET is TRUE.  */
+#define SYMBOL_ADDRESS(map, ref, map_set)				\
+  ((ref) == NULL ? 0							\
+   : (__glibc_unlikely ((ref)->st_shndx == SHN_ABS) ? 0			\
+      : LOOKUP_VALUE_ADDRESS (map, map_set)) + (ref)->st_value)
 
 /* On some architectures a pointer to a function is not just a pointer
    to the actual code of the function but rather an architecture
    specific descriptor. */
 #ifndef ELF_FUNCTION_PTR_IS_SPECIAL
 # define DL_SYMBOL_ADDRESS(map, ref) \
- (void *) (LOOKUP_VALUE_ADDRESS (map) + ref->st_value)
+ (void *) SYMBOL_ADDRESS (map, ref, false)
 # define DL_LOOKUP_ADDRESS(addr) ((ElfW(Addr)) (addr))
 # define DL_CALL_DT_INIT(map, start, argc, argv, env) \
  ((init_t) (start)) (argc, argv, env)
@@ -373,6 +380,13 @@ struct rtld_global
   EXTERN void (*_dl_rtld_unlock_recursive) (void *);
 #endif
 
+  /* Get architecture specific definitions.  */
+#define PROCINFO_DECL
+#ifndef PROCINFO_CLASS
+# define PROCINFO_CLASS EXTERN
+#endif
+#include <dl-procruntime.c>
+
   /* If loading a shared object requires that we make the stack executable
      when it was not, we do it by calling this function.
      It returns an errno code or zero on success.  */
@@ -428,6 +442,9 @@ struct rtld_global
     size_t count;
     void *list[50];
   } *_dl_scope_free_list;
+#if !THREAD_GSCOPE_IN_TCB
+  EXTERN int _dl_thread_gscope_count;
+#endif
 #ifdef SHARED
 };
 # define __rtld_global_attribute__
@@ -529,10 +546,6 @@ struct rtld_global_ro
 #endif
 
   /* Get architecture specific definitions.  */
-#define PROCINFO_DECL
-#ifndef PROCINFO_CLASS
-# define PROCINFO_CLASS EXTERN
-#endif
 #include <dl-procinfo.c>
 
   /* Names of shared object for which the RPATH should be ignored.  */
@@ -555,7 +568,11 @@ struct rtld_global_ro
   /* Map of shared object to be prelink traced.  */
   EXTERN struct link_map *_dl_trace_prelink_map;
 
-  /* All search directories defined at startup.  */
+  /* All search directories defined at startup.  This is assigned a
+     non-NULL pointer by the ld.so startup code (after initialization
+     to NULL), so this can also serve as an indicator whether a copy
+     of ld.so is initialized and active.  See the rtld_active function
+     below.  */
   EXTERN struct r_search_path_elem *_dl_init_all_dirs;
 
 #ifdef NEED_DL_SYSINFO
@@ -589,7 +606,6 @@ struct rtld_global_ro
 				   const ElfW(Sym) **, struct r_scope_elem *[],
 				   const struct r_found_version *, int, int,
 				   struct link_map *);
-  int (*_dl_check_caller) (const void *, enum allowmask);
   void *(*_dl_open) (const char *file, int mode, const void *caller_dlopen,
 		     Lmid_t nsid, int argc, char *argv[], char *env[]);
   void (*_dl_close) (void *map);
@@ -954,11 +970,11 @@ extern void _dl_init (struct link_map *main_map, int argc, char **argv,
 
 /* Call the finalizer functions of all shared objects whose
    initializer functions have completed.  */
-extern void _dl_fini (void);
+extern void _dl_fini (void) attribute_hidden;
 
 /* Sort array MAPS according to dependencies of the contained objects.  */
-extern void _dl_sort_fini (struct link_map **maps, size_t nmaps, char *used,
-			   Lmid_t ns) attribute_hidden;
+extern void _dl_sort_maps (struct link_map **maps, unsigned int nmaps,
+			   char *used, bool for_fini) attribute_hidden;
 
 /* The dynamic linker calls this function before and having changing
    any shared object mappings.  The `r_state' member of `struct r_debug'
@@ -1048,10 +1064,21 @@ extern void _dl_determine_tlsoffset (void) attribute_hidden;
    stack protector, among other things).  */
 void __libc_setup_tls (void);
 
+# if ENABLE_STATIC_PIE
+/* Relocate static executable with PIE.  */
+extern void _dl_relocate_static_pie (void) attribute_hidden;
+
+/* Get a pointer to _dl_main_map.  */
+extern struct link_map * _dl_get_dl_main_map (void)
+  __attribute__ ((visibility ("hidden")));
+# else
+#  define _dl_relocate_static_pie()
+# endif
+#endif
+
 /* Initialization of libpthread for statically linked applications.
    If libpthread is not linked in, this is an empty function.  */
 void __pthread_initialize_minimal (void) weak_function;
-#endif
 
 /* Allocate memory for static TLS block (unless MEM is nonzero) and dtv.  */
 extern void *_dl_allocate_tls (void *mem);
@@ -1078,15 +1105,11 @@ extern void _dl_nothread_init_static_tls (struct link_map *) attribute_hidden;
 extern const char *_dl_get_origin (void) attribute_hidden;
 
 /* Count DSTs.  */
-extern size_t _dl_dst_count (const char *name, int is_path) attribute_hidden;
+extern size_t _dl_dst_count (const char *name) attribute_hidden;
 
 /* Substitute DST values.  */
 extern char *_dl_dst_substitute (struct link_map *l, const char *name,
-				 char *result, int is_path) attribute_hidden;
-
-/* Check validity of the caller.  */
-extern int _dl_check_caller (const void *caller, enum allowmask mask)
-     attribute_hidden;
+				 char *result) attribute_hidden;
 
 /* Open the shared object NAME, relocate it, and run its initializer if it
    hasn't already been run.  MODE is as for `dlopen' (see <dlfcn.h>).  If
@@ -1123,11 +1146,27 @@ extern struct link_map *_dl_find_dso_for_object (const ElfW(Addr) addr);
 rtld_hidden_proto (_dl_find_dso_for_object)
 
 /* Initialization which is normally done by the dynamic linker.  */
-extern void _dl_non_dynamic_init (void);
+extern void _dl_non_dynamic_init (void)
+     attribute_hidden;
 
 /* Used by static binaries to check the auxiliary vector.  */
-extern void _dl_aux_init (ElfW(auxv_t) *av);
+extern void _dl_aux_init (ElfW(auxv_t) *av)
+     attribute_hidden;
 
+/* Return true if the ld.so copy in this namespace is actually active
+   and working.  If false, the dl_open/dlfcn hooks have to be used to
+   call into the outer dynamic linker (which happens after static
+   dlopen).  */
+#ifdef SHARED
+static inline bool
+rtld_active (void)
+{
+  /* The default-initialized variable does not have a non-zero
+     dl_init_all_dirs member, so this allows us to recognize an
+     initialized and active ld.so copy.  */
+  return GLRO(dl_init_all_dirs) != NULL;
+}
+#endif
 
 __END_DECLS
 

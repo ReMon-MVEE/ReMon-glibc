@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -82,7 +82,7 @@ __socketpair (int domain, int type, int protocol, int fds[2])
   if (d2 < 0)
     {
       err = errno;
-      (void) close (d1);
+      (void) __close (d1);
       return __hurd_fail (err);
     }
 

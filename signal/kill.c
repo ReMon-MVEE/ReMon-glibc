@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -30,4 +30,5 @@ __kill (int pid, int sig)
 }
 stub_warning (kill)
 
+libc_hidden_def (__kill)
 weak_alias (__kill, kill)

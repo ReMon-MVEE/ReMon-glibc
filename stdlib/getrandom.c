@@ -1,5 +1,5 @@
 /* Stub for getrandom.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,8 +19,8 @@
 #include <sys/random.h>
 #include <errno.h>
 
-/* Write LENGTH bytes of randomness starting at BUFFER.  Return the
-   number of bytes written, or -1 on error.  */
+/* Write up to LENGTH bytes of randomness starting at BUFFER.
+   Return the number of bytes written, or -1 on error.  */
 ssize_t
 getrandom (void *buffer, size_t length, unsigned int flags)
 {

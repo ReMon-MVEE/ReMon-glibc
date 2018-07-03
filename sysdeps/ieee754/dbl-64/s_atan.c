@@ -1,7 +1,7 @@
 /*
  * IBM Accurate Mathematical Library
  * written by International Business Machines Corp.
- * Copyright (C) 2001-2017 Free Software Foundation, Inc.
+ * Copyright (C) 2001-2018 Free Software Foundation, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -43,8 +43,10 @@
 #include "atnat.h"
 #include <fenv.h>
 #include <float.h>
+#include <libm-alias-double.h>
 #include <math.h>
 #include <math_private.h>
+#include <math-underflow.h>
 #include <stap-probe.h>
 
 void __mpatan (mp_no *, mp_no *, int);	/* see definition in mpatan.c */
@@ -61,7 +63,7 @@ __signArctan (double x, double y)
 /* An ultimate atan() routine. Given an IEEE double machine number x,    */
 /* routine computes the correctly rounded (to nearest) value of atan(x). */
 double
-atan (double x)
+__atan (double x)
 {
   double cor, s1, ss1, s2, ss2, t1, t2, t3, t7, t8, t9, t10, u, u2, u3,
 	 v, vv, w, ww, y, yy, z, zz;
@@ -323,6 +325,6 @@ atanMp (double x, const int pr[])
   return y1;			/*if impossible to do exact computing */
 }
 
-#ifdef NO_LONG_DOUBLE
-weak_alias (atan, atanl)
+#ifndef __atan
+libm_alias_double (__atan, atan)
 #endif

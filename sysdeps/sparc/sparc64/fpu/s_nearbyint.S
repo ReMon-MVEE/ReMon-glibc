@@ -1,7 +1,7 @@
 /* Round float to int floating-point values without generating
    an inexact exception, sparc64 version.
 
-   Copyright (C) 2013-2017 Free Software Foundation, Inc.
+   Copyright (C) 2013-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by David S. Miller <davem@davemloft.net>, 2013.
 
@@ -20,6 +20,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-double.h>
 
 	/* We pop constants into the FPU registers using the incoming
 	   argument stack slots, since this avoid having to use any PIC
@@ -61,4 +62,4 @@ ENTRY (__nearbyint)
 	retl
 	 ldx	[%sp + STACK_BIAS + 144], %fsr
 END (__nearbyint)
-weak_alias (__nearbyint, nearbyint)
+libm_alias_double (__nearbyint, nearbyint)

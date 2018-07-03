@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1995.
 
@@ -32,6 +32,7 @@
 #include <error.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <ctype.h>
 
 #include "localedef.h"
 #include "charmap.h"
@@ -47,12 +48,6 @@ struct copy_def_list_t *copy_list;
 
 /* If this is defined be POSIX conform.  */
 int posix_conformance;
-
-/* If not zero give a lot more messages.  */
-int verbose;
-
-/* If not zero suppress warnings and information messages.  */
-int be_quiet;
 
 /* If not zero force output even if warning were issued.  */
 static int force_output;
@@ -108,6 +103,8 @@ void (*argp_program_version_hook) (FILE *, struct argp_state *) = print_version;
 #define OPT_LIST_ARCHIVE 309
 #define OPT_LITTLE_ENDIAN 400
 #define OPT_BIG_ENDIAN 401
+#define OPT_NO_WARN 402
+#define OPT_WARN 403
 
 /* Definitions of arguments for argp functions.  */
 static const struct argp_option options[] =
@@ -128,6 +125,13 @@ static const struct argp_option options[] =
   { "quiet", OPT_QUIET, NULL, 0,
     N_("Suppress warnings and information messages") },
   { "verbose", 'v', NULL, 0, N_("Print more messages") },
+  { "no-warnings", OPT_NO_WARN, N_("<warnings>"), 0,
+    N_("Comma-separated list of warnings to disable; "
+       "supported warnings are: ascii, intcurrsym") },
+  { "warnings", OPT_WARN, N_("<warnings>"), 0,
+    N_("Comma-separated list of warnings to enable; "
+       "supported warnings are: ascii, intcurrsym") },
+
   { NULL, 0, NULL, 0, N_("Archive control:") },
   { "no-archive", OPT_NO_ARCHIVE, NULL, 0,
     N_("Don't add new data to archive") },
@@ -236,8 +240,8 @@ main (int argc, char *argv[])
      defines error code 3 for this situation so I think it must be
      a fatal error (see P1003.2 4.35.8).  */
   if (sysconf (_SC_2_LOCALEDEF) < 0)
-    WITH_CUR_LOCALE (error (3, 0, _("\
-FATAL: system does not define `_POSIX2_LOCALEDEF'")));
+    record_error (3, 0, _("\
+FATAL: system does not define `_POSIX2_LOCALEDEF'"));
 
   /* Process charmap file.  */
   charmap = charmap_read (charmap_file, verbose, 1, be_quiet, 1);
@@ -250,8 +254,8 @@ FATAL: system does not define `_POSIX2_LOCALEDEF'")));
 
   /* Now read the locale file.  */
   if (locfile_read (&global, charmap) != 0)
-    WITH_CUR_LOCALE (error (4, errno, _("\
-cannot open locale definition file `%s'"), input_file));
+    record_error (4, errno, _("\
+cannot open locale definition file `%s'"), input_file);
 
   /* Perhaps we saw some `copy' instructions.  */
   while (1)
@@ -266,31 +270,80 @@ cannot open locale definition file `%s'"), input_file));
 	break;
 
       if (locfile_read (runp, charmap) != 0)
-	WITH_CUR_LOCALE (error (4, errno, _("\
-cannot open locale definition file `%s'"), runp->name));
+	record_error (4, errno, _("\
+cannot open locale definition file `%s'"), runp->name);
     }
 
   /* Check the categories we processed in source form.  */
   check_all_categories (locales, charmap);
 
-  /* We are now able to write the data files.  If warning were given we
-     do it only if it is explicitly requested (--force).  */
-  if (error_message_count == 0 || force_output != 0)
+  /* What we do next depends on the number of errors and warnings we
+     have generated in processing the input files.
+
+     * No errors: Write the output file.
+
+     * Some warnings: Write the output file and exit with status 1 to
+     indicate there may be problems using the output file e.g. missing
+     data that makes it difficult to use
+
+     * Errors: We don't write the output file and we exit with status 4
+     to indicate no output files were written.
+
+     The use of -c|--force writes the output file even if errors were
+     seen.  */
+  if (recorded_error_count == 0 || force_output != 0)
     {
       if (cannot_write_why != 0)
-	WITH_CUR_LOCALE (error (4, cannot_write_why, _("\
-cannot write output files to `%s'"), output_path ? : argv[remaining]));
+	record_error (4, cannot_write_why, _("\
+cannot write output files to `%s'"), output_path ? : argv[remaining]);
       else
 	write_all_categories (locales, charmap, argv[remaining], output_path);
     }
   else
-    WITH_CUR_LOCALE (error (4, 0, _("\
-no output file produced because warnings were issued")));
+    record_error (4, 0, _("\
+no output file produced because errors were issued"));
 
   /* This exit status is prescribed by POSIX.2 4.35.7.  */
-  exit (error_message_count != 0);
+  exit (recorded_warning_count != 0);
 }
 
+/* Search warnings for matching warnings and if found enable those
+   warnings if ENABLED is true, otherwise disable the warnings.  */
+static void
+set_warnings (char *warnings, bool enabled)
+{
+  char *tok = warnings;
+  char *copy = (char *) malloc (strlen (warnings) + 1);
+  char *save = copy;
+
+  /* As we make a copy of the warnings list we remove all spaces from
+     the warnings list to make the processing a more robust.  We don't
+     support spaces in a warning name.  */
+  do
+    {
+      while (isspace (*tok) != 0)
+        tok++;
+    }
+  while ((*save++ = *tok++) != '\0');
+
+  warnings = copy;
+
+  /* Tokenize the input list of warnings to set, compare them to
+     known warnings, and set the warning.  We purposely ignore unknown
+     warnings, and are thus forward compatible, users can attempt to
+     disable whaterver new warnings they know about, but we will only
+     disable those *we* known about.  */
+  while ((tok = strtok_r (warnings, ",", &save)) != NULL)
+    {
+      warnings = NULL;
+      if (strcmp (tok, "ascii") == 0)
+	warn_ascii = enabled;
+      else if (strcmp (tok, "intcurrsym") == 0)
+	warn_int_curr_symbol = enabled;
+    }
+
+  free (copy);
+}
 
 /* Handle program arguments.  */
 static error_t
@@ -327,6 +380,14 @@ parse_opt (int key, char *arg, struct argp_state *state)
       break;
     case OPT_BIG_ENDIAN:
       set_big_endian (true);
+      break;
+    case OPT_NO_WARN:
+      /* Disable the warnings.  */
+      set_warnings (arg, false);
+      break;
+    case OPT_WARN:
+      /* Enable the warnings.  */
+      set_warnings (arg, true);
       break;
     case 'c':
       force_output = 1;
@@ -393,7 +454,7 @@ print_version (FILE *stream, struct argp_state *state)
 Copyright (C) %s Free Software Foundation, Inc.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\
-"), "2017");
+"), "2018");
   fprintf (stream, gettext ("Written by %s.\n"), "Ulrich Drepper");
 }
 
@@ -567,14 +628,14 @@ add_to_readlist (int category, const char *name, const char *repertoire_name,
   if (generate
       && (runp->needed & (1 << category)) != 0
       && (runp->avail & (1 << category)) == 0)
-    WITH_CUR_LOCALE (error (5, 0, _("\
-circular dependencies between locale definitions")));
+    record_error (5, 0, _("\
+circular dependencies between locale definitions"));
 
   if (copy_locale != NULL)
     {
       if (runp->categories[category].generic != NULL)
-	WITH_CUR_LOCALE (error (5, 0, _("\
-cannot add already read locale `%s' a second time"), name));
+	record_error (5, 0, _("\
+cannot add already read locale `%s' a second time"), name);
       else
 	runp->categories[category].generic =
 	  copy_locale->categories[category].generic;
@@ -599,8 +660,8 @@ find_locale (int category, const char *name, const char *repertoire_name,
 
   if ((result->avail & (1 << category)) == 0
       && locfile_read (result, charmap) != 0)
-    WITH_CUR_LOCALE (error (4, errno, _("\
-cannot open locale definition file `%s'"), result->name));
+    record_error (4, errno, _("\
+cannot open locale definition file `%s'"), result->name);
 
   return result;
 }
@@ -619,8 +680,8 @@ load_locale (int category, const char *name, const char *repertoire_name,
 
   if ((result->avail & (1 << category)) == 0
       && locfile_read (result, charmap) != 0)
-    WITH_CUR_LOCALE (error (4, errno, _("\
-cannot open locale definition file `%s'"), result->name));
+    record_error (4, errno, _("\
+cannot open locale definition file `%s'"), result->name);
 
   return result;
 }

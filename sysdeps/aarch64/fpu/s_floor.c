@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -16,6 +16,13 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#define FUNC floor
-#define INSN "frintm"
-#include <s_frint.c>
+#include <math.h>
+#include <libm-alias-double.h>
+
+double
+__floor (double x)
+{
+  return __builtin_floor (x);
+}
+
+libm_alias_double (__floor, floor)

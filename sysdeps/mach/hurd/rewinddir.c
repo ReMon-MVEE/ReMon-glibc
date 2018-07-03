@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@
 void
 __rewinddir (DIR *dirp)
 {
-  seekdir (dirp, (off_t) 0L);
+  __seekdir (dirp, (off_t) 0L);
 }
 libc_hidden_def (__rewinddir)
 weak_alias (__rewinddir, rewinddir)

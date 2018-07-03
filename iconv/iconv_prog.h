@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2001-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2001.
 
@@ -20,11 +20,9 @@
 #define _ICONV_PROG_H	1
 
 #include <stdio.h>
+
 #include <charmap.h>
-
-
-/* Nonzero if verbose ouput is wanted.  */
-extern int verbose;
+#include <record-status.h>
 
 /* If nonzero omit invalid character from output.  */
 extern int omit_invalid;

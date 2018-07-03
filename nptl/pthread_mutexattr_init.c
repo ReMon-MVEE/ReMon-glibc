@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -23,6 +23,10 @@
 int
 __pthread_mutexattr_init (pthread_mutexattr_t *attr)
 {
+  ASSERT_TYPE_SIZE (pthread_mutexattr_t, __SIZEOF_PTHREAD_MUTEXATTR_T);
+  ASSERT_PTHREAD_INTERNAL_SIZE (pthread_mutexattr_t,
+				struct pthread_mutexattr);
+
   if (sizeof (struct pthread_mutexattr) != sizeof (pthread_mutexattr_t))
     memset (attr, '\0', sizeof (*attr));
 

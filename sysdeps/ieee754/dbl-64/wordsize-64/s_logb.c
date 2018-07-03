@@ -1,5 +1,5 @@
 /* Compute radix independent exponent.
-   Copyright (C) 2011-2017 Free Software Foundation, Inc.
+   Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gmail.com>, 2011.
 
@@ -20,6 +20,7 @@
 #include <math.h>
 
 #include <math_private.h>
+#include <libm-alias-double.h>
 
 
 double
@@ -41,8 +42,6 @@ __logb (double x)
     }
   return (double) (ex - 1023);
 }
-weak_alias (__logb, logb)
-#ifdef NO_LONG_DOUBLE
-strong_alias (__logb, __logbl)
-weak_alias (__logb, logbl)
+#ifndef __logb
+libm_alias_double (__logb, logb)
 #endif

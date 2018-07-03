@@ -12,10 +12,6 @@ librt-sysdep_routines += rt-sysdep
 librt-shared-only-routines += rt-sysdep
 endif
 
-ifeq ($(subdir),debug)
-CFLAGS-backtrace.c += -funwind-tables
-endif
-
 ifeq ($(subdir),csu)
 CPPFLAGS-crti.S += $(pic-ccflag)
 CPPFLAGS-crtn.S += $(pic-ccflag)
@@ -27,6 +23,9 @@ CPPFLAGS-crtn.S += $(pic-ccflag)
 endif
 
 ASFLAGS-.os += $(pic-ccflag)
+# libc.a and libc_p.a must be compiled with -fPIE/-fpie for static PIE.
+ASFLAGS-.o += $(pie-default)
+ASFLAGS-.op += $(pie-default)
 
 ifeq ($(subdir),elf)
 ifneq ($(o32-fpabi),)

@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -38,14 +38,14 @@ static wchar_t const zeroes[PADSIZE] =
   L'0', L'0', L'0', L'0', L'0', L'0', L'0', L'0'
 };
 
-_IO_ssize_t
-_IO_wpadn (_IO_FILE *fp, wint_t pad, _IO_ssize_t count)
+ssize_t
+_IO_wpadn (FILE *fp, wint_t pad, ssize_t count)
 {
   wchar_t padbuf[PADSIZE];
   const wchar_t *padptr;
   int i;
-  _IO_size_t written = 0;
-  _IO_size_t w;
+  size_t written = 0;
+  size_t w;
 
   if (pad == L' ')
     padptr = blanks;

@@ -1,5 +1,5 @@
 /* Machine-dependent ELF dynamic relocation inline functions.  S390 Version.
-   Copyright (C) 2000-2017 Free Software Foundation, Inc.
+   Copyright (C) 2000-2018 Free Software Foundation, Inc.
    Contributed by Carl Pederson & Martin Schwidefsky.
    This file is part of the GNU C Library.
 
@@ -358,7 +358,7 @@ elf_machine_rela (struct link_map *map, const Elf32_Rela *reloc,
       const Elf32_Sym *const refsym = sym;
 #endif
       struct link_map *sym_map = RESOLVE_MAP (&sym, version, r_type);
-      Elf32_Addr value = sym == NULL ? 0 : sym_map->l_addr + sym->st_value;
+      Elf32_Addr value = SYMBOL_ADDRESS (sym_map, sym, true);
 
       if (sym != NULL
 	  && __builtin_expect (ELFW(ST_TYPE) (sym->st_info) == STT_GNU_IFUNC, 0)

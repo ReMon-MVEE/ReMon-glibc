@@ -1,4 +1,4 @@
-# Copyright (C) 1995-2017 Free Software Foundation, Inc.
+# Copyright (C) 1995-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -22,9 +22,11 @@ subdir	:= libio
 
 include ../Makeconfig
 
-headers	:= stdio.h libio.h _G_config.h bits/stdio.h \
-	   bits/sys_errlist.h bits/stdio2.h bits/stdio-ldbl.h bits/libio-ldbl.h \
-	   bits/types/FILE.h bits/types/__FILE.h
+headers	:= stdio.h \
+	   bits/stdio.h bits/stdio2.h bits/sys_errlist.h bits/stdio-ldbl.h \
+	   bits/types/FILE.h bits/types/__FILE.h bits/types/struct_FILE.h \
+	   bits/types/__fpos_t.h bits/types/__fpos64_t.h \
+	   bits/types/cookie_io_functions_t.h
 
 routines	:=							      \
 	filedoalloc iofclose iofdopen iofflush iofgetpos iofgets iofopen      \
@@ -62,7 +64,8 @@ tests = tst_swprintf tst_wprintf tst_swscanf tst_wscanf tst_getwc tst_putwc   \
 	bug-memstream1 bug-wmemstream1 \
 	tst-setvbuf1 tst-popen1 tst-fgetwc bug-wsetpos tst-fseek \
 	tst-fwrite-error tst-ftell-partial-wide tst-ftell-active-handler \
-	tst-ftell-append tst-fputws
+	tst-ftell-append tst-fputws tst-bz22415 tst-fgetc-after-eof
+
 ifeq (yes,$(build-shared))
 # Add test-fopenloc only if shared library is enabled since it depends on
 # shared localedata objects.
@@ -85,75 +88,77 @@ endif
 CPPFLAGS += $(libio-mtsafe)
 
 # Support for exception handling.
-CFLAGS-fileops.c = -fexceptions
-CFLAGS-fputc.c = -fexceptions
-CFLAGS-fputwc.c = -fexceptions
-CFLAGS-freopen64.c = -fexceptions
-CFLAGS-freopen.c = -fexceptions
-CFLAGS-fseek.c = -fexceptions
-CFLAGS-fseeko64.c = -fexceptions
-CFLAGS-fseeko.c = -fexceptions
-CFLAGS-ftello64.c = -fexceptions
-CFLAGS-ftello.c = -fexceptions
-CFLAGS-fwide.c = -fexceptions
-CFLAGS-genops.c = -fexceptions
-CFLAGS-getc.c = -fexceptions
-CFLAGS-getchar.c = -fexceptions
-CFLAGS-getwc.c = -fexceptions
-CFLAGS-getwchar.c = -fexceptions
-CFLAGS-iofclose.c = -fexceptions
-CFLAGS-iofflush.c = -fexceptions
-CFLAGS-iofgetpos64.c = -fexceptions
-CFLAGS-iofgetpos.c = -fexceptions
-CFLAGS-iofgets.c = -fexceptions
-CFLAGS-iofgetws.c = -fexceptions
-CFLAGS-iofputs.c = -fexceptions
-CFLAGS-iofputws.c = -fexceptions
-CFLAGS-iofread.c = -fexceptions
-CFLAGS-iofsetpos64.c = -fexceptions
-CFLAGS-iofsetpos.c = -fexceptions
-CFLAGS-ioftell.c = -fexceptions
-CFLAGS-iofwrite.c = -fexceptions
-CFLAGS-iogetdelim.c = -fexceptions
-CFLAGS-iogetline.c = -fexceptions
-CFLAGS-iogets.c = -fexceptions
-CFLAGS-iogetwline.c = -fexceptions
-CFLAGS-ioputs.c = -fexceptions
-CFLAGS-ioseekoff.c = -fexceptions
-CFLAGS-ioseekpos.c = -fexceptions
-CFLAGS-iosetbuffer.c = -fexceptions
-CFLAGS-iosetvbuf.c = -fexceptions
-CFLAGS-ioungetc.c = -fexceptions
-CFLAGS-ioungetwc.c = -fexceptions
-CFLAGS-oldfileops.c = -fexceptions
-CFLAGS-oldiofclose.c = -fexceptions
-CFLAGS-oldiofgetpos64.c = -fexceptions
-CFLAGS-oldiofgetpos.c = -fexceptions
-CFLAGS-oldiofsetpos64.c = -fexceptions
-CFLAGS-oldiofsetpos.c = -fexceptions
-CFLAGS-peekc.c = -fexceptions
-CFLAGS-putc.c = -fexceptions
-CFLAGS-putchar.c = -fexceptions
-CFLAGS-putwc.c = -fexceptions
-CFLAGS-putwchar.c = -fexceptions
-CFLAGS-rewind.c = -fexceptions
-CFLAGS-wfileops.c = -fexceptions
-CFLAGS-wgenops.c = -fexceptions
-CFLAGS-oldiofopen.c = -fexceptions
-CFLAGS-iofopen.c = -fexceptions
-CFLAGS-iofopen64.c = -fexceptions
-CFLAGS-oldtmpfile.c = -fexceptions
+CFLAGS-fileops.c += -fexceptions
+CFLAGS-fputc.c += -fexceptions
+CFLAGS-fputwc.c += -fexceptions
+CFLAGS-freopen64.c += -fexceptions
+CFLAGS-freopen.c += -fexceptions
+CFLAGS-fseek.c += -fexceptions
+CFLAGS-fseeko64.c += -fexceptions
+CFLAGS-fseeko.c += -fexceptions
+CFLAGS-ftello64.c += -fexceptions
+CFLAGS-ftello.c += -fexceptions
+CFLAGS-fwide.c += -fexceptions
+CFLAGS-genops.c += -fexceptions
+CFLAGS-getc.c += -fexceptions
+CFLAGS-getchar.c += -fexceptions
+CFLAGS-getwc.c += -fexceptions
+CFLAGS-getwchar.c += -fexceptions
+CFLAGS-iofclose.c += -fexceptions
+CFLAGS-iofflush.c += -fexceptions
+CFLAGS-iofgetpos64.c += -fexceptions
+CFLAGS-iofgetpos.c += -fexceptions
+CFLAGS-iofgets.c += -fexceptions
+CFLAGS-iofgetws.c += -fexceptions
+CFLAGS-iofputs.c += -fexceptions
+CFLAGS-iofputws.c += -fexceptions
+CFLAGS-iofread.c += -fexceptions
+CFLAGS-iofsetpos64.c += -fexceptions
+CFLAGS-iofsetpos.c += -fexceptions
+CFLAGS-ioftell.c += -fexceptions
+CFLAGS-iofwrite.c += -fexceptions
+CFLAGS-iogetdelim.c += -fexceptions
+CFLAGS-iogetline.c += -fexceptions
+CFLAGS-iogets.c += -fexceptions
+CFLAGS-iogetwline.c += -fexceptions
+CFLAGS-ioputs.c += -fexceptions
+CFLAGS-ioseekoff.c += -fexceptions
+CFLAGS-ioseekpos.c += -fexceptions
+CFLAGS-iosetbuffer.c += -fexceptions
+CFLAGS-iosetvbuf.c += -fexceptions
+CFLAGS-ioungetc.c += -fexceptions
+CFLAGS-ioungetwc.c += -fexceptions
+CFLAGS-oldfileops.c += -fexceptions
+CFLAGS-oldiofclose.c += -fexceptions
+CFLAGS-oldiofgetpos64.c += -fexceptions
+CFLAGS-oldiofgetpos.c += -fexceptions
+CFLAGS-oldiofsetpos64.c += -fexceptions
+CFLAGS-oldiofsetpos.c += -fexceptions
+CFLAGS-peekc.c += -fexceptions
+CFLAGS-putc.c += -fexceptions
+CFLAGS-putchar.c += -fexceptions
+CFLAGS-putwc.c += -fexceptions
+CFLAGS-putwchar.c += -fexceptions
+CFLAGS-rewind.c += -fexceptions
+CFLAGS-wfileops.c += -fexceptions
+CFLAGS-wgenops.c += -fexceptions
+CFLAGS-oldiofopen.c += -fexceptions
+CFLAGS-iofopen.c += -fexceptions
+CFLAGS-iofopen64.c += -fexceptions
+CFLAGS-oldtmpfile.c += -fexceptions
 # XXX Do we need filedoalloc and wfiledoalloc?  Others?
 
-CFLAGS-tst_putwc.c = -DOBJPFX=\"$(objpfx)\"
+CFLAGS-tst_putwc.c += -DOBJPFX=\"$(objpfx)\"
 
 tst_wprintf2-ARGS = "Some Text"
 
 test-fmemopen-ENV = MALLOC_TRACE=$(objpfx)test-fmemopen.mtrace
 tst-fopenloc-ENV = MALLOC_TRACE=$(objpfx)tst-fopenloc.mtrace
+tst-bz22415-ENV = MALLOC_TRACE=$(objpfx)tst-bz22415.mtrace
 
 generated += test-fmemopen.mtrace test-fmemopen.check
 generated += tst-fopenloc.mtrace tst-fopenloc.check
+generated += tst-bz22415.mtrace tst-bz22415.check
 
 aux	:= fileops genops stdfiles stdio strops
 
@@ -167,7 +172,8 @@ shared-only-routines = oldiofopen oldiofdopen oldiofclose oldfileops	\
 		       oldiofsetpos64
 
 ifeq ($(run-built-tests),yes)
-tests-special += $(objpfx)test-freopen.out $(objpfx)test-fmemopen-mem.out
+tests-special += $(objpfx)test-freopen.out $(objpfx)test-fmemopen-mem.out \
+		 $(objpfx)tst-bz22415-mem.out
 ifeq (yes,$(build-shared))
 # Run tst-fopenloc-cmp.out and tst-openloc-mem.out only if shared
 # library is enabled since they depend on tst-fopenloc.out.
@@ -217,4 +223,8 @@ $(objpfx)test-fmemopen-mem.out: $(objpfx)test-fmemopen.out
 
 $(objpfx)tst-fopenloc-mem.out: $(objpfx)tst-fopenloc.out
 	$(common-objpfx)malloc/mtrace $(objpfx)tst-fopenloc.mtrace > $@; \
+	$(evaluate-test)
+
+$(objpfx)tst-bz22415-mem.out: $(objpfx)tst-bz22415.out
+	$(common-objpfx)malloc/mtrace $(objpfx)tst-bz22415.mtrace > $@; \
 	$(evaluate-test)

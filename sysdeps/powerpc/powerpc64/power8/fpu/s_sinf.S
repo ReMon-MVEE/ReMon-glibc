@@ -1,5 +1,5 @@
 /* Optimized sinf().  PowerPC64/POWER8 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
 #include <sysdep.h>
 #define _ERRNO_H	1
 #include <bits/errno.h>
+#include <libm-alias-float.h>
 
 #define FRAMESIZE (FRAME_MIN_SIZE+16)
 
@@ -516,4 +517,4 @@ L(DPone):
 L(DPtwo):
 	.8byte	0x4000000000000000	/* 2.0 */
 
-weak_alias(__sinf, sinf)
+libm_alias_float (__sin, sin)

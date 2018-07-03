@@ -1,5 +1,5 @@
 /* lrint(), sparc64 version.
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by David S. Miller <davem@davemloft.net>, 2012.
 
@@ -18,6 +18,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-double.h>
 
 	/* We pop constants into the FPU registers using the incoming
 	   argument stack slots, since this avoid having to use any PIC
@@ -57,7 +58,7 @@ ENTRY (__lrint)
 	retl
 	 ldx	[%sp + STACK_BIAS + 128], %o0
 END (__lrint)
-weak_alias (__lrint, lrint)
+libm_alias_double (__lrint, lrint)
 
 strong_alias (__lrint, __llrint)
-weak_alias (__llrint, llrint)
+libm_alias_double (__llrint, llrint)

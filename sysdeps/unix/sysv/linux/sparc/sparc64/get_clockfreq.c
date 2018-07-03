@@ -1,5 +1,5 @@
 /* Get frequency of the system processor.  sparc64 version.
-   Copyright (C) 2001-2017 Free Software Foundation, Inc.
+   Copyright (C) 2001-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -90,12 +90,12 @@ __get_clockfreq_via_proc_openprom (void)
   if (obp_fd != -1)
     {
       unsigned long int buf[4096 / sizeof (unsigned long int)];
-      struct dirent *dirp = (struct dirent *) buf;
+      struct dirent64 *dirp = (struct dirent64 *) buf;
       ssize_t len;
 
-      while ((len = __getdents (obp_fd, (char *) dirp, sizeof (buf))) > 0)
+      while ((len = __getdents64 (obp_fd, (char *) dirp, sizeof (buf))) > 0)
 	{
-	  struct dirent *this_dirp = dirp;
+	  struct dirent64 *this_dirp = dirp;
 
 	  while (len > 0)
 	    {
@@ -140,7 +140,7 @@ __get_clockfreq_via_proc_openprom (void)
 		break;
 
 	      len -= this_dirp->d_reclen;
-	      this_dirp = (struct dirent *)
+	      this_dirp = (struct dirent64 *)
 		((char *) this_dirp + this_dirp->d_reclen);
 	    }
 	  if (result != 0)

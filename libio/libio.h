@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Per Bothner <bothner@cygnus.com>.
 
@@ -25,151 +25,97 @@
    This exception applies to code released by its copyright holders
    in files containing the exception.  */
 
-#ifndef _IO_STDIO_H
-#define _IO_STDIO_H
+#ifndef _LIBIO_H
+#define _LIBIO_H 1
 
-#include <_G_config.h>
-/* ALL of these should be defined in _G_config.h */
-#define _IO_fpos_t _G_fpos_t
-#define _IO_fpos64_t _G_fpos64_t
-#define _IO_size_t size_t
-#define _IO_ssize_t __ssize_t
-#define _IO_off_t __off_t
-#define _IO_off64_t __off64_t
-#define _IO_pid_t __pid_t
-#define _IO_uid_t __uid_t
-#define _IO_iconv_t _G_iconv_t
-#define _IO_HAVE_ST_BLKSIZE _G_HAVE_ST_BLKSIZE
-#define _IO_BUFSIZ _G_BUFSIZ
-#define _IO_va_list _G_va_list
-#define _IO_wint_t wint_t
-
-/* This define avoids name pollution if we're using GNU stdarg.h */
-#define __need___va_list
-#include <stdarg.h>
-#ifdef __GNUC_VA_LIST
-# undef _IO_va_list
-# define _IO_va_list __gnuc_va_list
-#endif /* __GNUC_VA_LIST */
-
-#ifndef __P
-# include <sys/cdefs.h>
-#endif /*!__P*/
-
-#define _IO_UNIFIED_JUMPTABLES 1
-
-#ifndef EOF
-# define EOF (-1)
+#ifndef _LIBC
+# error "libio.h should only be included when building glibc itself"
 #endif
-#ifndef NULL
-# if defined __GNUG__ && \
-    (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 8))
-#  define NULL (__null)
-# else
-#  if !defined(__cplusplus)
-#   define NULL ((void*)0)
-#  else
-#   define NULL (0)
-#  endif
-# endif
+#ifdef _ISOMAC
+# error "libio.h should not be included under _ISOMAC"
 #endif
 
+#include <stdio.h>
+
+#if defined _IO_MTSAFE_IO && !defined _IO_lock_t_defined
+# error "Someone forgot to include stdio-lock.h"
+#endif
+
+#define __need_wchar_t
+#include <stddef.h>
+
+#include <bits/types/__mbstate_t.h>
+#include <bits/types/wint_t.h>
+#include <gconv.h>
+
+typedef union
+{
+  struct __gconv_info __cd;
+  struct
+  {
+    struct __gconv_info __cd;
+    struct __gconv_step_data __data;
+  } __combined;
+} _IO_iconv_t;
+
+#include <shlib-compat.h>
+
+/* _IO_seekoff modes */
 #define _IOS_INPUT	1
 #define _IOS_OUTPUT	2
-#define _IOS_ATEND	4
-#define _IOS_APPEND	8
-#define _IOS_TRUNC	16
-#define _IOS_NOCREATE	32
-#define _IOS_NOREPLACE	64
-#define _IOS_BIN	128
 
-/* Magic numbers and bits for the _flags field.
-   The magic numbers use the high-order bits of _flags;
-   the remaining bits are available for variable flags.
-   Note: The magic numbers must all be negative if stdio
-   emulation is desired. */
+/* Magic number and bits for the _flags field.  The magic number is
+   mostly vestigial, but preserved for compatibility.  It occupies the
+   high 16 bits of _flags; the low 16 bits are actual flag bits.  */
 
-#define _IO_MAGIC 0xFBAD0000 /* Magic number */
-#define _OLD_STDIO_MAGIC 0xFABC0000 /* Emulate old stdio. */
-#define _IO_MAGIC_MASK 0xFFFF0000
-#define _IO_USER_BUF 1 /* User owns buffer; don't delete it on close. */
-#define _IO_UNBUFFERED 2
-#define _IO_NO_READS 4 /* Reading not allowed */
-#define _IO_NO_WRITES 8 /* Writing not allowd */
-#define _IO_EOF_SEEN 0x10
-#define _IO_ERR_SEEN 0x20
-#define _IO_DELETE_DONT_CLOSE 0x40 /* Don't call close(_fileno) on cleanup. */
-#define _IO_LINKED 0x80 /* Set if linked (using _chain) to streambuf::_list_all.*/
-#define _IO_IN_BACKUP 0x100
-#define _IO_LINE_BUF 0x200
-#define _IO_TIED_PUT_GET 0x400 /* Set if put and get pointer logicly tied. */
-#define _IO_CURRENTLY_PUTTING 0x800
-#define _IO_IS_APPENDING 0x1000
-#define _IO_IS_FILEBUF 0x2000
-#define _IO_BAD_SEEN 0x4000
-#define _IO_USER_LOCK 0x8000
+#define _IO_MAGIC         0xFBAD0000 /* Magic number */
+#define _IO_MAGIC_MASK    0xFFFF0000
+#define _IO_USER_BUF          0x0001 /* Don't deallocate buffer on close. */
+#define _IO_UNBUFFERED        0x0002
+#define _IO_NO_READS          0x0004 /* Reading not allowed.  */
+#define _IO_NO_WRITES         0x0008 /* Writing not allowed.  */
+#define _IO_EOF_SEEN          0x0010
+#define _IO_ERR_SEEN          0x0020
+#define _IO_DELETE_DONT_CLOSE 0x0040 /* Don't call close(_fileno) on close.  */
+#define _IO_LINKED            0x0080 /* In the list of all open files.  */
+#define _IO_IN_BACKUP         0x0100
+#define _IO_LINE_BUF          0x0200
+#define _IO_TIED_PUT_GET      0x0400 /* Put and get pointer move in unison.  */
+#define _IO_CURRENTLY_PUTTING 0x0800
+#define _IO_IS_APPENDING      0x1000
+#define _IO_IS_FILEBUF        0x2000
+                           /* 0x4000  No longer used, reserved for compat.  */
+#define _IO_USER_LOCK         0x8000
 
+/* Bits for the _flags2 field.  */
 #define _IO_FLAGS2_MMAP 1
 #define _IO_FLAGS2_NOTCANCEL 2
-#ifdef _LIBC
-# define _IO_FLAGS2_FORTIFY 4
-#endif
+#define _IO_FLAGS2_FORTIFY 4
 #define _IO_FLAGS2_USER_WBUF 8
-#ifdef _LIBC
-# define _IO_FLAGS2_SCANF_STD 16
-# define _IO_FLAGS2_NOCLOSE 32
-# define _IO_FLAGS2_CLOEXEC 64
-# define _IO_FLAGS2_NEED_LOCK 128
-#endif
+#define _IO_FLAGS2_SCANF_STD 16
+#define _IO_FLAGS2_NOCLOSE 32
+#define _IO_FLAGS2_CLOEXEC 64
+#define _IO_FLAGS2_NEED_LOCK 128
 
-/* These are "formatting flags" matching the iostream fmtflags enum values. */
-#define _IO_SKIPWS 01
-#define _IO_LEFT 02
-#define _IO_RIGHT 04
-#define _IO_INTERNAL 010
-#define _IO_DEC 020
-#define _IO_OCT 040
-#define _IO_HEX 0100
-#define _IO_SHOWBASE 0200
-#define _IO_SHOWPOINT 0400
-#define _IO_UPPERCASE 01000
-#define _IO_SHOWPOS 02000
-#define _IO_SCIENTIFIC 04000
-#define _IO_FIXED 010000
-#define _IO_UNITBUF 020000
-#define _IO_STDIO 040000
-#define _IO_DONT_CLOSE 0100000
-#define _IO_BOOLALPHA 0200000
+/* _IO_pos_BAD is an off64_t value indicating error, unknown, or EOF.  */
+#define _IO_pos_BAD ((off64_t) -1)
 
+/* _IO_pos_adjust adjusts an off64_t by some number of bytes.  */
+#define _IO_pos_adjust(pos, delta) ((pos) += (delta))
 
-struct _IO_jump_t;  struct _IO_FILE;
+/* _IO_pos_0 is an off64_t value indicating beginning of file.  */
+#define _IO_pos_0 ((off64_t) 0)
 
-/* During the build of glibc itself, _IO_lock_t will already have been
-   defined by internal headers.  */
-#ifndef _IO_lock_t_defined
-typedef void _IO_lock_t;
-#endif
-
+struct _IO_jump_t;
 
 /* A streammarker remembers a position in a buffer. */
-
 struct _IO_marker {
   struct _IO_marker *_next;
-  struct _IO_FILE *_sbuf;
+  FILE *_sbuf;
   /* If _pos >= 0
  it points to _buf->Gbase()+_pos. FIXME comment */
   /* if _pos < 0, it points to _buf->eBptr()+_pos. FIXME comment */
   int _pos;
-#if 0
-    void set_streampos(streampos sp) { _spos = sp; }
-    void set_offset(int offset) { _pos = offset; _spos = (streampos)(-2); }
-  public:
-    streammarker(streambuf *sb);
-    ~streammarker();
-    int saving() { return  _spos == -2; }
-    int delta(streammarker&);
-    int delta();
-#endif
 };
 
 /* This is the structure from the libstdc++ codecvt class.  */
@@ -181,7 +127,6 @@ enum __codecvt_result
   __codecvt_noconv
 };
 
-#if defined _LIBC || defined _GLIBCPP_USE_WCHAR_T
 /* The order of the elements in the following struct must match the order
    of the virtual functions in the libstdc++ codecvt class.  */
 struct _IO_codecvt
@@ -204,7 +149,7 @@ struct _IO_codecvt
   int (*__codecvt_do_encoding) (struct _IO_codecvt *);
   int (*__codecvt_do_always_noconv) (struct _IO_codecvt *);
   int (*__codecvt_do_length) (struct _IO_codecvt *, __mbstate_t *,
-			      const char *, const char *, _IO_size_t);
+			      const char *, const char *, size_t);
   int (*__codecvt_do_max_length) (struct _IO_codecvt *);
 
   _IO_iconv_t __cd_in;
@@ -236,210 +181,64 @@ struct _IO_wide_data
 
   const struct _IO_jump_t *_wide_vtable;
 };
-#endif
-
-struct _IO_FILE {
-  int _flags;		/* High-order word is _IO_MAGIC; rest is flags. */
-#define _IO_file_flags _flags
-
-  /* The following pointers correspond to the C++ streambuf protocol. */
-  /* Note:  Tk uses the _IO_read_ptr and _IO_read_end fields directly. */
-  char* _IO_read_ptr;	/* Current read pointer */
-  char* _IO_read_end;	/* End of get area. */
-  char* _IO_read_base;	/* Start of putback+get area. */
-  char* _IO_write_base;	/* Start of put area. */
-  char* _IO_write_ptr;	/* Current put pointer. */
-  char* _IO_write_end;	/* End of put area. */
-  char* _IO_buf_base;	/* Start of reserve area. */
-  char* _IO_buf_end;	/* End of reserve area. */
-  /* The following fields are used to support backing up and undo. */
-  char *_IO_save_base; /* Pointer to start of non-current get area. */
-  char *_IO_backup_base;  /* Pointer to first valid character of backup area */
-  char *_IO_save_end; /* Pointer to end of non-current get area. */
-
-  struct _IO_marker *_markers;
-
-  struct _IO_FILE *_chain;
-
-  int _fileno;
-#if 0
-  int _blksize;
-#else
-  int _flags2;
-#endif
-  _IO_off_t _old_offset; /* This used to be _offset but it's too small.  */
-
-#define __HAVE_COLUMN /* temporary */
-  /* 1+column number of pbase(); 0 is unknown. */
-  unsigned short _cur_column;
-  signed char _vtable_offset;
-  char _shortbuf[1];
-
-  /*  char* _save_gptr;  char* _save_egptr; */
-
-  _IO_lock_t *_lock;
-#ifdef _IO_USE_OLD_IO_FILE
-};
-
-struct _IO_FILE_complete
-{
-  struct _IO_FILE _file;
-#endif
-#if defined _G_IO_IO_FILE_VERSION && _G_IO_IO_FILE_VERSION == 0x20001
-  _IO_off64_t _offset;
-# if defined _LIBC || defined _GLIBCPP_USE_WCHAR_T
-  /* Wide character stream stuff.  */
-  struct _IO_codecvt *_codecvt;
-  struct _IO_wide_data *_wide_data;
-  struct _IO_FILE *_freeres_list;
-  void *_freeres_buf;
-# else
-  void *__pad1;
-  void *__pad2;
-  void *__pad3;
-  void *__pad4;
-# endif
-  size_t __pad5;
-  int _mode;
-  /* Make sure we don't get into trouble again.  */
-  char _unused2[15 * sizeof (int) - 4 * sizeof (void *) - sizeof (size_t)];
-#endif
-};
-
-#ifndef __cplusplus
-typedef struct _IO_FILE _IO_FILE;
-#endif
 
 struct _IO_FILE_plus;
 
 extern struct _IO_FILE_plus _IO_2_1_stdin_;
 extern struct _IO_FILE_plus _IO_2_1_stdout_;
 extern struct _IO_FILE_plus _IO_2_1_stderr_;
-#ifndef _LIBC
-#define _IO_stdin ((_IO_FILE*)(&_IO_2_1_stdin_))
-#define _IO_stdout ((_IO_FILE*)(&_IO_2_1_stdout_))
-#define _IO_stderr ((_IO_FILE*)(&_IO_2_1_stderr_))
-#else
-extern _IO_FILE *_IO_stdin attribute_hidden;
-extern _IO_FILE *_IO_stdout attribute_hidden;
-extern _IO_FILE *_IO_stderr attribute_hidden;
-#endif
-
-
-/* Functions to do I/O and file management for a stream.  */
-
-/* Read NBYTES bytes from COOKIE into a buffer pointed to by BUF.
-   Return number of bytes read.  */
-typedef __ssize_t __io_read_fn (void *__cookie, char *__buf, size_t __nbytes);
-
-/* Write N bytes pointed to by BUF to COOKIE.  Write all N bytes
-   unless there is an error.  Return number of bytes written.  If
-   there is an error, return 0 and do not write anything.  If the file
-   has been opened for append (__mode.__append set), then set the file
-   pointer to the end of the file and then do the write; if not, just
-   write at the current file pointer.  */
-typedef __ssize_t __io_write_fn (void *__cookie, const char *__buf,
-				 size_t __n);
-
-/* Move COOKIE's file position to *POS bytes from the
-   beginning of the file (if W is SEEK_SET),
-   the current position (if W is SEEK_CUR),
-   or the end of the file (if W is SEEK_END).
-   Set *POS to the new file position.
-   Returns zero if successful, nonzero if not.  */
-typedef int __io_seek_fn (void *__cookie, _IO_off64_t *__pos, int __w);
-
-/* Close COOKIE.  */
-typedef int __io_close_fn (void *__cookie);
-
-
-#ifdef __USE_GNU
-/* User-visible names for the above.  */
-typedef __io_read_fn cookie_read_function_t;
-typedef __io_write_fn cookie_write_function_t;
-typedef __io_seek_fn cookie_seek_function_t;
-typedef __io_close_fn cookie_close_function_t;
-
-/* The structure with the cookie function pointers.  */
-typedef struct
-{
-  __io_read_fn *read;		/* Read bytes.  */
-  __io_write_fn *write;		/* Write bytes.  */
-  __io_seek_fn *seek;		/* Seek/tell file position.  */
-  __io_close_fn *close;		/* Close file.  */
-} _IO_cookie_io_functions_t;
-typedef _IO_cookie_io_functions_t cookie_io_functions_t;
+extern FILE *_IO_stdin attribute_hidden;
+extern FILE *_IO_stdout attribute_hidden;
+extern FILE *_IO_stderr attribute_hidden;
 
 struct _IO_cookie_file;
 
 /* Initialize one of those.  */
 extern void _IO_cookie_init (struct _IO_cookie_file *__cfile, int __read_write,
-			     void *__cookie, _IO_cookie_io_functions_t __fns);
-#endif
+			     void *__cookie, cookie_io_functions_t __fns);
 
+extern int __underflow (FILE *);
+extern wint_t __wunderflow (FILE *);
+extern wint_t __wuflow (FILE *);
+extern wint_t __woverflow (FILE *, wint_t);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define _IO_getc_unlocked(_fp) __getc_unlocked_body (_fp)
+#define _IO_peekc_unlocked(_fp)						\
+  (__glibc_unlikely ((_fp)->_IO_read_ptr >= (_fp)->_IO_read_end)	\
+   && __underflow (_fp) == EOF						\
+   ? EOF								\
+   : *(unsigned char *) (_fp)->_IO_read_ptr)
+#define _IO_putc_unlocked(_ch, _fp) __putc_unlocked_body (_ch, _fp)
 
-extern int __underflow (_IO_FILE *);
-extern int __uflow (_IO_FILE *);
-extern int __overflow (_IO_FILE *, int);
-#if defined _LIBC || defined _GLIBCPP_USE_WCHAR_T
-extern _IO_wint_t __wunderflow (_IO_FILE *);
-extern _IO_wint_t __wuflow (_IO_FILE *);
-extern _IO_wint_t __woverflow (_IO_FILE *, _IO_wint_t);
-#endif
-
-#if  __GNUC__ >= 3
-# define _IO_BE(expr, res) __builtin_expect ((expr), res)
-#else
-# define _IO_BE(expr, res) (expr)
-#endif
-
-#define _IO_getc_unlocked(_fp) \
-       (_IO_BE ((_fp)->_IO_read_ptr >= (_fp)->_IO_read_end, 0) \
-	? __uflow (_fp) : *(unsigned char *) (_fp)->_IO_read_ptr++)
-#define _IO_peekc_unlocked(_fp) \
-       (_IO_BE ((_fp)->_IO_read_ptr >= (_fp)->_IO_read_end, 0) \
-	  && __underflow (_fp) == EOF ? EOF \
-	: *(unsigned char *) (_fp)->_IO_read_ptr)
-#define _IO_putc_unlocked(_ch, _fp) \
-   (_IO_BE ((_fp)->_IO_write_ptr >= (_fp)->_IO_write_end, 0) \
-    ? __overflow (_fp, (unsigned char) (_ch)) \
-    : (unsigned char) (*(_fp)->_IO_write_ptr++ = (_ch)))
-
-#if defined _LIBC || defined _GLIBCPP_USE_WCHAR_T
-# define _IO_getwc_unlocked(_fp) \
-  (_IO_BE ((_fp)->_wide_data == NULL					\
-	   || ((_fp)->_wide_data->_IO_read_ptr				\
-	       >= (_fp)->_wide_data->_IO_read_end), 0)			\
-   ? __wuflow (_fp) : (_IO_wint_t) *(_fp)->_wide_data->_IO_read_ptr++)
-# define _IO_putwc_unlocked(_wch, _fp) \
-  (_IO_BE ((_fp)->_wide_data == NULL					\
-	   || ((_fp)->_wide_data->_IO_write_ptr				\
-	       >= (_fp)->_wide_data->_IO_write_end), 0)			\
+# define _IO_getwc_unlocked(_fp)					\
+  (__glibc_unlikely ((_fp)->_wide_data == NULL				\
+		     || ((_fp)->_wide_data->_IO_read_ptr		\
+			 >= (_fp)->_wide_data->_IO_read_end))		\
+   ? __wuflow (_fp) : (wint_t) *(_fp)->_wide_data->_IO_read_ptr++)
+# define _IO_putwc_unlocked(_wch, _fp)					\
+  (__glibc_unlikely ((_fp)->_wide_data == NULL				\
+		     || ((_fp)->_wide_data->_IO_write_ptr		\
+			 >= (_fp)->_wide_data->_IO_write_end))		\
    ? __woverflow (_fp, _wch)						\
-   : (_IO_wint_t) (*(_fp)->_wide_data->_IO_write_ptr++ = (_wch)))
-#endif
+   : (wint_t) (*(_fp)->_wide_data->_IO_write_ptr++ = (_wch)))
 
-#define _IO_feof_unlocked(__fp) (((__fp)->_flags & _IO_EOF_SEEN) != 0)
-#define _IO_ferror_unlocked(__fp) (((__fp)->_flags & _IO_ERR_SEEN) != 0)
+#define _IO_feof_unlocked(_fp) __feof_unlocked_body (_fp)
+#define _IO_ferror_unlocked(_fp) __ferror_unlocked_body (_fp)
 
-extern int _IO_getc (_IO_FILE *__fp);
-extern int _IO_putc (int __c, _IO_FILE *__fp);
-extern int _IO_feof (_IO_FILE *__fp) __THROW;
-extern int _IO_ferror (_IO_FILE *__fp) __THROW;
+extern int _IO_getc (FILE *__fp);
+extern int _IO_putc (int __c, FILE *__fp);
+extern int _IO_feof (FILE *__fp) __THROW;
+extern int _IO_ferror (FILE *__fp) __THROW;
 
-extern int _IO_peekc_locked (_IO_FILE *__fp);
+extern int _IO_peekc_locked (FILE *__fp);
 
 /* This one is for Emacs. */
 #define _IO_PENDING_OUTPUT_COUNT(_fp)	\
 	((_fp)->_IO_write_ptr - (_fp)->_IO_write_base)
 
-extern void _IO_flockfile (_IO_FILE *) __THROW;
-extern void _IO_funlockfile (_IO_FILE *) __THROW;
-extern int _IO_ftrylockfile (_IO_FILE *) __THROW;
+extern void _IO_flockfile (FILE *) __THROW;
+extern void _IO_funlockfile (FILE *) __THROW;
+extern int _IO_ftrylockfile (FILE *) __THROW;
 
 #define _IO_peekc(_fp) _IO_peekc_unlocked (_fp)
 #define _IO_flockfile(_fp) /**/
@@ -455,40 +254,35 @@ extern int _IO_ftrylockfile (_IO_FILE *) __THROW;
 #define _IO_need_lock(_fp) \
   (((_fp)->_flags2 & _IO_FLAGS2_NEED_LOCK) != 0)
 
-extern int _IO_vfscanf (_IO_FILE * __restrict, const char * __restrict,
-			_IO_va_list, int *__restrict);
-extern int _IO_vfprintf (_IO_FILE *__restrict, const char *__restrict,
-			 _IO_va_list);
-extern _IO_ssize_t _IO_padn (_IO_FILE *, int, _IO_ssize_t);
-extern _IO_size_t _IO_sgetn (_IO_FILE *, void *, _IO_size_t);
+extern int _IO_vfscanf (FILE * __restrict, const char * __restrict,
+			__gnuc_va_list, int *__restrict);
+extern int _IO_vfprintf (FILE *__restrict, const char *__restrict,
+			 __gnuc_va_list);
+extern __ssize_t _IO_padn (FILE *, int, __ssize_t);
+extern size_t _IO_sgetn (FILE *, void *, size_t);
 
-extern _IO_off64_t _IO_seekoff (_IO_FILE *, _IO_off64_t, int, int);
-extern _IO_off64_t _IO_seekpos (_IO_FILE *, _IO_off64_t, int);
+extern off64_t _IO_seekoff (FILE *, off64_t, int, int);
+extern off64_t _IO_seekpos (FILE *, off64_t, int);
 
-extern void _IO_free_backup_area (_IO_FILE *) __THROW;
+extern void _IO_free_backup_area (FILE *) __THROW;
 
-#if defined _LIBC || defined _GLIBCPP_USE_WCHAR_T
-extern _IO_wint_t _IO_getwc (_IO_FILE *__fp);
-extern _IO_wint_t _IO_putwc (wchar_t __wc, _IO_FILE *__fp);
-extern int _IO_fwide (_IO_FILE *__fp, int __mode) __THROW;
-# if __GNUC__ >= 2
-/* While compiling glibc we have to handle compatibility with very old
-   versions.  */
-#  if defined _LIBC && defined SHARED
-#   include <shlib-compat.h>
-#   if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_1)
-#    define _IO_fwide_maybe_incompatible \
-  (__builtin_expect (&_IO_stdin_used == NULL, 0))
+
+extern wint_t _IO_getwc (FILE *__fp);
+extern wint_t _IO_putwc (wchar_t __wc, FILE *__fp);
+extern int _IO_fwide (FILE *__fp, int __mode) __THROW;
+
+#if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_1)
+#  define _IO_fwide_maybe_incompatible \
+  (__glibc_unlikely (&_IO_stdin_used == NULL))
 extern const int _IO_stdin_used;
 weak_extern (_IO_stdin_used);
-#   endif
-#  endif
-#  ifndef _IO_fwide_maybe_incompatible
-#   define _IO_fwide_maybe_incompatible (0)
-#  endif
+#else
+# define _IO_fwide_maybe_incompatible (0)
+#endif
+
 /* A special optimized version of the function above.  It optimizes the
    case of initializing an unoriented byte stream.  */
-#  define _IO_fwide(__fp, __mode) \
+#define _IO_fwide(__fp, __mode) \
   ({ int __result = (__mode);						      \
      if (__result < 0 && ! _IO_fwide_maybe_incompatible)		      \
        {								      \
@@ -502,22 +296,51 @@ weak_extern (_IO_stdin_used);
      else								      \
        __result = _IO_fwide (__fp, __result);				      \
      __result; })
-# endif
 
-extern int _IO_vfwscanf (_IO_FILE * __restrict, const wchar_t * __restrict,
-			 _IO_va_list, int *__restrict);
-extern int _IO_vfwprintf (_IO_FILE *__restrict, const wchar_t *__restrict,
-			  _IO_va_list);
-extern _IO_ssize_t _IO_wpadn (_IO_FILE *, wint_t, _IO_ssize_t);
-extern void _IO_free_wbackup_area (_IO_FILE *) __THROW;
-#endif
+extern int _IO_vfwscanf (FILE * __restrict, const wchar_t * __restrict,
+			 __gnuc_va_list, int *__restrict);
+extern int _IO_vfwprintf (FILE *__restrict, const wchar_t *__restrict,
+			  __gnuc_va_list);
+extern __ssize_t _IO_wpadn (FILE *, wint_t, __ssize_t);
+extern void _IO_free_wbackup_area (FILE *) __THROW;
 
 #ifdef __LDBL_COMPAT
-# include <bits/libio-ldbl.h>
+__LDBL_REDIR_DECL (_IO_vfscanf)
+__LDBL_REDIR_DECL (_IO_vfprintf)
 #endif
 
-#ifdef __cplusplus
-}
-#endif
+libc_hidden_proto (__overflow)
+libc_hidden_proto (__underflow)
+libc_hidden_proto (__uflow)
+libc_hidden_proto (__woverflow)
+libc_hidden_proto (__wunderflow)
+libc_hidden_proto (__wuflow)
+libc_hidden_proto (_IO_free_backup_area)
+libc_hidden_proto (_IO_free_wbackup_area)
+libc_hidden_proto (_IO_padn)
+libc_hidden_proto (_IO_putc)
+libc_hidden_proto (_IO_sgetn)
+libc_hidden_proto (_IO_vfprintf)
+libc_hidden_proto (_IO_vfscanf)
 
-#endif /* _IO_STDIO_H */
+#ifdef _IO_MTSAFE_IO
+# undef _IO_peekc
+# undef _IO_flockfile
+# undef _IO_funlockfile
+# undef _IO_ftrylockfile
+
+# define _IO_peekc(_fp) _IO_peekc_locked (_fp)
+# if _IO_lock_inexpensive
+#  define _IO_flockfile(_fp) \
+  if (((_fp)->_flags & _IO_USER_LOCK) == 0) _IO_lock_lock (*(_fp)->_lock)
+#  define _IO_funlockfile(_fp) \
+  if (((_fp)->_flags & _IO_USER_LOCK) == 0) _IO_lock_unlock (*(_fp)->_lock)
+# else
+#  define _IO_flockfile(_fp) \
+  if (((_fp)->_flags & _IO_USER_LOCK) == 0) _IO_flockfile (_fp)
+#  define _IO_funlockfile(_fp) \
+  if (((_fp)->_flags & _IO_USER_LOCK) == 0) _IO_funlockfile (_fp)
+# endif
+#endif /* _IO_MTSAFE_IO */
+
+#endif /* _LIBIO_H */

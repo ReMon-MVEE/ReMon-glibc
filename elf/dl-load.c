@@ -1,5 +1,5 @@
 /* Map in a shared object's segments from the file.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -33,10 +33,10 @@
 #include "dynamic-link.h"
 #include <abi-tag.h>
 #include <stackinfo.h>
-#include <caller.h>
 #include <sysdep.h>
 #include <stap-probe.h>
 #include <libc-pointer-arith.h>
+#include <array_length.h>
 
 #include <dl-dst.h>
 #include <dl-load.h>
@@ -103,7 +103,9 @@ static size_t ncapstr attribute_relro;
 static size_t max_capstrlen attribute_relro;
 
 
-/* Get the generated information about the trusted directories.  */
+/* Get the generated information about the trusted directories.  Use
+   an array of concatenated strings to avoid relocations.  See
+   gen-trusted-dirs.awk.  */
 #include "trusted-dirs.h"
 
 static const char system_dirs[] = SYSTEM_DIRS;
@@ -111,27 +113,7 @@ static const size_t system_dirs_len[] =
 {
   SYSTEM_DIRS_LEN
 };
-#define nsystem_dirs_len \
-  (sizeof (system_dirs_len) / sizeof (system_dirs_len[0]))
-
-
-static bool
-is_trusted_path (const char *path, size_t len)
-{
-  const char *trun = system_dirs;
-
-  for (size_t idx = 0; idx < nsystem_dirs_len; ++idx)
-    {
-      if (len == system_dirs_len[idx] && memcmp (trun, path, len) == 0)
-	/* Found it.  */
-	return true;
-
-      trun += system_dirs_len[idx] + 1;
-    }
-
-  return false;
-}
-
+#define nsystem_dirs_len array_length (system_dirs_len)
 
 static bool
 is_trusted_path_normalize (const char *path, size_t len)
@@ -197,8 +179,7 @@ is_trusted_path_normalize (const char *path, size_t len)
 
 
 static size_t
-is_dst (const char *start, const char *name, const char *str,
-	int is_path, int secure)
+is_dst (const char *start, const char *name, const char *str, int secure)
 {
   size_t len;
   bool is_curly = false;
@@ -223,14 +204,12 @@ is_dst (const char *start, const char *name, const char *str,
       /* Skip over closing curly brace and adjust for the --name.  */
       len += 2;
     }
-  else if (name[len] != '\0' && name[len] != '/'
-	   && (!is_path || name[len] != ':'))
+  else if (name[len] != '\0' && name[len] != '/')
     return 0;
 
   if (__glibc_unlikely (secure)
-      && ((name[len] != '\0' && name[len] != '/'
-	   && (!is_path || name[len] != ':'))
-	  || (name != start + 1 && (!is_path || name[-2] != ':'))))
+      && ((name[len] != '\0' && name[len] != '/')
+	  || (name != start + 1)))
     return 0;
 
   return len;
@@ -238,7 +217,7 @@ is_dst (const char *start, const char *name, const char *str,
 
 
 size_t
-_dl_dst_count (const char *name, int is_path)
+_dl_dst_count (const char *name)
 {
   const char *const start = name;
   size_t cnt = 0;
@@ -250,10 +229,9 @@ _dl_dst_count (const char *name, int is_path)
       /* $ORIGIN is not expanded for SUID/GUID programs (except if it
 	 is $ORIGIN alone) and it must always appear first in path.  */
       ++name;
-      if ((len = is_dst (start, name, "ORIGIN", is_path,
-			 __libc_enable_secure)) != 0
-	  || (len = is_dst (start, name, "PLATFORM", is_path, 0)) != 0
-	  || (len = is_dst (start, name, "LIB", is_path, 0)) != 0)
+      if ((len = is_dst (start, name, "ORIGIN", __libc_enable_secure)) != 0
+	  || (len = is_dst (start, name, "PLATFORM", 0)) != 0
+	  || (len = is_dst (start, name, "LIB", 0)) != 0)
 	++cnt;
 
       name = strchr (name + len, '$');
@@ -265,8 +243,7 @@ _dl_dst_count (const char *name, int is_path)
 
 
 char *
-_dl_dst_substitute (struct link_map *l, const char *name, char *result,
-		    int is_path)
+_dl_dst_substitute (struct link_map *l, const char *name, char *result)
 {
   const char *const start = name;
 
@@ -286,16 +263,15 @@ _dl_dst_substitute (struct link_map *l, const char *name, char *result,
 	  size_t len;
 
 	  ++name;
-	  if ((len = is_dst (start, name, "ORIGIN", is_path,
-			     __libc_enable_secure)) != 0)
+	  if ((len = is_dst (start, name, "ORIGIN", __libc_enable_secure)) != 0)
 	    {
 	      repl = l->l_origin;
 	      check_for_trusted = (__libc_enable_secure
 				   && l->l_type == lt_executable);
 	    }
-	  else if ((len = is_dst (start, name, "PLATFORM", is_path, 0)) != 0)
+	  else if ((len = is_dst (start, name, "PLATFORM", 0)) != 0)
 	    repl = GLRO(dl_platform);
-	  else if ((len = is_dst (start, name, "LIB", is_path, 0)) != 0)
+	  else if ((len = is_dst (start, name, "LIB", 0)) != 0)
 	    repl = DL_DST_LIB;
 
 	  if (repl != NULL && repl != (const char *) -1)
@@ -308,13 +284,7 @@ _dl_dst_substitute (struct link_map *l, const char *name, char *result,
 	      /* We cannot use this path element, the value of the
 		 replacement is unknown.  */
 	      wp = last_elem;
-	      name += len;
-	      while (*name != '\0' && (!is_path || *name != ':'))
-		++name;
-	      /* Also skip following colon if this is the first rpath
-		 element, but keep an empty element at the end.  */
-	      if (wp == result && is_path && *name == ':' && name[1] != '\0')
-		++name;
+	      break;
 	    }
 	  else
 	    /* No DST we recognize.  */
@@ -323,19 +293,6 @@ _dl_dst_substitute (struct link_map *l, const char *name, char *result,
       else
 	{
 	  *wp++ = *name++;
-	  if (is_path && *name == ':')
-	    {
-	      /* In SUID/SGID programs, after $ORIGIN expansion the
-		 normalized path must be rooted in one of the trusted
-		 directories.  */
-	      if (__glibc_unlikely (check_for_trusted)
-		  && !is_trusted_path_normalize (last_elem, wp - last_elem))
-		wp = last_elem;
-	      else
-		last_elem = wp;
-
-	      check_for_trusted = false;
-	    }
 	}
     }
   while (*name != '\0');
@@ -358,7 +315,7 @@ _dl_dst_substitute (struct link_map *l, const char *name, char *result,
    belonging to the map is loaded.  In this case the path element
    containing $ORIGIN is left out.  */
 static char *
-expand_dynamic_string_token (struct link_map *l, const char *s, int is_path)
+expand_dynamic_string_token (struct link_map *l, const char *s)
 {
   /* We make two runs over the string.  First we determine how large the
      resulting string is and then we copy it over.  Since this is no
@@ -369,7 +326,7 @@ expand_dynamic_string_token (struct link_map *l, const char *s, int is_path)
   char *result;
 
   /* Determine the number of DST elements.  */
-  cnt = DL_DST_COUNT (s, is_path);
+  cnt = DL_DST_COUNT (s);
 
   /* If we do not have to replace anything simply copy the string.  */
   if (__glibc_likely (cnt == 0))
@@ -383,7 +340,7 @@ expand_dynamic_string_token (struct link_map *l, const char *s, int is_path)
   if (result == NULL)
     return NULL;
 
-  return _dl_dst_substitute (l, s, result, is_path);
+  return _dl_dst_substitute (l, s, result);
 }
 
 
@@ -427,42 +384,43 @@ static size_t max_dirnamelen;
 
 static struct r_search_path_elem **
 fillin_rpath (char *rpath, struct r_search_path_elem **result, const char *sep,
-	      int check_trusted, const char *what, const char *where,
-	      struct link_map *l)
+	      const char *what, const char *where, struct link_map *l)
 {
   char *cp;
   size_t nelems = 0;
-  char *to_free;
 
   while ((cp = __strsep (&rpath, sep)) != NULL)
     {
       struct r_search_path_elem *dirp;
+      char *to_free = NULL;
+      size_t len = 0;
 
-      to_free = cp = expand_dynamic_string_token (l, cp, 1);
-
-      size_t len = strlen (cp);
-
-      /* `strsep' can pass an empty string.  This has to be
-	 interpreted as `use the current directory'. */
-      if (len == 0)
+      /* `strsep' can pass an empty string.  */
+      if (*cp != '\0')
 	{
-	  static const char curwd[] = "./";
-	  cp = (char *) curwd;
-	}
+	  to_free = cp = expand_dynamic_string_token (l, cp);
 
-      /* Remove trailing slashes (except for "/").  */
-      while (len > 1 && cp[len - 1] == '/')
-	--len;
+	  /* expand_dynamic_string_token can return NULL in case of empty
+	     path or memory allocation failure.  */
+	  if (cp == NULL)
+	    continue;
 
-      /* Now add one if there is none so far.  */
-      if (len > 0 && cp[len - 1] != '/')
-	cp[len++] = '/';
+	  /* Compute the length after dynamic string token expansion and
+	     ignore empty paths.  */
+	  len = strlen (cp);
+	  if (len == 0)
+	    {
+	      free (to_free);
+	      continue;
+	    }
 
-      /* Make sure we don't use untrusted directories if we run SUID.  */
-      if (__glibc_unlikely (check_trusted) && !is_trusted_path (cp, len))
-	{
-	  free (to_free);
-	  continue;
+	  /* Remove trailing slashes (except for "/").  */
+	  while (len > 1 && cp[len - 1] == '/')
+	    --len;
+
+	  /* Now add one if there is none so far.  */
+	  if (len > 0 && cp[len - 1] != '/')
+	    cp[len++] = '/';
 	}
 
       /* See if this directory is already known.  */
@@ -540,7 +498,6 @@ decompose_rpath (struct r_search_path_struct *sps,
 {
   /* Make a copy we can work with.  */
   const char *where = l->l_name;
-  char *copy;
   char *cp;
   struct r_search_path_elem **result;
   size_t nelems;
@@ -579,20 +536,19 @@ decompose_rpath (struct r_search_path_struct *sps,
       while (*inhp != '\0');
     }
 
+  /* Ignore empty rpaths.  */
+  if (*rpath == '\0')
+    {
+      sps->dirs = (struct r_search_path_elem **) -1;
+      return false;
+    }
+
   /* Make a writable copy.  */
-  copy = __strdup (rpath);
+  char *copy = __strdup (rpath);
   if (copy == NULL)
     {
       errstring = N_("cannot create RUNPATH/RPATH copy");
       goto signal_error;
-    }
-
-  /* Ignore empty rpaths.  */
-  if (*copy == 0)
-    {
-      free (copy);
-      sps->dirs = (struct r_search_path_elem **) -1;
-      return false;
     }
 
   /* Count the number of necessary elements in the result array.  */
@@ -613,11 +569,19 @@ decompose_rpath (struct r_search_path_struct *sps,
       _dl_signal_error (ENOMEM, NULL, NULL, errstring);
     }
 
-  fillin_rpath (copy, result, ":", 0, what, where, l);
+  fillin_rpath (copy, result, ":", what, where, l);
 
   /* Free the copied RPATH string.  `fillin_rpath' make own copies if
      necessary.  */
   free (copy);
+
+  /* There is no path after expansion.  */
+  if (result[0] == NULL)
+    {
+      free (result);
+      sps->dirs = (struct r_search_path_elem **) -1;
+      return false;
+    }
 
   sps->dirs = result;
   /* The caller will change this value if we haven't used a real malloc.  */
@@ -685,9 +649,8 @@ _dl_init_paths (const char *llp)
 		 + ncapstr * sizeof (enum r_dir_status))
 		/ sizeof (struct r_search_path_elem));
 
-  rtld_search_dirs.dirs[0] = (struct r_search_path_elem *)
-    malloc ((sizeof (system_dirs) / sizeof (system_dirs[0]))
-	    * round_size * sizeof (struct r_search_path_elem));
+  rtld_search_dirs.dirs[0] = malloc (nsystem_dirs_len * round_size
+				     * sizeof (*rtld_search_dirs.dirs[0]));
   if (rtld_search_dirs.dirs[0] == NULL)
     {
       errstring = N_("cannot create cache for search path");
@@ -773,37 +736,14 @@ _dl_init_paths (const char *llp)
 
   if (llp != NULL && *llp != '\0')
     {
-      size_t nllp;
-      const char *cp = llp;
-      char *llp_tmp;
-
-#ifdef SHARED
-      /* Expand DSTs.  */
-      size_t cnt = DL_DST_COUNT (llp, 1);
-      if (__glibc_likely (cnt == 0))
-	llp_tmp = strdupa (llp);
-      else
-	{
-	  /* Determine the length of the substituted string.  */
-	  size_t total = DL_DST_REQUIRED (l, llp, strlen (llp), cnt);
-
-	  /* Allocate the necessary memory.  */
-	  llp_tmp = (char *) alloca (total + 1);
-	  llp_tmp = _dl_dst_substitute (l, llp, llp_tmp, 1);
-	}
-#else
-      llp_tmp = strdupa (llp);
-#endif
+      char *llp_tmp = strdupa (llp);
 
       /* Decompose the LD_LIBRARY_PATH contents.  First determine how many
 	 elements it has.  */
-      nllp = 1;
-      while (*cp)
-	{
-	  if (*cp == ':' || *cp == ';')
-	    ++nllp;
-	  ++cp;
-	}
+      size_t nllp = 1;
+      for (const char *cp = llp_tmp; *cp != '\0'; ++cp)
+	if (*cp == ':' || *cp == ';')
+	  ++nllp;
 
       env_path_list.dirs = (struct r_search_path_elem **)
 	malloc ((nllp + 1) * sizeof (struct r_search_path_elem *));
@@ -814,8 +754,7 @@ _dl_init_paths (const char *llp)
 	}
 
       (void) fillin_rpath (llp_tmp, env_path_list.dirs, ":;",
-			   __libc_enable_secure, "LD_LIBRARY_PATH",
-			   NULL, l);
+			   "LD_LIBRARY_PATH", NULL, l);
 
       if (env_path_list.dirs[0] == NULL)
 	{
@@ -1052,8 +991,14 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 	     segments are mapped in.  We record the addresses it says
 	     verbatim, and later correct for the run-time load address.  */
 	case PT_DYNAMIC:
-	  l->l_ld = (void *) ph->p_vaddr;
-	  l->l_ldnum = ph->p_memsz / sizeof (ElfW(Dyn));
+	  if (ph->p_filesz)
+	    {
+	      /* Debuginfo only files from "objcopy --only-keep-debug"
+		 contain a PT_DYNAMIC segment with p_filesz == 0.  Skip
+		 such a segment to avoid a crash later.  */
+	      l->l_ld = (void *) ph->p_vaddr;
+	      l->l_ldnum = ph->p_memsz / sizeof (ElfW(Dyn));
+	    }
 	  break;
 
 	case PT_PHDR:
@@ -1237,12 +1182,6 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 
   if (__glibc_unlikely ((stack_flags &~ GL(dl_stack_flags)) & PF_X))
     {
-      if (__glibc_unlikely (__check_caller (RETURN_ADDRESS (0), allow_ldso) != 0))
-	{
-	  errstring = N_("invalid caller");
-	  goto call_lose;
-	}
-
       /* The stack is presently not executable, but this module
 	 requires that it be executable.  We must change the
 	 protection of the variable which contains the flags used in
@@ -1523,6 +1462,7 @@ open_verify (const char *name, int fd,
       ElfW(Ehdr) *ehdr;
       ElfW(Phdr) *phdr, *ph;
       ElfW(Word) *abi_note;
+      ElfW(Word) *abi_note_malloced = NULL;
       unsigned int osversion;
       size_t maplength;
 
@@ -1677,23 +1617,49 @@ open_verify (const char *name, int fd,
 	if (ph->p_type == PT_NOTE && ph->p_filesz >= 32 && ph->p_align >= 4)
 	  {
 	    ElfW(Addr) size = ph->p_filesz;
+	    /* NB: Some PT_NOTE segment may have alignment value of 0
+	       or 1.  gABI specifies that PT_NOTE segments should be
+	       aligned to 4 bytes in 32-bit objects and to 8 bytes in
+	       64-bit objects.  As a Linux extension, we also support
+	       4 byte alignment in 64-bit objects.  If p_align is less
+	       than 4, we treate alignment as 4 bytes since some note
+	       segments have 0 or 1 byte alignment.   */
+	    ElfW(Addr) align = ph->p_align;
+	    if (align < 4)
+	      align = 4;
+	    else if (align != 4 && align != 8)
+	      continue;
 
 	    if (ph->p_offset + size <= (size_t) fbp->len)
 	      abi_note = (void *) (fbp->buf + ph->p_offset);
 	    else
 	      {
-		abi_note = alloca (size);
+		/* Note: __libc_use_alloca is not usable here, because
+		   thread info may not have been set up yet.  */
+		if (size < __MAX_ALLOCA_CUTOFF)
+		  abi_note = alloca (size);
+		else
+		  {
+		    /* There could be multiple PT_NOTEs.  */
+		    abi_note_malloced = realloc (abi_note_malloced, size);
+		    if (abi_note_malloced == NULL)
+		      goto read_error;
+
+		    abi_note = abi_note_malloced;
+		  }
 		__lseek (fd, ph->p_offset, SEEK_SET);
 		if (__libc_read (fd, (void *) abi_note, size) != size)
-		  goto read_error;
+		  {
+		    free (abi_note_malloced);
+		    goto read_error;
+		  }
 	      }
 
 	    while (memcmp (abi_note, &expected_note, sizeof (expected_note)))
 	      {
-#define ROUND(len) (((len) + sizeof (ElfW(Word)) - 1) & -sizeof (ElfW(Word)))
-		ElfW(Addr) note_size = 3 * sizeof (ElfW(Word))
-				       + ROUND (abi_note[0])
-				       + ROUND (abi_note[1]);
+		ElfW(Addr) note_size
+		  = ELF_NOTE_NEXT_OFFSET (abi_note[0], abi_note[1],
+					  align);
 
 		if (size - 32 < note_size)
 		  {
@@ -1721,6 +1687,7 @@ open_verify (const char *name, int fd,
 
 	    break;
 	  }
+      free (abi_note_malloced);
     }
 
   return fd;
@@ -2124,7 +2091,7 @@ _dl_map_object (struct link_map *loader, const char *name,
     {
       /* The path may contain dynamic string tokens.  */
       realname = (loader
-		  ? expand_dynamic_string_token (loader, name, 0)
+		  ? expand_dynamic_string_token (loader, name)
 		  : __strdup (name));
       if (realname == NULL)
 	fd = -1;

@@ -1,5 +1,5 @@
 /* Round float to int floating-point values, sparc64 version.
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by David S. Miller <davem@davemloft.net>, 2012.
 
@@ -18,6 +18,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-float.h>
 
 	/* We pop constants into the FPU registers using the incoming
 	   argument stack slots, since this avoid having to use any PIC
@@ -53,4 +54,4 @@ ENTRY (__rintf)
 	retl
 	 fors	%f0, SIGN_BIT, %f0
 END (__rintf)
-weak_alias (__rintf, rintf)
+libm_alias_float (__rint, rint)

@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -307,6 +307,8 @@ SYSCALL_ERROR_LABEL_DCL:                            \
 /* Pointer mangling is not yet supported for Microblaze.  */
 # define PTR_MANGLE(var) (void) (var)
 # define PTR_DEMANGLE(var) (void) (var)
+
+# define SINGLE_THREAD_BY_GLOBAL	1
 
 #endif /* not __ASSEMBLER__ */
 

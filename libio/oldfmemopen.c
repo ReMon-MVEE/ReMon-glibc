@@ -1,5 +1,5 @@
 /* Fmemopen implementation.
-   Copyright (C) 2000-2017 Free Software Foundation, Inc.
+   Copyright (C) 2000-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Hanno Mueller, kontakt@hanno.de, 2000.
 
@@ -71,7 +71,6 @@
 #if SHLIB_COMPAT (libc, GLIBC_2_2, GLIBC_2_22)
 
 #include <errno.h>
-#include <libio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -86,7 +85,7 @@ struct fmemopen_cookie_struct
   int mybuffer;
   int binmode;
   size_t size;
-  _IO_off64_t pos;
+  off64_t pos;
   size_t maxpos;
 };
 
@@ -150,9 +149,9 @@ fmemopen_write (void *cookie, const char *b, size_t s)
 
 
 static int
-fmemopen_seek (void *cookie, _IO_off64_t *p, int w)
+fmemopen_seek (void *cookie, off64_t *p, int w)
 {
-  _IO_off64_t np;
+  off64_t np;
   fmemopen_cookie_t *c;
 
   c = (fmemopen_cookie_t *) cookie;

@@ -1,6 +1,6 @@
 /* Round to nearest integer value, rounding halfway cases to even.
    ldbl-96 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
 
 #include <math.h>
 #include <math_private.h>
+#include <libm-alias-ldouble.h>
 #include <stdint.h>
 
 #define BIAS 0x3fff
@@ -26,7 +27,7 @@
 #define MAX_EXP (2 * BIAS + 1)
 
 long double
-roundevenl (long double x)
+__roundevenl (long double x)
 {
   uint16_t se;
   uint32_t hx, lx;
@@ -122,3 +123,4 @@ roundevenl (long double x)
   SET_LDOUBLE_WORDS (x, se, hx, lx);
   return x;
 }
+libm_alias_ldouble (__roundeven, roundeven)

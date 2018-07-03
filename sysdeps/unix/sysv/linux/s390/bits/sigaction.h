@@ -1,5 +1,5 @@
 /* Definitions for 31 & 64 bit S/390 sigaction.
-   Copyright (C) 2001-2017 Free Software Foundation, Inc.
+   Copyright (C) 2001-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,6 +15,9 @@
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
+
+#ifndef _BITS_SIGACTION_H
+#define _BITS_SIGACTION_H 1
 
 #ifndef _SIGNAL_H
 # error "Never include <bits/sigaction.h> directly; use <signal.h> instead."
@@ -110,3 +113,5 @@ struct sigaction
 #define	SIG_BLOCK     0		 /* Block signals.  */
 #define	SIG_UNBLOCK   1		 /* Unblock signals.  */
 #define	SIG_SETMASK   2		 /* Set the set of blocked signals.  */
+
+#endif

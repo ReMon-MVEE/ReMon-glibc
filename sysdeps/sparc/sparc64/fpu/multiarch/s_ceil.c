@@ -1,5 +1,5 @@
 /* ceil function, sparc64 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,17 +16,15 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#ifdef HAVE_AS_VIS3_SUPPORT
-# include <sparc-ifunc.h>
-# include <math.h>
+#include <sparc-ifunc.h>
+#include <math.h>
+#include <libm-alias-double.h>
 
-extern double __ceil_vis3 (double);
-extern double __ceil_generic (double);
+extern __typeof (ceil) __ceil_vis3 attribute_hidden;
+extern __typeof (ceil) __ceil_generic attribute_hidden;
 
-sparc_libm_ifunc(__ceil, hwcap & HWCAP_SPARC_VIS3 ? __ceil_vis3 : __ceil_generic);
-weak_alias (__ceil, ceil)
-
-# define __ceil __ceil_generic
-#endif
-
-#include <sysdeps/ieee754/dbl-64/wordsize-64/s_ceil.c>
+sparc_libm_ifunc (__ceil,
+		  hwcap & HWCAP_SPARC_VIS3
+		  ? __ceil_vis3
+		  : __ceil_generic)
+libm_alias_double (__ceil, ceil)

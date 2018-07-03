@@ -1,5 +1,5 @@
 /* Machine-dependent ELF dynamic relocation inline functions.  i386 version.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -320,13 +320,12 @@ elf_machine_rel (struct link_map *map, const Elf32_Rel *reloc,
       const Elf32_Sym *const refsym = sym;
 # endif
       struct link_map *sym_map = RESOLVE_MAP (&sym, version, r_type);
-      Elf32_Addr value = sym_map == NULL ? 0 : sym_map->l_addr + sym->st_value;
+      Elf32_Addr value = SYMBOL_ADDRESS (sym_map, sym, true);
 
       if (sym != NULL
-	  && __builtin_expect (ELFW(ST_TYPE) (sym->st_info) == STT_GNU_IFUNC,
-			       0)
-	  && __builtin_expect (sym->st_shndx != SHN_UNDEF, 1)
-	  && __builtin_expect (!skip_ifunc, 1))
+	  && __glibc_unlikely (ELFW(ST_TYPE) (sym->st_info) == STT_GNU_IFUNC)
+	  && __glibc_likely (sym->st_shndx != SHN_UNDEF)
+	  && __glibc_likely (!skip_ifunc))
 	{
 # ifndef RTLD_BOOTSTRAP
 	  if (sym_map != map
@@ -456,8 +455,8 @@ elf_machine_rel (struct link_map *map, const Elf32_Rel *reloc,
 	    /* This can happen in trace mode if an object could not be
 	       found.  */
 	    break;
-	  if (__builtin_expect (sym->st_size > refsym->st_size, 0)
-	      || (__builtin_expect (sym->st_size < refsym->st_size, 0)
+	  if (__glibc_unlikely (sym->st_size > refsym->st_size)
+	      || (__glibc_unlikely(sym->st_size < refsym->st_size)
 		  && GLRO(dl_verbose)))
 	    {
 	      const char *strtab;
@@ -501,12 +500,12 @@ elf_machine_rela (struct link_map *map, const Elf32_Rela *reloc,
       const Elf32_Sym *const refsym = sym;
 #  endif
       struct link_map *sym_map = RESOLVE_MAP (&sym, version, r_type);
-      Elf32_Addr value = sym == NULL ? 0 : sym_map->l_addr + sym->st_value;
+      Elf32_Addr value = SYMBOL_ADDRESS (sym_map, sym, true);
 
       if (sym != NULL
-	  && __builtin_expect (sym->st_shndx != SHN_UNDEF, 1)
-	  && __builtin_expect (ELFW(ST_TYPE) (sym->st_info) == STT_GNU_IFUNC, 0)
-	  && __builtin_expect (!skip_ifunc, 1))
+	  && __glibc_likely (sym->st_shndx != SHN_UNDEF)
+	  && __glibc_unlikely (ELFW(ST_TYPE) (sym->st_info) == STT_GNU_IFUNC)
+	  && __glibc_likely (!skip_ifunc))
 	value = ((Elf32_Addr (*) (void)) value) ();
 
       switch (ELF32_R_TYPE (reloc->r_info))
@@ -601,8 +600,8 @@ elf_machine_rela (struct link_map *map, const Elf32_Rela *reloc,
 	    /* This can happen in trace mode if an object could not be
 	       found.  */
 	    break;
-	  if (__builtin_expect (sym->st_size > refsym->st_size, 0)
-	      || (__builtin_expect (sym->st_size < refsym->st_size, 0)
+	  if (__glibc_unlikely (sym->st_size > refsym->st_size)
+	      || (__glibc_unlikely (sym->st_size < refsym->st_size)
 		  && GLRO(dl_verbose)))
 	    {
 	      const char *strtab;
@@ -663,7 +662,8 @@ elf_machine_lazy_rel (struct link_map *map,
   /* Check for unexpected PLT reloc type.  */
   if (__glibc_likely (r_type == R_386_JMP_SLOT))
     {
-      if (__builtin_expect (map->l_mach.plt, 0) == 0)
+      /* Prelink has been deprecated.  */
+      if (__glibc_likely (map->l_mach.plt == 0))
 	*reloc_addr += l_addr;
       else
 	*reloc_addr = (map->l_mach.plt

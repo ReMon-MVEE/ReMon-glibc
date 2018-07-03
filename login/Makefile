@@ -1,4 +1,4 @@
-# Copyright (C) 1996-2017 Free Software Foundation, Inc.
+# Copyright (C) 1996-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -30,7 +30,7 @@ routines := getlogin getlogin_r setlogin getlogin_r_chk \
 	    utmp_file utmpname updwtmp getpt grantpt unlockpt ptsname \
 	    ptsname_r_chk
 
-CFLAGS-grantpt.c = -DLIBEXECDIR='"$(libexecdir)"'
+CFLAGS-grantpt.c += -DLIBEXECDIR='"$(libexecdir)"'
 
 others = utmpdump
 
@@ -53,7 +53,7 @@ libutil-routines:= login login_tty logout logwtmp openpty forkpty
 
 include ../Rules
 
-CFLAGS-getpt.c = -fexceptions
+CFLAGS-getpt.c += -fexceptions
 
 ifeq (yesyes,$(have-fpie)$(build-shared))
 pt_chown-cflags += $(pie-ccflag)
@@ -61,7 +61,7 @@ endif
 ifeq (yes,$(have-libcap))
 libcap = -lcap
 endif
-CFLAGS-pt_chown.c = $(pt_chown-cflags)
+CFLAGS-pt_chown.c += $(pt_chown-cflags)
 LDLIBS-pt_chown = $(libcap)
 ifeq (yesyes,$(have-fpie)$(build-shared))
 LDFLAGS-pt_chown = -Wl,-z,now

@@ -1,6 +1,6 @@
 /* Read block from given position in file without changing file pointer.
    Hurd version.
-   Copyright (C) 2001-2017 Free Software Foundation, Inc.
+   Copyright (C) 2001-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -34,5 +34,6 @@ __libc_pread64 (int fd, void *buf, size_t nbytes, off64_t offset)
 
 #ifndef __libc_pread64
 weak_alias (__libc_pread64, __pread64)
+libc_hidden_weak (__pread64)
 weak_alias (__libc_pread64, pread64)
 #endif

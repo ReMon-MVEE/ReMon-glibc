@@ -1,5 +1,5 @@
 /* Multiple versions of llrintf.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -24,6 +24,7 @@
 #undef lrintf
 #undef __lrintf
 #include "init-arch.h"
+#include <libm-alias-float.h>
 
 extern __typeof (__llrintf) __llrint_ppc64 attribute_hidden;
 extern __typeof (__llrintf) __llrint_power6x attribute_hidden;
@@ -41,6 +42,6 @@ libc_ifunc (__llrintf,
 	    ? __llrint_power6x
 	    : __llrint_ppc64);
 
-weak_alias (__llrintf, llrintf)
+libm_alias_float (__llrint, llrint)
 strong_alias (__llrintf, __lrintf)
-weak_alias (__lrintf, lrintf)
+libm_alias_float (__lrint, lrint)

@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gnu.org>, 1996.
 
@@ -634,7 +634,6 @@ get_string (struct linereader *lr, const struct charmap_t *charmap,
       size_t buf2act = 0;
       size_t buf2max = 56 * sizeof (uint32_t);
       int ch;
-      int warned = 0;
 
       /* We have to provide the wide character result as well.  */
       if (return_widestr)
@@ -662,13 +661,6 @@ get_string (struct linereader *lr, const struct charmap_t *charmap,
 		  ch = lr_getc (lr);
 		  if (ch == '\n' || ch == EOF)
 		    break;
-		}
-
-	      if (verbose && !warned)
-		{
-		  lr_error (lr, _("\
-non-symbolic character value should not be used"));
-		  warned = 1;
 		}
 
 	      ADDC (ch);

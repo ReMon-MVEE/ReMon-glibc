@@ -1,5 +1,5 @@
 /* Wrapper to set errno for acos.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@
 FLOAT
 M_DECL_FUNC (__acos) (FLOAT x)
 {
-  if (__glibc_unlikely (isgreater (M_SUF (fabs) (x), M_LIT (1.0))))
+  if (__glibc_unlikely (isgreater (M_FABS (x), M_LIT (1.0))))
     /* Domain error: acos(|x|>1).  */
     __set_errno (EDOM);
   return M_SUF (__ieee754_acos) (x);

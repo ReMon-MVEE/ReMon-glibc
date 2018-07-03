@@ -1,5 +1,5 @@
 /* Load a shared object at runtime, relocate it, and run its initializer.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -28,7 +28,6 @@
 #include <sys/param.h>
 #include <libc-lock.h>
 #include <ldsodefs.h>
-#include <caller.h>
 #include <sysdep-cancel.h>
 #include <tls.h>
 #include <stap-probe.h>
@@ -47,8 +46,6 @@ struct dl_open_args
   int mode;
   /* This is the caller of the dlopen() function.  */
   const void *caller_dlopen;
-  /* This is the caller of _dl_open().  */
-  const void *caller_dl_open;
   struct link_map *map;
   /* Namespace ID.  */
   Lmid_t nsid;
@@ -187,11 +184,6 @@ dl_open_worker (void *a)
   int mode = args->mode;
   struct link_map *call_map = NULL;
 
-  /* Check whether _dl_open() has been called from a valid DSO.  */
-  if (__check_caller (args->caller_dl_open,
-		      allow_libc|allow_libdl|allow_ldso) != 0)
-    _dl_signal_error (0, "dlopen", NULL, N_("invalid caller"));
-
   /* Determine the caller's map if necessary.  This is needed in case
      we have a DST, when we don't know the namespace ID we have to put
      the new object in, or when the file name has no path in which
@@ -311,7 +303,7 @@ dl_open_worker (void *a)
   /* Sort the objects by dependency for the relocation process.  This
      allows IFUNC relocations to work and it also means copy
      relocation of dependencies are if necessary overwritten.  */
-  size_t nmaps = 0;
+  unsigned int nmaps = 0;
   struct link_map *l = new;
   do
     {
@@ -330,62 +322,11 @@ dl_open_worker (void *a)
       l = l->l_next;
     }
   while (l != NULL);
-  if (nmaps > 1)
-    {
-      uint16_t seen[nmaps];
-      memset (seen, '\0', sizeof (seen));
-      size_t i = 0;
-      while (1)
-	{
-	  ++seen[i];
-	  struct link_map *thisp = maps[i];
-
-	  /* Find the last object in the list for which the current one is
-	     a dependency and move the current object behind the object
-	     with the dependency.  */
-	  size_t k = nmaps - 1;
-	  while (k > i)
-	    {
-	      struct link_map **runp = maps[k]->l_initfini;
-	      if (runp != NULL)
-		/* Look through the dependencies of the object.  */
-		while (*runp != NULL)
-		  if (__glibc_unlikely (*runp++ == thisp))
-		    {
-		      /* Move the current object to the back past the last
-			 object with it as the dependency.  */
-		      memmove (&maps[i], &maps[i + 1],
-			       (k - i) * sizeof (maps[0]));
-		      maps[k] = thisp;
-
-		      if (seen[i + 1] > nmaps - i)
-			{
-			  ++i;
-			  goto next_clear;
-			}
-
-		      uint16_t this_seen = seen[i];
-		      memmove (&seen[i], &seen[i + 1],
-			       (k - i) * sizeof (seen[0]));
-		      seen[k] = this_seen;
-
-		      goto next;
-		    }
-
-	      --k;
-	    }
-
-	  if (++i == nmaps)
-	    break;
-	next_clear:
-	  memset (&seen[i], 0, (nmaps - i) * sizeof (seen[0]));
-	next:;
-	}
-    }
+  _dl_sort_maps (maps, nmaps, NULL, false);
 
   int relocation_in_progress = 0;
 
-  for (size_t i = nmaps; i-- > 0; )
+  for (unsigned int i = nmaps; i-- > 0; )
     {
       l = maps[i];
 
@@ -634,7 +575,6 @@ no more namespaces available for dlmopen()"));
   args.file = file;
   args.mode = mode;
   args.caller_dlopen = caller_dlopen;
-  args.caller_dl_open = RETURN_ADDRESS (0);
   args.map = NULL;
   args.nsid = nsid;
   args.argc = argc;

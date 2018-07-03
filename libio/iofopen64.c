@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -31,7 +31,7 @@
 /* iofopen.c defines _IO_fopen64/fopen64 as aliases if O_LARGEFILE==0.  */
 #if defined O_LARGEFILE && O_LARGEFILE != 0
 
-_IO_FILE *
+FILE *
 _IO_fopen64 (const char *filename, const char *mode)
 {
   return __fopen_internal (filename, mode, 0);

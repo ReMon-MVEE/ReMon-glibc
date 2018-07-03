@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -30,8 +30,10 @@
 #undef feof_unlocked
 
 int
-feof_unlocked (_IO_FILE *fp)
+__feof_unlocked (FILE *fp)
 {
   CHECK_FILE (fp, EOF);
   return _IO_feof_unlocked (fp);
 }
+weak_alias (__feof_unlocked, feof_unlocked)
+libc_hidden_weak (feof_unlocked)

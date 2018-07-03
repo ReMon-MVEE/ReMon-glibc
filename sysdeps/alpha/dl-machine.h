@@ -1,5 +1,5 @@
 /* Machine-dependent ELF dynamic relocation inline functions.  Alpha version.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Richard Henderson <rth@tamu.edu>.
 
@@ -419,7 +419,7 @@ elf_machine_rela (struct link_map *map,
       if (sym_map)
 	{
 	  sym_raw_value += sym->st_value;
-	  sym_value = sym_raw_value + sym_map->l_addr;
+	  sym_value += SYMBOL_ADDRESS (sym_map, sym, true);
 	}
 
       if (r_type == R_ALPHA_GLOB_DAT)

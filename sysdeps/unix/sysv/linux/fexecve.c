@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,7 +19,12 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/stat.h>
+
+#include <sysdep.h>
+#include <sys/syscall.h>
+#include <kernel-features.h>
 
 
 /* Execute the file FD refers to, overlaying the running program image.
@@ -33,6 +38,16 @@ fexecve (int fd, char *const argv[], char *const envp[])
       return -1;
     }
 
+#ifdef __NR_execveat
+  /* Avoid implicit array coercion in syscall macros.  */
+  INLINE_SYSCALL (execveat, 5, fd, "", &argv[0], &envp[0], AT_EMPTY_PATH);
+# ifndef __ASSUME_EXECVEAT
+  if (errno != ENOSYS)
+    return -1;
+# endif
+#endif
+
+#ifndef __ASSUME_EXECVEAT
   /* We use the /proc filesystem to get the information.  If it is not
      mounted we fail.  */
   char buf[sizeof "/proc/self/fd/" + sizeof (int) * 3];
@@ -50,6 +65,7 @@ fexecve (int fd, char *const argv[], char *const envp[])
     save = ENOSYS;
 
   __set_errno (save);
+#endif
 
   return -1;
 }

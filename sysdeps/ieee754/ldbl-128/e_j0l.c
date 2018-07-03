@@ -723,7 +723,7 @@ __ieee754_j0l (_Float128 x)
     }
 
   if (xx > L(0x1p256))
-    return ONEOSQPI * cc / __ieee754_sqrtl (xx);
+    return ONEOSQPI * cc / sqrtl (xx);
 
   xinv = 1 / xx;
   z = xinv * xinv;
@@ -786,7 +786,7 @@ __ieee754_j0l (_Float128 x)
   p = 1 + z * p;
   q = z * xinv * q;
   q = q - L(0.125) * xinv;
-  z = ONEOSQPI * (p * cc - q * ss) / __ieee754_sqrtl (xx);
+  z = ONEOSQPI * (p * cc - q * ss) / sqrtl (xx);
   return z;
 }
 strong_alias (__ieee754_j0l, __j0l_finite)
@@ -796,7 +796,7 @@ strong_alias (__ieee754_j0l, __j0l_finite)
    Peak absolute error 1.7e-36 (relative where Y0 > 1)
    0 <= x <= 2   */
 #define NY0_2N 7
-static _Float128 Y0_2N[NY0_2N + 1] = {
+static const _Float128 Y0_2N[NY0_2N + 1] = {
  L(-1.062023609591350692692296993537002558155E19),
   L(2.542000883190248639104127452714966858866E19),
  L(-1.984190771278515324281415820316054696545E18),
@@ -807,7 +807,7 @@ static _Float128 Y0_2N[NY0_2N + 1] = {
   L(8.230845651379566339707130644134372793322E6),
 };
 #define NY0_2D 7
-static _Float128 Y0_2D[NY0_2D + 1] = {
+static const _Float128 Y0_2D[NY0_2D + 1] = {
   L(1.438972634353286978700329883122253752192E20),
   L(1.856409101981569254247700169486907405500E18),
   L(1.219693352678218589553725579802986255614E16),
@@ -868,7 +868,7 @@ _Float128
     }
 
   if (xx > L(0x1p256))
-    return ONEOSQPI * ss / __ieee754_sqrtl (x);
+    return ONEOSQPI * ss / sqrtl (x);
 
   xinv = 1 / xx;
   z = xinv * xinv;
@@ -931,7 +931,7 @@ _Float128
   p = 1 + z * p;
   q = z * xinv * q;
   q = q - L(0.125) * xinv;
-  z = ONEOSQPI * (p * ss + q * cc) / __ieee754_sqrtl (x);
+  z = ONEOSQPI * (p * ss + q * cc) / sqrtl (x);
   return z;
 }
 strong_alias (__ieee754_y0l, __y0l_finite)

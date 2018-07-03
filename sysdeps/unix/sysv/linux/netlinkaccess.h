@@ -1,4 +1,4 @@
-/* Copyright (C) 2004-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -44,10 +44,12 @@ struct netlink_handle
 };
 
 
-extern int __netlink_open (struct netlink_handle *h);
-extern void __netlink_close (struct netlink_handle *h);
-extern void __netlink_free_handle (struct netlink_handle *h);
-extern int __netlink_request (struct netlink_handle *h, int type);
+extern int __netlink_open (struct netlink_handle *h) attribute_hidden;
+extern void __netlink_close (struct netlink_handle *h) attribute_hidden;
+extern void __netlink_free_handle (struct netlink_handle *h)
+     attribute_hidden;
+extern int __netlink_request (struct netlink_handle *h, int type)
+     attribute_hidden;
 
 /* Terminate the process if RESULT is an invalid recvmsg result for
    the netlink socket FD.  */

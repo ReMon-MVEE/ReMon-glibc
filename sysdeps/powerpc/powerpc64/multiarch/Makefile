@@ -1,13 +1,14 @@
 ifeq ($(subdir),string)
-sysdep_routines += memcpy-power7 memcpy-a2 memcpy-power6 memcpy-cell \
-		   memcpy-power4 memcpy-ppc64 \
+sysdep_routines += memcpy-power8-cached memcpy-power7 memcpy-a2 memcpy-power6 \
+		   memcpy-cell memcpy-power4 memcpy-ppc64 \
 		   memcmp-power8 memcmp-power7 memcmp-power4 memcmp-ppc64 \
 		   memset-power7 memset-power6 memset-power4 \
 		   memset-ppc64 memset-power8 \
 		   mempcpy-power7 mempcpy-ppc64 \
 		   memchr-power8 memchr-power7 memchr-ppc64 \
-		   memrchr-power7 memrchr-ppc64 rawmemchr-power7 \
-		   rawmemchr-ppc64 strlen-power7 strlen-ppc64 \
+		   memrchr-power8 memrchr-power7 memrchr-ppc64 \
+		   rawmemchr-power7 rawmemchr-ppc64 \
+		   strlen-power7 strlen-ppc64 \
 		   strnlen-power8 strnlen-power7 strnlen-ppc64 \
 		   strcasecmp-power7 strcasecmp_l-power7 \
 		   strncase-power7 strncase_l-power7 \

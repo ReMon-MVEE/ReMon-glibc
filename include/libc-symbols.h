@@ -1,6 +1,6 @@
 /* Support macros for making weak and strong aliases for symbols,
    and for using symbol sets and linker warnings with GNU ld.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -507,6 +507,7 @@ for linking")
 #else
 # ifndef __ASSEMBLER__
 #  if !defined SHARED && IS_IN (libc) && !defined LIBC_NONSHARED \
+      && (!defined PIC || !defined NO_HIDDEN_EXTERN_FUNC_IN_PIE) \
       && !defined NO_HIDDEN
 #   define __hidden_proto_hiddenattr(attrs...) \
   __attribute__ ((visibility ("hidden"), ##attrs))
@@ -558,7 +559,7 @@ for linking")
 # define libc_hidden_data_ver(local, name)
 #endif
 
-#if IS_IN (rtld)
+#if IS_IN (rtld) && !defined NO_RTLD_HIDDEN
 # define rtld_hidden_proto(name, attrs...) hidden_proto (name, ##attrs)
 # define rtld_hidden_tls_proto(name, attrs...) hidden_tls_proto (name, ##attrs)
 # define rtld_hidden_def(name) hidden_def (name)

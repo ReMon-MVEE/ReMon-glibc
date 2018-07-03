@@ -22,7 +22,9 @@
 
 #include <fenv.h>
 #include <math.h>
+#include <math-barriers.h>
 #include <math_private.h>
+#include <libm-alias-double.h>
 
 static const double
 TWO52[2]={
@@ -42,9 +44,9 @@ __nearbyint(double x)
 	if(__builtin_expect(j0<52, 1)) {
 	    if(j0<0) {
 		libc_feholdexcept (&env);
-		double w = TWO52[sx]+x;
+		double w = TWO52[sx] + math_opt_barrier (x);
 		double t =  w-TWO52[sx];
-		math_opt_barrier(t);
+		math_force_eval (t);
 		libc_fesetenv (&env);
 		return __copysign (t, x);
 	    }
@@ -53,14 +55,10 @@ __nearbyint(double x)
 	    else return x;		/* x is integral */
 	}
 	libc_feholdexcept (&env);
-	double w = TWO52[sx]+x;
+	double w = TWO52[sx] + math_opt_barrier (x);
 	double t = w-TWO52[sx];
-	math_opt_barrier (t);
+	math_force_eval (t);
 	libc_fesetenv (&env);
 	return t;
 }
-weak_alias (__nearbyint, nearbyint)
-#ifdef NO_LONG_DOUBLE
-strong_alias (__nearbyint, __nearbyintl)
-weak_alias (__nearbyint, nearbyintl)
-#endif
+libm_alias_double (__nearbyint, nearbyint)

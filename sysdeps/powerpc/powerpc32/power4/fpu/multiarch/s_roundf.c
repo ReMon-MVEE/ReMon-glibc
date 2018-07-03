@@ -1,5 +1,5 @@
 /* Multiple versions of roundf.
-   Copyright (C) 2013-2017 Free Software Foundation, Inc.
+   Copyright (C) 2013-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 #include <math_ldbl_opt.h>
 #include <shlib-compat.h>
 #include "init-arch.h"
+#include <libm-alias-float.h>
 
 extern __typeof (__roundf) __roundf_ppc32 attribute_hidden;
 extern __typeof (__roundf) __roundf_power5plus attribute_hidden;
@@ -29,4 +30,4 @@ libc_ifunc (__roundf,
 	    ? __roundf_power5plus
             : __roundf_ppc32);
 
-weak_alias (__roundf, roundf)
+libm_alias_float (__round, round)

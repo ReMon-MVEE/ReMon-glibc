@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2001-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -34,4 +34,5 @@ __sigprocmask (int how, const sigset_t *set, sigset_t *oset)
      real size of the user-level sigset_t.  */
   return INLINE_SYSCALL (rt_sigprocmask, 4, how, set, oset, _NSIG / 8);
 }
+libc_hidden_def (__sigprocmask)
 weak_alias (__sigprocmask, sigprocmask)

@@ -1,4 +1,4 @@
-/* Copyright (C) 1999-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1999-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>, 1999.
 
@@ -17,15 +17,4 @@
    <http://www.gnu.org/licenses/>.  */
 
 #define SIGCONTEXT struct sigcontext *
-#define SIGCONTEXT_EXTRA_ARGS
 #define GET_PC(__ctx)	((void *) ((__ctx)->si_regs.pc))
-#define FIRST_FRAME_POINTER \
-  ({ void *ret;							\
-     asm volatile ("ta 3; add %%fp, 56, %0" : "=r" (ret)); ret; })
-#define ADVANCE_STACK_FRAME(__next) \
-	((void *) (((unsigned *)(__next))+14))
-
-#define GET_STACK(__ctx)	((void *) (__ctx)->si_regs.u_regs[14])
-#define GET_FRAME(__ctx)	ADVANCE_STACK_FRAME (GET_STACK(__ctx))
-#define CALL_SIGHANDLER(handler, signo, ctx) \
-  (handler)((signo), SIGCONTEXT_EXTRA_ARGS (ctx))

@@ -1,5 +1,5 @@
 /* Add SIG to the calling process' signal mask.
-   Copyright (C) 1998-2017 Free Software Foundation, Inc.
+   Copyright (C) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1998.
 
@@ -26,14 +26,8 @@ sighold (int sig)
 {
   sigset_t set;
 
-  /* Retrieve current signal set.  */
-  if (__sigprocmask (SIG_SETMASK, NULL, &set) < 0)
-    return -1;
-
-  /* Add the specified signal.  */
+  sigemptyset (&set);
   if (sigaddset (&set, sig) < 0)
     return -1;
-
-  /* Set the new mask.  */
-  return __sigprocmask (SIG_SETMASK, &set, NULL);
+  return __sigprocmask (SIG_BLOCK, &set, NULL);
 }

@@ -1,5 +1,5 @@
 /* Complex tangent function for a complex float type.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -21,6 +21,7 @@
 #include <fenv.h>
 #include <math.h>
 #include <math_private.h>
+#include <math-underflow.h>
 #include <float.h>
 
 CFLOAT
@@ -49,7 +50,10 @@ M_DECL_FUNC (__ctan) (CFLOAT x)
       else
 	{
 	  __real__ res = M_NAN;
-	  __imag__ res = M_NAN;
+	  if (__imag__ x == 0)
+	    __imag__ res = __imag__ x;
+	  else
+	    __imag__ res = M_NAN;
 
 	  if (isinf (__real__ x))
 	    feraiseexcept (FE_INVALID);

@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -39,4 +39,5 @@ __getutid (const struct utmp *id)
 
   return result;
 }
+libc_hidden_def (__getutid)
 weak_alias (__getutid, getutid)

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -16,6 +16,13 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#define FUNC nearbyintf
-#define INSN "frinti"
-#include <s_frintf.c>
+#include <math.h>
+#include <libm-alias-float.h>
+
+float
+__nearbyintf (float x)
+{
+  return __builtin_nearbyintf (x);
+}
+
+libm_alias_float (__nearbyint, nearbyint)

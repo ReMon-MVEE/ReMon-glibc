@@ -1,5 +1,5 @@
 /* Get source filter.  Linux version.
-   Copyright (C) 2004-2017 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2004.
 
@@ -31,6 +31,7 @@
 #include <netrose/rose.h>
 #include <sys/param.h>
 #include <sys/socket.h>
+#include "getsourcefilter.h"
 
 
 static const struct

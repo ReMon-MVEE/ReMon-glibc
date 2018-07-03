@@ -1,4 +1,4 @@
-# Copyright (C) 2002-2017 Free Software Foundation, Inc.
+# Copyright (C) 2002-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -26,12 +26,12 @@ headers := pthread.h semaphore.h bits/semaphore.h
 
 extra-libs := libpthread
 extra-libs-others := $(extra-libs)
-install-lib-ldscripts := libpthread.so
 
 routines = alloca_cutoff forward libc-lowlevellock libc-cancellation \
 	   libc-cleanup libc_pthread_init libc_multiple_threads \
-	   register-atfork unregister-atfork
+	   register-atfork pthread_atfork pthread_self
 shared-only-routines = forward
+static-only-routines = pthread_atfork
 
 # We need to provide certain routines for compatibility with existing
 # binaries.
@@ -48,7 +48,8 @@ pthread-compat-wrappers = \
 libpthread-routines = nptl-init vars events version pt-interp \
 		      pthread_create pthread_exit pthread_detach \
 		      pthread_join pthread_tryjoin pthread_timedjoin \
-		      pthread_self pthread_equal pthread_yield \
+		      pthread_join_common \
+		      compat-pthread_self pthread_equal pthread_yield \
 		      pthread_getconcurrency pthread_setconcurrency \
 		      pthread_getschedparam pthread_setschedparam \
 		      pthread_setschedprio \
@@ -105,7 +106,7 @@ libpthread-routines = nptl-init vars events version pt-interp \
 		      pthread_cancel pthread_testcancel \
 		      pthread_setcancelstate pthread_setcanceltype \
 		      pthread_once \
-		      old_pthread_atfork pthread_atfork \
+		      old_pthread_atfork \
 		      pthread_getcpuclockid \
 		      pthread_clock_gettime pthread_clock_settime \
 		      shm-directory \
@@ -146,87 +147,90 @@ libpthread-routines = nptl-init vars events version pt-interp \
 
 libpthread-shared-only-routines = version pt-interp pt-allocrtsig \
 				  unwind-forcedunwind
-libpthread-static-only-routines = pthread_atfork
 
 # Since cancellation handling is in large parts handled using exceptions
 # we have to compile some files with exception handling enabled, some
 # even with asynchronous unwind tables.
 
 # nptl-init.c contains sigcancel_handler().
-CFLAGS-nptl-init.c = -fexceptions -fasynchronous-unwind-tables
+CFLAGS-nptl-init.c += -fexceptions -fasynchronous-unwind-tables
 # The unwind code itself,
-CFLAGS-unwind.c = -fexceptions
-CFLAGS-unwind-forcedunwind.c = -fexceptions -fasynchronous-unwind-tables
+CFLAGS-unwind.c += -fexceptions
+CFLAGS-unwind-forcedunwind.c += -fexceptions -fasynchronous-unwind-tables
 
 # The following three functions must be async-cancel safe.
-CFLAGS-pthread_cancel.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-pthread_setcancelstate.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-pthread_setcanceltype.c = -fexceptions -fasynchronous-unwind-tables
+CFLAGS-pthread_cancel.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-pthread_setcancelstate.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-pthread_setcanceltype.c += -fexceptions -fasynchronous-unwind-tables
 
 # These are internal functions which similar functionality as setcancelstate
 # and setcanceltype.
-CFLAGS-cancellation.c = -fasynchronous-unwind-tables
-CFLAGS-libc-cancellation.c = -fasynchronous-unwind-tables
+CFLAGS-cancellation.c += -fasynchronous-unwind-tables
+CFLAGS-libc-cancellation.c += -fasynchronous-unwind-tables
 
 # Calling pthread_exit() must cause the registered cancel handlers to
 # be executed.  Therefore exceptions have to be thrown through this
 # function.
-CFLAGS-pthread_exit.c = -fexceptions
+CFLAGS-pthread_exit.c += -fexceptions
 
 # Among others, __pthread_unwind is forwarded.  This function must handle
 # exceptions.
-CFLAGS-forward.c = -fexceptions
+CFLAGS-forward.c += -fexceptions
 
 # The following are cancellation points.  Some of the functions can
 # block and therefore temporarily enable asynchronous cancellation.
 # Those must be compiled asynchronous unwind tables.
-CFLAGS-pthread_testcancel.c = -fexceptions
-CFLAGS-pthread_join.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-pthread_timedjoin.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-pthread_once.c = $(uses-callbacks) -fexceptions \
+CFLAGS-pthread_testcancel.c += -fexceptions
+CFLAGS-pthread_join.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-pthread_timedjoin.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-pthread_once.c += $(uses-callbacks) -fexceptions \
 			-fasynchronous-unwind-tables
-CFLAGS-pthread_cond_wait.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-sem_wait.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-sem_timedwait.c = -fexceptions -fasynchronous-unwind-tables
+CFLAGS-pthread_cond_wait.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-sem_wait.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-sem_timedwait.c += -fexceptions -fasynchronous-unwind-tables
 
 # These are the function wrappers we have to duplicate here.
-CFLAGS-fcntl.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-lockf.c = -fexceptions
-CFLAGS-pread.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-pread64.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-pwrite.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-pwrite64.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-wait.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-waitpid.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-sigwait.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-msgrcv.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-msgsnd.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-tcdrain.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-open.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-open64.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-pause.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-recv.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-send.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-accept.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-sendto.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-connect.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-recvfrom.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-recvmsg.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-sendmsg.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-close.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-read.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-write.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-nanosleep.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-sigsuspend.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-msync.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-fdatasync.c = -fexceptions -fasynchronous-unwind-tables
-CFLAGS-fsync.c = -fexceptions -fasynchronous-unwind-tables
+CFLAGS-fcntl.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-lockf.c += -fexceptions
+CFLAGS-pread.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-pread64.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-pwrite.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-pwrite64.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-wait.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-waitpid.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-sigwait.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-msgrcv.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-msgsnd.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-tcdrain.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-open.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-open64.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-pause.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-recv.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-send.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-accept.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-sendto.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-connect.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-recvfrom.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-recvmsg.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-sendmsg.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-close.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-read.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-write.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-nanosleep.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-sigsuspend.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-msync.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-fdatasync.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-fsync.c += -fexceptions -fasynchronous-unwind-tables
 
-CFLAGS-pt-system.c = -fexceptions
+CFLAGS-pt-system.c += -fexceptions
 
 LDLIBS-tst-once5 = -lstdc++
 CFLAGS-tst-thread_local1.o = -std=gnu++11
 LDLIBS-tst-thread_local1 = -lstdc++
+CFLAGS-tst-thread-exit-clobber.o = -std=gnu++11
+LDLIBS-tst-thread-exit-clobber = -lstdc++
+CFLAGS-tst-minstack-throw.o = -std=gnu++11
+LDLIBS-tst-minstack-throw = -lstdc++
 
 tests = tst-attr1 tst-attr2 tst-attr3 tst-default-attr \
 	tst-mutex1 tst-mutex2 tst-mutex3 tst-mutex4 tst-mutex5 tst-mutex6 \
@@ -302,10 +306,11 @@ tests = tst-attr1 tst-attr2 tst-attr3 tst-default-attr \
 			    c89 gnu89 c99 gnu99 c11 gnu11) \
 	tst-bad-schedattr \
 	tst-thread_local1 tst-mutex-errorcheck tst-robust10 \
-	tst-robust-fork tst-create-detached tst-memstream
+	tst-robust-fork tst-create-detached tst-memstream \
+	tst-thread-exit-clobber tst-minstack-cancel tst-minstack-exit \
+	tst-minstack-throw
 
-tests-internal := tst-typesizes \
-		  tst-rwlock19 tst-rwlock20 \
+tests-internal := tst-rwlock19 tst-rwlock20 \
 		  tst-sem11 tst-sem12 tst-sem13 \
 		  tst-barrier5 tst-signal7 tst-mutex8 tst-mutex8-static \
 		  tst-mutexpi8 tst-mutexpi8-static
@@ -357,8 +362,8 @@ endif
 LDFLAGS-pthread.so = -Wl,--enable-new-dtags,-z,nodelete,-z,initfirst
 
 # GCC-4.9 compiles 'sprintf(NULL, ...)' into UD2 on x86_64 without -fno-builtin
-CFLAGS-tst-cleanup2.c = -fno-builtin
-CFLAGS-tst-cleanupx2.c = -fno-builtin
+CFLAGS-tst-cleanup2.c += -fno-builtin
+CFLAGS-tst-cleanupx2.c += -fno-builtin
 
 tests += tst-cancelx2 tst-cancelx3 tst-cancelx4 tst-cancelx5 \
 	 tst-cancelx6 tst-cancelx7 tst-cancelx8 tst-cancelx9 tst-cancelx10 \
@@ -424,9 +429,9 @@ extra-objs += $(crti-objs) $(crtn-objs)
 extra-objs += pt-crti.o
 endif
 
-CFLAGS-flockfile.c = $(libio-mtsafe)
-CFLAGS-ftrylockfile.c = $(libio-mtsafe)
-CFLAGS-funlockfile.c = $(libio-mtsafe)
+CFLAGS-flockfile.c += $(libio-mtsafe)
+CFLAGS-ftrylockfile.c += $(libio-mtsafe)
+CFLAGS-funlockfile.c += $(libio-mtsafe)
 
 link-libc-static := $(common-objpfx)libc.a $(static-gnulib) \
 		    $(common-objpfx)libc.a
@@ -453,7 +458,8 @@ endif
 
 ifeq (,$(CXX))
 # These tests require a C++ compiler and runtime.
-tests-unsupported += tst-cancel24 tst-cancel24-static tst-once5
+tests-unsupported += tst-cancel24 tst-cancel24-static tst-once5 \
+  tst-thread-exit-clobber tst-minstack-throw
 endif
 # These tests require a C++ compiler and runtime with thread_local support.
 ifneq ($(have-cxx-thread_local),yes)
@@ -466,29 +472,6 @@ ifeq (yes,$(build-shared))
 # Make sure these things are built in the `make lib' pass so they can be used
 # to run programs during the `make others' pass.
 lib-noranlib: $(addprefix $(objpfx),$(extra-objs))
-
-# What we install as libpthread.so for programs to link against is in fact a
-# link script.  It contains references for the various libraries we need.
-# The libpthread.so object is not complete since some functions are only
-# defined in libpthread_nonshared.a.
-# We need to use absolute paths since otherwise local copies (if they exist)
-# of the files are taken by the linker.
-install: $(inst_libdir)/libpthread.so
-
-$(inst_libdir)/libpthread.so: $(common-objpfx)format.lds \
-			      $(objpfx)libpthread.so$(libpthread.so-version) \
-			      $(inst_libdir)/$(patsubst %,$(libtype.oS),\
-							$(libprefix)pthread) \
-			      $(+force)
-	(echo '/* GNU ld script';\
-	 echo '   Use the shared library, but some functions are only in';\
-	 echo '   the static library, so try that secondarily.  */';\
-	 cat $<; \
-	 echo 'GROUP ( $(slibdir)/libpthread.so$(libpthread.so-version)' \
-	      '$(libdir)/$(patsubst %,$(libtype.oS),$(libprefix)pthread)'\
-	      ')' \
-	) > $@.new
-	mv -f $@.new $@
 endif
 
 
@@ -529,15 +512,15 @@ CFLAGS-tst-oncex3.c += -fexceptions
 CFLAGS-tst-oncex4.c += -fexceptions
 CFLAGS-tst-align.c += $(stack-align-test-flags)
 CFLAGS-tst-align3.c += $(stack-align-test-flags)
-CFLAGS-tst-initializers1.c = -W -Wall -Werror
+CFLAGS-tst-initializers1.c += -W -Wall -Werror
 CFLAGS-tst-initializers1-< = $(CFLAGS-tst-initializers1.c) \
 			     $(patsubst tst-initializers1-%.c,-std=%,$<)
-CFLAGS-tst-initializers1-c89.c = $(CFLAGS-tst-initializers1-<)
-CFLAGS-tst-initializers1-c99.c = $(CFLAGS-tst-initializers1-<)
-CFLAGS-tst-initializers1-c11.c = $(CFLAGS-tst-initializers1-<)
-CFLAGS-tst-initializers1-gnu89.c = $(CFLAGS-tst-initializers1-<)
-CFLAGS-tst-initializers1-gnu99.c = $(CFLAGS-tst-initializers1-<)
-CFLAGS-tst-initializers1-gnu11.c = $(CFLAGS-tst-initializers1-<)
+CFLAGS-tst-initializers1-c89.c += $(CFLAGS-tst-initializers1-<)
+CFLAGS-tst-initializers1-c99.c += $(CFLAGS-tst-initializers1-<)
+CFLAGS-tst-initializers1-c11.c += $(CFLAGS-tst-initializers1-<)
+CFLAGS-tst-initializers1-gnu89.c += $(CFLAGS-tst-initializers1-<)
+CFLAGS-tst-initializers1-gnu99.c += $(CFLAGS-tst-initializers1-<)
+CFLAGS-tst-initializers1-gnu11.c += $(CFLAGS-tst-initializers1-<)
 
 tst-cancel7-ARGS = --command "exec $(host-test-program-cmd)"
 tst-cancelx7-ARGS = $(tst-cancel7-ARGS)
@@ -611,6 +594,10 @@ else
 librt = $(common-objpfx)rt/librt.a
 endif
 
+# `make check' sometimes triggers a rebuild of librt.so using this Makefile,
+# which ignores librt's dependence on libpthread
+$(common-objpfx)rt/librt.so: $(shared-thread-library)
+
 $(objpfx)tst-cancel17: $(librt)
 $(objpfx)tst-cancelx17: $(librt)
 $(objpfx)tst-_res1mod2.so: $(objpfx)tst-_res1mod1.so
@@ -633,14 +620,12 @@ $(addprefix $(objpfx), \
   $(filter-out $(tests-static) $(xtests-static) $(tests-reverse) \
     $(tests-nolibpthread), \
     $(tests) $(tests-internal) $(xtests) $(test-srcs))): \
-	$(objpfx)libpthread.so \
-	$(objpfx)libpthread_nonshared.a
+	$(objpfx)libpthread.so
 $(objpfx)tst-unload: $(libdl)
 # $(objpfx)../libc.so is used instead of $(common-objpfx)libc.so,
 # since otherwise libpthread.so comes before libc.so when linking.
 $(addprefix $(objpfx), $(tests-reverse)): \
-  $(objpfx)../libc.so $(objpfx)libpthread.so \
-  $(objpfx)libpthread_nonshared.a
+  $(objpfx)../libc.so $(objpfx)libpthread.so
 $(objpfx)../libc.so: $(common-objpfx)libc.so ;
 $(addprefix $(objpfx),$(tests-static) $(xtests-static)): $(objpfx)libpthread.a
 
@@ -670,18 +655,12 @@ $(objpfx)$(multidir)/crtn.o: $(objpfx)crtn.o $(objpfx)$(multidir)/
 	ln -f $< $@
 endif
 
-generated += libpthread_nonshared.a \
-	     multidir.mk tst-atfork2.mtrace tst-cancel-wrappers.out \
+generated += multidir.mk tst-atfork2.mtrace tst-cancel-wrappers.out \
 	     tst-tls6.out
 
 generated += $(objpfx)tst-atfork2.mtrace \
 	     $(addsuffix .so,$(strip $(modules-names)))
 
-$(objpfx)version.d: $(objpfx)banner.h
-$(objpfx)version.os: $(objpfx)banner.h
-$(objpfx)banner.h: Banner
-	sed 's/\(.*\)/"\1\\n"/' $< > $@
-generated += banner.h
 # Give libpthread.so an entry point and make it directly runnable itself.
 LDFLAGS-pthread.so += -e __nptl_main
 # pt-interp.c exists just to get the runtime linker path into libpthread.so.

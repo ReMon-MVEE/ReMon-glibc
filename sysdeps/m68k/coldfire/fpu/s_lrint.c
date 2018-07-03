@@ -1,4 +1,4 @@
-/* Copyright (C) 2006-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2006-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,6 +15,8 @@
    License along with the GNU C Library.  If not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include <libm-alias-double.h>
+
 long int
 __lrint (double x)
 {
@@ -22,8 +24,4 @@ __lrint (double x)
   asm ("fmove.l %1,%0" : "=dm" (result) : "f" (x));
   return result;
 }
-weak_alias (__lrint, lrint)
-#ifdef NO_LONG_DOUBLE
-strong_alias (__lrint, __lrintl)
-weak_alias (__lrint, lrintl)
-#endif
+libm_alias_double (__lrint, lrint)

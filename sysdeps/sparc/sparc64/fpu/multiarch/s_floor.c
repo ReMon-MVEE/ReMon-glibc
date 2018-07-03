@@ -1,5 +1,5 @@
 /* floor function, sparc64 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,17 +16,15 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#ifdef HAVE_AS_VIS3_SUPPORT
-# include <sparc-ifunc.h>
-# include <math.h>
+#include <sparc-ifunc.h>
+#include <math.h>
+#include <libm-alias-double.h>
 
-extern double __floor_vis3 (double);
-extern double __floor_generic (double);
+extern __typeof (floor) __floor_vis3 attribute_hidden;
+extern __typeof (floor) __floor_generic attribute_hidden;
 
-sparc_libm_ifunc(__floor, hwcap & HWCAP_SPARC_VIS3 ? __floor_vis3 : __floor_generic);
-weak_alias (__floor, floor)
-
-# define __floor __floor_generic
-#endif
-
-#include <sysdeps/ieee754/dbl-64/wordsize-64/s_floor.c>
+sparc_libm_ifunc (__floor,
+		  hwcap & HWCAP_SPARC_VIS3
+		  ? __floor_vis3
+		  : __floor_generic);
+libm_alias_double (__floor, floor)

@@ -1,5 +1,5 @@
 /* Total order operation on absolute values.  ldbl-128 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,11 +18,12 @@
 
 #include <math.h>
 #include <math_private.h>
+#include <libm-alias-ldouble.h>
 #include <nan-high-order-bit.h>
 #include <stdint.h>
 
 int
-totalordermagl (_Float128 x, _Float128 y)
+__totalordermagl (_Float128 x, _Float128 y)
 {
   uint64_t hx, hy;
   uint64_t lx, ly;
@@ -46,3 +47,4 @@ totalordermagl (_Float128 x, _Float128 y)
 #endif
   return hx < hy || (hx == hy && lx <= ly);
 }
+libm_alias_ldouble (__totalordermag, totalordermag)

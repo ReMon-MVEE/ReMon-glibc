@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -124,6 +124,10 @@ extern const struct __locale_data _nl_C_LC_TIME attribute_hidden;
   (&_nl_C_LC_TIME.values[_NL_ITEM_INDEX (ABDAY_1)].string)
 # define month_name (&_nl_C_LC_TIME.values[_NL_ITEM_INDEX (MON_1)].string)
 # define ab_month_name (&_nl_C_LC_TIME.values[_NL_ITEM_INDEX (ABMON_1)].string)
+# define alt_month_name \
+  (&_nl_C_LC_TIME.values[_NL_ITEM_INDEX (ALTMON_1)].string)
+# define ab_alt_month_name \
+  (&_nl_C_LC_TIME.values[_NL_ITEM_INDEX (_NL_ABALTMON_1)].string)
 # define HERE_D_T_FMT (_nl_C_LC_TIME.values[_NL_ITEM_INDEX (D_T_FMT)].string)
 # define HERE_D_FMT (_nl_C_LC_TIME.values[_NL_ITEM_INDEX (D_FMT)].string)
 # define HERE_AM_STR (_nl_C_LC_TIME.values[_NL_ITEM_INDEX (AM_STR)].string)
@@ -319,10 +323,9 @@ __strptime_internal (const char *rp, const char *fmt, struct tm *tmp,
       while (*fmt >= '0' && *fmt <= '9')
 	++fmt;
 
-#ifndef _NL_CURRENT
-      /* We need this for handling the `E' modifier.  */
+      /* In some cases, modifiers are handled by adjusting state and
+         then restarting the switch statement below.  */
     start_over:
-#endif
 
       /* Make back up of current processing pointer.  */
       rp_backup = rp;
@@ -423,13 +426,46 @@ __strptime_internal (const char *rp, const char *fmt, struct tm *tmp,
 				     ab_month_name[cnt]))
 			decided_longest = loc;
 		    }
+#ifdef _LIBC
+		  /* Now check the alt month.  */
+		  trp = rp;
+		  if (match_string (_NL_CURRENT (LC_TIME, ALTMON_1 + cnt), trp)
+		      && trp > rp_longest)
+		    {
+		      rp_longest = trp;
+		      cnt_longest = cnt;
+		      if (s.decided == not
+			  && strcmp (_NL_CURRENT (LC_TIME, ALTMON_1 + cnt),
+				     alt_month_name[cnt]))
+			decided_longest = loc;
+		    }
+		  trp = rp;
+		  if (match_string (_NL_CURRENT (LC_TIME, _NL_ABALTMON_1 + cnt),
+				    trp)
+		      && trp > rp_longest)
+		    {
+		      rp_longest = trp;
+		      cnt_longest = cnt;
+		      if (s.decided == not
+			  && strcmp (_NL_CURRENT (LC_TIME, _NL_ABALTMON_1 + cnt),
+				     alt_month_name[cnt]))
+			decided_longest = loc;
+		    }
+#endif
 		}
 #endif
 	      if (s.decided != loc
 		  && (((trp = rp, match_string (month_name[cnt], trp))
 		       && trp > rp_longest)
 		      || ((trp = rp, match_string (ab_month_name[cnt], trp))
-			  && trp > rp_longest)))
+			  && trp > rp_longest)
+#ifdef _LIBC
+		      || ((trp = rp, match_string (alt_month_name[cnt], trp))
+			  && trp > rp_longest)
+		      || ((trp = rp, match_string (ab_alt_month_name[cnt], trp))
+			  && trp > rp_longest)
+#endif
+	      ))
 		{
 		  rp_longest = trp;
 		  cnt_longest = cnt;
@@ -1015,6 +1051,12 @@ __strptime_internal (const char *rp, const char *fmt, struct tm *tmp,
 	case 'O':
 	  switch (*fmt++)
 	    {
+	    case 'b':
+	    case 'B':
+	    case 'h':
+	      /* Match month name.  Reprocess as plain 'B'.  */
+	      fmt--;
+	      goto start_over;
 	    case 'd':
 	    case 'e':
 	      /* Match day of month using alternate numeric symbols.  */

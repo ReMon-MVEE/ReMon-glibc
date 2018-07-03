@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -62,7 +62,7 @@ static service_library *nss_new_service (name_database *database,
 
 /* Declare external database variables.  */
 #define DEFINE_DATABASE(name)						      \
-  extern service_user *__nss_##name##_database attribute_hidden;	      \
+  service_user *__nss_##name##_database attribute_hidden;		      \
   weak_extern (__nss_##name##_database)
 #include "databases.def"
 #undef DEFINE_DATABASE
@@ -599,7 +599,7 @@ nss_parse_file (const char *fname)
 	  last = this;
 	}
     }
-  while (!feof_unlocked (fp));
+  while (!__feof_unlocked (fp));
 
   /* Free the buffer.  */
   free (line);

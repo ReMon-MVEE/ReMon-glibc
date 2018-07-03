@@ -1,5 +1,5 @@
 /* logb(). PowerPC/POWER7 version.
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,7 +16,10 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include <math.h>
+#include <math_private.h>
 #include <math_ldbl_opt.h>
+#include <libm-alias-double.h>
 
 /* This implementation avoids FP to INT conversions by using VSX
    bitwise instructions over FP values.  */
@@ -68,12 +71,4 @@ __logb (double x)
   /* Test to avoid logb_downward (0.0) == -0.0.  */
   return ret == -0.0 ? 0.0 : ret;
 }
-weak_alias (__logb, logb)
-#ifdef NO_LONG_DOUBLE
-strong_alias (__logb, __logbl)
-weak_alias (__logb, logbl)
-#endif
-
-#if LONG_DOUBLE_COMPAT (libm, GLIBC_2_0)
-compat_symbol (libm, logb, logbl, GLIBC_2_0);
-#endif
+libm_alias_double (__logb, logb)

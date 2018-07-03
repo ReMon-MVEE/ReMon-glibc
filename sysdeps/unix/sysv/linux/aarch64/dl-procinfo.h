@@ -1,5 +1,5 @@
 /* Processor capability information handling macros - aarch64 version.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -26,12 +26,6 @@
 
 /* We cannot provide a general printing function.  */
 #define _dl_procinfo(type, word) -1
-
-/* Number of HWCAP bits set.  */
-#define _DL_HWCAP_COUNT 16
-
-/* Offset of the last bit allocated in HWCAP.  */
-#define _DL_HWCAP_LAST 15
 
 /* HWCAP_CPUID should be available by default to influence IFUNC as well as
    library search.  */

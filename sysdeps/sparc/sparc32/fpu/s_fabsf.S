@@ -1,5 +1,5 @@
 /* Float absolute value, sparc32 version.
-   Copyright (C) 2006-2017 Free Software Foundation, Inc.
+   Copyright (C) 2006-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>, 2006.
 
@@ -18,6 +18,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-float.h>
 
 ENTRY (__fabsf)
 	st	%o0, [%sp+68]
@@ -25,4 +26,4 @@ ENTRY (__fabsf)
 	retl
 	 fabss	%f0, %f0
 END (__fabsf)
-weak_alias (__fabsf, fabsf)
+libm_alias_float (__fabs, fabs)

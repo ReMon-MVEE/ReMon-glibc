@@ -1,5 +1,5 @@
 /* Round double to long int.  PowerPC32 on PowerPC64 version.
-   Copyright (C) 2004-2017 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,7 @@
 
 #include <sysdep.h>
 #include <math_ldbl_opt.h>
+#include <libm-alias-double.h>
 
 /* long long int[r3, r4] __llrint (double x[fp1])  */
 ENTRY (__llrint)
@@ -35,12 +36,4 @@ ENTRY (__llrint)
 	blr
 	END (__llrint)
 
-weak_alias (__llrint, llrint)
-
-#ifdef NO_LONG_DOUBLE
-strong_alias (__llrint, __llrintl)
-weak_alias (__llrint, llrintl)
-#endif
-#if LONG_DOUBLE_COMPAT(libm, GLIBC_2_1)
-compat_symbol (libm, __llrint, llrintl, GLIBC_2_1)
-#endif
+libm_alias_double (__llrint, llrint)

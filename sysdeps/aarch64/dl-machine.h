@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -51,40 +51,11 @@ elf_machine_load_address (void)
   /* To figure out the load address we use the definition that for any symbol:
      dynamic_addr(symbol) = static_addr(symbol) + load_addr
 
-     The choice of symbol is arbitrary. The static address we obtain
-     by constructing a non GOT reference to the symbol, the dynamic
-     address of the symbol we compute using adrp/add to compute the
-     symbol's address relative to the PC.
-     This depends on 32/16bit relocations being resolved at link time
-     and that the static address fits in the 32/16 bits.  */
+    _DYNAMIC sysmbol is used here as its link-time address stored in
+    the special unrelocated first GOT entry.  */
 
-  ElfW(Addr) static_addr;
-  ElfW(Addr) dynamic_addr;
-
-  asm ("					\n"
-"	adrp	%1, _dl_start;			\n"
-#ifdef __LP64__
-"	add	%1, %1, #:lo12:_dl_start	\n"
-#else
-"	add	%w1, %w1, #:lo12:_dl_start	\n"
-#endif
-"	ldr	%w0, 1f				\n"
-"	b	2f				\n"
-"1:						\n"
-#ifdef __LP64__
-"	.word	_dl_start			\n"
-#else
-# ifdef __AARCH64EB__
-"	.short  0                               \n"
-# endif
-"	.short  _dl_start                       \n"
-# ifndef __AARCH64EB__
-"	.short  0                               \n"
-# endif
-#endif
-"2:						\n"
-    : "=r" (static_addr),  "=r" (dynamic_addr));
-  return dynamic_addr - static_addr;
+    extern ElfW(Dyn) _DYNAMIC[] attribute_hidden;
+    return (ElfW(Addr)) &_DYNAMIC - elf_machine_dynamic ();
 }
 
 /* Set up the loaded object described by L so its unrelocated PLT
@@ -130,10 +101,6 @@ elf_machine_runtime_setup (struct link_map *l, int lazy, int profile)
 	  got[2] = (ElfW(Addr)) &_dl_runtime_resolve;
 	}
     }
-
-  if (l->l_info[ADDRIDX (DT_TLSDESC_GOT)] && lazy)
-    *(ElfW(Addr)*)(D_PTR (l, l_info[ADDRIDX (DT_TLSDESC_GOT)]) + l->l_addr)
-      = (ElfW(Addr)) &_dl_tlsdesc_resolve_rela;
 
   return lazy;
 }
@@ -287,7 +254,7 @@ elf_machine_rela (struct link_map *map, const ElfW(Rela) *reloc,
     {
       const ElfW(Sym) *const refsym = sym;
       struct link_map *sym_map = RESOLVE_MAP (&sym, version, r_type);
-      ElfW(Addr) value = sym_map == NULL ? 0 : sym_map->l_addr + sym->st_value;
+      ElfW(Addr) value = SYMBOL_ADDRESS (sym_map, sym, true);
 
       if (sym != NULL
 	  && __glibc_unlikely (ELFW(ST_TYPE) (sym->st_info) == STT_GNU_IFUNC)
@@ -312,7 +279,8 @@ elf_machine_rela (struct link_map *map, const ElfW(Rela) *reloc,
 				RTLD_PROGNAME, strtab + refsym->st_name);
 	    }
 	  memcpy (reloc_addr_arg, (void *) value,
-		  MIN (sym->st_size, refsym->st_size));
+		  sym->st_size < refsym->st_size
+		  ? sym->st_size : refsym->st_size);
 	  break;
 
 	case AARCH64_R(RELATIVE):
@@ -427,12 +395,21 @@ elf_machine_lazy_rel (struct link_map *map,
     }
   else if (__builtin_expect (r_type == AARCH64_R(TLSDESC), 1))
     {
-      struct tlsdesc volatile *td =
-	(struct tlsdesc volatile *)reloc_addr;
+      const Elf_Symndx symndx = ELFW (R_SYM) (reloc->r_info);
+      const ElfW (Sym) *symtab = (const void *)D_PTR (map, l_info[DT_SYMTAB]);
+      const ElfW (Sym) *sym = &symtab[symndx];
+      const struct r_found_version *version = NULL;
 
-      td->arg = (void*)reloc;
-      td->entry = (void*)(D_PTR (map, l_info[ADDRIDX (DT_TLSDESC_PLT)])
-			  + map->l_addr);
+      if (map->l_info[VERSYMIDX (DT_VERSYM)] != NULL)
+	{
+	  const ElfW (Half) *vernum =
+	    (const void *)D_PTR (map, l_info[VERSYMIDX (DT_VERSYM)]);
+	  version = &map->l_versions[vernum[symndx] & 0x7fff];
+	}
+
+      /* Always initialize TLS descriptors completely, because lazy
+	 initialization requires synchronization at every TLS access.  */
+      elf_machine_rela (map, reloc, sym, version, reloc_addr, skip_ifunc);
     }
   else if (__glibc_unlikely (r_type == AARCH64_R(IRELATIVE)))
     {

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gmail.com>, 2011.
 
@@ -38,7 +38,9 @@
 #include <float.h>
 #include <inttypes.h>
 #include <math.h>
+#include <math-barriers.h>
 #include <math_private.h>
+#include <math-underflow.h>
 
 static const float huge = 1e30;
 

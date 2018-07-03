@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gmail.com>, 2011.
 
@@ -19,6 +19,7 @@
 #include <math.h>
 #include <math_private.h>
 #include <math-svid-compat.h>
+#include <libm-alias-ldouble.h>
 
 #if LIBM_SVID_COMPAT
 /* wrapper fmodl */
@@ -32,5 +33,5 @@ __fmodl (long double x, long double y)
 
   return __ieee754_fmodl (x, y);
 }
-weak_alias (__fmodl, fmodl)
+libm_alias_ldouble (__fmod, fmod)
 #endif

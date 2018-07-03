@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -149,6 +149,8 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   __libc_multiple_libcs = &_dl_starting_up && !_dl_starting_up;
 
 #ifndef SHARED
+  _dl_relocate_static_pie ();
+
   char **ev = &argv[argc + 1];
 
   __environ = ev;
@@ -200,7 +202,7 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   ARCH_SETUP_IREL ();
 
   /* The stack guard goes into the TCB, so initialize it early.  */
-  __libc_setup_tls ();
+  ARCH_SETUP_TLS ();
 
   /* In some architectures, IREL{,A} relocations happen after TLS setup in
      order to let IFUNC resolvers benefit from TCB information, e.g. powerpc's

@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -228,6 +228,7 @@ struct in_pktinfo
 #define IPV6_TRANSPARENT	75
 #define IPV6_UNICAST_IF		76
 #define IPV6_RECVFRAGSIZE	77
+#define IPV6_FREEBIND		78
 
 /* Obsolete synonyms for the above.  */
 #if !__USE_KERNEL_IPV6_DEFS

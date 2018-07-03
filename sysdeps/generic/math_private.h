@@ -20,7 +20,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <fenv.h>
-#include <float.h>
 #include <get-rounding-mode.h>
 
 /* Gather machine dependent _Floatn support.  */
@@ -250,100 +249,18 @@ fabsf128 (_Float128 x)
 
 
 /* Prototypes for functions of the IBM Accurate Mathematical Library.  */
-extern double __exp1 (double __x, double __xx, double __error);
+extern double __exp1 (double __x, double __xx);
 extern double __sin (double __x);
 extern double __cos (double __x);
 extern int __branred (double __x, double *__a, double *__aa);
 extern void __doasin (double __x, double __dx, double __v[]);
 extern void __dubsin (double __x, double __dx, double __v[]);
 extern void __dubcos (double __x, double __dx, double __v[]);
-extern double __halfulp (double __x, double __y);
 extern double __sin32 (double __x, double __res, double __res1);
 extern double __cos32 (double __x, double __res, double __res1);
 extern double __mpsin (double __x, double __dx, bool __range_reduce);
 extern double __mpcos (double __x, double __dx, bool __range_reduce);
-extern double __slowexp (double __x);
-extern double __slowpow (double __x, double __y, double __z);
 extern void __docos (double __x, double __dx, double __v[]);
-
-#ifndef math_opt_barrier
-# define math_opt_barrier(x) \
-({ __typeof (x) __x = (x); __asm ("" : "+m" (__x)); __x; })
-# define math_force_eval(x) \
-({ __typeof (x) __x = (x); __asm __volatile__ ("" : : "m" (__x)); })
-#endif
-
-/* math_narrow_eval reduces its floating-point argument to the range
-   and precision of its semantic type.  (The original evaluation may
-   still occur with excess range and precision, so the result may be
-   affected by double rounding.)  */
-#if FLT_EVAL_METHOD == 0
-# define math_narrow_eval(x) (x)
-#else
-# if FLT_EVAL_METHOD == 1
-#  define excess_precision(type) __builtin_types_compatible_p (type, float)
-# else
-#  define excess_precision(type) (__builtin_types_compatible_p (type, float) \
-				  || __builtin_types_compatible_p (type, \
-								   double))
-# endif
-# define math_narrow_eval(x)					\
-  ({								\
-    __typeof (x) math_narrow_eval_tmp = (x);			\
-    if (excess_precision (__typeof (math_narrow_eval_tmp)))	\
-      __asm__ ("" : "+m" (math_narrow_eval_tmp));		\
-    math_narrow_eval_tmp;					\
-   })
-#endif
-
-#define fabs_tg(x) __MATH_TG ((x), (__typeof (x)) __builtin_fabs, (x))
-
-#define min_of_type_f FLT_MIN
-#define min_of_type_ DBL_MIN
-#define min_of_type_l LDBL_MIN
-#define min_of_type_f128 FLT128_MIN
-
-#define min_of_type(x) __MATH_TG ((x), (__typeof (x)) min_of_type_, )
-
-/* If X (which is not a NaN) is subnormal, force an underflow
-   exception.  */
-#define math_check_force_underflow(x)				\
-  do								\
-    {								\
-      __typeof (x) force_underflow_tmp = (x);			\
-      if (fabs_tg (force_underflow_tmp)				\
-	  < min_of_type (force_underflow_tmp))			\
-	{							\
-	  __typeof (force_underflow_tmp) force_underflow_tmp2	\
-	    = force_underflow_tmp * force_underflow_tmp;	\
-	  math_force_eval (force_underflow_tmp2);		\
-	}							\
-    }								\
-  while (0)
-/* Likewise, but X is also known to be nonnegative.  */
-#define math_check_force_underflow_nonneg(x)			\
-  do								\
-    {								\
-      __typeof (x) force_underflow_tmp = (x);			\
-      if (force_underflow_tmp					\
-	  < min_of_type (force_underflow_tmp))			\
-	{							\
-	  __typeof (force_underflow_tmp) force_underflow_tmp2	\
-	    = force_underflow_tmp * force_underflow_tmp;	\
-	  math_force_eval (force_underflow_tmp2);		\
-	}							\
-    }								\
-  while (0)
-/* Likewise, for both real and imaginary parts of a complex
-   result.  */
-#define math_check_force_underflow_complex(x)				\
-  do									\
-    {									\
-      __typeof (x) force_underflow_complex_tmp = (x);			\
-      math_check_force_underflow (__real__ force_underflow_complex_tmp); \
-      math_check_force_underflow (__imag__ force_underflow_complex_tmp); \
-    }									\
-  while (0)
 
 /* The standards only specify one variant of the fenv.h interfaces.
    But at least for some architectures we can be more efficient if we
@@ -495,7 +412,7 @@ default_libc_feupdateenv_test (fenv_t *e, int ex)
 # define libc_feresetroundl libc_feupdateenvl
 #endif
 
-/* ... and a version that may also discard exceptions.  */
+/* ... and a version that also discards exceptions.  */
 
 #ifndef libc_feresetround_noex
 # define libc_feresetround_noex  libc_fesetenv
@@ -569,8 +486,9 @@ libc_feresetround_ctx (struct rm_ctx *ctx)
 static __always_inline void
 libc_feholdsetround_noex_ctx (struct rm_ctx *ctx, int round)
 {
-  /* Save exception flags and rounding mode.  */
-  __fegetenv (&ctx->env);
+  /* Save exception flags and rounding mode, and disable exception
+     traps.  */
+  __feholdexcept (&ctx->env);
 
   /* Update rounding mode only if different.  */
   if (__glibc_unlikely (round != get_rounding_mode ()))
@@ -623,7 +541,7 @@ libc_feresetround_noex_ctx (struct rm_ctx *ctx)
    the value at the start of the block.  The exception mode must be preserved.
    Exceptions raised within the block must be discarded, and exception flags
    are restored to the value at the start of the block.
-   Non-stop mode may be enabled inside the block.  */
+   Non-stop mode must be enabled inside the block.  */
 
 #define SET_RESTORE_ROUND_NOEX(RM) \
   SET_RESTORE_ROUND_GENERIC (RM, libc_feholdsetround_noex, \
@@ -639,5 +557,95 @@ libc_feresetround_noex_ctx (struct rm_ctx *ctx)
 #define SET_RESTORE_ROUND_53BIT(RM) \
   SET_RESTORE_ROUND_GENERIC (RM, libc_feholdsetround_53bit,	      \
 			     libc_feresetround_53bit)
+
+/* When no floating-point exceptions are defined in <fenv.h>, make
+   feraiseexcept ignore its argument so that unconditional
+   feraiseexcept calls do not cause errors for undefined exceptions.
+   Define it to expand to a void expression so that any calls testing
+   the result of feraiseexcept do produce errors.  */
+#if FE_ALL_EXCEPT == 0
+# define feraiseexcept(excepts) ((void) 0)
+# define __feraiseexcept(excepts) ((void) 0)
+#endif
+
+/* Similarly, most <fenv.h> functions have trivial implementations in
+   the absence of support for floating-point exceptions and rounding
+   modes.  */
+
+#if !FE_HAVE_ROUNDING_MODES
+# if FE_ALL_EXCEPT == 0
+extern inline int
+fegetenv (fenv_t *__e)
+{
+  return 0;
+}
+
+extern inline int
+__fegetenv (fenv_t *__e)
+{
+  return 0;
+}
+
+extern inline int
+feholdexcept (fenv_t *__e)
+{
+  return 0;
+}
+
+extern inline int
+__feholdexcept (fenv_t *__e)
+{
+  return 0;
+}
+
+extern inline int
+fesetenv (const fenv_t *__e)
+{
+  return 0;
+}
+
+extern inline int
+__fesetenv (const fenv_t *__e)
+{
+  return 0;
+}
+
+extern inline int
+feupdateenv (const fenv_t *__e)
+{
+  return 0;
+}
+
+extern inline int
+__feupdateenv (const fenv_t *__e)
+{
+  return 0;
+}
+# endif
+
+extern inline int
+fegetround (void)
+{
+  return FE_TONEAREST;
+}
+
+extern inline int
+__fegetround (void)
+{
+  return FE_TONEAREST;
+}
+
+extern inline int
+fesetround (int __d)
+{
+  return 0;
+}
+
+extern inline int
+__fesetround (int __d)
+{
+  return 0;
+}
+#endif
 
 #endif /* _MATH_PRIVATE_H_ */

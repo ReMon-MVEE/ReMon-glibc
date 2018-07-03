@@ -1,5 +1,5 @@
 /* Assembly macros for 64-bit PowerPC.
-   Copyright (C) 2002-2017 Free Software Foundation, Inc.
+   Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -263,8 +263,8 @@ LT_LABELSUFFIX(name,_name_end): ; \
   TRACEBACK_MASK(name,mask);	\
   END_2(name)
 
-#if !IS_IN(rtld) && defined (ENABLE_LOCK_ELISION)
-# define ABORT_TRANSACTION \
+#if !IS_IN(rtld)
+# define ABORT_TRANSACTION_IMPL \
     cmpdi    13,0;		\
     beq      1f;		\
     lwz      0,TM_CAPABLE(13);	\
@@ -275,8 +275,9 @@ LT_LABELSUFFIX(name,_name_end): ; \
     .p2align 4;			\
 1:
 #else
-# define ABORT_TRANSACTION
+# define ABORT_TRANSACTION_IMPL
 #endif
+#define ABORT_TRANSACTION ABORT_TRANSACTION_IMPL
 
 #define DO_CALL(syscall) \
     ABORT_TRANSACTION \

@@ -36,56 +36,65 @@ libc_hidden_proto (__qsort_r)
 libc_hidden_proto (lrand48_r)
 libc_hidden_proto (wctomb)
 
-extern long int __random (void);
+extern long int __random (void) attribute_hidden;
 extern void __srandom (unsigned int __seed);
 extern char *__initstate (unsigned int __seed, char *__statebuf,
 			  size_t __statelen);
 extern char *__setstate (char *__statebuf);
-extern int __random_r (struct random_data *__buf, int32_t *__result);
-extern int __srandom_r (unsigned int __seed, struct random_data *__buf);
+extern int __random_r (struct random_data *__buf, int32_t *__result)
+     attribute_hidden;
+extern int __srandom_r (unsigned int __seed, struct random_data *__buf)
+     attribute_hidden;
 extern int __initstate_r (unsigned int __seed, char *__statebuf,
-			  size_t __statelen, struct random_data *__buf);
-extern int __setstate_r (char *__statebuf, struct random_data *__buf);
+			  size_t __statelen, struct random_data *__buf)
+     attribute_hidden;
+extern int __setstate_r (char *__statebuf, struct random_data *__buf)
+     attribute_hidden;
 extern int __rand_r (unsigned int *__seed);
 extern int __erand48_r (unsigned short int __xsubi[3],
-			struct drand48_data *__buffer, double *__result);
+			struct drand48_data *__buffer, double *__result)
+     attribute_hidden;
 extern int __nrand48_r (unsigned short int __xsubi[3],
 			struct drand48_data *__buffer,
-			long int *__result);
+			long int *__result) attribute_hidden;
 extern int __jrand48_r (unsigned short int __xsubi[3],
 			struct drand48_data *__buffer,
-			long int *__result);
+			long int *__result) attribute_hidden;
 extern int __srand48_r (long int __seedval,
-			struct drand48_data *__buffer);
+			struct drand48_data *__buffer) attribute_hidden;
 extern int __seed48_r (unsigned short int __seed16v[3],
-		       struct drand48_data *__buffer);
+		       struct drand48_data *__buffer) attribute_hidden;
 extern int __lcong48_r (unsigned short int __param[7],
-			struct drand48_data *__buffer);
+			struct drand48_data *__buffer) attribute_hidden;
 
 /* Internal function to compute next state of the generator.  */
 extern int __drand48_iterate (unsigned short int __xsubi[3],
-			      struct drand48_data *__buffer);
+			      struct drand48_data *__buffer)
+     attribute_hidden;
 
 /* Global state for non-reentrant functions.  Defined in drand48-iter.c.  */
 extern struct drand48_data __libc_drand48_data attribute_hidden;
 
-extern int __setenv (const char *__name, const char *__value, int __replace);
-extern int __unsetenv (const char *__name);
-extern int __clearenv (void);
+extern int __setenv (const char *__name, const char *__value, int __replace)
+     attribute_hidden;
+extern int __unsetenv (const char *__name) attribute_hidden;
+extern int __clearenv (void) attribute_hidden;
 extern char *__mktemp (char *__template) __THROW __nonnull ((1));
 extern char *__canonicalize_file_name (const char *__name);
 extern char *__realpath (const char *__name, char *__resolved);
-extern int __ptsname_r (int __fd, char *__buf, size_t __buflen);
+libc_hidden_proto (__realpath)
+extern int __ptsname_r (int __fd, char *__buf, size_t __buflen)
+     attribute_hidden;
 # ifndef _ISOMAC
 extern int __ptsname_internal (int fd, char *buf, size_t buflen,
-			       struct stat64 *stp);
+			       struct stat64 *stp) attribute_hidden;
 # endif
 extern int __getpt (void);
-extern int __posix_openpt (int __oflag);
+extern int __posix_openpt (int __oflag) attribute_hidden;
 
 extern int __add_to_environ (const char *name, const char *value,
-			     const char *combines, int replace);
-
+			     const char *combines, int replace)
+     attribute_hidden;
 extern void _quicksort (void *const pbase, size_t total_elems,
 			size_t size, __compar_d_fn_t cmp, void *arg);
 
@@ -201,6 +210,8 @@ libc_hidden_proto (strtoll)
 libc_hidden_proto (strtoul)
 libc_hidden_proto (strtoull)
 
+libc_hidden_proto (atoi)
+
 extern float __strtof_nan (const char *, char **, char);
 extern double __strtod_nan (const char *, char **, char);
 extern long double __strtold_nan (const char *, char **, char);
@@ -250,9 +261,11 @@ extern char *__gcvt (double __value, int __ndigit, char *__buf);
 extern int __ecvt_r (double __value, int __ndigit, int *__restrict __decpt,
 		     int *__restrict __sign, char *__restrict __buf,
 		     size_t __len);
+libc_hidden_proto (__ecvt_r)
 extern int __fcvt_r (double __value, int __ndigit, int *__restrict __decpt,
 		     int *__restrict __sign, char *__restrict __buf,
 		     size_t __len);
+libc_hidden_proto (__fcvt_r)
 extern char *__qecvt (long double __value, int __ndigit,
 		      int *__restrict __decpt, int *__restrict __sign);
 extern char *__qfcvt (long double __value, int __ndigit,
@@ -261,9 +274,11 @@ extern char *__qgcvt (long double __value, int __ndigit, char *__buf);
 extern int __qecvt_r (long double __value, int __ndigit,
 		      int *__restrict __decpt, int *__restrict __sign,
 		      char *__restrict __buf, size_t __len);
+libc_hidden_proto (__qecvt_r)
 extern int __qfcvt_r (long double __value, int __ndigit,
 		      int *__restrict __decpt, int *__restrict __sign,
 		      char *__restrict __buf, size_t __len);
+libc_hidden_proto (__qfcvt_r)
 
 # if IS_IN (libc)
 #  undef MB_CUR_MAX
@@ -281,7 +296,7 @@ struct abort_msg_s
 extern struct abort_msg_s *__abort_msg;
 libc_hidden_proto (__abort_msg)
 
-# if IS_IN (rtld)
+# if IS_IN (rtld) && !defined NO_RTLD_HIDDEN
 extern __typeof (unsetenv) unsetenv attribute_hidden;
 extern __typeof (__strtoul_internal) __strtoul_internal attribute_hidden;
 # endif

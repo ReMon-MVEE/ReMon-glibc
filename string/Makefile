@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2017 Free Software Foundation, Inc.
+# Copyright (C) 1991-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@ include ../Makeconfig
 
 headers		:= string.h bits/string_fortified.h			\
 		   strings.h bits/strings_fortified.h			\
-		   byteswap.h bits/byteswap.h bits/byteswap-16.h	\
+		   byteswap.h bits/byteswap.h				\
 		   endian.h bits/endian.h bits/uintn-identity.h		\
 		   memory.h argz.h envz.h
 
@@ -58,7 +58,8 @@ tests		:= tester inl-tester noinl-tester testcopy test-ffs	\
 		   bug-strtok1 $(addprefix test-,$(strop-tests))	\
 		   bug-envz1 tst-strxfrm2 tst-endian tst-svc2		\
 		   tst-strtok_r bug-strcoll2 tst-cmp tst-xbzero-opt	\
-		   test-endian-types
+		   test-endian-types test-endian-file-scope		\
+		   test-endian-sign-conversion
 
 # This test allocates a lot of memory and can run for a long time.
 xtests = tst-strcoll-overflow
@@ -69,13 +70,14 @@ endif
 
 include ../Rules
 
-CFLAGS-inl-tester.c = -fno-builtin
-CFLAGS-noinl-tester.c = -fno-builtin
-CFLAGS-tst-strlen.c = -fno-builtin
-CFLAGS-stratcliff.c = -fno-builtin
-CFLAGS-test-ffs.c = -fno-builtin
-CFLAGS-tst-inlcall.c = -fno-builtin
-CFLAGS-tst-xbzero-opt.c = -O3
+CFLAGS-inl-tester.c += -fno-builtin
+CFLAGS-noinl-tester.c += -fno-builtin
+CFLAGS-tst-strlen.c += -fno-builtin
+CFLAGS-stratcliff.c += -fno-builtin
+CFLAGS-test-ffs.c += -fno-builtin
+CFLAGS-tst-inlcall.c += -fno-builtin
+CFLAGS-tst-xbzero-opt.c += -O3
+CFLAGS-test-endian-sign-conversion.c += -Werror -Wsign-conversion
 # BZ 21006: Resolve all functions but at least explicit_bzero at startup.
 # Otherwise the test fails on s390x as the memcpy in prepare_test_buffer is
 # done by loading r4 / r5 with the test_pattern and using store multiple
@@ -86,8 +88,8 @@ CFLAGS-tst-xbzero-opt.c = -O3
 LDFLAGS-tst-xbzero-opt = -z now
 
 # Called during TLS initialization.
-CFLAGS-memcpy.c = $(no-stack-protector)
-CFLAGS-wordcopy.c = $(no-stack-protector)
+CFLAGS-memcpy.c += $(no-stack-protector)
+CFLAGS-wordcopy.c += $(no-stack-protector)
 
 ifeq ($(run-built-tests),yes)
 $(objpfx)tst-svc-cmp.out: tst-svc.expect $(objpfx)tst-svc.out

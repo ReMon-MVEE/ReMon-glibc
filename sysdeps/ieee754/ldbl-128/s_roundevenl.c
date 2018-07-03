@@ -1,6 +1,6 @@
 /* Round to nearest integer value, rounding halfway cases to even.
    ldbl-128 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
 
 #include <math.h>
 #include <math_private.h>
+#include <libm-alias-ldouble.h>
 #include <stdint.h>
 
 #define BIAS 0x3fff
@@ -26,7 +27,7 @@
 #define MAX_EXP (2 * BIAS + 1)
 
 _Float128
-roundevenl (_Float128 x)
+__roundevenl (_Float128 x)
 {
   uint64_t hx, lx, uhx;
   GET_LDOUBLE_WORDS64 (hx, lx, x);
@@ -100,3 +101,4 @@ roundevenl (_Float128 x)
   SET_LDOUBLE_WORDS64 (x, hx, lx);
   return x;
 }
+libm_alias_ldouble (__roundeven, roundeven)

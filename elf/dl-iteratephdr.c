@@ -1,5 +1,5 @@
 /* Get loaded objects program headers.
-   Copyright (C) 2001-2017 Free Software Foundation, Inc.
+   Copyright (C) 2001-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>, 2001.
 
@@ -28,7 +28,6 @@ cancel_handler (void *arg __attribute__((unused)))
   __rtld_lock_unlock_recursive (GL(dl_load_write_lock));
 }
 
-hidden_proto (__dl_iterate_phdr)
 int
 __dl_iterate_phdr (int (*callback) (struct dl_phdr_info *info,
 				    size_t size, void *data), void *data)

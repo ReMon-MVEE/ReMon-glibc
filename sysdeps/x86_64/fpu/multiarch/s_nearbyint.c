@@ -1,5 +1,5 @@
 /* Multiple versions of __nearbyint.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,6 +16,8 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include <libm-alias-double.h>
+
 #define nearbyint __redirect_nearbyint
 #define __nearbyint __redirect___nearbyint
 #include <math.h>
@@ -27,4 +29,4 @@
 
 libc_ifunc_redirected (__redirect_nearbyint, __nearbyint,
 		       IFUNC_SELECTOR ());
-weak_alias (__nearbyint, nearbyint)
+libm_alias_double (__nearbyint, nearbyint)

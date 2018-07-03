@@ -1,5 +1,5 @@
 /* Host and service name lookups using Name Service Switch modules.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -86,10 +86,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <inet/net-internal.h>
 
 #ifdef HAVE_LIBIDN
-extern int __idna_to_ascii_lz (const char *input, char **output, int flags);
-extern int __idna_to_unicode_lzlz (const char *input, char **output,
-				   int flags);
-# include <libidn/idna.h>
+# include <idna.h>
+#endif
+
+#if IS_IN (libc)
+# define feof_unlocked(fp) __feof_unlocked (fp)
 #endif
 
 struct gaih_service

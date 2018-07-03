@@ -1,5 +1,5 @@
 /* Multiple versions of fma.
-   Copyright (C) 2010-2017 Free Software Foundation, Inc.
+   Copyright (C) 2010-2018 Free Software Foundation, Inc.
    Contributed by Intel Corporation.
    This file is part of the GNU C Library.
 
@@ -21,13 +21,14 @@
 
 #include <math.h>
 #include <init-arch.h>
+#include <libm-alias-double.h>
 
 extern double __fma_ia32 (double x, double y, double z) attribute_hidden;
 extern double __fma_fma (double x, double y, double z) attribute_hidden;
 
 libm_ifunc (__fma,
 	    HAS_ARCH_FEATURE (FMA_Usable) ? __fma_fma : __fma_ia32);
-weak_alias (__fma, fma)
+libm_alias_double (__fma, fma)
 
 #define __fma __fma_ia32
 

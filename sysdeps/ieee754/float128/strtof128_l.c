@@ -1,5 +1,5 @@
 /* Convert string representing a number to a _Float128 value, with locale.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,6 +21,11 @@
 /* Bring in potential typedef for _Float128 early for declaration below.  */
 #include <bits/floatn.h>
 
+#if __HAVE_FLOAT64X && !__HAVE_FLOAT64X_LONG_DOUBLE
+# define strtof64x_l __hide_strtof64x_l
+# define wcstof64x_l __hide_wcstof64x_l
+#endif
+
 extern _Float128 ____strtof128_l_internal (const char *, char **,
 					   int, locale_t);
 
@@ -41,3 +46,13 @@ extern _Float128 ____strtof128_l_internal (const char *, char **,
 #include <float128_private.h>
 
 #include <stdlib/strtod_l.c>
+
+#if __HAVE_FLOAT64X && !__HAVE_FLOAT64X_LONG_DOUBLE
+# undef strtof64x_l
+# undef wcstof64x_l
+# ifdef USE_WIDE_CHAR
+weak_alias (wcstof128_l, wcstof64x_l)
+# else
+weak_alias (strtof128_l, strtof64x_l)
+# endif
+#endif

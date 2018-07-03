@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Richard Henderson.
 
@@ -17,6 +17,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <math.h>
+#include <libm-alias-float.h>
 
 float
 __copysignf (float x, float y)
@@ -24,4 +25,4 @@ __copysignf (float x, float y)
   return __builtin_copysignf (x, y);
 }
 
-weak_alias (__copysignf, copysignf)
+libm_alias_float (__copysign, copysign)

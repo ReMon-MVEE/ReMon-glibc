@@ -1,5 +1,5 @@
 /* Test compilation of tgmath macros.
-   Copyright (C) 2001-2017 Free Software Foundation, Inc.
+   Copyright (C) 2001-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com> and
    Ulrich Drepper <drepper@redhat.com>, 2001.
@@ -45,12 +45,12 @@ complex float fz;
 complex double dz;
 complex long double lz;
 
-int count_double;
-int count_float;
-int count_ldouble;
-int count_cdouble;
-int count_cfloat;
-int count_cldouble;
+volatile int count_double;
+volatile int count_float;
+volatile int count_ldouble;
+volatile int count_cdouble;
+volatile int count_cfloat;
+volatile int count_cldouble;
 
 #define NCALLS     134
 #define NCALLS_INT 4

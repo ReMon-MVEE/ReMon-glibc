@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2017 Free Software Foundation, Inc.
+# Copyright (C) 1991-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -48,7 +48,8 @@ tests	:= test_time clocktest tst-posixtz tst-strptime tst_wcsftime \
 include ../Rules
 
 ifeq ($(run-built-tests),yes)
-LOCALES := de_DE.ISO-8859-1 en_US.ISO-8859-1 ja_JP.EUC-JP
+LOCALES := de_DE.ISO-8859-1 en_US.ISO-8859-1 ja_JP.EUC-JP fr_FR.UTF-8 \
+	   es_ES.UTF-8 pl_PL.UTF-8 ru_RU.UTF-8
 include ../gen-locales.mk
 
 $(objpfx)tst-ftime_l.out: $(gen-locales)
@@ -59,17 +60,17 @@ tz-cflags = -DTZDIR='"$(zonedir)"' \
 	    -DTZDEFAULT='"$(localtime-file)"' \
 	    -DTZDEFRULES='"$(posixrules-file)"'
 
-CFLAGS-tzfile.c = $(tz-cflags)
-CFLAGS-tzset.c = $(tz-cflags)
-CFLAGS-getdate.c = -fexceptions
+CFLAGS-tzfile.c += $(tz-cflags)
+CFLAGS-tzset.c += $(tz-cflags)
+CFLAGS-getdate.c += -fexceptions
 
 # Don't warn about Y2k problem in strftime format string.
-CFLAGS-test_time.c = -Wno-format
+CFLAGS-test_time.c += -Wno-format
 
 tst-getdate-ENV= DATEMSK=datemsk TZDIR=${common-objpfx}timezone/testdata
 test_time-ARGS= EST5EDT CST
 
 tst-tzname-ENV = TZDIR=${common-objpfx}timezone/testdata
-CPPFLAGS-tst-tzname.c = -DTZDEFRULES='"$(posixrules-file)"'
+CPPFLAGS-tst-tzname.c += -DTZDEFRULES='"$(posixrules-file)"'
 
 bug-getdate1-ARGS = ${objpfx}bug-getdate1-fmt

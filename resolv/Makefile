@@ -1,4 +1,4 @@
-# Copyright (C) 1994-2017 Free Software Foundation, Inc.
+# Copyright (C) 1994-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -46,9 +46,12 @@ tests += \
   tst-bug18665-tcp \
   tst-ns_name \
   tst-ns_name_compress \
+  tst-ns_name_pton \
   tst-res_hconf_reorder \
+  tst-res_hnok \
   tst-res_use_inet6 \
   tst-resolv-basic \
+  tst-resolv-binary \
   tst-resolv-edns \
   tst-resolv-network \
   tst-resolv-res_init-multi \
@@ -71,8 +74,11 @@ tests-internal += \
 
 endif
 
-# This test accesses __inet_ntop_range, an internal libc function.
+# This test accesses __inet_ntop_length, an internal libc function.
 tests-internal += tst-inet_pton
+
+# This test accesses the __p_secstodate compat symbol.
+tests-internal += tst-p_secstodate
 
 # This test sends millions of packets and is rather slow.
 xtests += tst-resolv-qtypes
@@ -101,10 +107,6 @@ routines                += $(libnss_dns-routines) $(libresolv-routines)
 static-only-routines    += $(libnss_dns-routines) $(libresolv-routines)
 endif
 
-ifeq (yesyes,$(build-shared)$(have-thread-library))
-tests: $(objpfx)ga_test
-endif
-
 ifeq ($(run-built-tests),yes)
 ifneq (no,$(PERL))
 tests-special += $(objpfx)mtrace-tst-leaks.out
@@ -126,15 +128,13 @@ generated += mtrace-tst-leaks.out tst-leaks.mtrace \
 
 include ../Rules
 
-CFLAGS-res_hconf.c = -fexceptions
+CFLAGS-res_hconf.c += -fexceptions
 
 # The DNS NSS modules needs the resolver.
 $(objpfx)libnss_dns.so: $(objpfx)libresolv.so
 
 # The asynchronous name lookup code needs the thread library.
 $(objpfx)libanl.so: $(shared-thread-library)
-
-$(objpfx)ga_test: $(objpfx)libanl.so $(shared-thread-library)
 
 $(objpfx)tst-res_hconf_reorder: $(libdl) $(shared-thread-library)
 tst-res_hconf_reorder-ENV = RESOLV_REORDER=on
@@ -160,6 +160,7 @@ $(objpfx)tst-bug18665-tcp: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-bug18665: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-res_use_inet6: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-basic: $(objpfx)libresolv.so $(shared-thread-library)
+$(objpfx)tst-resolv-binary: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-edns: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-network: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-res_init: $(libdl) $(objpfx)libresolv.so
@@ -178,6 +179,9 @@ $(objpfx)tst-resolv-canonname: \
 $(objpfx)tst-ns_name: $(objpfx)libresolv.so
 $(objpfx)tst-ns_name.out: tst-ns_name.data
 $(objpfx)tst-ns_name_compress: $(objpfx)libresolv.so
+$(objpfx)tst-ns_name_pton: $(objpfx)libresolv.so
+$(objpfx)tst-res_hnok: $(objpfx)libresolv.so
+$(objpfx)tst-p_secstodate: $(objpfx)libresolv.so
 
 
 # This test case uses the deprecated RES_USE_INET6 resolver option.

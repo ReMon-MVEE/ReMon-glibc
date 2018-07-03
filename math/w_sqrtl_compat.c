@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gmail.com>, 2011.
 
@@ -16,9 +16,11 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#define NO_MATH_REDIRECT
 #include <math.h>
 #include <math_private.h>
 #include <math-svid-compat.h>
+#include <libm-alias-ldouble.h>
 
 
 #if LIBM_SVID_COMPAT
@@ -31,5 +33,5 @@ __sqrtl (long double x)
 
   return __ieee754_sqrtl (x);
 }
-weak_alias (__sqrtl, sqrtl)
+libm_alias_ldouble (__sqrt, sqrt)
 #endif

@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2017 Free Software Foundation, Inc.
+# Copyright (C) 1991-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -21,9 +21,9 @@ include ../Makeconfig
 
 headers = mach_init.h mach.h mach_error.h mach-shortcuts.h mach/mach_traps.h \
 	  $(interface-headers) mach/mach.h mach/mig_support.h mach/error.h \
-	  $(lock-headers) machine-sp.h
+	  $(lock-headers) machine-sp.h bits/mach/param.h
 lock = spin-solid spin-lock mutex-init mutex-solid
-lock-headers = lock-intern.h machine-lock.h spin-lock.h
+lock-headers = lock-intern.h spin-lock.h
 routines = $(mach-syscalls) $(mach-shortcuts) \
 	   mach_init mig_strncpy msg \
 	   mig-alloc mig-dealloc mig-reply \
@@ -116,7 +116,7 @@ ifndef mach-shortcuts
 # $(mach-shortcuts) will be set, and that will change how
 # mach_interface.defs is processed: it will get the -D flags below.
 user-interfaces := $(filter-out $(mach-interface-list:%=mach/%) \
-				mach/mach_port mach/mach_host mach/mach4 \
+				mach/mach_port mach/mach_host mach/mach4 mach/gnumach \
 				device/device_request,\
 				$(user-interfaces))
 endif
@@ -146,9 +146,12 @@ $(objpfx)mach-shortcuts.h: $(mach-interface-list:%=$(objpfx)mach/%.h) \
 # The first line gets us one paragraph per line, with @s separating real lines.
 # The second line selects paragraphs for the shortcutted functions.
 # The third line removes `_rpc' from the names and reconstitutes the lines.
-	cat $^ | tr \\012 @ | sed s/@@/@%/g | tr % \\012 \
-	| grep '^/\* Routine [a-z0-9_]*_rpc \*/' \
-	| sed 's/_rpc//g' | tr @ \\012 > $@-new
+	( echo "#include <mach/mach_types.h>" ; \
+	  echo "#include <mach/message.h>" ; \
+	  echo ; \
+	  cat $^ | tr \\012 @ | sed s/@@/@%/g | tr % \\012 \
+	  | grep '^/\* Routine [a-z0-9_]*_rpc \*/' \
+	  | sed 's/_rpc//g' | tr @ \\012 ) > $@-new
 	mv -f $@-new $@
 generated += mach-shortcuts.h
 

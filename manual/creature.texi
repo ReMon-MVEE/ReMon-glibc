@@ -8,7 +8,7 @@ is controlled by which @dfn{feature test macros} you define.
 If you compile your programs using @samp{gcc -ansi}, you get only the
 @w{ISO C} library features, unless you explicitly request additional
 features by defining one or more of the feature macros.
-@xref{Invoking GCC,, GNU CC Command Options, gcc.info, The GNU CC Manual},
+@xref{Invoking GCC,, GNU CC Command Options, gcc, The GNU CC Manual},
 for more information about GCC options.@refill
 
 You should define these macros by using @samp{#define} preprocessor
@@ -61,13 +61,27 @@ If you define this macro to a value greater than or equal to @code{199309L},
 then the functionality from the 1993 edition of the POSIX.1b standard
 (IEEE Standard 1003.1b-1993) is made available.
 
+If you define this macro to a value greater than or equal to
+@code{199506L}, then the functionality from the 1995 edition of the
+POSIX.1c standard (IEEE Standard 1003.1c-1995) is made available.
+
+If you define this macro to a value greater than or equal to
+@code{200112L}, then the functionality from the 2001 edition of the
+POSIX standard (IEEE Standard 1003.1-2001) is made available.
+
+If you define this macro to a value greater than or equal to
+@code{200809L}, then the functionality from the 2008 edition of the
+POSIX standard (IEEE Standard 1003.1-2008) is made available.
+
 Greater values for @code{_POSIX_C_SOURCE} will enable future extensions.
 The POSIX standards process will define these values as necessary, and
 @theglibc{} should support them some time after they become standardized.
 The 1996 edition of POSIX.1 (ISO/IEC 9945-1: 1996) states that
 if you define @code{_POSIX_C_SOURCE} to a value greater than
 or equal to @code{199506L}, then the functionality from the 1996
-edition is made available.
+edition is made available.  In general, in @theglibc{}, bugfixes to
+the standards are included when specifying the base version; e.g.,
+POSIX.1-2004 will always be included with a value of @code{200112L}.
 @end defvr
 
 @defvr Macro _XOPEN_SOURCE
@@ -87,7 +101,10 @@ available which are necessary for the X/Open Unix brand.
 
 If the macro @code{_XOPEN_SOURCE} has the value @math{500} this includes
 all functionality described so far plus some new definitions from the
-Single Unix Specification, @w{version 2}.
+Single Unix Specification, @w{version 2}.  The value @math{600}
+(corresponding to the sixth revision) includes definitions from SUSv3,
+and using @math{700} (the seventh revision) includes definitions from
+SUSv4.
 @end defvr
 
 @defvr Macro _LARGEFILE_SOURCE
@@ -150,10 +167,14 @@ This macro was introduced as part of the Large File Support extension
 
 @defvr Macro _ISOC99_SOURCE
 @standards{GNU, (none)}
-Until the revised @w{ISO C} standard is widely adopted the new features
-are not automatically enabled.  @Theglibc{} nevertheless has a complete
-implementation of the new standard and to enable the new features the
-macro @code{_ISOC99_SOURCE} should be defined.
+If this macro is defined, features from ISO C99 are included.  Since
+these features are included by default, this macro is mostly relevant
+when the compiler uses an earlier language version.
+@end defvr
+
+@defvr Macro _ISOC11_SOURCE
+@standards{C11, (none)}
+If this macro is defined, ISO C11 extensions to ISO C99 are included.
 @end defvr
 
 @defvr Macro __STDC_WANT_LIB_EXT2__
@@ -200,13 +221,33 @@ precedence.
 If you define this macro, most features are included apart from
 X/Open, LFS and GNU extensions: the effect is to enable features from
 the 2008 edition of POSIX, as well as certain BSD and SVID features
-without a separate feature test macro to control them.  Defining this
-macro, on its own and without using compiler options such as
-@option{-ansi} or @option{-std=c99}, has the same effect as not
-defining any feature test macros; defining it together with other
-feature test macros, or when options such as @option{-ansi} are used,
-enables those features even when the other options would otherwise
-cause them to be disabled.
+without a separate feature test macro to control them.
+
+Be aware that compiler options also affect included features:
+
+@itemize
+@item
+If you use a strict conformance option, features beyond those from the
+compiler's language version will be disabled, though feature test
+macros may be used to enable them.
+
+@item
+Features enabled by compiler options are not overridden by feature
+test macros.
+@end itemize
+@end defvr
+
+@defvr Macro _ATFILE_SOURCE
+@standards{GNU, (none)}
+If this macro is defined, additional @code{*at} interfaces are
+included.
+@end defvr
+
+@defvr Macro _FORTIFY_SOURCE
+@standards{GNU, (none)}
+If this macro is defined to @math{1}, security hardening is added to
+various library functions.  If defined to @math{2}, even stricter
+checks are applied.
 @end defvr
 
 @defvr Macro _REENTRANT

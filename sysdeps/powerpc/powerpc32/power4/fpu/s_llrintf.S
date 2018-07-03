@@ -1,5 +1,5 @@
 /* Round float to long int.  PowerPC32 on PowerPC64 version.
-   Copyright (C) 2004-2017 Free Software Foundation, Inc.
+   Copyright (C) 2004-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,6 +17,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-float.h>
 
 /* long long int[r3, r4] __llrintf (float x[fp1])  */
 ENTRY (__llrintf)
@@ -34,5 +35,5 @@ ENTRY (__llrintf)
 	blr
 	END (__llrintf)
 
-weak_alias (__llrintf, llrintf)
+libm_alias_float (__llrint, llrint)
 

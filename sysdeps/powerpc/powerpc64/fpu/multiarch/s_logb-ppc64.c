@@ -1,5 +1,5 @@
 /* logb(). PowerPC32/POWER7 version.
-   Copyright (C) 2013-2017 Free Software Foundation, Inc.
+   Copyright (C) 2013-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,11 +17,6 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <math.h>
-
-#undef weak_alias
-#define weak_alias(a, b)
-#undef strong_alias
-#define strong_alias(a, b)
 
 #define __logb __logb_ppc64
 

@@ -1,5 +1,5 @@
 /* Multiple versions of __floor.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,6 +16,8 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include <libm-alias-double.h>
+
 #define floor __redirect_floor
 #define __floor __redirect___floor
 #include <math.h>
@@ -26,4 +28,4 @@
 #include "ifunc-sse4_1.h"
 
 libc_ifunc_redirected (__redirect_floor, __floor, IFUNC_SELECTOR ());
-weak_alias (__floor, floor)
+libm_alias_double (__floor, floor)

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gmail.com>, 2011.
 
@@ -20,12 +20,13 @@
 #include <math.h>
 #include <math_private.h>
 #include <math-svid-compat.h>
+#include <libm-alias-double.h>
 
 
 #if LIBM_SVID_COMPAT
 /* wrapper j0 */
 double
-j0 (double x)
+__j0 (double x)
 {
   if (__builtin_expect (isgreater (fabs (x), X_TLOSS), 0)
       && _LIB_VERSION != _IEEE_ && _LIB_VERSION != _POSIX_)
@@ -34,14 +35,12 @@ j0 (double x)
 
   return __ieee754_j0 (x);
 }
-# ifdef NO_LONG_DOUBLE
-weak_alias (j0, j0l)
-# endif
+libm_alias_double (__j0, j0)
 
 
 /* wrapper y0 */
 double
-y0 (double x)
+__y0 (double x)
 {
   if (__builtin_expect (islessequal (x, 0.0) || isgreater (x, X_TLOSS), 0)
       && _LIB_VERSION != _IEEE_)
@@ -65,7 +64,5 @@ y0 (double x)
 
   return __ieee754_y0 (x);
 }
-# ifdef NO_LONG_DOUBLE
-weak_alias (y0, y0l)
-# endif
+libm_alias_double (__y0, y0)
 #endif

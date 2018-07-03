@@ -1,5 +1,5 @@
 /* truncf function.  PowerPC32/power5+ version.
-   Copyright (C) 2006-2017 Free Software Foundation, Inc.
+   Copyright (C) 2006-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,6 +17,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-float.h>
 
 	.machine	"power5"
 EALIGN (__truncf, 4, 0)
@@ -25,5 +26,5 @@ EALIGN (__truncf, 4, 0)
 	blr
 	END (__truncf)
 
-weak_alias (__truncf, truncf)
+libm_alias_float (__trunc, trunc)
 

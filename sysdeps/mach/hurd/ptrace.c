@@ -1,5 +1,5 @@
 /* Process tracing interface `ptrace' for GNU Hurd.
-   Copyright (C) 1991-2017 Free Software Foundation, Inc.
+   Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -155,7 +155,7 @@ ptrace (enum __ptrace_request request, ... )
       va_end (ap);
       /* SIGKILL always just terminates the task,
 	 so normal kill is just the same when traced.  */
-      return kill (pid, SIGKILL);
+      return __kill (pid, SIGKILL);
 
     case PTRACE_SINGLESTEP:
       /* This is a machine-dependent kernel RPC on

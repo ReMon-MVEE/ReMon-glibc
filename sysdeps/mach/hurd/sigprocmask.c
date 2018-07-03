@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -80,4 +80,5 @@ __sigprocmask (int how, const sigset_t *set, sigset_t *oset)
   return 0;
 }
 
+libc_hidden_def (__sigprocmask)
 weak_alias (__sigprocmask, sigprocmask)

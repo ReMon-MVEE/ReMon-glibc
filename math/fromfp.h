@@ -1,5 +1,5 @@
 /* Round to integer type.  Common helper functions.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 #include <fenv.h>
 #include <float.h>
 #include <math.h>
+#include <math-barriers.h>
 #include <math_private.h>
 #include <stdbool.h>
 #include <stdint.h>

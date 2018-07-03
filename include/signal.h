@@ -17,13 +17,16 @@ libc_hidden_proto (_sys_siglist)
 /* Now define the internal interfaces.  */
 extern __sighandler_t __bsd_signal (int __sig, __sighandler_t __handler);
 extern int __kill (__pid_t __pid, int __sig);
+libc_hidden_proto (__kill)
 extern int __sigaction (int __sig, const struct sigaction *__restrict __act,
 			struct sigaction *__restrict __oact);
 libc_hidden_proto (__sigaction)
 extern int __sigblock (int __mask);
+libc_hidden_proto (__sigblock)
 extern int __sigsetmask (int __mask);
 extern int __sigprocmask (int __how,
 			  const sigset_t *__set, sigset_t *__oset);
+libc_hidden_proto (__sigprocmask)
 extern int __sigsuspend (const sigset_t *__set);
 libc_hidden_proto (__sigsuspend)
 extern int __sigwait (const sigset_t *__set, int *__sig);
@@ -40,6 +43,7 @@ extern int __sigreturn (struct sigcontext *__scp);
 #endif
 extern int __sigaltstack (const stack_t *__ss,
 			  stack_t *__oss);
+libc_hidden_proto (__sigaltstack)
 extern int __libc_sigaction (int sig, const struct sigaction *act,
 			     struct sigaction *oact);
 libc_hidden_proto (__libc_sigaction)
@@ -50,7 +54,7 @@ extern int __xpg_sigpause (int sig);
 /* Allocate real-time signal with highest/lowest available priority.  */
 extern int __libc_allocate_rtsig (int __high);
 
-#  if IS_IN (rtld)
+#  if IS_IN (rtld) && !defined NO_RTLD_HIDDEN
 extern __typeof (__sigaction) __sigaction attribute_hidden;
 extern __typeof (__libc_sigaction) __libc_sigaction attribute_hidden;
 #  endif

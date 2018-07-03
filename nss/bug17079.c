@@ -1,5 +1,5 @@
 /* Test for bug 17079: heap overflow in NSS with small buffers.
-   Copyright (C) 2015-2017 Free Software Foundation, Inc.
+   Copyright (C) 2015-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,6 +17,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
+#include <nss.h>
 #include <pwd.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -213,6 +214,8 @@ test_buffer_size (size_t buffer_size)
 int
 do_test (void)
 {
+  __nss_configure_lookup ("passwd", "files");
+
   if (!init_test_items ())
     return 1;
   printf ("info: %d test items\n", test_count);

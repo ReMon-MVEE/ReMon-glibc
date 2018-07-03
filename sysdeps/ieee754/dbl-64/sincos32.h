@@ -1,7 +1,7 @@
 /*
  * IBM Accurate Mathematical Library
  * Written by International Business Machines Corp.
- * Copyright (C) 2001-2017 Free Software Foundation, Inc.
+ * Copyright (C) 2001-2018 Free Software Foundation, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -25,7 +25,7 @@
 /******************************************************************/
 
 #ifndef SINCOS32_H
-#define SINCCOS32_H
+#define SINCOS32_H
 
 #ifdef BIG_ENDI
 static const number

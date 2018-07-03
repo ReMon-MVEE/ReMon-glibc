@@ -26,7 +26,9 @@ static char rcsid[] = "$NetBSD: s_rint.c,v 1.8 1995/05/10 20:48:04 jtc Exp $";
 
 #include <fenv.h>
 #include <math.h>
+#include <math-barriers.h>
 #include <math_private.h>
+#include <libm-alias-double.h>
 
 static const double
   TWO52[2] = {
@@ -48,7 +50,7 @@ __nearbyint (double x)
       if (j0 < 0)
 	{
 	  libc_feholdexcept (&env);
-	  w = TWO52[sx] + x;
+	  w = TWO52[sx] + math_opt_barrier (x);
 	  t = w - TWO52[sx];
 	  math_force_eval (t);
 	  libc_fesetenv (&env);
@@ -65,14 +67,10 @@ __nearbyint (double x)
 	return x;                       /* x is integral */
     }
   libc_feholdexcept (&env);
-  w = TWO52[sx] + x;
+  w = TWO52[sx] + math_opt_barrier (x);
   t = w - TWO52[sx];
   math_force_eval (t);
   libc_fesetenv (&env);
   return t;
 }
-weak_alias (__nearbyint, nearbyint)
-#ifdef NO_LONG_DOUBLE
-strong_alias (__nearbyint, __nearbyintl)
-weak_alias (__nearbyint, nearbyintl)
-#endif
+libm_alias_double (__nearbyint, nearbyint)

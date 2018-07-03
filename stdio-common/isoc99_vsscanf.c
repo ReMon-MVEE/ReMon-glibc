@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@
 #include "../libio/strfile.h"
 
 int
-__isoc99_vsscanf (const char *string, const char *format, _IO_va_list args)
+__isoc99_vsscanf (const char *string, const char *format, va_list args)
 {
   int ret;
   _IO_strfile sf;

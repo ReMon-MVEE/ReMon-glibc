@@ -21,6 +21,7 @@ includedir = @includedir@
 datarootdir = @datarootdir@
 localstatedir = @libc_cv_localstatedir@
 localedir = @localedir@
+multidir= @libc_cv_multidir@
 
 # Should we use and build ldconfig?
 use-ldconfig = @use_ldconfig@
@@ -56,7 +57,7 @@ have-z-execstack = @libc_cv_z_execstack@
 have-protected-data = @libc_cv_protected_data@
 have-insert = @libc_cv_insert@
 have-glob-dat-reloc = @libc_cv_has_glob_dat@
-with-fp = @with_fp@
+with-fp = @libc_cv_with_fp@
 enable-timezone-tools = @enable_timezone_tools@
 unwind-find-fde = @libc_cv_gcc_unwind_find_fde@
 have-fpie = @libc_cv_fpie@
@@ -88,11 +89,9 @@ static-nss-crypt = @libc_cv_static_nss_crypt@
 build-shared = @shared@
 build-pic-default= @libc_cv_pic_default@
 build-pie-default= @libc_cv_pie_default@
+cc-pie-default= @libc_cv_cc_pie_default@
 build-profile = @profile@
 build-static-nss = @static_nss@
-add-ons = @add_ons@
-add-on-subdirs = @add_on_subdirs@
-sysdeps-add-ons = @sysdeps_add_ons@
 cross-compiling = @cross_compiling@
 force-install = @force_install@
 link-obsolete-rpc = @link_obsolete_rpc@
@@ -101,7 +100,6 @@ build-nscd = @build_nscd@
 use-nscd = @use_nscd@
 build-hardcoded-path-in-tests= @hardcoded_path_in_tests@
 build-pt-chown = @build_pt_chown@
-enable-lock-elision = @enable_lock_elision@
 have-tunables = @have_tunables@
 
 # Build tools.

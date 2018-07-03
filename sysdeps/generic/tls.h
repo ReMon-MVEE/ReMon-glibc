@@ -1,5 +1,5 @@
 /* Definition for thread-local data handling.  Generic version.
-   Copyright (C) 2002-2017 Free Software Foundation, Inc.
+   Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -71,4 +71,10 @@
      This macro returns the address of the DTV of the current thread.
      This normally is done using the thread register which points
      to the dtv or the TCB (from which the DTV can found).
+
+
+     THREAD_GSCOPE_IN_TCB
+
+     This should be set to 1 if the global scope flag is stored within the TCB.
+     When set to 0, GL(_dl_thread_gscope_count) will be defined to store it.
   */

@@ -1,5 +1,5 @@
 /* Pythagorean addition using doubles
-   Copyright (C) 2011-2017 Free Software Foundation, Inc.
+   Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library
    Contributed by Adhemerval Zanella <azanella@br.ibm.com>, 2011
 
@@ -19,6 +19,7 @@
 
 #include <math.h>
 #include <math_private.h>
+#include <math-underflow.h>
 #include <stdint.h>
 
 static const double two60   = 1.152921504606847e+18;
@@ -110,7 +111,7 @@ __ieee754_hypot (double x, double y)
     {
       x *= twoM600;
       y *= twoM600;
-      return __ieee754_sqrt (x * x + y * y) / twoM600;
+      return sqrt (x * x + y * y) / twoM600;
     }
   if (y < twoM500)
     {
@@ -118,7 +119,7 @@ __ieee754_hypot (double x, double y)
 	{
 	  x *= two1022;
 	  y *= two1022;
-	  double ret = __ieee754_sqrt (x * x + y * y) / two1022;
+	  double ret = sqrt (x * x + y * y) / two1022;
 	  math_check_force_underflow_nonneg (ret);
 	  return ret;
 	}
@@ -126,9 +127,9 @@ __ieee754_hypot (double x, double y)
 	{
 	  x *= two600;
 	  y *= two600;
-	  return __ieee754_sqrt (x * x + y * y) / two600;
+	  return sqrt (x * x + y * y) / two600;
 	}
     }
-  return __ieee754_sqrt (x * x + y * y);
+  return sqrt (x * x + y * y);
 }
 strong_alias (__ieee754_hypot, __hypot_finite)

@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,14 +18,13 @@
 #include <hurd.h>
 #include <hurd/port.h>
 #include <hurd/id.h>
+#include <hurdlock.h>
 #include "set-hooks.h"
 
 /* Things in the library which want to be run when the auth port changes.  */
 DEFINE_HOOK (_hurd_reauth_hook, (auth_t new_auth));
 
-#include <cthreads.h>
-static struct mutex reauth_lock = MUTEX_INITIALIZER;
-
+static unsigned int reauth_lock = LLL_INITIALIZER;
 
 /* Set the auth port to NEW, and reauthenticate
    everything used by the library.  */

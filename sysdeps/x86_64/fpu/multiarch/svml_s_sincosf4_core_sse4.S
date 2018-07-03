@@ -1,5 +1,5 @@
 /* Function sincosf vectorized with SSE4.
-   Copyright (C) 2014-2017 Free Software Foundation, Inc.
+   Copyright (C) 2014-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -42,7 +42,7 @@ ENTRY (_ZGVbN4vl4l4_sincosf_sse4)
         b) Calculate 2 polynomials for sin and cos:
            RS = X * ( A0 + X^2 * (A1 + x^2 * (A2 + x^2 * (A3))));
            RC = B0 + X^2 * (B1 + x^2 * (B2 + x^2 * (B3 + x^2 * (B4))));
-        c) Swap RS & RC if if first bit of obtained value after
+        c) Swap RS & RC if first bit of obtained value after
            Right Shifting is set to 1. Using And, Andnot & Or operations.
      3) Destination sign setting
         a) Set shifted destination sign using XOR operation:

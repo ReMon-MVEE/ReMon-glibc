@@ -1,5 +1,5 @@
 /* Locate the shared object symbol nearest a given address.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -42,8 +42,7 @@ determine_info (const ElfW(Addr) addr, struct link_map *match, Dl_info *info,
   ElfW(Word) strtabsize = match->l_info[DT_STRSZ]->d_un.d_val;
 
   const ElfW(Sym) *matchsym = NULL;
-  if (match->l_info[DT_ADDRTAGIDX (DT_GNU_HASH) + DT_NUM + DT_THISPROCNUM
-		    + DT_VERSIONTAGNUM + DT_EXTRANUM + DT_VALNUM] != NULL)
+  if (match->l_info[ADDRIDX (DT_GNU_HASH)] != NULL)
     {
       /* We look at all symbol table entries referenced by the hash
 	 table.  */
@@ -60,6 +59,7 @@ determine_info (const ElfW(Addr) addr, struct link_map *match, Dl_info *info,
 		     we can omit that test here.  */
 		  if ((symtab[symndx].st_shndx != SHN_UNDEF
 		       || symtab[symndx].st_value != 0)
+		      && symtab[symndx].st_shndx != SHN_ABS
 		      && ELFW(ST_TYPE) (symtab[symndx].st_info) != STT_TLS
 		      && DL_ADDR_SYM_MATCH (match, &symtab[symndx],
 					    matchsym, addr)
@@ -92,6 +92,7 @@ determine_info (const ElfW(Addr) addr, struct link_map *match, Dl_info *info,
 	    && ELFW(ST_TYPE) (symtab->st_info) != STT_TLS
 	    && (symtab->st_shndx != SHN_UNDEF
 		|| symtab->st_value != 0)
+	    && symtab->st_shndx != SHN_ABS
 	    && DL_ADDR_SYM_MATCH (match, symtab, matchsym, addr)
 	    && symtab->st_name < strtabsize)
 	  matchsym = (ElfW(Sym) *) symtab;

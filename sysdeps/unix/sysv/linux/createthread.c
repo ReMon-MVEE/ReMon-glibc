@@ -1,5 +1,5 @@
 /* Low-level thread creation for NPTL.  Linux version.
-   Copyright (C) 2002-2017 Free Software Foundation, Inc.
+   Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -28,8 +28,9 @@
 
 #include <arch-fork.h>
 
-
-#ifndef ARCH_CLONE
+#ifdef __NR_clone2
+# define ARCH_CLONE __clone2
+#else
 # define ARCH_CLONE __clone
 #endif
 

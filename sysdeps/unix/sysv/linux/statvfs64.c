@@ -1,5 +1,5 @@
 /* Return information about the filesystem on which FILE resides.
-   Copyright (C) 1998-2017 Free Software Foundation, Inc.
+   Copyright (C) 1998-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,13 +21,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
-#include <sys/statvfs.h>
+#include "internal_statvfs.h"
 #include <kernel-features.h>
-
-
-extern void __internal_statvfs64 (const char *name, struct statvfs64 *buf,
-				  struct statfs64 *fsbuf, int fd);
-
 
 /* Return information about the filesystem on which FILE resides.  */
 int

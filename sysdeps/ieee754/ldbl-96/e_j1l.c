@@ -75,6 +75,7 @@
 #include <float.h>
 #include <math.h>
 #include <math_private.h>
+#include <math-underflow.h>
 
 static long double pone (long double), qone (long double);
 
@@ -137,12 +138,12 @@ __ieee754_j1l (long double x)
        * y1(x) = 1/sqrt(pi) * (P(1,x)*ss + Q(1,x)*cc) / sqrt(x)
        */
       if (__glibc_unlikely (ix > 0x4080))
-	z = (invsqrtpi * cc) / __ieee754_sqrtl (y);
+	z = (invsqrtpi * cc) / sqrtl (y);
       else
 	{
 	  u = pone (y);
 	  v = qone (y);
-	  z = invsqrtpi * (u * cc - v * ss) / __ieee754_sqrtl (y);
+	  z = invsqrtpi * (u * cc - v * ss) / sqrtl (y);
 	}
       if (se & 0x8000)
 	return -z;
@@ -231,12 +232,12 @@ __ieee754_y1l (long double x)
        * to compute the worse one.
        */
       if (__glibc_unlikely (ix > 0x4080))
-	z = (invsqrtpi * ss) / __ieee754_sqrtl (x);
+	z = (invsqrtpi * ss) / sqrtl (x);
       else
 	{
 	  u = pone (x);
 	  v = qone (x);
-	  z = invsqrtpi * (u * ss + v * cc) / __ieee754_sqrtl (x);
+	  z = invsqrtpi * (u * ss + v * cc) / sqrtl (x);
 	}
       return z;
     }
@@ -507,7 +508,7 @@ static long double
 qone (long double x)
 {
   const long double *p, *q;
-  static long double s, r, z;
+  long double s, r, z;
   int32_t ix;
   uint32_t se, i0, i1;
 

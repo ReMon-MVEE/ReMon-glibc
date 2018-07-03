@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>.
 
@@ -49,6 +49,7 @@ pthread_cancel_init (void)
       return;
     }
 
+  /* See include/dlfcn.h. Use of __libc_dlopen requires RTLD_NOW.  */
   handle = __libc_dlopen (LIBGCC_S_SO);
 
   if (handle == NULL

@@ -1,5 +1,5 @@
 /* ix87 specific frexp implementation for long double.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -17,6 +17,7 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include <libm-alias-ldouble.h>
 #include <machine/asm.h>
 
 	.section .rodata
@@ -89,4 +90,4 @@ ENTRY (__frexpl)
 	movl	%ecx, (%eax)
 	ret
 END (__frexpl)
-weak_alias (__frexpl, frexpl)
+libm_alias_ldouble (__frexp, frexp)

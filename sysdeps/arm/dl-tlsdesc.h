@@ -1,6 +1,6 @@
 /* Thread-local storage descriptor handling in the ELF dynamic linker.
    ARM version.
-   Copyright (C) 2005-2017 Free Software Foundation, Inc.
+   Copyright (C) 2005-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -48,9 +48,7 @@ struct tlsdesc_dynamic_arg
 
 extern ptrdiff_t attribute_hidden
   _dl_tlsdesc_return(struct tlsdesc *),
-  _dl_tlsdesc_undefweak(struct tlsdesc *),
-  _dl_tlsdesc_resolve_hold(struct tlsdesc *),
-  _dl_tlsdesc_lazy_resolver(struct tlsdesc *);
+  _dl_tlsdesc_undefweak(struct tlsdesc *);
 
 # ifdef SHARED
 extern void *_dl_make_tlsdesc_dynamic (struct link_map *map, size_t ti_offset);

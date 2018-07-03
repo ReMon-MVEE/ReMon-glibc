@@ -1,5 +1,5 @@
 /* Internal prototype declarations that don't fit anywhere else.
-   Copyright (C) 2000-2017 Free Software Foundation, Inc.
+   Copyright (C) 2000-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -47,9 +47,9 @@ libc_hidden_proto (__libc_freeres)
 extern void __libc_thread_freeres (void);
 
 /* Define and initialize `__progname' et. al.  */
-extern void __init_misc (int, char **, char **);
+extern void __init_misc (int, char **, char **) attribute_hidden;
 
-# if IS_IN (rtld)
+# if IS_IN (rtld) && !defined NO_RTLD_HIDDEN
 extern __typeof (__profile_frequency) __profile_frequency attribute_hidden;
 # endif
 

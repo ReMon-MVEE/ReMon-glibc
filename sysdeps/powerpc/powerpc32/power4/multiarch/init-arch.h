@@ -1,5 +1,5 @@
 /* This file is part of the GNU C Library.
-   Copyright (C) 2013-2017 Free Software Foundation, Inc.
+   Copyright (C) 2013-2018 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -37,6 +37,8 @@
 #define INIT_ARCH() \
   unsigned long int hwcap = __GLRO(dl_hwcap); 			\
   unsigned long int __attribute__((unused)) hwcap2 = __GLRO(dl_hwcap2); \
+  bool __attribute__((unused)) use_cached_memopt =		\
+    GLRO(dl_powerpc_cpu_features).use_cached_memopt;		\
   if (hwcap & PPC_FEATURE_ARCH_2_06)				\
     hwcap |= PPC_FEATURE_ARCH_2_05 |				\
 	     PPC_FEATURE_POWER5_PLUS |				\

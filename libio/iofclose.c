@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -30,7 +30,7 @@
 #include <shlib-compat.h>
 
 int
-_IO_new_fclose (_IO_FILE *fp)
+_IO_new_fclose (FILE *fp)
 {
   int status;
 
@@ -45,11 +45,11 @@ _IO_new_fclose (_IO_FILE *fp)
 #endif
 
   /* First unlink the stream.  */
-  if (fp->_IO_file_flags & _IO_IS_FILEBUF)
+  if (fp->_flags & _IO_IS_FILEBUF)
     _IO_un_link ((struct _IO_FILE_plus *) fp);
 
   _IO_acquire_lock (fp);
-  if (fp->_IO_file_flags & _IO_IS_FILEBUF)
+  if (fp->_flags & _IO_IS_FILEBUF)
     status = _IO_file_close_it (fp);
   else
     status = fp->_flags & _IO_ERR_SEEN ? -1 : 0;
@@ -73,7 +73,7 @@ _IO_new_fclose (_IO_FILE *fp)
     }
   if (fp != _IO_stdin && fp != _IO_stdout && fp != _IO_stderr)
     {
-      fp->_IO_file_flags = 0;
+      fp->_flags = 0;
       free(fp);
     }
 

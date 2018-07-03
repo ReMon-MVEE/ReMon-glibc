@@ -4,13 +4,7 @@ libc {
     _end;
 
     # variables used in macros & inline functions
-    __hurd_sigthread_stack_base; __hurd_sigthread_stack_end;
-    __hurd_sigthread_variables;
-    __hurd_threadvar_max;
     __hurd_threadvar_stack_mask; __hurd_threadvar_stack_offset;
-
-    # functions used in macros & inline functions
-    __hurd_errno_location;
 
     # functions used in libmachuser and libhurduser
     _S_catch_exception_raise;
@@ -129,16 +123,37 @@ libc {
     # functions used in macros & inline functions
     __errno_location;
   }
+  GLIBC_2.26 {
+    # "quasi-internal" functions
+    _hurd_exec_paths;
+  }
+  GLIBC_2.27 {
+    # These always existed as inlines but the real functions were not exported.
+    _hurd_fd_error_signal; _hurd_fd_error;
+    __hurd_dfail; __hurd_sockfail;
+    _hurd_port_locked_set;
+    __hurd_threadvar_location_from_sp;
+    __hurd_threadvar_location;
+    _hurd_userlink_link; _hurd_userlink_unlink; _hurd_userlink_clear;
+  }
 
   HURD_CTHREADS_0.3 {
     # weak refs to libthreads functions that libc calls iff libthreads in use
-    cthread_fork; cthread_detach;
+    __cthread_fork; __cthread_detach;
+    __pthread_getattr_np; __pthread_attr_getstack;
 
     # variables used for detecting cthreads
     _cthread_exit_routine; _cthread_init_routine;
 
     # cthreads functions with stubs in libc
-    cthread_keycreate; cthread_getspecific; cthread_setspecific;
-    __libc_getspecific;
+    __cthread_keycreate; __cthread_getspecific; __cthread_setspecific;
+  }
+
+  GLIBC_PRIVATE {
+    # Used by other libs.
+    __lll_abstimed_wait; __lll_abstimed_xwait;
+    __lll_abstimed_lock; __lll_robust_lock;
+    __lll_robust_abstimed_lock; __lll_robust_trylock;
+    __lll_robust_unlock;
   }
 }

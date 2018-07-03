@@ -1,5 +1,5 @@
 /* Implementation of gamma function according to ISO C.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -18,7 +18,9 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <math.h>
+#include <math-narrow-eval.h>
 #include <math_private.h>
+#include <math-underflow.h>
 #include <float.h>
 
 /* Coefficients B_2k / 2k(2k-1) of x^-(2k-1) inside exp in Stirling's
@@ -98,7 +100,7 @@ gamma_positive (double x, int *exp2_adj)
       double ret = (__ieee754_pow (x_adj_mant, x_adj)
 		    * __ieee754_exp2 (x_adj_log2 * x_adj_frac)
 		    * __ieee754_exp (-x_adj)
-		    * __ieee754_sqrt (2 * M_PI / x_adj)
+		    * sqrt (2 * M_PI / x_adj)
 		    / prod);
       exp_adj += x_eps * __ieee754_log (x_adj);
       double bsum = gamma_coeff[NCOEFF - 1];

@@ -1,5 +1,5 @@
 /* Internal definitions for posix_spawn functionality.
-   Copyright (C) 2000-2017 Free Software Foundation, Inc.
+   Copyright (C) 2000-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -57,12 +57,13 @@ struct __spawn_action
 #define SPAWN_XFLAGS_TRY_SHELL	0x2
 
 extern int __posix_spawn_file_actions_realloc (posix_spawn_file_actions_t *
-					       file_actions);
+					       file_actions)
+     attribute_hidden;
 
 extern int __spawni (pid_t *pid, const char *path,
 		     const posix_spawn_file_actions_t *file_actions,
 		     const posix_spawnattr_t *attrp, char *const argv[],
-		     char *const envp[], int xflags);
+		     char *const envp[], int xflags) attribute_hidden;
 
 /* Return true if FD falls into the range valid for file descriptors.
    The check in this form is mandated by POSIX.  */

@@ -1,5 +1,5 @@
 /* Real definitions for extern inline functions in argp.h
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
@@ -31,7 +31,7 @@
 #define ARGP_EI
 #undef __OPTIMIZE__
 #define __OPTIMIZE__ 1
-#include "argp.h"
+#include <argp.h>
 
 /* Add weak aliases.  */
 #if _LIBC - 0 && defined (weak_alias)

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gmail.com>, 2011.
 
@@ -20,12 +20,13 @@
 #include <math.h>
 #include <math_private.h>
 #include <math-svid-compat.h>
+#include <libm-alias-float.h>
 
 
-#if LIBM_SVID_COMPAT
+#if LIBM_SVID_COMPAT && SHLIB_COMPAT (libm, GLIBC_2_0, GLIBC_2_27)
 /* wrapper logf(x) */
 float
-__logf (float x)
+__logf_compat (float x)
 {
   if (__builtin_expect (islessequal (x, 0.0f), 0) && _LIB_VERSION != _IEEE_)
     {
@@ -43,5 +44,5 @@ __logf (float x)
 
   return  __ieee754_logf (x);
 }
-weak_alias (__logf, logf)
+compat_symbol (libm, __logf_compat, logf, GLIBC_2_0);
 #endif

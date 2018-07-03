@@ -1,5 +1,5 @@
 /* Floating point output for `printf'.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
    Written by Ulrich Drepper <drepper@gnu.ai.mit.edu>, 1995.
@@ -21,6 +21,7 @@
 /* The gmp headers need some configuration frobs.  */
 #define HAVE_ALLOCA 1
 
+#include <array_length.h>
 #include <libioP.h>
 #include <alloca.h>
 #include <ctype.h>
@@ -55,17 +56,12 @@
 #endif
 #include <assert.h>
 
-/* This defines make it possible to use the same code for GNU C library and
-   the GNU I/O library.	 */
 #define PUT(f, s, n) _IO_sputn (f, s, n)
 #define PAD(f, c, n) (wide ? _IO_wpadn (f, c, n) : _IO_padn (f, c, n))
-/* We use this file GNU C library and GNU I/O library.	So make
-   names equal.	 */
 #undef putc
 #define putc(c, f) (wide \
 		    ? (int)_IO_putwc_unlocked (c, f) : _IO_putc_unlocked (c, f))
-#define size_t     _IO_size_t
-#define FILE	     _IO_FILE
+
 
 /* Macros for doing the actual output.  */
 
@@ -371,8 +367,7 @@ __printf_fp_l (FILE *fp, locale_t loc,
     else								\
       {									\
 	p.fracsize = __mpn_extract_##SUFFIX				\
-		     (fp_input,						\
-		      (sizeof (fp_input) / sizeof (fp_input[0])),	\
+		     (fp_input, array_length (fp_input),		\
 		      &p.exponent, &is_neg, VAR);			\
 	to_shift = 1 + p.fracsize * BITS_PER_MP_LIMB - MANT_DIG;	\
       }									\

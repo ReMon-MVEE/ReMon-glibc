@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -323,4 +323,5 @@ __ioctl (int fd, unsigned long int request, ...)
     }
 }
 
+libc_hidden_def (__ioctl)
 weak_alias (__ioctl, ioctl)

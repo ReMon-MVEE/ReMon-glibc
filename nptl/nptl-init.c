@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -122,7 +122,6 @@ static const struct pthread_functions pthread_functions =
     .ptr_pthread_mutex_init = __pthread_mutex_init,
     .ptr_pthread_mutex_lock = __pthread_mutex_lock,
     .ptr_pthread_mutex_unlock = __pthread_mutex_unlock,
-    .ptr_pthread_self = __pthread_self,
     .ptr___pthread_setcancelstate = __pthread_setcancelstate,
     .ptr_pthread_setcanceltype = __pthread_setcanceltype,
     .ptr___pthread_cleanup_upto = __pthread_cleanup_upto,
@@ -297,7 +296,7 @@ __pthread_initialize_minimal_internal (void)
 
   /* Initialize the robust mutex data.  */
   {
-#ifdef __PTHREAD_MUTEX_HAVE_PREV
+#if __PTHREAD_MUTEX_HAVE_PREV
     pd->robust_prev = &pd->robust_head;
 #endif
     pd->robust_head.list = &pd->robust_head;
@@ -473,8 +472,5 @@ strong_alias (__pthread_initialize_minimal_internal,
 size_t
 __pthread_get_minstack (const pthread_attr_t *attr)
 {
-  struct pthread_attr *iattr = (struct pthread_attr *) attr;
-
-  return (GLRO(dl_pagesize) + __static_tls_size + PTHREAD_STACK_MIN
-	  + iattr->guardsize);
+  return GLRO(dl_pagesize) + __static_tls_size + PTHREAD_STACK_MIN;
 }

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gmail.com>, 2011.
 
@@ -19,6 +19,7 @@
 #include <inttypes.h>
 #include <math.h>
 #include <math_private.h>
+#include <libm-alias-double.h>
 
 /*
  * for non-zero, finite x
@@ -62,8 +63,4 @@ __frexp (double x, int *eptr)
   *eptr = e;
   return x;
 }
-weak_alias (__frexp, frexp)
-#ifdef NO_LONG_DOUBLE
-strong_alias (__frexp, __frexpl)
-weak_alias (__frexp, frexpl)
-#endif
+libm_alias_double (__frexp, frexp)

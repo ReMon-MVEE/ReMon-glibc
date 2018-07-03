@@ -1,5 +1,5 @@
 /* Multiple versions of modff.
-   Copyright (C) 2013-2017 Free Software Foundation, Inc.
+   Copyright (C) 2013-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,7 @@
 
 #include <math.h>
 #include "init-arch.h"
+#include <libm-alias-float.h>
 
 extern __typeof (__modff) __modff_ppc32 attribute_hidden;
 extern __typeof (__modff) __modff_power5plus attribute_hidden;
@@ -27,4 +28,4 @@ libc_ifunc (__modff,
 	    ? __modff_power5plus
             : __modff_ppc32);
 
-weak_alias (__modff, modff)
+libm_alias_float (__modf, modf)

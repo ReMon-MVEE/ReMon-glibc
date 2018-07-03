@@ -1,5 +1,5 @@
 /* Compute maximum of two numbers, regarding NaN as missing argument.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -18,6 +18,7 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <libm-alias-ldouble.h>
 
 	.text
 ENTRY(__fmaxl)
@@ -55,4 +56,4 @@ ENTRY(__fmaxl)
 	faddp
 	ret
 END(__fmaxl)
-weak_alias (__fmaxl, fmaxl)
+libm_alias_ldouble (__fmax, fmax)

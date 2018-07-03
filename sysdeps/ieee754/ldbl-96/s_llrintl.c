@@ -1,6 +1,6 @@
 /* Round argument to nearest integral value according to current rounding
    direction.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -23,6 +23,7 @@
 #include <math.h>
 
 #include <math_private.h>
+#include <libm-alias-ldouble.h>
 
 static const long double two63[2] =
 {
@@ -88,4 +89,4 @@ __llrintl (long double x)
   return sx ? -result : result;
 }
 
-weak_alias (__llrintl, llrintl)
+libm_alias_ldouble (__llrint, llrint)

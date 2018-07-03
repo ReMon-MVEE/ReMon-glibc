@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -16,7 +16,13 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#define FUNC fmaf
-#define TYPE float
-#define REGS "s"
-#include <s_fma.c>
+#include <math.h>
+#include <libm-alias-float.h>
+
+float
+__fmaf (float x, float y, float z)
+{
+  return __builtin_fmaf (x, y, z);
+}
+
+libm_alias_float (__fma, fma)

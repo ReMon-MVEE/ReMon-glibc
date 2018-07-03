@@ -1,6 +1,6 @@
 #!/bin/sh
 # Update copyright year lists.
-# Copyright (C) 2012-2017 Free Software Foundation, Inc.
+# Copyright (C) 2012-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -54,7 +54,7 @@ for f in $files; do
     po/*.po)
       # Files imported verbatim from the Translation Project.
       ;;
-    INSTALL | intl/plural.c | locale/C-translit.h \
+    INSTALL | locale/C-translit.h \
       | locale/programs/charmap-kw.h | locale/programs/locfile-kw.h \
       | po/libc.pot | sysdeps/gnu/errlist.c)
       # Generated files.

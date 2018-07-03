@@ -1,6 +1,6 @@
 /* Machine-dependent ELF dynamic relocation inline functions.
    PowerPC64 version.
-   Copyright 1995-2017 Free Software Foundation, Inc.
+   Copyright 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -27,6 +27,7 @@
 #include <dl-tls.h>
 #include <sysdep.h>
 #include <hwcapinfo.h>
+#include <cpu-features.c>
 
 /* Translate a processor specific dynamic tag to the index
    in l_info array.  */
@@ -300,13 +301,14 @@ BODY_PREFIX "_dl_start_user:\n"						\
 /* We define an initialization function to initialize HWCAP/HWCAP2 and
    platform data so it can be copied into the TCB later.  This is called
    very early in _dl_sysdep_start for dynamically linked binaries.  */
-#ifdef SHARED
+#if defined(SHARED) && IS_IN (rtld)
 # define DL_PLATFORM_INIT dl_platform_init ()
 
 static inline void __attribute__ ((unused))
 dl_platform_init (void)
 {
   __tcb_parse_hwcap_and_convert_at_platform ();
+  init_cpu_features (&GLRO(dl_powerpc_cpu_features));
 }
 #endif
 
@@ -706,8 +708,7 @@ elf_machine_rela (struct link_map *map,
   /* We need SYM_MAP even in the absence of TLS, for elf_machine_fixup_plt
      and STT_GNU_IFUNC.  */
   struct link_map *sym_map = RESOLVE_MAP (&sym, version, r_type);
-  Elf64_Addr value = ((sym_map == NULL ? 0 : sym_map->l_addr + sym->st_value)
-		      + reloc->r_addend);
+  Elf64_Addr value = SYMBOL_ADDRESS (sym_map, sym, true) + reloc->r_addend;
 
   if (sym != NULL
       && __builtin_expect (ELFW(ST_TYPE) (sym->st_info) == STT_GNU_IFUNC, 0)

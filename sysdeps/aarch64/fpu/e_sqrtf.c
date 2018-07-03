@@ -1,5 +1,5 @@
 /* Single-precision floating point square root.
-   Copyright (C) 2015-2017 Free Software Foundation, Inc.
+   Copyright (C) 2015-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,8 +21,6 @@
 float
 __ieee754_sqrtf (float s)
 {
-  float res;
-  asm ("fsqrt   %s0, %s1" : "=w" (res) : "w" (s));
-  return res;
+  return __builtin_sqrtf (s);
 }
 strong_alias (__ieee754_sqrtf, __sqrtf_finite)

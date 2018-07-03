@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2001-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -20,8 +20,6 @@
 #include <stdlib.h>
 
 
-extern void *__dso_handle __attribute__ ((__weak__));
-
 int
 main (void)
 {
@@ -29,12 +27,6 @@ main (void)
   void *h;
   void (*fp) (void *);
   int v = 0;
-
-  if (&__dso_handle == NULL)
-    {
-      puts ("__dso_handle not available, cannot perform the test");
-      exit (0);
-    }
 
   h = dlopen (fname, RTLD_NOW);
   if (h == NULL)

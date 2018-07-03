@@ -108,6 +108,8 @@
 #include <float.h>
 #include <math.h>
 #include <math_private.h>
+#include <math-underflow.h>
+#include <libm-alias-ldouble.h>
 
 static const long double
 tiny = 1e-4931L,
@@ -335,7 +337,7 @@ __erfl (long double x)
     return r / x - one;
 }
 
-weak_alias (__erfl, erfl)
+libm_alias_ldouble (__erf, erf)
 long double
 __erfcl (long double x)
 {
@@ -448,4 +450,4 @@ __erfcl (long double x)
     }
 }
 
-weak_alias (__erfcl, erfcl)
+libm_alias_ldouble (__erfc, erfc)

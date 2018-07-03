@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -106,6 +106,7 @@ extern char *tzname[];
 # define UCHAR_T unsigned char
 # define L_(Str) Str
 # define NLW(Sym) Sym
+# define ABALTMON_1 _NL_ABALTMON_1
 
 # if !defined STDC_HEADERS && !defined HAVE_MEMCPY
 #  define MEMCPY(d, s, n) bcopy ((s), (d), (n))
@@ -492,12 +493,19 @@ __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
 # define f_month \
   ((const CHAR_T *) (tp->tm_mon < 0 || tp->tm_mon > 11			     \
 		     ? "?" : _NL_CURRENT (LC_TIME, NLW(MON_1) + tp->tm_mon)))
+# define a_altmonth \
+  ((const CHAR_T *) (tp->tm_mon < 0 || tp->tm_mon > 11			     \
+		     ? "?" : _NL_CURRENT (LC_TIME, NLW(ABALTMON_1) + tp->tm_mon)))
+# define f_altmonth \
+  ((const CHAR_T *) (tp->tm_mon < 0 || tp->tm_mon > 11			     \
+		     ? "?" : _NL_CURRENT (LC_TIME, NLW(ALTMON_1) + tp->tm_mon)))
 # define ampm \
   ((const CHAR_T *) _NL_CURRENT (LC_TIME, tp->tm_hour > 11		      \
 				 ? NLW(PM_STR) : NLW(AM_STR)))
 
 # define aw_len STRLEN (a_wkday)
 # define am_len STRLEN (a_month)
+# define aam_len STRLEN (a_altmonth)
 # define ap_len STRLEN (ampm)
 #else
 # if !HAVE_STRFTIME
@@ -507,10 +515,13 @@ __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
 		   ? "?" : month_name[tp->tm_mon])
 #  define a_wkday f_wkday
 #  define a_month f_month
+#  define a_altmonth a_month
+#  define f_altmonth f_month
 #  define ampm (L_("AMPM") + 2 * (tp->tm_hour > 11))
 
   size_t aw_len = 3;
   size_t am_len = 3;
+  size_t aam_len = 3;
   size_t ap_len = 2;
 # endif
 #endif
@@ -775,17 +786,20 @@ __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
 	      to_uppcase = 1;
 	      to_lowcase = 0;
 	    }
-	  if (modifier != 0)
+	  if (modifier == L_('E'))
 	    goto bad_format;
 #if defined _NL_CURRENT || !HAVE_STRFTIME
-	  cpy (am_len, a_month);
+	  if (modifier == L_('O'))
+	    cpy (aam_len, a_altmonth);
+	  else
+	    cpy (am_len, a_month);
 	  break;
 #else
 	  goto underlying_strftime;
 #endif
 
 	case L_('B'):
-	  if (modifier != 0)
+	  if (modifier == L_('E'))
 	    goto bad_format;
 	  if (change_case)
 	    {
@@ -793,7 +807,10 @@ __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
 	      to_lowcase = 0;
 	    }
 #if defined _NL_CURRENT || !HAVE_STRFTIME
-	  cpy (STRLEN (f_month), f_month);
+	  if (modifier == L_('O'))
+	    cpy (STRLEN (f_altmonth), f_altmonth);
+	  else
+	    cpy (STRLEN (f_month), f_month);
 	  break;
 #else
 	  goto underlying_strftime;

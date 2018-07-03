@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -17,33 +17,12 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include <math.h>
+#include <libm-alias-double.h>
 
-#ifndef FUNC
-# define FUNC fmin
-#endif
-
-#ifndef INSN
-# define INSN "fminnm"
-#endif
-
-#ifndef TYPE
-# define TYPE double
-# define REGS "d"
-#else
-# ifndef REGS
-#  error REGS not defined
-# endif
-#endif
-
-#define __CONCATX(a,b) __CONCAT(a,b)
-
-TYPE
-__CONCATX(__,FUNC) (TYPE x, TYPE y)
+double
+__fmin (double x, double y)
 {
-  TYPE result;
-  asm ( INSN "\t%" REGS "0, %" REGS "1, %" REGS "2"
-        : "=w" (result) : "w" (x), "w" (y) );
-  return result;
+  return __builtin_fmin (x, y);
 }
 
-weak_alias (__CONCATX(__,FUNC), FUNC)
+libm_alias_double (__fmin, fmin)

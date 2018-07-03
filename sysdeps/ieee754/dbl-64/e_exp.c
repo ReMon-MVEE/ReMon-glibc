@@ -1,7 +1,7 @@
 /*
  * IBM Accurate Mathematical Library
  * written by International Business Machines Corp.
- * Copyright (C) 2001-2017 Free Software Foundation, Inc.
+ * Copyright (C) 2001-2018 Free Software Foundation, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -23,10 +23,9 @@
 /*           exp1                                                          */
 /*                                                                         */
 /* FILES NEEDED:dla.h endian.h mpa.h mydefs.h uexp.h                       */
-/*              mpa.c mpexp.x slowexp.c                                    */
 /*                                                                         */
 /* An ultimate exp routine. Given an IEEE double machine number x          */
-/* it computes the correctly rounded (to nearest) value of e^x             */
+/* it computes an almost correctly rounded (to nearest) value of e^x       */
 /* Assumption: Machine arithmetic operations are performed in              */
 /* round to nearest mode of IEEE 754 standard.                             */
 /*                                                                         */
@@ -38,25 +37,25 @@
 #include "mydefs.h"
 #include "MathLib.h"
 #include "uexp.tbl"
+#include <math-barriers.h>
 #include <math_private.h>
 #include <fenv.h>
 #include <float.h>
+#include "eexp.tbl"
 
 #ifndef SECTION
 # define SECTION
 #endif
 
-double __slowexp (double);
-
-/* An ultimate exp routine. Given an IEEE double machine number x it computes
-   the correctly rounded (to nearest) value of e^x.  */
 double
 SECTION
 __ieee754_exp (double x)
 {
   double bexp, t, eps, del, base, y, al, bet, res, rem, cor;
+  double z;
   mynumber junk1, junk2, binexp = {{0, 0}};
   int4 i, j, m, n, ex;
+  int4 k;
   double retval;
 
   {
@@ -66,7 +65,42 @@ __ieee754_exp (double x)
     m = junk1.i[HIGH_HALF];
     n = m & hugeint;
 
-    if (n > smallint && n < bigint)
+    if (n < 0x3ff0a2b2)		/* |x| < 1.03972053527832 */
+      {
+	if (n < 0x3f862e42)	/* |x| < 3/2 ln 2 */
+	  {
+	    if (n < 0x3ed00000)	/* |x| < 1/64 ln 2 */
+	      {
+		if (n < 0x3e300000)	/* |x| < 2^18 */
+		  {
+		    retval = one + junk1.x;
+		    goto ret;
+		  }
+		retval = one + junk1.x * (one + half * junk1.x);
+		goto ret;
+	      }
+	    t = junk1.x * junk1.x;
+	    retval = junk1.x + (t * (half + junk1.x * t2) +
+				(t * t) * (t3 + junk1.x * t4 + t * t5));
+	    retval = one + retval;
+	    goto ret;
+	  }
+
+	/* Find the multiple of 2^-6 nearest x.  */
+	k = n >> 20;
+	j = (0x00100000 | (n & 0x000fffff)) >> (0x40c - k);
+	j = (j - 1) & ~1;
+	if (m < 0)
+	  j += 134;
+	z = junk1.x - TBL2[j];
+	t = z * z;
+	retval = z + (t * (half + (z * t2))
+		      + (t * t) * (t3 + z * t4 + t * t5));
+	retval = TBL2[j + 1] + TBL2[j + 1] * retval;
+	goto ret;
+      }
+
+    if (n < bigint)		/* && |x| >= 1.03972053527832 */
       {
 	y = x * log2e.x + three51.x;
 	bexp = y - three51.x;	/*  multiply the result by 2**bexp        */
@@ -93,22 +127,9 @@ __ieee754_exp (double x)
 
 	rem = (bet + bet * eps) + al * eps;
 	res = al + rem;
-	cor = (al - res) + rem;
-	if (res == (res + cor * err_0))
-	  {
-	    retval = res * binexp.x;
-	    goto ret;
-	  }
-	else
-	  {
-	    retval = __slowexp (x);
-	    goto ret;
-	  }			/*if error is over bound */
-      }
-
-    if (n <= smallint)
-      {
-	retval = 1.0;
+	/* Maximum relative error is 7.8e-22 (70.1 bits).
+	   Maximum ULP error is 0.500007.  */
+	retval = res * binexp.x;
 	goto ret;
       }
 
@@ -166,38 +187,22 @@ __ieee754_exp (double x)
 	if (ex >= -1022)
 	  {
 	    binexp.i[HIGH_HALF] = (1023 + ex) << 20;
-	    if (res == (res + cor * err_0))
-	      {
-		retval = res * binexp.x;
-		goto ret;
-	      }
-	    else
-	      {
-		retval = __slowexp (x);
-		goto check_uflow_ret;
-	      }			/*if error is over bound */
+	    /* Does not underflow: res >= 1.0, binexp >= 0x1p-1022
+	       Maximum relative error is 7.8e-22 (70.1 bits).
+	       Maximum ULP error is 0.500007.  */
+	    retval = res * binexp.x;
+	    goto ret;
 	  }
 	ex = -(1022 + ex);
 	binexp.i[HIGH_HALF] = (1023 - ex) << 20;
 	res *= binexp.x;
 	cor *= binexp.x;
-	eps = 1.0000000001 + err_0 * binexp.x;
 	t = 1.0 + res;
 	y = ((1.0 - t) + res) + cor;
 	res = t + y;
-	cor = (t - res) + y;
-	if (res == (res + eps * cor))
-	  {
-	    binexp.i[HIGH_HALF] = 0x00100000;
-	    retval = (res - 1.0) * binexp.x;
-	    goto check_uflow_ret;
-	  }
-	else
-	  {
-	    retval = __slowexp (x);
-	    goto check_uflow_ret;
-	  }			/*   if error is over bound    */
-      check_uflow_ret:
+	/* Maximum ULP error is 0.5000035.  */
+	binexp.i[HIGH_HALF] = 0x00100000;
+	retval = (res - 1.0) * binexp.x;
 	if (retval < DBL_MIN)
 	  {
 	    double force_underflow = tiny * tiny;
@@ -210,10 +215,9 @@ __ieee754_exp (double x)
     else
       {
 	binexp.i[HIGH_HALF] = (junk1.i[LOW_HALF] + 767) << 20;
-	if (res == (res + cor * err_0))
-	  retval = res * binexp.x * t256.x;
-	else
-	  retval = __slowexp (x);
+	/* Maximum relative error is 7.8e-22 (70.1 bits).
+	   Maximum ULP error is 0.500007.  */
+	retval = res * binexp.x * t256.x;
 	if (isinf (retval))
 	  goto ret_huge;
 	else
@@ -233,13 +237,10 @@ ret:
 strong_alias (__ieee754_exp, __exp_finite)
 #endif
 
-/* Compute e^(x+xx).  The routine also receives bound of error of previous
-   calculation.  If after computing exp the error exceeds the allowed bounds,
-   the routine returns a non-positive number.  Otherwise it returns the
-   computed result, which is always positive.  */
+/* Compute e^(x+xx).  */
 double
 SECTION
-__exp1 (double x, double xx, double error)
+__exp1 (double x, double xx)
 {
   double bexp, t, eps, del, base, y, al, bet, res, rem, cor;
   mynumber junk1, junk2, binexp = {{0, 0}};
@@ -249,6 +250,7 @@ __exp1 (double x, double xx, double error)
   m = junk1.i[HIGH_HALF];
   n = m & hugeint;		/* no sign */
 
+  /* fabs (x) > 5.551112e-17 and fabs (x) < 7.080010e+02.  */
   if (n > smallint && n < bigint)
     {
       y = x * log2e.x + three51.x;
@@ -276,11 +278,9 @@ __exp1 (double x, double xx, double error)
 
       rem = (bet + bet * eps) + al * eps;
       res = al + rem;
-      cor = (al - res) + rem;
-      if (res == (res + cor * (1.0 + error + err_1)))
-	return res * binexp.x;
-      else
-	return -10.0;
+      /* Maximum relative error before rounding is 8.8e-22 (69.9 bits).
+	 Maximum ULP error is 0.500008.  */
+      return res * binexp.x;
     }
 
   if (n <= smallint)
@@ -318,6 +318,7 @@ __exp1 (double x, double xx, double error)
   cor = (al - res) + rem;
   if (m >> 31)
     {
+      /* x < 0.  */
       ex = junk1.i[LOW_HALF];
       if (res < 1.0)
 	{
@@ -328,34 +329,25 @@ __exp1 (double x, double xx, double error)
       if (ex >= -1022)
 	{
 	  binexp.i[HIGH_HALF] = (1023 + ex) << 20;
-	  if (res == (res + cor * (1.0 + error + err_1)))
-	    return res * binexp.x;
-	  else
-	    return -10.0;
+	  /* Maximum ULP error is 0.500008.  */
+	  return res * binexp.x;
 	}
+      /* Denormal case - ex < -1022.  */
       ex = -(1022 + ex);
       binexp.i[HIGH_HALF] = (1023 - ex) << 20;
       res *= binexp.x;
       cor *= binexp.x;
-      eps = 1.00000000001 + (error + err_1) * binexp.x;
       t = 1.0 + res;
       y = ((1.0 - t) + res) + cor;
       res = t + y;
-      cor = (t - res) + y;
-      if (res == (res + eps * cor))
-	{
-	  binexp.i[HIGH_HALF] = 0x00100000;
-	  return (res - 1.0) * binexp.x;
-	}
-      else
-	return -10.0;
+      binexp.i[HIGH_HALF] = 0x00100000;
+      /* Maximum ULP error is 0.500004.  */
+      return (res - 1.0) * binexp.x;
     }
   else
     {
       binexp.i[HIGH_HALF] = (junk1.i[LOW_HALF] + 767) << 20;
-      if (res == (res + cor * (1.0 + error + err_1)))
-	return res * binexp.x * t256.x;
-      else
-	return -10.0;
+      /* Maximum ULP error is 0.500008.  */
+      return res * binexp.x * t256.x;
     }
 }

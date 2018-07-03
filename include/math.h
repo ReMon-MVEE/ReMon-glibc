@@ -2,7 +2,6 @@
 
 #ifdef _ISOMAC
 # undef NO_LONG_DOUBLE
-# undef _Mlong_double_
 #endif
 
 #include <math/math.h>
@@ -39,7 +38,7 @@ libm_hidden_proto (__issignaling)
 libm_hidden_proto (__issignalingf)
 libm_hidden_proto (__exp)
 libm_hidden_proto (__expf)
-libm_hidden_proto (roundeven)
+libm_hidden_proto (__roundeven)
 
 # ifndef __NO_LONG_DOUBLE_MATH
 libm_hidden_proto (__fpclassifyl)
@@ -53,6 +52,21 @@ libm_hidden_proto (__fpclassifyf128)
 libm_hidden_proto (__issignalingf128)
 libm_hidden_proto (__expf128)
 libm_hidden_proto (__expm1f128)
+# endif
+
+# if !(defined __FINITE_MATH_ONLY__ && __FINITE_MATH_ONLY__ > 0)
+#  ifndef NO_MATH_REDIRECT
+/* Declare sqrt for use within GLIBC.  Compilers typically inline sqrt as a
+   single instruction.  Use an asm to avoid use of PLTs if it doesn't.  */
+float (sqrtf) (float) asm ("__ieee754_sqrtf");
+double (sqrt) (double) asm ("__ieee754_sqrt");
+#   ifndef __NO_LONG_DOUBLE_MATH
+long double (sqrtl) (long double) asm ("__ieee754_sqrtl");
+#   endif
+#   if __HAVE_DISTINCT_FLOAT128 > 0
+_Float128 (sqrtf128) (_Float128) asm ("__ieee754_sqrtf128");
+#   endif
+#  endif
 # endif
 
 #endif

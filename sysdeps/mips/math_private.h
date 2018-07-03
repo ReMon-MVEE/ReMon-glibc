@@ -1,5 +1,5 @@
 /* Internal math stuff.  MIPS version.
-   Copyright (C) 2013-2017 Free Software Foundation, Inc.
+   Copyright (C) 2013-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -239,10 +239,6 @@ libc_feholdsetround_mips_ctx (struct rm_ctx *ctx, int round)
 # define libc_feholdsetroundl_ctx         libc_feholdsetround_mips_ctx
 
 #endif
-
-/* Enable __finitel, __isinfl, and __isnanl for binary compatibility
-   when built without long double support. */
-#define LDBL_CLASSIFY_COMPAT 1
 
 #include_next <math_private.h>
 

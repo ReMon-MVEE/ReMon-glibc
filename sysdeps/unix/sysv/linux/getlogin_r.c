@@ -1,4 +1,4 @@
-/* Copyright (C) 2010-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2010-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,7 @@
 #include <pwd.h>
 #include <unistd.h>
 #include <not-cancel.h>
+#include <scratch_buffer.h>
 
 #define STATIC static
 static int getlogin_r_fd0 (char *name, size_t namesize);
@@ -54,29 +55,31 @@ __getlogin_r_loginuid (char *name, size_t namesize)
 	  endp == uidbuf || *endp != '\0'))
     return -1;
 
-  size_t buflen = 1024;
-  char *buf = alloca (buflen);
-  bool use_malloc = false;
+  /* If there is no login uid, linux sets /proc/self/loginid to the sentinel
+     value of, (uid_t) -1, so check if that value is set and return early to
+     avoid making unneeded nss lookups. */
+  if (uid == (uid_t) -1)
+    {
+      __set_errno (ENXIO);
+      return ENXIO;
+    }
+
   struct passwd pwd;
   struct passwd *tpwd;
   int result = 0;
   int res;
+  struct scratch_buffer tmpbuf;
+  scratch_buffer_init (&tmpbuf);
 
-  while ((res = __getpwuid_r (uid, &pwd, buf, buflen, &tpwd)) == ERANGE)
-    if (__libc_use_alloca (2 * buflen))
-      buf = extend_alloca (buf, buflen, 2 * buflen);
-    else
-      {
-	buflen *= 2;
-	char *newp = realloc (use_malloc ? buf : NULL, buflen);
-	if (newp == NULL)
-	  {
-	    result = ENOMEM;
-	    goto out;
-	  }
-	buf = newp;
-	use_malloc = true;
-      }
+  while ((res =  __getpwuid_r (uid, &pwd,
+			       tmpbuf.data, tmpbuf.length, &tpwd)) == ERANGE)
+    {
+      if (!scratch_buffer_grow (&tmpbuf))
+	{
+	  result = ENOMEM;
+	  goto out;
+	}
+    }
 
   if (res != 0 || tpwd == NULL)
     {
@@ -95,9 +98,7 @@ __getlogin_r_loginuid (char *name, size_t namesize)
   memcpy (name, pwd.pw_name, needed);
 
  out:
-  if (use_malloc)
-    free (buf);
-
+  scratch_buffer_free (&tmpbuf);
   return result;
 }
 

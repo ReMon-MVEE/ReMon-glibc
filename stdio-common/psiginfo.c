@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2009-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,6 +15,7 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include <array_length.h>
 #include <errno.h>
 #include <libintl.h>
 #include <signal.h>
@@ -116,7 +117,7 @@ psiginfo (const siginfo_t *pinfo, const char *s)
 	case sig:							      \
 	  base = C(codestrs_, sig).str;					      \
 	  offarr = C (codes_, sig);					      \
-	  offarr_len = sizeof (C (codes_, sig)) / sizeof (C (codes_, sig)[0]);\
+	  offarr_len = array_length (C (codes_, sig));			      \
 	  break
 
 	  H (SIGILL);

@@ -1,5 +1,5 @@
 /* Common function for preadv2 and pwritev2 tests.
-   Copyright (C) 2017 Free Software Foundation, Inc.
+   Copyright (C) 2017-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -34,7 +34,11 @@ do_test_with_invalid_flags (void)
 #ifndef RWF_NOWAIT
 # define RWF_NOWAIT 0
 #endif
-#define RWF_SUPPORTED	(RWF_HIPRI | RWF_DSYNC | RWF_SYNC | RWF_NOWAIT)
+#ifndef RWF_APPEND
+# define RWF_APPEND 0
+#endif
+#define RWF_SUPPORTED	(RWF_HIPRI | RWF_DSYNC | RWF_SYNC | RWF_NOWAIT \
+			 | RWF_APPEND)
   /* Set the next bit from the mask of all supported flags.  */
   int invalid_flag = RWF_SUPPORTED != 0 ? __builtin_clz (RWF_SUPPORTED) : 2;
   invalid_flag = 0x1 << ((sizeof (int) * CHAR_BIT) - invalid_flag);

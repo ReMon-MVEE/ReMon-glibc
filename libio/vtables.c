@@ -1,5 +1,5 @@
 /* libio vtable validation.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
 #include <dlfcn.h>
 #include <libioP.h>
 #include <stdio.h>
+#include <ldsodefs.h>
 
 #ifdef SHARED
 
@@ -54,7 +55,7 @@ _IO_vtable_check (void)
   {
     Dl_info di;
     struct link_map *l;
-    if (_dl_open_hook != NULL
+    if (!rtld_active ()
         || (_dl_addr (_IO_vtable_check, &di, &l, NULL) != 0
             && l->l_ns != LM_ID_BASE))
       return;

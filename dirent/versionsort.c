@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,16 +15,10 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-/* We need to avoid the header declaration of versionsort64, because
-   the types don't match versionsort and then the compiler will
-   complain about the mismatch when we do the alias below.  */
-#define versionsort64     __renamed_versionsort64
-
 #include <dirent.h>
 
-#undef  versionsort64
-
-#include <string.h>
+#if !_DIRENT_MATCHES_DIRENT64
+# include <string.h>
 
 int
 versionsort (const struct dirent **a, const struct dirent **b)
@@ -32,6 +26,4 @@ versionsort (const struct dirent **a, const struct dirent **b)
   return __strverscmp ((*a)->d_name, (*b)->d_name);
 }
 
-#ifdef _DIRENT_MATCHES_DIRENT64
-weak_alias (versionsort, versionsort64)
 #endif

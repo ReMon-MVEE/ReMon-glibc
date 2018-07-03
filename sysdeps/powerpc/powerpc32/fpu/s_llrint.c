@@ -1,5 +1,5 @@
 /* Round a double value to a long long in the current rounding mode.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,6 +21,7 @@
 #include <math_ldbl_opt.h>
 #include <math_private.h>
 #include <stdint.h>
+#include <libm-alias-double.h>
 
 long long int
 __llrint (double x)
@@ -53,11 +54,4 @@ __llrint (double x)
 	return (long long int) (long int) rx << 32;
     }
 }
-weak_alias (__llrint, llrint)
-#ifdef NO_LONG_DOUBLE
-strong_alias (__llrint, __llrintl)
-weak_alias (__llrint, llrintl)
-#endif
-#if LONG_DOUBLE_COMPAT(libm, GLIBC_2_1)
-compat_symbol (libm, __llrint, llrintl, GLIBC_2_1);
-#endif
+libm_alias_double (__llrint, llrint)

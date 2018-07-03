@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -30,10 +30,10 @@
 #include <stddef.h>
 #include <shlib-compat.h>
 
-_IO_FILE *
-__fopen_maybe_mmap (_IO_FILE *fp)
+FILE *
+__fopen_maybe_mmap (FILE *fp)
 {
-#ifdef _G_HAVE_MMAP
+#if _G_HAVE_MMAP
   if ((fp->_flags2 & _IO_FLAGS2_MMAP) && (fp->_flags & _IO_NO_WRITES))
     {
       /* Since this is read-only, we might be able to mmap the contents
@@ -52,7 +52,7 @@ __fopen_maybe_mmap (_IO_FILE *fp)
 }
 
 
-_IO_FILE *
+FILE *
 __fopen_internal (const char *filename, const char *mode, int is32)
 {
   struct locked_FILE
@@ -72,10 +72,7 @@ __fopen_internal (const char *filename, const char *mode, int is32)
   _IO_no_init (&new_f->fp.file, 0, 0, &new_f->wd, &_IO_wfile_jumps);
   _IO_JUMPS (&new_f->fp) = &_IO_file_jumps;
   _IO_new_file_init_internal (&new_f->fp);
-#if  !_IO_UNIFIED_JUMPTABLES
-  new_f->fp.vtable = NULL;
-#endif
-  if (_IO_file_fopen ((_IO_FILE *) new_f, filename, mode, is32) != NULL)
+  if (_IO_file_fopen ((FILE *) new_f, filename, mode, is32) != NULL)
     return __fopen_maybe_mmap (&new_f->fp.file);
 
   _IO_un_link (&new_f->fp);
@@ -83,7 +80,7 @@ __fopen_internal (const char *filename, const char *mode, int is32)
   return NULL;
 }
 
-_IO_FILE *
+FILE *
 _IO_new_fopen (const char *filename, const char *mode)
 {
   return __fopen_internal (filename, mode, 1);

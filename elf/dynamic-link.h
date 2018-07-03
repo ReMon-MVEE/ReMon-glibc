@@ -1,5 +1,5 @@
 /* Inline functions for dynamic linking.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -94,7 +94,7 @@ elf_machine_lazy_rel (struct link_map *map,
 
 #ifdef RESOLVE_MAP
 
-# ifdef RTLD_BOOTSTRAP
+# if defined RTLD_BOOTSTRAP || defined STATIC_PIE_BOOTSTRAP
 #  define ELF_DURING_STARTUP (1)
 # else
 #  define ELF_DURING_STARTUP (0)

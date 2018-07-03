@@ -1,5 +1,5 @@
 /* Round float to int floating-point values, sparc32 v9 version.
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by David S. Miller <davem@davemloft.net>, 2012.
 
@@ -19,6 +19,7 @@
 
 #include <sysdep.h>
 #include <math_ldbl_opt.h>
+#include <libm-alias-double.h>
 
 	/* We pop constants into the FPU registers using the incoming
 	   argument stack slots, since this avoid having to use any PIC
@@ -62,8 +63,4 @@ ENTRY (__rint)
 	retl
 	 for	%f0, SIGN_BIT, %f0
 END (__rint)
-weak_alias (__rint, rint)
-
-#if LONG_DOUBLE_COMPAT(libm, GLIBC_2_0)
-compat_symbol (libm, __rint, rintl, GLIBC_2_0)
-#endif
+libm_alias_double (__rint, rint)

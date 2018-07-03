@@ -1,5 +1,5 @@
 /* File descriptors.
-   Copyright (C) 1993-2017 Free Software Foundation, Inc.
+   Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -26,6 +26,9 @@
 #include <hurd/hurd_types.h>
 #include <hurd/port.h>
 #include <sys/socket.h>
+#include <sys/select.h>
+#include <fcntl.h>
+#include <bits/types/sigset_t.h>
 
 
 /* Structure representing a file descriptor.  */
@@ -58,6 +61,10 @@ extern struct mutex _hurd_dtable_lock; /* Locks those two variables.  */
    NULL.  The cell is unlocked; when ready to use it, lock it and check for
    it being unused.  */
 
+extern struct hurd_fd *_hurd_fd_get (int fd);
+
+#if defined __USE_EXTERN_INLINES && defined _LIBC
+# if IS_IN (libc)
 _HURD_FD_H_EXTERN_INLINE struct hurd_fd *
 _hurd_fd_get (int fd)
 {
@@ -90,6 +97,8 @@ _hurd_fd_get (int fd)
 
   return descriptor;
 }
+# endif
+#endif
 
 
 /* Evaluate EXPR with the variable `descriptor' bound to a pointer to the
@@ -133,10 +142,14 @@ _hurd_fd_get (int fd)
      __result; })
 
 #include <errno.h>
+#include <bits/types/error_t.h>
 
 /* Check if ERR should generate a signal.
    Returns the signal to take, or zero if none.  */
 
+extern int _hurd_fd_error_signal (error_t err);
+
+#ifdef __USE_EXTERN_INLINES
 _HURD_FD_H_EXTERN_INLINE int
 _hurd_fd_error_signal (error_t err)
 {
@@ -153,11 +166,15 @@ _hurd_fd_error_signal (error_t err)
       return 0;
     }
 }
+#endif
 
 /* Handle an error from an RPC on a file descriptor's port.  You should
    always use this function to handle errors from RPCs made on file
    descriptor ports.  Some errors are translated into signals.  */
 
+extern error_t _hurd_fd_error (int fd, error_t err);
+
+#ifdef __USE_EXTERN_INLINES
 _HURD_FD_H_EXTERN_INLINE error_t
 _hurd_fd_error (int fd, error_t err)
 {
@@ -165,25 +182,33 @@ _hurd_fd_error (int fd, error_t err)
   if (signo)
     {
       const struct hurd_signal_detail detail
-	= { code: fd, error: err, exc: 0 };
+	= { exc: 0, exc_code: 0, exc_subcode: 0, code: fd, error: err };
       _hurd_raise_signal (NULL, signo, &detail);
     }
   return err;
 }
+#endif
 
 /* Handle error code ERR from an RPC on file descriptor FD's port.
    Set `errno' to the appropriate error code, and always return -1.  */
 
+extern int __hurd_dfail (int fd, error_t err);
+
+#ifdef __USE_EXTERN_INLINES
 _HURD_FD_H_EXTERN_INLINE int
 __hurd_dfail (int fd, error_t err)
 {
   errno = _hurd_fd_error (fd, err);
   return -1;
 }
+#endif
 
 /* Likewise, but do not raise SIGPIPE on EPIPE if flags contain
    MSG_NOSIGNAL.  */
 
+extern int __hurd_sockfail (int fd, int flags, error_t err);
+
+#ifdef __USE_EXTERN_INLINES
 _HURD_FD_H_EXTERN_INLINE int
 __hurd_sockfail (int fd, int flags, error_t err)
 {
@@ -192,6 +217,7 @@ __hurd_sockfail (int fd, int flags, error_t err)
   errno = err;
   return -1;
 }
+#endif
 
 /* Set up *FD to have PORT its server port, doing appropriate ctty magic.
    Does no locking or unlocking.  */
@@ -229,9 +255,9 @@ extern error_t _hurd_fd_close (struct hurd_fd *fd);
    If successful, stores the amount actually read or written in *NBYTES.  */
 
 extern error_t _hurd_fd_read (struct hurd_fd *fd,
-			      void *buf, size_t *nbytes, loff_t offset);
+			      void *buf, size_t *nbytes, __loff_t offset);
 extern error_t _hurd_fd_write (struct hurd_fd *fd,
-			       const void *buf, size_t *nbytes, loff_t offset);
+			       const void *buf, size_t *nbytes, __loff_t offset);
 
 
 /* Call *RPC on PORT and/or CTTY; if a call on CTTY returns EBACKGROUND,
@@ -253,6 +279,30 @@ extern int _hurd_select (int nfds, struct pollfd *pollfds,
 			 fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 			 const struct timespec *timeout,
 			 const sigset_t *sigmask);
+
+/* Apply AT_FLAGS on FLAGS, in preparation for calling
+   __hurd_file_name_lookup.  */
+
+#if defined __USE_EXTERN_INLINES && defined _LIBC
+# if IS_IN (libc)
+_HURD_FD_H_EXTERN_INLINE error_t
+__hurd_at_flags (int *at_flags, int *flags)
+{
+  if ((*at_flags & AT_SYMLINK_FOLLOW) && (*at_flags & AT_SYMLINK_NOFOLLOW))
+    return EINVAL;
+
+  *flags |= (*at_flags & AT_SYMLINK_NOFOLLOW) ? O_NOLINK : 0;
+  *at_flags &= ~AT_SYMLINK_NOFOLLOW;
+  if (*at_flags & AT_SYMLINK_FOLLOW)
+    *flags &= ~O_NOLINK;
+  *at_flags &= ~AT_SYMLINK_FOLLOW;
+  if (*at_flags != 0)
+    return EINVAL;
+
+  return 0;
+}
+# endif
+#endif
 
 /* Variant of file_name_lookup used in *at function implementations.
    AT_FLAGS may only contain AT_SYMLINK_FOLLOW or AT_SYMLINK_NOFOLLOW,

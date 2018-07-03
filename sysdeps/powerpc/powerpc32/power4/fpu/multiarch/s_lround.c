@@ -1,5 +1,5 @@
 /* Multiple versions of lround.
-   Copyright (C) 2013-2017 Free Software Foundation, Inc.
+   Copyright (C) 2013-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 #include <math_ldbl_opt.h>
 #include <shlib-compat.h>
 #include "init-arch.h"
+#include <libm-alias-double.h>
 
 extern __typeof (__lround) __lround_ppc32 attribute_hidden;
 extern __typeof (__lround) __lround_power5plus attribute_hidden;
@@ -32,12 +33,4 @@ libc_ifunc (__lround,
 		  __lround_power5plus
             : __lround_ppc32);
 
-weak_alias (__lround, lround)
-
-#ifdef NO_LONG_DOUBLE
-weak_alias (__lround, lroundl)
-strong_alias (__lround, __lroundl)
-#endif
-#if LONG_DOUBLE_COMPAT(libm, GLIBC_2_1)
-compat_symbol (libm, __lround, lroundl, GLIBC_2_1);
-#endif
+libm_alias_double (__lround, lround)

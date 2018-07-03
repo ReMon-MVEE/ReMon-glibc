@@ -1,5 +1,5 @@
 /* Definitions of functions to access `dev_t' values.
-   Copyright (C) 2003-2017 Free Software Foundation, Inc.
+   Copyright (C) 2003-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -23,8 +23,14 @@
 #include <sys/sysmacros.h>
 
 #define OUT_OF_LINE_IMPL_TEMPL(rtype, name, proto) \
-  rtype gnu_dev_##name proto
+  rtype __gnu_dev_##name proto
 
 __SYSMACROS_DEFINE_MAJOR(OUT_OF_LINE_IMPL_TEMPL)
+weak_alias (__gnu_dev_major, gnu_dev_major)
+libc_hidden_weak (gnu_dev_major)
 __SYSMACROS_DEFINE_MINOR(OUT_OF_LINE_IMPL_TEMPL)
+weak_alias (__gnu_dev_minor, gnu_dev_minor)
+libc_hidden_weak (gnu_dev_minor)
 __SYSMACROS_DEFINE_MAKEDEV(OUT_OF_LINE_IMPL_TEMPL)
+weak_alias (__gnu_dev_makedev, gnu_dev_makedev)
+libc_hidden_weak (gnu_dev_makedev)

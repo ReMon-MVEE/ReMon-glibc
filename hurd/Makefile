@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2017 Free Software Foundation, Inc.
+# Copyright (C) 1991-2018 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -21,10 +21,10 @@ include ../Makeconfig
 
 headers = hurd.h $(interface-headers) \
 	  $(addprefix hurd/,fd.h id.h port.h signal.h sigpreempt.h ioctl.h\
-			    userlink.h resource.h threadvar.h lookup.h)
+			    userlink.h resource.h lookup.h)
 
 inline-headers = hurd.h $(addprefix hurd/,fd.h signal.h \
-					  userlink.h threadvar.h port.h)
+					  userlink.h port.h)
 
 # The RPC interfaces go in a separate library.
 interface-library := libhurduser
@@ -54,6 +54,7 @@ routines = hurdstartup hurdinit \
 	   vpprintf \
 	   ports-get ports-set hurdports hurdmsg \
 	   errno-loc \
+	   hurdlock \
 	   $(sig) $(dtable) $(inlines) port-cleanup report-wait xattr
 sig	= hurdsig hurdfault siginfo hurd-raise preempt-sig \
 	  trampoline longjmp-ts catch-exc exc2signal hurdkill sigunwind \
@@ -78,6 +79,7 @@ shared-only-routines = compat-20
 $(inlines:%=$(objpfx)%.c): $(objpfx)%-inlines.c: %.h
 	(h="`echo $(subst /,_,$*) | tr '[a-z]' '[A-Z]'`"; \
 	 echo "#define _$${h}_H_EXTERN_INLINE /* Define real function.  */"; \
+	 echo "#define _$${h}_H_HIDDEN_DEF    /* Declare hidden definition.  */"; \
 	 echo '#include "$<"') > $@-new
 	mv -f $@-new $@
 generated += $(inlines:=.c)
@@ -86,6 +88,8 @@ generated += $(inlines:=.c)
 CFLAGS-hurdstartup.o = $(no-stack-protector)
 CFLAGS-RPC_exec_startup_get_info.o = $(no-stack-protector)
 
+# Make generated headers compatible with all support standards
+migheaderpipe := | sed -e 's/\<ino64_t\>/__ino64_t/' -e 's/\<loff_t\>/__loff_t/'
 include ../mach/Machrules
 include ../Rules
 

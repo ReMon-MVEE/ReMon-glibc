@@ -1,5 +1,5 @@
 /* Get NaN payload.  flt-32 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,10 +19,11 @@
 #include <fix-int-fp-convert-zero.h>
 #include <math.h>
 #include <math_private.h>
+#include <libm-alias-float.h>
 #include <stdint.h>
 
 float
-getpayloadf (const float *x)
+__getpayloadf (const float *x)
 {
   uint32_t ix;
   GET_FLOAT_WORD (ix, *x);
@@ -31,3 +32,4 @@ getpayloadf (const float *x)
     return 0.0f;
   return (float) ix;
 }
+libm_alias_float (__getpayload, getpayload)

@@ -1,5 +1,5 @@
 /* High-resolution sleep with the specified clock.
-   Copyright (C) 2000-2017 Free Software Foundation, Inc.
+   Copyright (C) 2000-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -71,7 +71,7 @@ __clock_nanosleep (clockid_t clock_id, int flags, const struct timespec *req,
       assert (sizeof (sec) >= sizeof (now.tv_sec));
 
       /* Get the current time for this clock.  */
-      if (__builtin_expect (clock_gettime (clock_id, &now), 0) != 0)
+      if (__builtin_expect (__clock_gettime (clock_id, &now), 0) != 0)
 	return errno;
 
       /* Compute the difference.  */
@@ -96,6 +96,6 @@ __clock_nanosleep (clockid_t clock_id, int flags, const struct timespec *req,
     /* Not supported.  */
     return ENOTSUP;
 
-  return __builtin_expect (nanosleep (req, rem), 0) ? errno : 0;
+  return __builtin_expect (__nanosleep (req, rem), 0) ? errno : 0;
 }
 weak_alias (__clock_nanosleep, clock_nanosleep)

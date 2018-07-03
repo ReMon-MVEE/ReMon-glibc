@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <hurd.h>
 #include <hurd/port.h>
+#include <lowlevellock.h>
 
 /* Set the process group ID of the process matching PID to PGID.
    If PID is zero, the current process's process group ID is set.
@@ -38,14 +39,7 @@ __setpgid (pid_t pid, pid_t pgid)
     /* Synchronize with the signal thread to make sure we have
        received and processed proc_newids before returning to the user.  */
     while (_hurd_pids_changed_stamp == stamp)
-      {
-#ifdef noteven
-	/* XXX we have no need for a mutex, but cthreads demands one.  */
-	__condition_wait (&_hurd_pids_changed_sync, NULL);
-#else
-	__swtch_pri(0);
-#endif
-      }
+      lll_wait (&_hurd_pids_changed_stamp, stamp, 0);
 
   return 0;
 

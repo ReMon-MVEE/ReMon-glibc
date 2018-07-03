@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -140,7 +140,7 @@ struct pthread_key_struct
 struct new_sem
 {
 #if __HAVE_64B_ATOMICS
-  /* The data field holds both value (in the least-significant 32 bytes) and
+  /* The data field holds both value (in the least-significant 32 bits) and
      nwaiters.  */
 # if __BYTE_ORDER == __LITTLE_ENDIAN
 #  define SEM_VALUE_OFFSET 0

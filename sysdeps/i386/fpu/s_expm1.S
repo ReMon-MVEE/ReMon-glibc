@@ -1,5 +1,5 @@
 /* ix87 specific implementation of exp(x)-1.
-   Copyright (C) 1996-2017 Free Software Foundation, Inc.
+   Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
    Based on code by John C. Bowman <bowman@ipp-garching.mpg.de>.
@@ -24,6 +24,7 @@
 #include <sysdep.h>
 #include <machine/asm.h>
 #include <i386-math-asm.h>
+#include <libm-alias-double.h>
 
 	.section .rodata
 
@@ -110,4 +111,4 @@ ENTRY(__expm1)
 	fldl	MO(minus1)	// Set result to -1.0.
 3:	ret
 END(__expm1)
-weak_alias (__expm1, expm1)
+libm_alias_double (__expm1, expm1)

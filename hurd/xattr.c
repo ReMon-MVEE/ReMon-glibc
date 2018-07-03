@@ -1,5 +1,5 @@
 /* Support for *xattr interfaces on GNU/Hurd.
-   Copyright (C) 2006-2017 Free Software Foundation, Inc.
+   Copyright (C) 2006-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -67,14 +67,14 @@ _hurd_xattr_get (io_t port, const char *name, void *value, size_t *size)
       if (value != NULL && *size < bufsz)
 	{
 	  if (buf != value)
-	    munmap (buf, bufsz);
+	    __munmap (buf, bufsz);
 	  return -ERANGE;
 	}
       if (buf != value && bufsz > 0)
 	{
 	  if (value != NULL)
 	    memcpy (value, buf, bufsz);
-	  munmap (buf, bufsz);
+	  __munmap (buf, bufsz);
 	}
       *size = bufsz;
       return 0;
@@ -150,7 +150,7 @@ _hurd_xattr_set (io_t port, const char *name, const void *value, size_t size,
 	    return err;
 	  if (bufsz > 0)
 	    {
-	      munmap (buf, bufsz);
+	      __munmap (buf, bufsz);
 	      return ENODATA;
 	    }
 	}

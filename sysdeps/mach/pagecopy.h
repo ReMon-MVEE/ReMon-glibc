@@ -1,5 +1,5 @@
 /* Macros for copying by pages; used in memcpy, memmove.  Mach version.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,8 +19,8 @@
 #include <mach.h>
 
 /* Threshold at which vm_copy is more efficient than well-optimized copying
-   by words.  This parameter should be tuned as necessary.  */
-#define PAGE_THRESHOLD		(2 * PAGE_SIZE)	/* XXX ? */
+   by words.  */
+#define PAGE_COPY_THRESHOLD		(16384)
 
 #define PAGE_SIZE		__vm_page_size
 #define PAGE_COPY_FWD(dstp, srcp, nbytes_left, nbytes)			      \

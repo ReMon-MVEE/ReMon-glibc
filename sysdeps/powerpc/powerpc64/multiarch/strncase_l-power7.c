@@ -1,4 +1,4 @@
-/* Copyright (C) 2013-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2013-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,8 +18,10 @@
 #include <string.h>
 
 #define __strncasecmp_l __strncasecmp_l_power7
-#define USE_IN_EXTENDED_LOCALE_MODEL    1
+
+#undef libc_hidden_def
+#define libc_hidden_def(name)
 
 extern __typeof (strncasecmp_l) __strncasecmp_l_power7 attribute_hidden;
 
-#include <string/strncase.c>
+#include <string/strncase_l.c>

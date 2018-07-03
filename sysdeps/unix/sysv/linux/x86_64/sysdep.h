@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2001-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -23,9 +23,8 @@
 #include <sysdeps/unix/x86_64/sysdep.h>
 #include <tls.h>
 
-#if IS_IN (rtld)
-# include <dl-sysdep.h>		/* Defines RTLD_PRIVATE_ERRNO.  */
-#endif
+/* Defines RTLD_PRIVATE_ERRNO.  */
+#include <dl-sysdep.h>
 
 /* For Linux we can use the system call table in the header file
 	/usr/include/asm/unistd.h
@@ -110,7 +109,7 @@
 
 # define ret_ERRVAL ret
 
-# if defined PIC && defined RTLD_PRIVATE_ERRNO
+# if defined PIC && RTLD_PRIVATE_ERRNO
 #  define SYSCALL_SET_ERRNO			\
   lea rtld_errno(%rip), %RCX_LP;		\
   neg %eax;					\
@@ -375,6 +374,8 @@
 # define HAVE_CLOCK_GETTIME_VSYSCALL    1
 # define HAVE_GETTIMEOFDAY_VSYSCALL     1
 # define HAVE_GETCPU_VSYSCALL		1
+
+# define SINGLE_THREAD_BY_GLOBAL		1
 
 #endif	/* __ASSEMBLER__ */
 

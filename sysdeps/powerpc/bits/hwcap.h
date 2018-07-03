@@ -1,5 +1,5 @@
 /* Defines for bits in AT_HWCAP and AT_HWCAP2.
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -72,3 +72,5 @@
 						 128-bit */
 #define PPC_FEATURE2_DARN	   0x00200000 /* darn instruction.  */
 #define PPC_FEATURE2_SCV	   0x00100000 /* scv syscall.  */
+#define PPC_FEATURE2_HTM_NO_SUSPEND  0x00080000 /* TM without suspended
+						   state.  */

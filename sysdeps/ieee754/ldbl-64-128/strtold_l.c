@@ -1,4 +1,4 @@
-/* Copyright (C) 1999-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1999-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,6 +14,18 @@
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
+
+#include <bits/floatn.h>
+
+#if __HAVE_FLOAT128 && !__HAVE_DISTINCT_FLOAT128
+# define strtof128_l __hide_strtof128_l
+# define wcstof128_l __hide_wcstof128_l
+#endif
+
+#if __HAVE_FLOAT64X_LONG_DOUBLE
+# define strtof64x_l __hide_strtof64x_l
+# define wcstof64x_l __hide_wcstof64x_l
+#endif
 
 #include <math.h>
 #include <stdlib.h>
@@ -55,5 +67,25 @@ long_double_symbol (libc, ____new_wcstold_l, __wcstold_l);
 weak_alias (____new_strtold_l, ___new_strtold_l);
 long_double_symbol (libc, ___new_strtold_l, strtold_l);
 long_double_symbol (libc, ____new_strtold_l, __strtold_l);
+# endif
+#endif
+
+#if __HAVE_FLOAT128 && !__HAVE_DISTINCT_FLOAT128
+# undef strtof128_l
+# undef wcstof128_l
+# ifdef USE_WIDE_CHAR
+weak_alias (____new_wcstold_l, wcstof128_l)
+# else
+weak_alias (____new_strtold_l, strtof128_l)
+# endif
+#endif
+
+#if __HAVE_FLOAT64X_LONG_DOUBLE
+# undef strtof64x_l
+# undef wcstof64x_l
+# ifdef USE_WIDE_CHAR
+weak_alias (____new_wcstold_l, wcstof64x_l)
+# else
+weak_alias (____new_strtold_l, strtof64x_l)
 # endif
 #endif

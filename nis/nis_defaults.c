@@ -1,4 +1,4 @@
-/* Copyright (c) 1997-2017 Free Software Foundation, Inc.
+/* Copyright (c) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@vt.uni-paderborn.de>, 1997.
 
@@ -428,6 +428,7 @@ __nis_default_ttl (char *defaults)
 
   return searchttl (cptr);
 }
+libnsl_hidden_nolink_def (__nis_default_ttl, GLIBC_2_1)
 
 /* Default access rights are ----rmcdr---r---, but we could change
    this with the NIS_DEFAULTS variable. */

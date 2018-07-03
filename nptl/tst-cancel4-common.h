@@ -1,6 +1,6 @@
 /* Common definition for tst-cancel4_* tests.
 
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -61,6 +61,20 @@ static pthread_barrier_t b2;
    slack space.  */
 
 #define WRITE_BUFFER_SIZE 16384
+
+/* Set the send buffer of socket S to 1 byte so any send operation
+   done with WRITE_BUFFER_SIZE bytes will force syscall blocking.  */
+static void
+set_socket_buffer (int s)
+{
+  int val = 1;
+  socklen_t len = sizeof(val);
+
+  TEST_VERIFY_EXIT (setsockopt (s, SOL_SOCKET, SO_SNDBUF, &val,
+		    sizeof(val)) == 0);
+  TEST_VERIFY_EXIT (getsockopt (s, SOL_SOCKET, SO_SNDBUF, &val, &len) == 0);
+  TEST_VERIFY_EXIT (val < WRITE_BUFFER_SIZE);
+}
 
 /* Cleanup handling test.  */
 static int cl_called;

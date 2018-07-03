@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,8 +21,10 @@
 #undef putc_unlocked
 
 int
-putc_unlocked (int c, _IO_FILE *fp)
+__putc_unlocked (int c, FILE *fp)
 {
   CHECK_FILE (fp, EOF);
   return _IO_putc_unlocked (c, fp);
 }
+weak_alias (__putc_unlocked, putc_unlocked)
+libc_hidden_weak (putc_unlocked)

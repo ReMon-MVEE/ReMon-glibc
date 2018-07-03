@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,25 +17,30 @@
 
 #include <stdlib.h>
 #include "exit.h"
-#include <atomic.h>
 #include <sysdep.h>
 
 /* Register a function to be called by exit.  */
 int
 __on_exit (void (*func) (int status, void *arg), void *arg)
 {
-  struct exit_function *new = __new_exitfn (&__exit_funcs);
+  struct exit_function *new;
+
+   __libc_lock_lock (__exit_funcs_lock);
+  new = __new_exitfn (&__exit_funcs);
 
   if (new == NULL)
-    return -1;
+    {
+      __libc_lock_unlock (__exit_funcs_lock);
+      return -1;
+    }
 
 #ifdef PTR_MANGLE
   PTR_MANGLE (func);
 #endif
   new->func.on.fn = func;
   new->func.on.arg = arg;
-  atomic_write_barrier ();
   atomic_store_relaxed(&new->flavor, ef_on);
+  __libc_lock_unlock (__exit_funcs_lock);
   return 0;
 }
 weak_alias (__on_exit, on_exit)

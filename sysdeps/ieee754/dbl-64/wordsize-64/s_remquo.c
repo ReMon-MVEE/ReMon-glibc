@@ -1,5 +1,5 @@
 /* Compute remainder and a congruent to the quotient.
-   Copyright (C) 1997-2017 Free Software Foundation, Inc.
+   Copyright (C) 1997-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -20,6 +20,7 @@
 #include <math.h>
 
 #include <math_private.h>
+#include <libm-alias-double.h>
 #include <stdint.h>
 
 static const double zero = 0.0;
@@ -107,8 +108,4 @@ __remquo (double x, double y, int *quo)
     x = -x;
   return x;
 }
-weak_alias (__remquo, remquo)
-#ifdef NO_LONG_DOUBLE
-strong_alias (__remquo, __remquol)
-weak_alias (__remquo, remquol)
-#endif
+libm_alias_double (__remquo, remquo)

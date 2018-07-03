@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -47,3 +47,16 @@
 #if __LINUX_KERNEL_VERSION < 0x030300
 # undef __ASSUME_SENDMMSG_SYSCALL
 #endif
+
+/* Support for the execveat syscall was added in 4.0.  */
+#if __LINUX_KERNEL_VERSION < 0x040000
+# undef __ASSUME_EXECVEAT
+#endif
+
+/* Support for the copy_file_range syscall was added in 4.10.  */
+#if __LINUX_KERNEL_VERSION < 0x040A00
+# undef __ASSUME_COPY_FILE_RANGE
+#endif
+
+#undef __ASSUME_CLONE_DEFAULT
+#define __ASSUME_CLONE_BACKWARDS3

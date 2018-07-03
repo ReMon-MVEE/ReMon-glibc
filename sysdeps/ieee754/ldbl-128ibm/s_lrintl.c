@@ -1,6 +1,6 @@
 /* Round to long int long double floating-point values.
    IBM extended format long double version.
-   Copyright (C) 2006-2017 Free Software Foundation, Inc.
+   Copyright (C) 2006-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
 
 #include <math.h>
 #include <fenv.h>
+#include <math_private.h>
 #include <math_ldbl_opt.h>
 #include <float.h>
 #include <ieee754.h>
@@ -84,7 +85,7 @@ __lrintl (long double x)
       /* Peg at max/min values, assuming that the above conversions do so.
          Strictly speaking, we can return anything for values that overflow,
          but this is more useful.  */
-      res = hi + lo;
+      res = (long int) ((unsigned long int) hi + (unsigned long int) lo);
 
       /* This is just sign(hi) == sign(lo) && sign(res) != sign(hi).  */
       if (__glibc_unlikely (((~(hi ^ lo) & (res ^ hi)) < 0)))
@@ -105,27 +106,27 @@ __lrintl (long double x)
 	    return res;
 
 	  if (xh < 0.0)
-	    res -= 1;
+	    res -= 1UL;
 	  else
-	    res += 1;
+	    res += 1UL;
 	  break;
 
 	case FE_TOWARDZERO:
 	  if (res > 0 && (xh < 0.0 || (xh == 0.0 && xl < 0.0)))
-	    res -= 1;
+	    res -= 1UL;
 	  else if (res < 0 && (xh > 0.0 || (xh == 0.0 && xl > 0.0)))
-	    res += 1;
+	    res += 1UL;
 	  return res;
 	  break;
 
 	case FE_UPWARD:
 	  if (xh > 0.0 || (xh == 0.0 && xl > 0.0))
-	    res += 1;
+	    res += 1UL;
 	  break;
 
 	case FE_DOWNWARD:
 	  if (xh < 0.0 || (xh == 0.0 && xl < 0.0))
-	    res -= 1;
+	    res -= 1UL;
 	  break;
 	}
 

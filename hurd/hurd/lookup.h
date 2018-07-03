@@ -1,5 +1,5 @@
 /* Declarations of file name translation functions for the GNU Hurd.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,6 +18,10 @@
 
 #ifndef _HURD_LOOKUP_H
 #define _HURD_LOOKUP_H	1
+
+#include <errno.h>
+#include <bits/types/error_t.h>
+#include <hurd/hurd_types.h>
 
 /* These functions all take two callback functions as the first two arguments.
    The first callback function USE_INIT_PORT is called as follows:
@@ -48,7 +52,7 @@ error_t __hurd_file_name_lookup (error_t (*use_init_port)
 				    error_t (*operate) (mach_port_t)),
 				 file_t (*get_dtable_port) (int fd),
 				 error_t (*lookup)
-				   (file_t dir, char *name, int flags, mode_t mode,
+				   (file_t dir, const char *name, int flags, mode_t mode,
 				    retry_type *do_retry, string_t retry_name,
 				    mach_port_t *result),
 				 const char *file_name,
@@ -59,7 +63,7 @@ error_t hurd_file_name_lookup (error_t (*use_init_port)
 				  error_t (*operate) (mach_port_t)),
 			       file_t (*get_dtable_port) (int fd),
 			       error_t (*lookup)
-				 (file_t dir, char *name, int flags, mode_t mode,
+				 (file_t dir, const char *name, int flags, mode_t mode,
 				  retry_type *do_retry, string_t retry_name,
 				  mach_port_t *result),
 			       const char *file_name,
@@ -75,7 +79,7 @@ error_t __hurd_file_name_split (error_t (*use_init_port)
 				  (int which,
 				   error_t (*operate) (mach_port_t)),
 				file_t (*get_dtable_port) (int fd),
-				error_t (*lookup) (file_t dir, char *name,
+				error_t (*lookup) (file_t dir, const char *name,
 						   int flags, mode_t mode,
 				   retry_type *do_retry, string_t retry_name,
 				   mach_port_t *result),
@@ -85,7 +89,7 @@ error_t hurd_file_name_split (error_t (*use_init_port)
 			        (int which,
 				 error_t (*operate) (mach_port_t)),
 			      file_t (*get_dtable_port) (int fd),
-			      error_t (*lookup) (file_t dir, char *name,
+			      error_t (*lookup) (file_t dir, const char *name,
 						 int flags, mode_t mode,
 				 retry_type *do_retry, string_t retry_name,
 				 mach_port_t *result),
@@ -99,7 +103,7 @@ error_t __hurd_directory_name_split (error_t (*use_init_port)
 				  (int which,
 				   error_t (*operate) (mach_port_t)),
 				file_t (*get_dtable_port) (int fd),
-				error_t (*lookup) (file_t dir, char *name,
+				error_t (*lookup) (file_t dir, const char *name,
 						   int flags, mode_t mode,
 				   retry_type *do_retry, string_t retry_name,
 				   mach_port_t *result),
@@ -109,7 +113,7 @@ error_t hurd_directory_name_split (error_t (*use_init_port)
 				   (int which,
 				    error_t (*operate) (mach_port_t)),
 				   file_t (*get_dtable_port) (int fd),
-				   error_t (*lookup) (file_t dir, char *name,
+				   error_t (*lookup) (file_t dir, const char *name,
 						      int flags, mode_t mode,
 				    retry_type *do_retry, string_t retry_name,
 				    mach_port_t *result),
@@ -128,7 +132,7 @@ error_t __hurd_file_name_lookup_retry (error_t (*use_init_port)
 					  error_t (*operate) (mach_port_t)),
 				       file_t (*get_dtable_port) (int fd),
 				       error_t (*lookup)
-				         (file_t dir, char *name,
+				         (file_t dir, const char *name,
 					  int flags, mode_t mode,
 					  retry_type *do_retry,
 					  string_t retry_name,
@@ -142,7 +146,7 @@ error_t hurd_file_name_lookup_retry (error_t (*use_init_port)
 					error_t (*operate) (mach_port_t)),
 				     file_t (*get_dtable_port) (int fd),
 				     error_t (*lookup)
-				       (file_t dir, char *name,
+				       (file_t dir, const char *name,
 					int flags, mode_t mode,
 					retry_type *do_retry,
 					string_t retry_name,
@@ -178,7 +182,7 @@ error_t hurd_file_name_path_lookup (error_t (*use_init_port)
 				     error_t (*operate) (mach_port_t)),
 				    file_t (*get_dtable_port) (int fd),
 				    error_t (*lookup)
-				      (file_t dir, char *name,
+				      (file_t dir, const char *name,
 				       int flags, mode_t mode,
 				       retry_type *do_retry,
 				       string_t retry_name,

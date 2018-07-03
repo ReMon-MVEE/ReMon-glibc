@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -47,3 +47,4 @@ _hurd_intern_fd (io_t port, int flags, int dealloc)
 
   return fd;
 }
+libc_hidden_def (_hurd_intern_fd)

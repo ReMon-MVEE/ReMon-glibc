@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
 #define __NETINET_IF_ETHER_H	1
 
 #include <sys/types.h>
+#include <stdint.h>
 
 #define ETH_ALEN	6	/* Octets in one ethernet address.  */
 

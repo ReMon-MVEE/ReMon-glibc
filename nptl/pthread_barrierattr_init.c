@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -22,6 +22,10 @@
 int
 pthread_barrierattr_init (pthread_barrierattr_t *attr)
 {
+  ASSERT_TYPE_SIZE (pthread_barrierattr_t, __SIZEOF_PTHREAD_BARRIERATTR_T);
+  ASSERT_PTHREAD_INTERNAL_SIZE (pthread_barrierattr_t,
+				struct pthread_barrierattr);
+
   ((struct pthread_barrierattr *) attr)->pshared = PTHREAD_PROCESS_PRIVATE;
 
   return 0;

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2017 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -16,8 +16,13 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#define FUNC fmaxf
-#define INSN "fmaxnm"
-#define TYPE float
-#define REGS "s"
-#include <fpu/s_fmin.c>
+#include <math.h>
+#include <libm-alias-float.h>
+
+float
+__fmaxf (float x, float y)
+{
+  return __builtin_fmaxf (x, y);
+}
+
+libm_alias_float (__fmax, fmax)

@@ -1,5 +1,5 @@
 /* Generic conversion to and from 8bit charsets - S390 version.
-   Copyright (C) 2016-2017 Free Software Foundation, Inc.
+   Copyright (C) 2016-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -358,6 +358,10 @@
 		  }							\
 	      }								\
 									\
+	    /* iconv/loop.c disables -Wmaybe-uninitialized for a false	\
+	       positive warning in this code with -Os and has a		\
+	       comment referencing this code accordingly.  Updates in	\
+	       one place may require updates in the other.  */		\
 	    UNICODE_TAG_HANDLER (ch, 4);				\
 									\
 	    /* This is an illegal character.  */			\

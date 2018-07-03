@@ -1,5 +1,5 @@
 /* Handle aliases for locale names.
-   Copyright (C) 1995-2017 Free Software Foundation, Inc.
+   Copyright (C) 1995-2018 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -90,7 +90,7 @@ char *alloca ();
 
 /* Some optimizations for glibc.  */
 #ifdef _LIBC
-# define FEOF(fp)		feof_unlocked (fp)
+# define FEOF(fp)		__feof_unlocked (fp)
 # define FGETS(buf, n, fp)	__fgets_unlocked (buf, n, fp)
 #else
 # define FEOF(fp)		feof (fp)
