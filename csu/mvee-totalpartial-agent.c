@@ -1,4 +1,4 @@
-static volatile long                  mvee_lock_owner               = 0;
+static volatile unsigned int          mvee_lock_owner               = 0;
 static unsigned char                  mvee_sync_enabled             = 0;
 static unsigned char                  mvee_libc_initialized         = 0;
 static unsigned char                  mvee_master_variant           = 0;
@@ -8,7 +8,7 @@ static unsigned short                 mvee_my_variant_num           = 0;
 static struct mvee_buffer_info*       mvee_lock_buffer_info         = NULL;
 static struct mvee_buffer_entry*      mvee_lock_buffer              = NULL;
 static struct mvee_callstack_entry*   mvee_callstack_buffer         = NULL;
-static __thread int                   mvee_master_thread_id         = 0;
+static __thread unsigned int          mvee_master_thread_id         = 0;
 static __thread unsigned long         mvee_prev_flush_cnt           = 0;
 static __thread unsigned long         mvee_lock_buffer_prev_pos     = 0;
 #ifdef MVEE_CHECK_LOCK_TYPE
@@ -389,7 +389,7 @@ static INLINEIFNODEBUG void mvee_read_lock_result_wait(unsigned short op_type, v
 
 		for (current_pos = start_pos; current_pos <= mvee_lock_buffer_info->size; ++current_pos)
 		{
-			unsigned short tid = mvee_lock_buffer[current_pos].master_thread_id;
+			unsigned int tid = mvee_lock_buffer[current_pos].master_thread_id;
 
 			// no tid => the slaves are running ahead of the master
 			// or the master stores are not visible yet
