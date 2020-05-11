@@ -27,7 +27,7 @@ __pthread_key_create (pthread_key_t *key, void (*destr) (void *))
   /* Find a slot in __pthread_keys which is unused.  */
   for (size_t cnt = 0; cnt < PTHREAD_KEYS_MAX; ++cnt)
     {
-      uintptr_t seq = __pthread_keys[cnt].seq;
+      uintptr_t seq = atomic_load_relaxed(&__pthread_keys[cnt].seq);
 
       if (KEY_UNUSED (seq) && KEY_USABLE (seq)
 	  /* We found an unused slot.  Try to allocate it.  */
