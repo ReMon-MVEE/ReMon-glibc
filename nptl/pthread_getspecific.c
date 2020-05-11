@@ -57,7 +57,7 @@ __pthread_getspecific (pthread_key_t key)
     {
       uintptr_t seq = data->seq;
 
-      if (__glibc_unlikely (seq != __pthread_keys[key].seq))
+      if (__glibc_unlikely (seq != atomic_load_relaxed(&__pthread_keys[key].seq)))
 	result = data->data = NULL;
     }
 

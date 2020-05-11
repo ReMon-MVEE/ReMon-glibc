@@ -37,7 +37,7 @@ __pthread_setspecific (pthread_key_t key, const void *value)
   if (__glibc_likely (key < PTHREAD_KEY_2NDLEVEL_SIZE))
     {
       /* Verify the key is sane.  */
-      if (KEY_UNUSED ((seq = __pthread_keys[key].seq)))
+      if (KEY_UNUSED ((seq = atomic_load_relaxed(&__pthread_keys[key].seq))))
 	/* Not valid.  */
 	return EINVAL;
 

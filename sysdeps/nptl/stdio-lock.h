@@ -32,7 +32,11 @@ typedef struct { int lock; int cnt; void *owner; } _IO_lock_t;
 #define _IO_lock_initializer { LLL_LOCK_INITIALIZER, 0, NULL }
 
 #define _IO_lock_init(_name) \
-  ((void) ((_name) = (_IO_lock_t) _IO_lock_initializer))
+  ({ \
+    atomic_store_relaxed(&((_name).lock), LLL_LOCK_INITIALIZER); \
+    (_name).cnt = 0; \
+    (_name).owner = NULL; \
+  })
 
 #define _IO_lock_fini(_name) \
   ((void) 0)

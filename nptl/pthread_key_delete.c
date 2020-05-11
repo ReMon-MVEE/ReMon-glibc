@@ -28,7 +28,7 @@ __pthread_key_delete (pthread_key_t key)
 
   if (__glibc_likely (key < PTHREAD_KEYS_MAX))
     {
-      unsigned int seq = __pthread_keys[key].seq;
+      unsigned int seq = atomic_load_relaxed(&__pthread_keys[key].seq);
 
       if (__builtin_expect (! KEY_UNUSED (seq), 1)
 	  && ! atomic_compare_and_exchange_bool_acq (&__pthread_keys[key].seq,

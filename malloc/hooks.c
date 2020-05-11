@@ -27,7 +27,7 @@
 static void *
 malloc_hook_ini (size_t sz, const void *caller)
 {
-  __malloc_hook = NULL;
+  atomic_store_relaxed(&__malloc_hook, NULL);
   ptmalloc_init ();
   return __libc_malloc (sz);
 }
@@ -35,8 +35,8 @@ malloc_hook_ini (size_t sz, const void *caller)
 static void *
 realloc_hook_ini (void *ptr, size_t sz, const void *caller)
 {
-  __malloc_hook = NULL;
-  __realloc_hook = NULL;
+  atomic_store_relaxed(&__malloc_hook, NULL);
+  atomic_store_relaxed(&__realloc_hook, NULL);
   ptmalloc_init ();
   return __libc_realloc (ptr, sz);
 }
@@ -44,7 +44,7 @@ realloc_hook_ini (void *ptr, size_t sz, const void *caller)
 static void *
 memalign_hook_ini (size_t alignment, size_t sz, const void *caller)
 {
-  __memalign_hook = NULL;
+  atomic_store_relaxed(&__memalign_hook, NULL);
   ptmalloc_init ();
   return __libc_memalign (alignment, sz);
 }
