@@ -467,7 +467,11 @@ static INLINEIFNODEBUG void mvee_read_lock_result_wait(unsigned short op_type, v
 		if (current_pos < mvee_lock_buffer_info->size)
 		{
 			if (mvee_lock_buffer[current_pos].master_thread_id == mvee_master_thread_id)
-				mvee_assert_operation_matches(current_pos, 0, op_type);
+			{
+				mvee_assert_operation_matches(current_pos, (unsigned long)word_ptr, op_type);
+				mvee_log_stack(current_pos, 1);
+				break;
+			}
 
 			syscall(__NR_sched_yield);
 		}
@@ -478,7 +482,7 @@ static INLINEIFNODEBUG void mvee_read_lock_result_wait(unsigned short op_type, v
 			// we have to flush... figure out which thread does the flush
 			if (tid == mvee_master_thread_id)
 			{
-				mvee_lock_flush_buffer();
+				mvee_lock_buffer_flush();
 			}
 			else
 			{
