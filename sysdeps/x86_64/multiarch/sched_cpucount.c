@@ -1,6 +1,6 @@
 /* Count bits in CPU set.  x86-64 multi-arch version.
    This file is part of the GNU C Library.
-   Copyright (C) 2008-2018 Free Software Foundation, Inc.
+   Copyright (C) 2008-2020 Free Software Foundation, Inc.
    Contributed by Ulrich Drepper <drepper@redhat.com>.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sched.h>
 #include "init-arch.h"
@@ -33,4 +33,4 @@
 #undef __sched_cpucount
 
 libc_ifunc (__sched_cpucount,
-	    HAS_CPU_FEATURE (POPCOUNT) ? popcount_cpucount : generic_cpucount);
+	    HAS_CPU_FEATURE (POPCNT) ? popcount_cpucount : generic_cpucount);

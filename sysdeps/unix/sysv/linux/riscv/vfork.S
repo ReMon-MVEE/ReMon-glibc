@@ -1,5 +1,5 @@
 /* vfork for Linux, RISC-V version.
-   Copyright (C) 2005-2018 Free Software Foundation, Inc.
+   Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,15 +14,18 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* vfork() is just a special case of clone().  */
 
 #include <sys/asm.h>
 #include <sysdep.h>
 #define __ASSEMBLY__
-#include <linux/sched.h>
 #include <asm/signal.h>
+
+#define CLONE_VM      0x00000100 /* Set if VM shared between processes.  */
+#define CLONE_VFORK   0x00004000 /* Set if the parent wants the child to
+				    wake it up on mm_release.  */
 
 	.text
 LEAF (__libc_vfork)

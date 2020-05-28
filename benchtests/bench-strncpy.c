@@ -1,5 +1,5 @@
 /* Measure strncpy functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,27 +14,15 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
+
+#define BIG_CHAR MAX_CHAR
 
 #ifdef WIDE
-# include <wchar.h>
-# define CHAR wchar_t
-# define UCHAR wchar_t
-# define BIG_CHAR WCHAR_MAX
 # define SMALL_CHAR 1273
-# define MEMCMP wmemcmp
-# define MEMSET wmemset
-# define STRNLEN wcsnlen
 #else
-# define CHAR char
-# define UCHAR unsigned char
-# define BIG_CHAR CHAR_MAX
 # define SMALL_CHAR 127
-# define MEMCMP memcmp
-# define MEMSET memset
-# define STRNLEN strnlen
 #endif /* !WIDE */
-
 
 #ifndef STRNCPY_RESULT
 # define STRNCPY_RESULT(dst, len, n) dst
@@ -43,51 +31,22 @@
 #  define TEST_NAME "strncpy"
 # else
 #  define TEST_NAME "wcsncpy"
+#  define generic_strncpy generic_wcsncpy
 # endif /* WIDE */
 # include "bench-string.h"
-# ifndef WIDE
-#  define SIMPLE_STRNCPY simple_strncpy
-#  define STUPID_STRNCPY stupid_strncpy
-#  define STRNCPY strncpy
-# else
-#  define SIMPLE_STRNCPY simple_wcsncpy
-#  define STUPID_STRNCPY stupid_wcsncpy
-#  define STRNCPY wcsncpy
-# endif /* WIDE */
-
-CHAR *SIMPLE_STRNCPY (CHAR *, const CHAR *, size_t);
-CHAR *STUPID_STRNCPY (CHAR *, const CHAR *, size_t);
-
-IMPL (STUPID_STRNCPY, 0)
-IMPL (SIMPLE_STRNCPY, 0)
-IMPL (STRNCPY, 1)
 
 CHAR *
-SIMPLE_STRNCPY (CHAR *dst, const CHAR *src, size_t n)
-{
-  CHAR *ret = dst;
-  while (n--)
-    if ((*dst++ = *src++) == '\0')
-      {
-	while (n--)
-	  *dst++ = '\0';
-	return ret;
-      }
-  return ret;
-}
-
-CHAR *
-STUPID_STRNCPY (CHAR *dst, const CHAR *src, size_t n)
+generic_strncpy (CHAR *dst, const CHAR *src, size_t n)
 {
   size_t nc = STRNLEN (src, n);
-  size_t i;
-
-  for (i = 0; i < nc; ++i)
-    dst[i] = src[i];
-  for (; i < n; ++i)
-    dst[i] = '\0';
-  return dst;
+  if (nc != n)
+    MEMSET (dst + nc, 0, n - nc);
+  return MEMCPY (dst, src, nc);
 }
+
+IMPL (STRNCPY, 1)
+IMPL (generic_strncpy, 0)
+
 #endif /* !STRNCPY_RESULT */
 
 typedef CHAR *(*proto_t) (CHAR *, const CHAR *, size_t);
@@ -95,7 +54,7 @@ typedef CHAR *(*proto_t) (CHAR *, const CHAR *, size_t);
 static void
 do_one_test (impl_t *impl, CHAR *dst, const CHAR *src, size_t len, size_t n)
 {
-  size_t i, iters = INNER_LOOP_ITERS;
+  size_t i, iters = INNER_LOOP_ITERS_LARGE * (4 / CHARBYTES);
   timing_t start, stop, cur;
 
   if (CALL (impl, dst, src, n) != STRNCPY_RESULT (dst, len, n))

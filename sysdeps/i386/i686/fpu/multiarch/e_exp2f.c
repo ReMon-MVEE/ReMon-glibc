@@ -1,5 +1,5 @@
 /* Multiple versions of exp2f.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,18 +14,18 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 extern float __redirect_exp2f (float);
 
 #define SYMBOL_NAME exp2f
 #include "ifunc-sse2.h"
+#include <libm-alias-finite.h>
 
 libc_ifunc_redirected (__redirect_exp2f, __exp2f, IFUNC_SELECTOR ());
 
 #include <libm-alias-float.h>
 #ifdef SHARED
-# include <shlib-compat.h>
 versioned_symbol (libm, __exp2f, exp2f, GLIBC_2_27);
 libm_alias_float_other (__exp2, exp2)
 #else
@@ -33,7 +33,7 @@ libm_alias_float (__exp2, exp2)
 #endif
 
 strong_alias (__exp2f, __ieee754_exp2f)
-strong_alias (__exp2f, __exp2f_finite)
+libm_alias_finite (__ieee754_exp2f, __exp2f)
 
 #define __exp2f __exp2f_ia32
 #include <sysdeps/ieee754/flt-32/e_exp2f.c>

@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,13 +13,10 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdarg.h>
-#include <stdio.h>
-
 #include <libioP.h>
-#define vdprintf(d, f, a) _IO_vdprintf (d, f, a)
 
 /* Write formatted output to D, according to the format string FORMAT.  */
 /* VARARGS2 */
@@ -30,7 +27,7 @@ __dprintf (int d, const char *format, ...)
   int done;
 
   va_start (arg, format);
-  done = vdprintf (d, format, arg);
+  done = __vdprintf_internal (d, format, arg, 0);
   va_end (arg);
 
   return done;

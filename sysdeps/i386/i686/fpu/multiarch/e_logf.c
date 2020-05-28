@@ -1,5 +1,5 @@
 /* Multiple versions of logf.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,21 +14,21 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 extern float __redirect_logf (float);
 
 #define SYMBOL_NAME logf
 #include "ifunc-sse2.h"
+#include <libm-alias-finite.h>
 
 libc_ifunc_redirected (__redirect_logf, __logf, IFUNC_SELECTOR ());
 
 #include <libm-alias-float.h>
 #ifdef SHARED
 __hidden_ver1 (__logf_ia32, __GI___logf, __redirect_logf)
-  __attribute__ ((visibility ("hidden")));
+  __attribute__ ((visibility ("hidden"))) __THROW;
 
-# include <shlib-compat.h>
 versioned_symbol (libm, __logf, logf, GLIBC_2_27);
 libm_alias_float_other (__log, log)
 #else
@@ -36,7 +36,7 @@ libm_alias_float (__log, log)
 #endif
 
 strong_alias (__logf, __ieee754_logf)
-strong_alias (__logf, __logf_finite)
+libm_alias_finite (__ieee754_logf, __logf)
 
 #define __logf __logf_ia32
 #include <sysdeps/ieee754/flt-32/e_logf.c>

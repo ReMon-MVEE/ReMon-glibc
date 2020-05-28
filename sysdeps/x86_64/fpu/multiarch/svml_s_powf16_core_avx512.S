@@ -1,5 +1,5 @@
 /* Function powf vectorized with AVX-512. KNL and SKX versions.
-   Copyright (C) 2014-2018 Free Software Foundation, Inc.
+   Copyright (C) 2014-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 #include "svml_s_powf_data.h"
@@ -344,7 +344,7 @@ WRAPPER_IMPL_AVX512_ff _ZGVdN8vv_powf
         movzbl    %r12b, %r15d
         vmovss    1156(%rsp,%r15,8), %xmm0
         vmovss    1220(%rsp,%r15,8), %xmm1
-        call      JUMPTARGET(__powf_finite)
+        call      JUMPTARGET(powf)
         vmovss    %xmm0, 1284(%rsp,%r15,8)
         jmp       .LBL_1_8
 
@@ -352,7 +352,7 @@ WRAPPER_IMPL_AVX512_ff _ZGVdN8vv_powf
         movzbl    %r12b, %r15d
         vmovss    1152(%rsp,%r15,8), %xmm0
         vmovss    1216(%rsp,%r15,8), %xmm1
-        call      JUMPTARGET(__powf_finite)
+        call      JUMPTARGET(powf)
         vmovss    %xmm0, 1280(%rsp,%r15,8)
         jmp       .LBL_1_7
 #endif
@@ -629,7 +629,7 @@ WRAPPER_IMPL_AVX512_ff _ZGVdN8vv_powf
         vmovss    1156(%rsp,%r15,8), %xmm1
         vzeroupper
         vmovss    1092(%rsp,%r15,8), %xmm0
-        call      JUMPTARGET(__powf_finite)
+        call      JUMPTARGET(powf)
         vmovss    %xmm0, 1220(%rsp,%r15,8)
         jmp       .LBL_2_8
 
@@ -638,7 +638,7 @@ WRAPPER_IMPL_AVX512_ff _ZGVdN8vv_powf
         vmovss    1152(%rsp,%r15,8), %xmm1
         vzeroupper
         vmovss    1088(%rsp,%r15,8), %xmm0
-        call      JUMPTARGET(__powf_finite)
+        call      JUMPTARGET(powf)
         vmovss    %xmm0, 1216(%rsp,%r15,8)
         jmp       .LBL_2_7
 #endif

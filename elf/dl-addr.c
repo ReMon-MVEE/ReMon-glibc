@@ -1,5 +1,5 @@
 /* Locate the shared object symbol nearest a given address.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <dlfcn.h>
 #include <stddef.h>
@@ -42,7 +42,7 @@ determine_info (const ElfW(Addr) addr, struct link_map *match, Dl_info *info,
   ElfW(Word) strtabsize = match->l_info[DT_STRSZ]->d_un.d_val;
 
   const ElfW(Sym) *matchsym = NULL;
-  if (match->l_info[ADDRIDX (DT_GNU_HASH)] != NULL)
+  if (match->l_info[ELF_MACHINE_GNU_HASH_ADDRIDX] != NULL)
     {
       /* We look at all symbol table entries referenced by the hash
 	 table.  */
@@ -57,6 +57,7 @@ determine_info (const ElfW(Addr) addr, struct link_map *match, Dl_info *info,
 		{
 		  /* The hash table never references local symbols so
 		     we can omit that test here.  */
+		  symndx = ELF_MACHINE_HASH_SYMIDX (match, hasharr);
 		  if ((symtab[symndx].st_shndx != SHN_UNDEF
 		       || symtab[symndx].st_value != 0)
 		      && symtab[symndx].st_shndx != SHN_ABS
@@ -65,8 +66,6 @@ determine_info (const ElfW(Addr) addr, struct link_map *match, Dl_info *info,
 					    matchsym, addr)
 		      && symtab[symndx].st_name < strtabsize)
 		    matchsym = (ElfW(Sym) *) &symtab[symndx];
-
-		  ++symndx;
 		}
 	      while ((*hasharr++ & 1u) == 0);
 	    }

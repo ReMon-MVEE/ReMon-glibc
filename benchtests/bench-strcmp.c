@@ -1,5 +1,5 @@
 /* Measure strcmp and wcscmp functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #ifdef WIDE
@@ -25,24 +25,11 @@
 #include "bench-string.h"
 
 #ifdef WIDE
-# include <wchar.h>
-
 # define L(str) L##str
-# define STRCMP wcscmp
-# define STRCPY wcscpy
-# define STRLEN wcslen
-# define MEMCPY wmemcpy
 # define SIMPLE_STRCMP simple_wcscmp
-# define STUPID_STRCMP stupid_wcscmp
-# define CHAR wchar_t
-# define UCHAR wchar_t
-# define CHARBYTES 4
 # define CHARBYTESLOG 2
-# define CHARALIGN __alignof__ (CHAR)
 # define MIDCHAR 0x7fffffff
 # define LARGECHAR 0xfffffffe
-# define CHAR__MAX WCHAR_MAX
-# define CHAR__MIN WCHAR_MIN
 
 /* Wcscmp uses signed semantics for comparison, not unsigned */
 /* Avoid using substraction since possible overflow */
@@ -63,44 +50,14 @@ simple_wcscmp (const wchar_t *s1, const wchar_t *s2)
   return c1 < c2 ? -1 : 1;
 }
 
-int
-stupid_wcscmp (const wchar_t *s1, const wchar_t *s2)
-{
-  size_t ns1 = wcslen (s1) + 1;
-  size_t ns2 = wcslen (s2) + 1;
-  size_t n = ns1 < ns2 ? ns1 : ns2;
-  int ret = 0;
-
-  wchar_t c1, c2;
-
-  while (n--) {
-    c1 = *s1++;
-    c2 = *s2++;
-    if ((ret = c1 < c2 ? -1 : c1 == c2 ? 0 : 1) != 0)
-      break;
-  }
-  return ret;
-}
-
 #else
 # include <limits.h>
 
 # define L(str) str
-# define STRCMP strcmp
-# define STRCPY strcpy
-# define STRLEN strlen
-# define MEMCPY memcpy
 # define SIMPLE_STRCMP simple_strcmp
-# define STUPID_STRCMP stupid_strcmp
-# define CHAR char
-# define UCHAR unsigned char
-# define CHARBYTES 1
 # define CHARBYTESLOG 0
-# define CHARALIGN 1
 # define MIDCHAR 0x7f
 # define LARGECHAR 0xfe
-# define CHAR__MAX CHAR_MAX
-# define CHAR__MIN CHAR_MIN
 
 /* Strcmp uses unsigned semantics for comparison. */
 int
@@ -112,26 +69,12 @@ simple_strcmp (const char *s1, const char *s2)
   return ret;
 }
 
-int
-stupid_strcmp (const char *s1, const char *s2)
-{
-  size_t ns1 = strlen (s1) + 1;
-  size_t ns2 = strlen (s2) + 1;
-  size_t n = ns1 < ns2 ? ns1 : ns2;
-  int ret = 0;
-
-  while (n--)
-    if ((ret = *(unsigned char *) s1++ - *(unsigned char *) s2++) != 0)
-      break;
-  return ret;
-}
 #endif
 
 # include "json-lib.h"
 
 typedef int (*proto_t) (const CHAR *, const CHAR *);
 
-IMPL (STUPID_STRCMP, 1)
 IMPL (SIMPLE_STRCMP, 1)
 IMPL (STRCMP, 1)
 
@@ -140,7 +83,7 @@ do_one_test (json_ctx_t *json_ctx, impl_t *impl,
 	     const CHAR *s1, const CHAR *s2,
 	     int exp_result)
 {
-  size_t i, iters = INNER_LOOP_ITERS;
+  size_t i, iters = INNER_LOOP_ITERS8;
   timing_t start, stop, cur;
 
   TIMING_NOW (start);

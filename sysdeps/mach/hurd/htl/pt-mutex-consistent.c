@@ -1,5 +1,5 @@
 /* pthread_mutex_consistent.  Hurd version.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library;  if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <pthread.h>
 #include <stdlib.h>
@@ -29,11 +29,11 @@ pthread_mutex_consistent (pthread_mutex_t *mtxp)
   int ret = EINVAL;
   unsigned int val = mtxp->__lock;
 
-  if ((mtxp->__flags & PTHREAD_MUTEX_ROBUST) != 0 &&
-      (val & LLL_DEAD_OWNER) != 0 &&
-      atomic_compare_and_exchange_bool_acq (&mtxp->__lock,
-					    __getpid () | LLL_WAITERS,
-					    val) == 0)
+  if ((mtxp->__flags & PTHREAD_MUTEX_ROBUST) != 0
+      && (val & LLL_DEAD_OWNER) != 0
+      && atomic_compare_and_exchange_bool_acq (&mtxp->__lock,
+					       __getpid () | LLL_WAITERS,
+					       val) == 0)
     {
       /* The mutex is now ours, and it's consistent. */
       mtxp->__owner_id = _pthread_self ()->thread;

@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Per Bothner <bothner@cygnus.com>.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -109,10 +109,7 @@ _IO_old_file_init_internal (struct _IO_FILE_plus *fp)
 			     - (int) sizeof (struct _IO_FILE_complete));
   fp->file._fileno = -1;
 
-  if (__builtin_expect (&_IO_stdin_used != NULL, 1)
-      || (fp != (struct _IO_FILE_plus *) _IO_stdin
-	  && fp != (struct _IO_FILE_plus *) _IO_stdout
-	  && fp != (struct _IO_FILE_plus *) _IO_stderr))
+  if (&_IO_stdin_used != NULL || !_IO_legacy_file ((FILE *) fp))
     /* The object is dynamically allocated and large enough.  Initialize
        the _mode element as well.  */
     ((struct _IO_FILE_complete *) fp)->_mode = -1;

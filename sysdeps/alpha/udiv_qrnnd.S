@@ -1,6 +1,6 @@
  # Alpha 21064 __udiv_qrnnd
 
- # Copyright (C) 1992-2018 Free Software Foundation, Inc.
+ # Copyright (C) 1992-2020 Free Software Foundation, Inc.
 
  # This file is part of the GNU MP Library.
 
@@ -15,7 +15,7 @@
  # License for more details.
 
  # You should have received a copy of the GNU Lesser General Public License
- # along with the GNU MP Library.  If not, see <http://www.gnu.org/licenses/>.
+ # along with the GNU MP Library.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <sysdep.h>
 

@@ -1,4 +1,4 @@
-# Copyright (C) 1998-2018 Free Software Foundation, Inc.
+# Copyright (C) 1998-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 #
 #	Sub-makefile for debug portion of the library.
@@ -45,7 +45,7 @@ routines  = backtrace backtracesyms backtracesymsfd noophooks \
 	    gethostname_chk getdomainname_chk wcrtomb_chk mbsnrtowcs_chk \
 	    wcsnrtombs_chk mbsrtowcs_chk wcsrtombs_chk mbstowcs_chk \
 	    wcstombs_chk asprintf_chk vasprintf_chk dprintf_chk \
-	    vdprintf_chk obprintf_chk \
+	    vdprintf_chk obprintf_chk vobprintf_chk \
 	    longjmp_chk ____longjmp_chk \
 	    fdelt_chk poll_chk ppoll_chk \
 	    explicit_bzero_chk \
@@ -58,10 +58,13 @@ static-only-routines := warning-nop stack_chk_fail_local
 elide-routines.o := stack_chk_fail_local
 
 # Building the stack-protector failure routines with stack protection
-# makes no sense.
+# is not required since we have already failed a stack check and are
+# exiting the process.  However, the local aliases which jump to the
+# real routines should still be compiled with stack protection
+# (stack_chk_fail_local.c), so that the statically linked parts of the
+# library have the expected flags.
 
 CFLAGS-stack_chk_fail.c += $(no-stack-protector)
-CFLAGS-stack_chk_fail_local.c += $(no-stack-protector)
 
 CFLAGS-backtrace.c += -fno-omit-frame-pointer -funwind-tables
 CFLAGS-sprintf_chk.c += $(libio-mtsafe)

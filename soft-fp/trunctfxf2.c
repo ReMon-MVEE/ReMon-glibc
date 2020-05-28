@@ -1,8 +1,8 @@
 /* Software floating-point emulation.
    Truncate IEEE quad into IEEE extended
-   Copyright (C) 2007-2018 Free Software Foundation, Inc.
+   Copyright (C) 2007-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Uros Bizjak (ubizjak@gmail.com).
+   Contributed by Uroš Bizjak (ubizjak@gmail.com).
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "soft-fp.h"
 #include "extended.h"
@@ -41,7 +41,7 @@ __trunctfxf2 (TFtype a)
 
   FP_INIT_ROUNDMODE;
   FP_UNPACK_SEMIRAW_Q (A, a);
-#if (2 * _FP_W_TYPE_SIZE) < _FP_FRACBITS_Q
+#if _FP_W_TYPE_SIZE < 64
   FP_TRUNC (E, Q, 4, 4, R, A);
 #else
   FP_TRUNC (E, Q, 2, 2, R, A);

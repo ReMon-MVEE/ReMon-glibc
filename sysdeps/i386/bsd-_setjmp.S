@@ -1,5 +1,5 @@
 /* BSD `_setjmp' entry point to `sigsetjmp (..., 0)'.  i386 version.
-   Copyright (C) 1994-2018 Free Software Foundation, Inc.
+   Copyright (C) 1994-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This just does a tail-call to `__sigsetjmp (ARG, 0)'.
    We cannot do it in C because it must be a tail-call, so frame-unwinding
@@ -22,11 +22,17 @@
 
 #include <sysdep.h>
 #include <jmpbuf-offsets.h>
+#include <jmp_buf-ssp.h>
 #include <stap-probe.h>
 
 #define PARMS	4		/* no space for saved regs */
 #define JMPBUF	PARMS
 #define SIGMSK	JMPBUF+4
+
+/* Don't save shadow stack register if shadow stack isn't enabled.  */
+#if !SHSTK_ENABLED
+# undef SHADOW_STACK_POINTER_OFFSET
+#endif
 
 ENTRY (_setjmp)
 
@@ -51,6 +57,21 @@ ENTRY (_setjmp)
 	movl %ebp, (JB_BP*4)(%edx) /* Save caller's frame pointer.  */
 
 	movl %eax, JB_SIZE(%edx) /* No signal mask set.  */
+#ifdef SHADOW_STACK_POINTER_OFFSET
+# if IS_IN (libc) && defined SHARED && defined FEATURE_1_OFFSET
+	/* Check if Shadow Stack is enabled.  */
+	testl $X86_FEATURE_1_SHSTK, %gs:FEATURE_1_OFFSET
+	jz L(skip_ssp)
+# else
+	xorl %ecx, %ecx
+# endif
+	/* Get the current Shadow-Stack-Pointer and save it.  */
+	rdsspd %ecx
+	movl %ecx, SHADOW_STACK_POINTER_OFFSET(%edx)
+# if IS_IN (libc) && defined SHARED && defined FEATURE_1_OFFSET
+L(skip_ssp):
+# endif
+#endif
 	ret
 END (_setjmp)
 libc_hidden_def (_setjmp)

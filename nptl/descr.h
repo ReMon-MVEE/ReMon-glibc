@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _DESCR_H
 #define _DESCR_H	1
@@ -29,7 +29,7 @@
 #include <lowlevellock.h>
 #include <pthreaddef.h>
 #include <dl-sysdep.h>
-#include "../nptl_db/thread_db.h"
+#include <thread_db.h>
 #include <tls.h>
 #include <unwind.h>
 #include <bits/types/res_state.h>
@@ -145,9 +145,6 @@ struct pthread
 	 looks to cancel itself and is hence going to end anyway.  */
       int multiple_threads;
       int gscope_flag;
-# ifndef __ASSUME_PRIVATE_FUTEX
-      int private_futex;
-# endif
     } header;
 #endif
 
@@ -345,9 +342,8 @@ struct pthread
   /* Lock for synchronizing setxid calls.  */
   unsigned int setxid_futex;
 
-#if HP_TIMING_AVAIL
-  /* Offset of the CPU clock at start thread start time.  */
-  hp_timing_t cpuclock_offset;
+#if HP_TIMING_INLINE
+  hp_timing_t cpuclock_offset_ununsed;
 #endif
 
   /* If the thread waits to join another one the ID of the latter is
@@ -394,6 +390,9 @@ struct pthread
 
   /* Resolver state.  */
   struct __res_state res;
+
+  /* Indicates whether is a C11 thread created by thrd_creat.  */
+  bool c11;
 
   /* This member must be last.  */
   char end_padding[];

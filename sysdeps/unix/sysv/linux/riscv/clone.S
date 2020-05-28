@@ -1,5 +1,5 @@
 /* Wrapper around clone system call.  RISC-V version.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* clone() is even more special than fork() as it mucks with stacks
    and invokes a function in the right context after its all over.  */
@@ -69,6 +69,11 @@ L (error):
 
 ENTRY (__thread_start)
 L (thread_start):
+	/* Terminate call stack by noting ra is undefined.  Use a dummy
+	   .cfi_label to force starting the FDE.  */
+	.cfi_label .Ldummy
+	cfi_undefined (ra)
+
 	/* Restore the arg for user's function.  */
 	REG_L		a1,0(sp)	/* Function pointer.  */
 	REG_L		a0,SZREG(sp)	/* Argument pointer.  */

@@ -1,5 +1,5 @@
 /* Multiple versions of memmove. AARCH64 version.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Define multiple versions only for the definition in libc.  */
 
@@ -30,14 +30,17 @@ extern __typeof (__redirect_memmove) __libc_memmove;
 
 extern __typeof (__redirect_memmove) __memmove_generic attribute_hidden;
 extern __typeof (__redirect_memmove) __memmove_thunderx attribute_hidden;
+extern __typeof (__redirect_memmove) __memmove_thunderx2 attribute_hidden;
 extern __typeof (__redirect_memmove) __memmove_falkor attribute_hidden;
 
 libc_ifunc (__libc_memmove,
             (IS_THUNDERX (midr)
 	     ? __memmove_thunderx
-	     : (IS_FALKOR (midr)
+	     : (IS_FALKOR (midr) || IS_PHECDA (midr)
 		? __memmove_falkor
-		: __memmove_generic)));
+		: (IS_THUNDERX2 (midr) || IS_THUNDERX2PA (midr)
+		  ? __memmove_thunderx2
+		  : __memmove_generic))));
 
 # undef memmove
 strong_alias (__libc_memmove, memmove);

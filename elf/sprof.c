@@ -1,5 +1,5 @@
 /* Read and display shared object profiling data.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <argp.h>
 #include <dlfcn.h>
@@ -88,7 +88,7 @@ static const struct argp_option options[] =
 /* Short description of program.  */
 static const char doc[] = N_("Read and display shared object profiling data.");
 //For bug reporting instructions, please see:\n
-//<http://www.gnu.org/software/libc/bugs.html>.\n");
+//<https://www.gnu.org/software/libc/bugs.html>.\n");
 
 /* Strings for arguments in help texts.  */
 static const char args_doc[] = N_("SHOBJ [PROFDATA]");
@@ -391,7 +391,7 @@ Copyright (C) %s Free Software Foundation, Inc.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\
 "),
-	   "2018");
+	   "2020");
   fprintf (stream, gettext ("Written by %s.\n"), "Ulrich Drepper");
 }
 
@@ -1354,8 +1354,8 @@ generate_call_graph (struct profdata *profdata)
 		     ? sortsym[runp->idx]->ticks * tick_unit : 0.0),
 		    0.0, /* FIXME: what's time for the children, recursive */
 		    runp->count, sortsym[cnt]->calls,
-		    (runp->idx != (size_t) -1l ?
-		     sortsym[runp->idx]->name : "<UNKNOWN>"));
+		    (runp->idx != (size_t) -1l
+		     ? sortsym[runp->idx]->name : "<UNKNOWN>"));
 
 	    if (runp->idx != (size_t) -1l)
 	      printf (" [%Zd]", runp->idx);

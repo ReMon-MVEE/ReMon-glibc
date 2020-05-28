@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -27,11 +27,8 @@
 #include <shlib-compat.h>
 #if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_1)
 
-/* This file provides definitions of _IO_stdin, _IO_stdout, and _IO_stderr
-   for C code.  Compare stdstreams.cc.
-   (The difference is that here the vtable field is set to 0,
-   so the objects defined are not valid C++ objects.  On the other
-   hand, we don't need a C++ compiler to build this file.) */
+/* This file provides legacy definitions of _IO_stdin_, _IO_stdout_,
+   and _IO_stderr_.  See stdfiles.c for the current definitions.  */
 
 #define _IO_USE_OLD_IO_FILE
 #include "libioP.h"
@@ -78,15 +75,19 @@ _IO_check_libio (void)
   if (&_IO_stdin_used == NULL)
     {
       /* We are using the old one. */
-      _IO_stdin = stdin = (FILE *) &_IO_stdin_;
-      _IO_stdout = stdout = (FILE *) &_IO_stdout_;
-      _IO_stderr = stderr = (FILE *) &_IO_stderr_;
+      stdin = (FILE *) &_IO_stdin_;
+      stdout = (FILE *) &_IO_stdout_;
+      stderr = (FILE *) &_IO_stderr_;
       _IO_list_all = &_IO_stderr_;
-      _IO_stdin->_vtable_offset = _IO_stdout->_vtable_offset =
-	_IO_stderr->_vtable_offset = stdin->_vtable_offset =
-	stdout->_vtable_offset = stderr->_vtable_offset =
+      stdin->_vtable_offset = stdout->_vtable_offset
+	= stderr->_vtable_offset =
 	((int) sizeof (struct _IO_FILE)
 	 - (int) sizeof (struct _IO_FILE_complete));
+
+      if (_IO_stdin_.vtable != &_IO_old_file_jumps
+	  || _IO_stdout_.vtable != &_IO_old_file_jumps
+	  || _IO_stderr_.vtable != &_IO_old_file_jumps)
+	IO_set_accept_foreign_vtables (&_IO_vtable_check);
     }
 }
 

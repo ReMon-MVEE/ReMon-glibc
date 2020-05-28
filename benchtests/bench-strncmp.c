@@ -1,5 +1,5 @@
 /* Measure strncmp functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #ifdef WIDE
@@ -26,14 +26,8 @@
 #include "json-lib.h"
 
 #ifdef WIDE
-# include <wchar.h>
-
 # define L(str) L##str
-# define STRNCMP wcsncmp
 # define SIMPLE_STRNCMP simple_wcsncmp
-# define STUPID_STRNCMP stupid_wcsncmp
-# define CHAR wchar_t
-# define CHARBYTES 4
 
 /* Wcsncmp uses signed semantics for comparison, not unsigned.
    Avoid using substraction since possible overflow.  */
@@ -52,32 +46,9 @@ simple_wcsncmp (const CHAR *s1, const CHAR *s2, size_t n)
   return 0;
 }
 
-int
-stupid_wcsncmp (const CHAR *s1, const CHAR *s2, size_t n)
-{
-  wchar_t c1, c2;
-  size_t ns1 = wcsnlen (s1, n) + 1, ns2 = wcsnlen (s2, n) + 1;
-
-  n = ns1 < n ? ns1 : n;
-  n = ns2 < n ? ns2 : n;
-
-  while (n--)
-    {
-      c1 = *s1++;
-      c2 = *s2++;
-      if (c1 != c2)
-	return c1 > c2 ? 1 : -1;
-    }
-  return 0;
-}
-
 #else
 # define L(str) str
-# define STRNCMP strncmp
 # define SIMPLE_STRNCMP simple_strncmp
-# define STUPID_STRNCMP stupid_strncmp
-# define CHAR char
-# define CHARBYTES 1
 
 /* Strncmp uses unsigned semantics for comparison.  */
 int
@@ -90,23 +61,10 @@ simple_strncmp (const char *s1, const char *s2, size_t n)
   return ret;
 }
 
-int
-stupid_strncmp (const char *s1, const char *s2, size_t n)
-{
-  size_t ns1 = strnlen (s1, n) + 1, ns2 = strnlen (s2, n) + 1;
-  int ret = 0;
-
-  n = ns1 < n ? ns1 : n;
-  n = ns2 < n ? ns2 : n;
-  while (n-- && (ret = *(unsigned char *) s1++ - *(unsigned char *) s2++) == 0);
-  return ret;
-}
-
 #endif /* !WIDE */
 
 typedef int (*proto_t) (const CHAR *, const CHAR *, size_t);
 
-IMPL (STUPID_STRNCMP, 0)
 IMPL (SIMPLE_STRNCMP, 0)
 IMPL (STRNCMP, 1)
 
@@ -115,7 +73,7 @@ static void
 do_one_test (json_ctx_t *json_ctx, impl_t *impl, const CHAR *s1, const CHAR
 	     *s2, size_t n, int exp_result)
 {
-  size_t i, iters = INNER_LOOP_ITERS;
+  size_t i, iters = INNER_LOOP_ITERS8;
   timing_t start, stop, cur;
 
   TIMING_NOW (start);
@@ -150,7 +108,7 @@ do_test_limit (json_ctx_t *json_ctx, size_t align1, size_t align2, size_t len,
 
   FOR_EACH_IMPL (impl, 0)
     {
-      realloc_bufs ();
+      alloc_bufs ();
       s1 = (CHAR *) (buf1 + page_size - n * CHARBYTES);
       s2 = (CHAR *) (buf2 + page_size - n * CHARBYTES);
 
@@ -207,7 +165,7 @@ do_test (json_ctx_t *json_ctx, size_t align1, size_t align2, size_t len, size_t
 
   FOR_EACH_IMPL (impl, 0)
     {
-      realloc_bufs ();
+      alloc_bufs ();
       s1 = (CHAR *) (buf1 + align1);
       s2 = (CHAR *) (buf2 + align2);
 

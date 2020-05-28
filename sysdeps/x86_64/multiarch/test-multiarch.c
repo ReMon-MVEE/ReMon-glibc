@@ -1,6 +1,6 @@
 /* Test CPU feature data.
    This file is part of the GNU C Library.
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <cpu-features.h>
 #include <stdio.h>
@@ -85,8 +85,8 @@ do_test (int argc, char **argv)
 		       , "HAS_CPU_FEATURE (SSE4_1)");
   fails += check_proc ("ssse3", HAS_CPU_FEATURE (SSSE3),
 		       "HAS_CPU_FEATURE (SSSE3)");
-  fails += check_proc ("popcnt", HAS_CPU_FEATURE (POPCOUNT),
-		       "HAS_CPU_FEATURE (POPCOUNT)");
+  fails += check_proc ("popcnt", HAS_CPU_FEATURE (POPCNT),
+		       "HAS_CPU_FEATURE (POPCNT)");
 
   printf ("%d differences between /proc/cpuinfo and glibc code.\n", fails);
 

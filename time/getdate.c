@@ -1,5 +1,5 @@
 /* Convert a string representation of time to a time value.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Mark Kettenis <kettenis@phys.uva.nl>, 1997.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <limits.h>
 #include <stdio.h>
@@ -219,7 +219,7 @@ __getdate_r (const char *string, struct tm *tp)
     return 7;
 
   /* Get current time.  */
-  time (&timer);
+  timer = time_now ();
   __localtime_r (&timer, &tm);
 
   /* If only the weekday is given, today is assumed if the given day

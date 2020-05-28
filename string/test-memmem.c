@@ -1,5 +1,5 @@
 /* Test and measure memmem functions.
-   Copyright (C) 2008-2018 Free Software Foundation, Inc.
+   Copyright (C) 2008-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Ulrich Drepper <drepper@redhat.com>, 2008.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #define TEST_NAME "memmem"
@@ -48,10 +48,10 @@ simple_memmem (const void *haystack, size_t haystack_len, const void *needle,
     return NULL;
 
   for (begin = (const char *) haystack; begin <= last_possible; ++begin)
-    if (begin[0] == ((const char *) needle)[0] &&
-        !memcmp ((const void *) &begin[1],
-                 (const void *) ((const char *) needle + 1),
-                 needle_len - 1))
+    if (begin[0] == ((const char *) needle)[0]
+        && !memcmp ((const void *) &begin[1],
+		    (const void *) ((const char *) needle + 1),
+		    needle_len - 1))
       return (void *) begin;
 
   return NULL;

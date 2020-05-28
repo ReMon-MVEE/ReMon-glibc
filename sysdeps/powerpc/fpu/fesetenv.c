@@ -1,5 +1,5 @@
 /* Install given floating-point environment.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,12 +14,10 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <fenv_libc.h>
 #include <fpu_control.h>
-
-#define _FPU_MASK_ALL (_FPU_MASK_ZM | _FPU_MASK_OM | _FPU_MASK_UM | _FPU_MASK_XM | _FPU_MASK_IM)
 
 int
 __fesetenv (const fenv_t *envp)
@@ -28,25 +26,12 @@ __fesetenv (const fenv_t *envp)
 
   /* get the currently set exceptions.  */
   new.fenv = *envp;
-  old.fenv = fegetenv_register ();
-  if (old.l == new.l)
-    return 0;
+  old.fenv = fegetenv_control ();
 
-  /* If the old env has no enabled exceptions and the new env has any enabled
-     exceptions, then unmask SIGFPE in the MSR FE0/FE1 bits.  This will put the
-     hardware into "precise mode" and may cause the FPU to run slower on some
-     hardware.  */
-  if ((old.l & _FPU_MASK_ALL) == 0 && (new.l & _FPU_MASK_ALL) != 0)
-    (void) __fe_nomask_env_priv ();
+  __TEST_AND_EXIT_NON_STOP (old.l, new.l);
+  __TEST_AND_ENTER_NON_STOP (old.l, new.l);
 
-  /* If the old env had any enabled exceptions and the new env has no enabled
-     exceptions, then mask SIGFPE in the MSR FE0/FE1 bits.  This may allow the
-     FPU to run faster because it always takes the default action and can not
-     generate SIGFPE. */
-  if ((old.l & _FPU_MASK_ALL) != 0 && (new.l & _FPU_MASK_ALL) == 0)
-    (void)__fe_mask_env ();
-
-  fesetenv_register (*envp);
+  fesetenv_register (new.fenv);
 
   /* Success.  */
   return 0;

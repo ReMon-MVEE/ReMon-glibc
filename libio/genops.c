@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -789,9 +789,16 @@ _IO_unbuffer_all (void)
 
   for (fp = (FILE *) _IO_list_all; fp; fp = fp->_chain)
     {
+      int legacy = 0;
+
+#if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_1)
+      if (__glibc_unlikely (_IO_vtable_offset (fp) != 0))
+	legacy = 1;
+#endif
+
       if (! (fp->_flags & _IO_UNBUFFERED)
 	  /* Iff stream is un-orientated, it wasn't used. */
-	  && fp->_mode != 0)
+	  && (legacy || fp->_mode != 0))
 	{
 #ifdef _IO_MTSAFE_IO
 	  int cnt;
@@ -805,7 +812,7 @@ _IO_unbuffer_all (void)
 	      __sched_yield ();
 #endif
 
-	  if (! dealloc_buffers && !(fp->_flags & _IO_USER_BUF))
+	  if (! legacy && ! dealloc_buffers && !(fp->_flags & _IO_USER_BUF))
 	    {
 	      fp->_flags |= _IO_USER_BUF;
 
@@ -816,7 +823,7 @@ _IO_unbuffer_all (void)
 
 	  _IO_SETBUF (fp, NULL, 0);
 
-	  if (fp->_mode > 0)
+	  if (! legacy && fp->_mode > 0)
 	    _IO_wsetb (fp, NULL, NULL, 0);
 
 #ifdef _IO_MTSAFE_IO
@@ -827,7 +834,8 @@ _IO_unbuffer_all (void)
 
       /* Make sure that never again the wide char functions can be
 	 used.  */
-      fp->_mode = -1;
+      if (! legacy)
+	fp->_mode = -1;
     }
 
 #ifdef _IO_MTSAFE_IO

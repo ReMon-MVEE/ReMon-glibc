@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <stdlib.h>
@@ -31,18 +31,9 @@ __pthread_cond_wait_2_0 (pthread_cond_2_0_t *cond, pthread_mutex_t *mutex)
     {
       pthread_cond_t *newcond;
 
-#if LLL_LOCK_INITIALIZER == 0
       newcond = (pthread_cond_t *) calloc (sizeof (pthread_cond_t), 1);
       if (newcond == NULL)
 	return ENOMEM;
-#else
-      newcond = (pthread_cond_t *) malloc (sizeof (pthread_cond_t));
-      if (newcond == NULL)
-	return ENOMEM;
-
-      /* Initialize the condvar.  */
-      (void) pthread_cond_init (newcond, NULL);
-#endif
 
       if (atomic_compare_and_exchange_bool_acq (&cond->cond, newcond, NULL))
 	/* Somebody else just initialized the condvar.  */

@@ -1,5 +1,5 @@
 /* Compute sine and cosine of argument.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -15,12 +15,13 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <math.h>
 
 #include <math_private.h>
+#include <fenv_private.h>
 #include <math-underflow.h>
 #include <libm-alias-double.h>
 
@@ -62,7 +63,7 @@ __sincos (double x, double *sinx, double *cosx)
       y = hp0 - fabs (x);
       a = y + hp1;
       da = (y - a) + hp1;
-      *sinx = __copysign (do_cos (a, da), x);
+      *sinx = copysign (do_cos (a, da), x);
       *cosx = do_sin (a, da);
       return;
     }

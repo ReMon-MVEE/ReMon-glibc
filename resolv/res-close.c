@@ -1,5 +1,5 @@
 /* Deallocation functions for the resolver state.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /*
  * Copyright (c) 1985, 1989, 1993
@@ -126,8 +126,8 @@ res_nclose (res_state statp)
 libc_hidden_def (__res_nclose)
 
 /* This is called when a thread is exiting to free resources held in _res.  */
-static void __attribute__ ((section ("__libc_thread_freeres_fn")))
-res_thread_freeres (void)
+void
+__res_thread_freeres (void)
 {
   __resolv_context_freeres ();
 
@@ -140,5 +140,5 @@ res_thread_freeres (void)
   /* Make sure we do a full re-initialization the next time.  */
   _res.options = 0;
 }
-text_set_element (__libc_thread_subfreeres, res_thread_freeres);
-text_set_element (__libc_subfreeres, res_thread_freeres);
+/* Also must be called when the main thread exits.  */
+text_set_element (__libc_subfreeres, __res_thread_freeres);

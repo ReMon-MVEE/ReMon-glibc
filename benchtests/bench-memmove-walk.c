@@ -1,5 +1,5 @@
 /* Measure memmove function combined throughput for different alignments.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This microbenchmark measures the throughput of memmove for various sizes from
    1 byte to 32MiB, doubling every iteration and then misaligning by 0-15
@@ -107,23 +107,15 @@ test_main (void)
   /* Non-overlapping buffers.  */
   for (size_t i = START_SIZE; i <= MIN_PAGE_SIZE; i <<= 1)
     {
-      /* Test length alignments from 0-16 bytes.  */
-      for (int j = 0; j < 8; j++)
-	{
-	  do_test (&json_ctx, i + j, false);
-	  do_test (&json_ctx, i + 16 - j, false);
-	}
+      do_test (&json_ctx, i, false);
+      do_test (&json_ctx, i + 1, false);
     }
 
   /* Overlapping buffers.  */
   for (size_t i = START_SIZE; i <= MIN_PAGE_SIZE; i <<= 1)
     {
-      /* Test length alignments from 0-16 bytes.  */
-      for (int j = 0; j < 8; j++)
-	{
-	  do_test (&json_ctx, i + j, true);
-	  do_test (&json_ctx, i + 16 - j, true);
-	}
+      do_test (&json_ctx, i, true);
+      do_test (&json_ctx, i + 1, true);
     }
 
   json_array_end (&json_ctx);

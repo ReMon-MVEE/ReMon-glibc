@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2018 Free Software Foundation, Inc.
+# Copyright (C) 1991-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 #
 #	Sub-makefile for POSIX portion of the library.
@@ -31,7 +31,8 @@ headers	:= sys/utsname.h sys/times.h sys/wait.h sys/types.h unistd.h	      \
 	   bits/local_lim.h tar.h bits/utsname.h bits/confname.h	      \
 	   bits/waitflags.h bits/waitstatus.h sys/unistd.h sched.h	      \
 	   bits/sched.h bits/cpu-set.h re_comp.h wait.h bits/environments.h   \
-	   cpio.h spawn.h bits/unistd.h bits/types/struct_sched_param.h
+	   cpio.h spawn.h bits/unistd.h bits/types/struct_sched_param.h	      \
+	   bits/unistd_ext.h
 
 routines :=								      \
 	uname								      \
@@ -55,6 +56,7 @@ routines :=								      \
 	pread pwrite pread64 pwrite64					      \
 	spawn_faction_init spawn_faction_destroy spawn_faction_addclose	      \
 	spawn_faction_addopen spawn_faction_adddup2 spawn_valid_fd	      \
+	spawn_faction_addchdir spawn_faction_addfchdir			      \
 	spawnattr_init spawnattr_destroy				      \
 	spawnattr_getdefault spawnattr_setdefault			      \
 	spawnattr_getflags spawnattr_setflags				      \
@@ -62,7 +64,8 @@ routines :=								      \
 	spawnattr_getsigmask spawnattr_getschedpolicy spawnattr_getschedparam \
 	spawnattr_setsigmask spawnattr_setschedpolicy spawnattr_setschedparam \
 	posix_madvise							      \
-	get_child_max sched_cpucount sched_cpualloc sched_cpufree
+	get_child_max sched_cpucount sched_cpualloc sched_cpufree \
+	streams-compat
 
 aux		:= init-posix environ
 tests		:= test-errno tstgetopt testfnm runtests runptests \
@@ -92,13 +95,16 @@ tests		:= test-errno tstgetopt testfnm runtests runptests \
 		   bug-getopt5 tst-getopt_long1 bug-regex34 bug-regex35 \
 		   tst-pathconf tst-rxspencer-no-utf8 \
 		   tst-fnmatch3 bug-regex36 \
+		   tst-fnmatch4 tst-fnmatch5 \
 		   tst-posix_spawn-fd tst-posix_spawn-setsid \
 		   tst-posix_fadvise tst-posix_fadvise64 \
 		   tst-sysconf-empty-chroot tst-glob_symlinks tst-fexecve \
-		   tst-glob-tilde test-ssize-max
+		   tst-glob-tilde test-ssize-max tst-spawn4 bug-regex37 \
+		   bug-regex38 tst-regcomp-truncated tst-spawn-chdir \
+		   tst-wordexp-nocmd
 tests-internal	:= bug-regex5 bug-regex20 bug-regex33 \
 		   tst-rfc3484 tst-rfc3484-2 tst-rfc3484-3 \
-		   tst-glob_lstat_compat
+		   tst-glob_lstat_compat tst-spawn4-compat
 xtests		:= bug-ga2 tst-getaddrinfo4 tst-getaddrinfo5
 ifeq (yes,$(build-shared))
 test-srcs	:= globtest
@@ -113,7 +119,7 @@ others		:= getconf
 install-bin	:= getconf
 install-others-programs	:= $(inst_libexecdir)/getconf
 
-before-compile	+= testcases.h ptestcases.h $(objpfx)posix-conf-vars-def.h
+before-compile	+= $(objpfx)posix-conf-vars-def.h
 
 # So they get cleaned up.
 generated += $(addprefix wordexp-test-result, 1 2 3 4 5 6 7 8 9 10) \
@@ -127,7 +133,8 @@ generated += $(addprefix wordexp-test-result, 1 2 3 4 5 6 7 8 9 10) \
 	     tst-boost.mtrace bug-ga2.mtrace bug-ga2-mem.out \
 	     bug-glob2.mtrace bug-glob2-mem.out tst-vfork3-mem.out \
 	     tst-vfork3.mtrace getconf.speclist tst-fnmatch-mem.out \
-	     tst-fnmatch.mtrace bug-regex36.mtrace
+	     tst-fnmatch.mtrace bug-regex36.mtrace \
+	     testcases.h ptestcases.h
 
 ifeq ($(run-built-tests),yes)
 ifeq (yes,$(build-shared))
@@ -165,7 +172,8 @@ $(objpfx)wordexp-tst.out: wordexp-tst.sh $(objpfx)wordexp-test
 endif
 
 LOCALES := cs_CZ.UTF-8 da_DK.ISO-8859-1 de_DE.ISO-8859-1 de_DE.UTF-8 \
-	   en_US.UTF-8 es_US.ISO-8859-1 es_US.UTF-8 ja_JP.EUC-JP tr_TR.UTF-8
+	   en_US.UTF-8 es_US.ISO-8859-1 es_US.UTF-8 ja_JP.EUC-JP tr_TR.UTF-8 \
+	   cs_CZ.ISO-8859-2
 include ../gen-locales.mk
 
 $(objpfx)bug-regex1.out: $(gen-locales)
@@ -193,6 +201,7 @@ $(objpfx)tst-regex2.out: $(gen-locales)
 $(objpfx)tst-regexloc.out: $(gen-locales)
 $(objpfx)tst-rxspencer.out: $(gen-locales)
 $(objpfx)tst-rxspencer-no-utf8.out: $(gen-locales)
+$(objpfx)tst-regcomp-truncated.out: $(gen-locales)
 endif
 
 # If we will use the generic uname implementation, we must figure out what
@@ -214,6 +223,7 @@ CFLAGS-sleep.c += -fexceptions
 CFLAGS-wait.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-waitid.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-waitpid.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-wait4.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-getopt.c += -fexceptions
 CFLAGS-wordexp.c += -fexceptions
 CFLAGS-wordexp.os = -fomit-frame-pointer
@@ -256,14 +266,17 @@ tst-pcre-ARGS = PCRE.tests
 tst-boost-ARGS = BOOST.tests
 bug-glob1-ARGS = "$(objpfx)"
 tst-execvp3-ARGS = --test-dir=$(objpfx)
+CFLAGS-tst-spawn3.c += -DOBJPFX=\"$(objpfx)\"
 
-testcases.h: TESTS TESTS2C.sed
+$(objpfx)testcases.h: TESTS TESTS2C.sed
 	LC_ALL=C sed -f TESTS2C.sed < $< > $@T
-	mv -f $@T $@
+	mv $@T $@
+$(objpfx)runtests.o: $(objpfx)testcases.h
 
-ptestcases.h: PTESTS PTESTS2C.sed
+$(objpfx)ptestcases.h: PTESTS PTESTS2C.sed
 	LC_ALL=C sed -f PTESTS2C.sed < $< > $@T
-	mv -f $@T $@
+	mv $@T $@
+$(objpfx)runptests.o: $(objpfx)ptestcases.h
 
 $(objpfx)tst-getopt-cancel: $(shared-thread-library)
 

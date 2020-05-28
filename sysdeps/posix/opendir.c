@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -99,7 +99,7 @@ __alloc_dir (int fd, bool close_fd, int flags, const struct stat64 *statp)
   /* We have to set the close-on-exit flag if the user provided the
      file descriptor.  */
   if (!close_fd
-      && __builtin_expect (__fcntl (fd, F_SETFD, FD_CLOEXEC), 0) < 0)
+      && __glibc_unlikely (__fcntl64_nocancel (fd, F_SETFD, FD_CLOEXEC) < 0))
 	goto lose;
 
   const size_t default_allocation = (4 * BUFSIZ < sizeof (struct dirent64)

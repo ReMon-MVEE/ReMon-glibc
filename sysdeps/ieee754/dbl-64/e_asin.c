@@ -1,7 +1,7 @@
 /*
  * IBM Accurate Mathematical Library
  * written by International Business Machines Corp.
- * Copyright (C) 2001-2018 Free Software Foundation, Inc.
+ * Copyright (C) 2001-2020 Free Software Foundation, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -14,7 +14,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, see <http://www.gnu.org/licenses/>.
+ * along with this program; if not, see <https://www.gnu.org/licenses/>.
  */
 /******************************************************************/
 /*     MODULE_NAME:uasncs.c                                       */
@@ -43,6 +43,7 @@
 #include <math.h>
 #include <math_private.h>
 #include <math-underflow.h>
+#include <libm-alias-finite.h>
 
 #ifndef SECTION
 # define SECTION
@@ -334,7 +335,7 @@ __ieee754_asin(double x){
  }
 }
 #ifndef __ieee754_asin
-strong_alias (__ieee754_asin, __asin_finite)
+libm_alias_finite (__ieee754_asin, __asin)
 #endif
 
 /*******************************************************************/
@@ -644,5 +645,5 @@ __ieee754_acos(double x)
   }
 }
 #ifndef __ieee754_acos
-strong_alias (__ieee754_acos, __acos_finite)
+libm_alias_finite (__ieee754_acos, __acos)
 #endif

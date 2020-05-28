@@ -114,8 +114,6 @@ libc_hidden_proto (fputws_unlocked)
 libc_hidden_proto (putwc_unlocked)
 libc_hidden_proto (putwc)
 
-libc_hidden_proto (vswscanf)
-
 libc_hidden_proto (mbrtowc)
 libc_hidden_proto (wcrtomb)
 extern int __wcscmp (const wchar_t *__s1, const wchar_t *__s2)
@@ -143,6 +141,8 @@ libc_hidden_proto (wmemchr)
 libc_hidden_proto (__wmemchr)
 libc_hidden_proto (wmemset)
 libc_hidden_proto (__wmemset)
+extern int __wmemcmp (const wchar_t *__s1, const wchar_t *__s2, size_t __n)
+     __THROW __attribute_pure__;
 
 /* Now define the internal interfaces.  */
 extern int __wcscasecmp (const wchar_t *__s1, const wchar_t *__s2)
@@ -180,6 +180,10 @@ extern size_t __wcsnrtombs (char *__restrict __dst,
 			    size_t __nwc, size_t __len,
 			    __mbstate_t *__restrict __ps)
      attribute_hidden;
+extern wchar_t *__wcscpy (wchar_t *__restrict __dest,
+			  const wchar_t *__restrict __src)
+			  attribute_hidden __nonnull ((1, 2));
+libc_hidden_proto (__wcscpy)
 extern wchar_t *__wcsncpy (wchar_t *__restrict __dest,
 			   const wchar_t *__restrict __src, size_t __n);
 extern wchar_t *__wcpcpy (wchar_t *__dest, const wchar_t *__src);
@@ -203,20 +207,10 @@ extern int __vfwscanf (__FILE *__restrict __s,
 		       __gnuc_va_list __arg)
      attribute_hidden
      /* __attribute__ ((__format__ (__wscanf__, 2, 0)) */;
-extern int __vswprintf (wchar_t *__restrict __s, size_t __n,
-			const wchar_t *__restrict __format,
-			__gnuc_va_list __arg)
-     attribute_hidden
-     /* __attribute__ ((__format__ (__wprintf__, 3, 0))) */;
 extern int __fwprintf (__FILE *__restrict __s,
 		       const wchar_t *__restrict __format, ...)
      attribute_hidden
      /* __attribute__ ((__format__ (__wprintf__, 2, 3))) */;
-extern int __vfwprintf (__FILE *__restrict __s,
-			const wchar_t *__restrict __format,
-			__gnuc_va_list __arg)
-     attribute_hidden
-     /* __attribute__ ((__format__ (__wprintf__, 2, 0))) */;
 extern int __vfwprintf_chk (FILE *__restrict __s, int __flag,
 			    const wchar_t *__restrict __format,
 			    __gnuc_va_list __arg)
@@ -226,8 +220,6 @@ extern int __vswprintf_chk (wchar_t *__restrict __s, size_t __n,
 			    const wchar_t *__restrict __format,
 			    __gnuc_va_list __arg)
      /* __attribute__ ((__format__ (__wprintf__, 5, 0))) */;
-libc_hidden_proto (__vfwprintf_chk)
-libc_hidden_proto (__vswprintf_chk)
 
 extern int __isoc99_fwscanf (__FILE *__restrict __stream,
 			     const wchar_t *__restrict __format, ...);
@@ -243,11 +235,7 @@ extern int __isoc99_vwscanf (const wchar_t *__restrict __format,
 extern int __isoc99_vswscanf (const wchar_t *__restrict __s,
 			      const wchar_t *__restrict __format,
 			      __gnuc_va_list __arg) __THROW;
-extern int __vswscanf (const wchar_t *__restrict __s,
-		       const wchar_t *__restrict __format,
-		       __gnuc_va_list __arg) __THROW;
 libc_hidden_proto (__isoc99_vswscanf)
-libc_hidden_proto (__vswscanf)
 libc_hidden_proto (__isoc99_vfwscanf)
 
 /* Internal functions.  */

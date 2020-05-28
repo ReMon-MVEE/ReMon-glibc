@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@suse.de>, 1998.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <ctype.h>
 #include <errno.h>
@@ -89,7 +89,7 @@ init_nss_interface (void)
 
   /* Retest.  */
   if (ni == NULL
-      && __nss_database_lookup ("group_compat", NULL, "nis", &ni) >= 0)
+      && __nss_database_lookup2 ("group_compat", NULL, "nis", &ni) >= 0)
     {
       nss_initgroups_dyn = __nss_lookup_function (ni, "initgroups_dyn");
       nss_getgrnam_r = __nss_lookup_function (ni, "getgrnam_r");
@@ -133,7 +133,7 @@ internal_setgrent (ent_t *ent)
 }
 
 
-static enum nss_status
+static enum nss_status __attribute_warn_unused_result__
 internal_endgrent (ent_t *ent)
 {
   if (ent->stream != NULL)
@@ -155,6 +155,15 @@ internal_endgrent (ent_t *ent)
     nss_endgrent ();
 
   return NSS_STATUS_SUCCESS;
+}
+
+/* Like internal_endgrent, but preserve errno in all cases.  */
+static void
+internal_endgrent_noerror (ent_t *ent)
+{
+  int saved_errno = errno;
+  enum nss_status unused __attribute__ ((unused)) = internal_endgrent (ent);
+  __set_errno (saved_errno);
 }
 
 /* Add new group record.  */
@@ -261,7 +270,6 @@ getgrent_next_nss (ent_t *ent, char *buffer, size_t buflen, const char *user,
 		 overwrite the pointer with one to a bigger buffer.  */
 	      char *tmpbuf = buffer;
 	      size_t tmplen = buflen;
-	      bool use_malloc = false;
 
 	      for (int i = 0; i < mystart; i++)
 		{
@@ -270,29 +278,26 @@ getgrent_next_nss (ent_t *ent, char *buffer, size_t buflen, const char *user,
 			 == NSS_STATUS_TRYAGAIN
 			 && *errnop == ERANGE)
                     {
-                      if (__libc_use_alloca (tmplen * 2))
-                        {
-                          if (tmpbuf == buffer)
-                            {
-                              tmplen *= 2;
-                              tmpbuf = __alloca (tmplen);
-                            }
-                          else
-                            tmpbuf = extend_alloca (tmpbuf, tmplen, tmplen * 2);
-                        }
-                      else
-                        {
-                          tmplen *= 2;
-                          char *newbuf = realloc (use_malloc ? tmpbuf : NULL, tmplen);
-
-                          if (newbuf == NULL)
-                            {
-                              status = NSS_STATUS_TRYAGAIN;
-			      goto done;
-                            }
-                          use_malloc = true;
-                          tmpbuf = newbuf;
-                        }
+		      /* Check for overflow. */
+		      if (__glibc_unlikely (tmplen * 2 < tmplen))
+			{
+			  __set_errno (ENOMEM);
+			  status = NSS_STATUS_TRYAGAIN;
+			  goto done;
+			}
+		      /* Increase the size.  Make sure that we retry
+			 with a reasonable size.  */
+		      tmplen *= 2;
+		      if (tmplen < 1024)
+			tmplen = 1024;
+		      if (tmpbuf != buffer)
+			free (tmpbuf);
+		      tmpbuf = malloc (tmplen);
+		      if (__glibc_unlikely (tmpbuf == NULL))
+			{
+			  status = NSS_STATUS_TRYAGAIN;
+			  goto done;
+			}
                     }
 
 		  if (__builtin_expect  (status != NSS_STATUS_NOTFOUND, 1))
@@ -320,7 +325,7 @@ getgrent_next_nss (ent_t *ent, char *buffer, size_t buflen, const char *user,
 	      status = NSS_STATUS_NOTFOUND;
 
  done:
-	      if (use_malloc)
+	      if (tmpbuf != buffer)
 	        free (tmpbuf);
 	    }
 
@@ -338,8 +343,8 @@ getgrent_next_nss (ent_t *ent, char *buffer, size_t buflen, const char *user,
  iter:
   do
     {
-      if ((status = nss_getgrent_r (&grpbuf, buffer, buflen, errnop)) !=
-	  NSS_STATUS_SUCCESS)
+      if ((status = nss_getgrent_r (&grpbuf, buffer, buflen, errnop))
+	  != NSS_STATUS_SUCCESS)
 	break;
     }
   while (in_blacklist (grpbuf.gr_name, strlen (grpbuf.gr_name), ent));
@@ -398,11 +403,11 @@ internal_getgrent_r (ent_t *ent, char *buffer, size_t buflen, const char *user,
 	  while (isspace (*p))
 	    ++p;
 	}
-      while (*p == '\0' || *p == '#' ||	/* Ignore empty and comment lines. */
+      while (*p == '\0' || *p == '#' /* Ignore empty and comment lines. */
 	     /* Parse the line.  If it is invalid, loop to
 		get the next line of the file to parse.  */
-	     !(parse_res = _nss_files_parse_grent (p, &grpbuf, data, buflen,
-						   errnop)));
+	     || !(parse_res = _nss_files_parse_grent (p, &grpbuf, data, buflen,
+						      errnop)));
 
       if (__glibc_unlikely (parse_res == -1))
 	/* The parser ran out of space.  */
@@ -505,7 +510,7 @@ _nss_compat_initgroups_dyn (const char *user, gid_t group, long int *start,
  done:
   scratch_buffer_free (&tmpbuf);
 
-  internal_endgrent (&intern);
+  internal_endgrent_noerror (&intern);
 
   return status;
 }

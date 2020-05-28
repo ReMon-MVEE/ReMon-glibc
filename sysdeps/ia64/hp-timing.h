@@ -1,5 +1,5 @@
 /* High precision, low overhead timing functions.  IA-64 version.
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+   Copyright (C) 2001-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 2001.
 
@@ -15,14 +15,10 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _HP_TIMING_H
 #define _HP_TIMING_H	1
-
-/* We always assume having the timestamp register.  */
-#define HP_TIMING_AVAIL		(1)
-#define HP_SMALL_TIMING_AVAIL	(1)
 
 /* We indeed have inlined functions.  */
 #define HP_TIMING_INLINE	(1)

@@ -28,7 +28,7 @@
 
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, see
-    <http://www.gnu.org/licenses/>.  */
+    <https://www.gnu.org/licenses/>.  */
 
 /* __ieee754_powl(x,y) return x**y
  *
@@ -67,6 +67,7 @@
 #include <math.h>
 #include <math-barriers.h>
 #include <math_private.h>
+#include <libm-alias-finite.h>
 
 static const _Float128 bp[] = {
   1,
@@ -198,10 +199,10 @@ __ieee754_powl (_Float128 x, _Float128 y)
 	yisint = 2;		/* even integer y */
       else if (iy >= 0x3fff0000)	/* 1.0 */
 	{
-	  if (__floorl (y) == y)
+	  if (floorl (y) == y)
 	    {
 	      z = 0.5 * y;
-	      if (__floorl (z) == z)
+	      if (floorl (z) == z)
 		yisint = 2;
 	      else
 		yisint = 1;
@@ -413,7 +414,7 @@ __ieee754_powl (_Float128 x, _Float128 y)
   n = 0;
   if (i > 0x3ffe0000)
     {				/* if |z| > 0.5, set n = [z+0.5] */
-      n = __floorl (z + L(0.5));
+      n = floorl (z + L(0.5));
       t = n;
       p_h -= t;
     }
@@ -449,4 +450,4 @@ __ieee754_powl (_Float128 x, _Float128 y)
     }
   return sgn * z;
 }
-strong_alias (__ieee754_powl, __powl_finite)
+libm_alias_finite (__ieee754_powl, __powl)

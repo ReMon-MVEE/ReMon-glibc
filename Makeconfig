@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2018 Free Software Foundation, Inc.
+# Copyright (C) 1991-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 #
 #	Makefile configuration options for the GNU C library.
@@ -336,9 +336,6 @@ ifndef asm-CPPFLAGS
 asm-CPPFLAGS =
 endif
 
-as-needed := -Wl,--as-needed
-no-as-needed := -Wl,--no-as-needed
-
 # Must be supported by the linker.
 no-whole-archive = -Wl,--no-whole-archive
 whole-archive = -Wl,--whole-archive
@@ -398,6 +395,8 @@ endif
 # test modules.
 ifeq ($(bind-now),yes)
 LDFLAGS-lib.so += -Wl,-z,now
+# Extra flags for dynamically linked non-test main programs.
+link-extra-flags += -Wl,-z,now
 endif
 
 # Command to run after every final link (executable or shared object).
@@ -413,7 +412,7 @@ link-extra-libs-tests = $(libsupport)
 
 # Command for linking PIE programs with the C library.
 ifndef +link-pie
-+link-pie-before-libc = $(CC) $(if $($(@F)-no-pie),$(no-pie-ldflag),-pie) \
++link-pie-before-libc = $(if $($(@F)-no-pie),$(no-pie-ldflag),-pie) \
 	     -Wl,-O1 -nostdlib -nostartfiles -o $@ \
 	     $(sysdep-LDFLAGS) $(LDFLAGS) $(LDFLAGS-$(@F)) \
 	     $(combreloc-LDFLAGS) $(relro-LDFLAGS) $(hashstyle-LDFLAGS) \
@@ -426,23 +425,24 @@ ifndef +link-pie
 	     $(link-extra-libs)
 +link-pie-after-libc = $(+postctorS) $(+postinit)
 define +link-pie
-$(+link-pie-before-libc) $(rtld-LDFLAGS) $(link-libc) $(+link-pie-after-libc)
+$(CC) $(link-libc-rpath-link) $(+link-pie-before-libc) $(rtld-LDFLAGS) \
+  $(link-extra-flags) $(link-libc) $(+link-pie-after-libc)
 $(call after-link,$@)
 endef
 define +link-pie-tests
-$(+link-pie-before-libc) $(rtld-tests-LDFLAGS) $(link-libc-tests) \
-			 $(+link-pie-after-libc)
+$(CC) $(+link-pie-before-libc) $(rtld-tests-LDFLAGS) $(link-libc-tests) \
+  $(+link-pie-after-libc)
 $(call after-link,$@)
 endef
 define +link-pie-printers-tests
-$(+link-pie-before-libc) $(built-rtld-LDFLAGS) $(link-libc-printers-tests) \
-			 $(+link-pie-after-libc)
+$(CC) $(+link-pie-before-libc) $(built-rtld-LDFLAGS) \
+  $(link-libc-printers-tests) $(+link-pie-after-libc)
 $(call after-link,$@)
 endef
 endif
 # Command for statically linking programs with the C library.
 ifndef +link-static
-+link-static-before-libc = $(CC) -nostdlib -nostartfiles -static -o $@ \
++link-static-before-libc = -nostdlib -nostartfiles -static -o $@ \
 	      $(if $($(@F)-no-pie),$(no-pie-ldflag),$(default-pie-ldflag)) \
 	      $(sysdep-LDFLAGS) $(LDFLAGS) $(LDFLAGS-$(@F))  \
 	      $(firstword $(CRT-$(@F)) $(csu-objpfx)$(real-static-start-installed-name)) \
@@ -454,11 +454,13 @@ ifndef +link-static
 	      $(link-extra-libs-static)
 +link-static-after-libc = $(+postctorT) $(+postinit)
 define +link-static
-$(+link-static-before-libc) $(link-libc-static) $(+link-static-after-libc)
+$(CC) $(+link-static-before-libc) $(link-extra-flags) $(link-libc-static) \
+  $(+link-static-after-libc)
 $(call after-link,$@)
 endef
 define +link-static-tests
-$(+link-static-before-libc) $(link-libc-static-tests) $(+link-static-after-libc)
+$(CC) $(+link-static-before-libc) $(link-libc-static-tests) \
+  $(+link-static-after-libc)
 $(call after-link,$@)
 endef
 endif
@@ -473,7 +475,7 @@ ifeq (yes,$(build-pie-default))
 +link-tests = $(+link-pie-tests)
 +link-printers-tests = $(+link-pie-printers-tests)
 else  # not build-pie-default
-+link-before-libc = $(CC) -nostdlib -nostartfiles -o $@ \
++link-before-libc = -nostdlib -nostartfiles -o $@ \
 	      $(sysdep-LDFLAGS) $(LDFLAGS) $(LDFLAGS-$(@F)) \
 	      $(combreloc-LDFLAGS) $(relro-LDFLAGS) $(hashstyle-LDFLAGS) \
 	      $(firstword $(CRT-$(@F)) $(csu-objpfx)$(start-installed-name)) \
@@ -485,16 +487,17 @@ else  # not build-pie-default
 	      $(link-extra-libs)
 +link-after-libc = $(+postctor) $(+postinit)
 define +link
-$(+link-before-libc) $(rtld-LDFLAGS) $(link-libc) $(+link-after-libc)
+$(CC) $(link-libc-rpath-link) $(+link-before-libc) $(rtld-LDFLAGS) \
+  $(link-extra-flags) $(link-libc) $(+link-after-libc)
 $(call after-link,$@)
 endef
 define +link-tests
-$(+link-before-libc) $(rtld-tests-LDFLAGS) $(link-libc-tests) \
+$(CC) $(+link-before-libc) $(rtld-tests-LDFLAGS) $(link-libc-tests) \
 		     $(+link-after-libc)
 $(call after-link,$@)
 endef
 define +link-printers-tests
-$(+link-before-libc) $(built-rtld-LDFLAGS) $(link-libc-printers-tests) \
+$(CC) $(+link-before-libc) $(built-rtld-LDFLAGS) $(link-libc-printers-tests) \
 		     $(+link-after-libc)
 $(call after-link,$@)
 endef
@@ -546,6 +549,15 @@ ifeq (yes,$(build-shared))
 link-libc-rpath = -Wl,-rpath=$(rpath-link)
 link-libc-rpath-link = -Wl,-rpath-link=$(rpath-link)
 
+# For programs which are not tests, $(link-libc-rpath-link) is added
+# directly in $(+link), $(+link-pie) above, so that -Wl,-rpath-link
+# comes before the expansion of LDLIBS-* and affects libraries added
+# there.  For shared objects, -Wl,-rpath-link is added via
+# $(build-shlib-helper) and $(build-module-helper) in Makerules (also
+# before the expansion of LDLIBS-* variables).
+
+# Tests use -Wl,-rpath instead of -Wl,-rpath-link for
+# build-hardcoded-path-in-tests.
 ifeq (yes,$(build-hardcoded-path-in-tests))
 link-libc-tests-rpath-link = $(link-libc-rpath)
 else
@@ -554,9 +566,9 @@ endif  # build-hardcoded-path-in-tests
 
 link-libc-before-gnulib = $(common-objpfx)libc.so$(libc.so-version) \
 			  $(common-objpfx)$(patsubst %,$(libtype.oS),c) \
-			  $(as-needed) $(elf-objpfx)ld.so \
-			  $(no-as-needed)
-link-libc = $(link-libc-rpath-link) $(link-libc-before-gnulib) $(gnulib)
+			  -Wl,--as-needed $(elf-objpfx)ld.so \
+			  -Wl,--no-as-needed
+link-libc = $(link-libc-before-gnulib) $(gnulib)
 
 link-libc-tests-after-rpath-link = $(link-libc-before-gnulib) $(gnulib-tests)
 link-libc-tests = $(link-libc-tests-rpath-link) \
@@ -566,7 +578,7 @@ link-libc-printers-tests = $(link-libc-rpath) \
 			   $(link-libc-tests-after-rpath-link)
 
 # This is how to find at build-time things that will be installed there.
-rpath-dirs = math elf dlfcn nss nis rt resolv crypt mathvec support
+rpath-dirs = math elf dlfcn nss nis rt resolv mathvec support
 rpath-link = \
 $(common-objdir):$(subst $(empty) ,:,$(patsubst ../$(subdir),.,$(rpath-dirs:%=$(common-objpfx)%)))
 else  # build-static
@@ -831,8 +843,10 @@ endif
 # disable any optimization that assume default rounding mode.
 +math-flags = -frounding-math
 
-# Build libc/libm using -fno-math-errno, but run testsuite with -fmath-errno.
-+extra-math-flags = $(if $(filter libnldbl nonlib testsuite,$(in-module)),-fmath-errno,-fno-math-errno)
+# Logically only "libnldbl", "nonlib" and "testsuite" should be using
+# -fno-math-errno. However due to GCC bug #88576, only "libm" can use
+# -fno-math-errno.
++extra-math-flags = $(if $(filter libm,$(in-module)),-fno-math-errno,-fmath-errno)
 
 # We might want to compile with some stack-protection flag.
 ifneq ($(stack-protector),)
@@ -901,9 +915,6 @@ endif	# $(+cflags) == ""
 +cflags += $(cflags-cpu) $(+gccwarn) $(+merge-constants) $(+math-flags) \
 	   $(+stack-protector)
 +gcc-nowarn := -w
-
-# Don't duplicate options if we inherited variables from the parent.
-+cflags	:= $(sort $(+cflags))
 
 # Each sysdeps directory can contain header files that both will be
 # used to compile and will be installed.  Each can also contain an
@@ -1038,7 +1049,7 @@ object-suffixes-for-libc += .oS
 # Must build the routines as PIC, though, because they can end up in (users')
 # shared objects.  We don't want to use CFLAGS-os because users may, for
 # example, make that processor-specific.
-CFLAGS-.oS = $(CFLAGS-.o) $(PIC-ccflag)
+CFLAGS-.oS = $(CFLAGS-.o) $(PIC-ccflag) $(extra-nonshared-cflags)
 CPPFLAGS-.oS = $(CPPFLAGS-.o) -DPIC -DLIBC_NONSHARED=1
 libtype.oS = lib%_nonshared.a
 endif
@@ -1047,7 +1058,7 @@ endif
 ifndef ASFLAGS
 ASFLAGS := $(filter -g% -fdebug-prefix-map=%,$(CFLAGS))
 endif
-ASFLAGS += -Werror=undef $(ASFLAGS-config) $(asflags-cpu)
+override ASFLAGS += -Werror=undef $(ASFLAGS-config) $(asflags-cpu)
 
 ifndef BUILD_CC
 BUILD_CC = $(CC)
@@ -1160,6 +1171,61 @@ $(common-objpfx)dl-tunable-list.stmp: \
 	touch $@
 endif
 
+# Generate version maps, but wait until sysdep-subdirs is known
+ifeq ($(sysd-sorted-done),t)
+ifeq ($(build-shared),yes)
+-include $(common-objpfx)sysd-versions
+-include $(common-objpfx)Versions.mk
+$(addprefix $(common-objpfx),$(version-maps)): $(common-objpfx)sysd-versions
+common-generated += $(version-maps)
+postclean-generated += sysd-versions Versions.all abi-versions.h \
+		       Versions.def Versions.v.i Versions.v Versions.mk
+
+ifndef avoid-generated
+ifneq ($(sysd-versions-subdirs),$(sorted-subdirs) $(config-sysdirs))
+sysd-versions-force = FORCE
+FORCE:
+endif
+
+$(common-objpfx)Versions.def: $(..)scripts/versionlist.awk \
+			      $(common-objpfx)Versions.v
+	LC_ALL=C $(AWK) -f $^ > $@T
+	mv -f $@T $@
+
+$(common-objpfx)Versions.all: $(..)scripts/firstversions.awk \
+			      $(common-objpfx)soversions.i \
+			      $(common-objpfx)Versions.def
+	{ while read which lib version setname; do \
+	    test x"$$which" = xDEFAULT || continue; \
+	    test -z "$$setname" || echo "$$lib : $$setname"; \
+	  done < $(word 2,$^); \
+	  cat $(word 3,$^); \
+	} | LC_ALL=C $(AWK) -f $< > $@T
+	mv -f $@T $@
+$(common-objpfx)Versions.mk: $(..)scripts/haveversions.awk \
+			     $(common-objpfx)Versions.all
+	$(AWK) -f $^ > $@T
+	mv -f $@T $@
+# See %.v/%.v.i implicit rules in Makeconfig.
+$(common-objpfx)Versions.v.i: $(wildcard $(subdirs:%=$(..)%/Versions)) \
+			      $(wildcard $(sysdirs:%=%/Versions)) \
+			      $(sysd-versions-force)
+$(common-objpfx)sysd-versions: $(common-objpfx)versions.stmp
+$(common-objpfx)versions.stmp: $(common-objpfx)Versions.all \
+			       $(common-objpfx)Versions.v \
+			       $(..)scripts/versions.awk
+	( echo 'sysd-versions-subdirs = $(subdirs) $(config-sysdirs)' ; \
+	  cat $(word 2,$^) \
+	  | LC_ALL=C $(AWK) -v buildroot=$(common-objpfx) -v defsfile=$< \
+			    -v move_if_change='$(move-if-change)' \
+			    -f $(word 3,$^); \
+	) > $(common-objpfx)sysd-versionsT
+	mv -f $(common-objpfx)sysd-versionsT $(common-objpfx)sysd-versions
+	touch $@
+endif # avoid-generated
+endif # $(build-shared) = yes
+endif # sysd-sorted-done
+
 # The name under which the run-time dynamic linker is installed.
 # We are currently going for the convention that `/lib/ld.so.1'
 # names the SVR4/ELF ABI-compliant dynamic linker.
@@ -1198,15 +1264,20 @@ else
 libsupport = $(common-objpfx)support/libsupport.a
 endif
 
-# These are the subdirectories containing the library source.  The order
-# is more or less arbitrary.  The sorting step will take care of the
-# dependencies.
+# This is a partial list of subdirectories containing the library source.
+# The order is more or less arbitrary.  The sorting step will take care of the
+# dependencies and generate sorted-subdirs dynamically.
 all-subdirs = csu assert ctype locale intl catgets math setjmp signal	    \
 	      stdlib stdio-common libio malloc string wcsmbs time dirent    \
 	      grp pwd posix io termios resource misc socket sysvipc gmon    \
 	      gnulib iconv iconvdata wctype manual shadow gshadow po argp   \
-	      crypt localedata timezone rt conform debug mathvec support    \
+	      localedata timezone rt conform debug mathvec support	    \
 	      dlfcn elf
+
+ifeq ($(build-crypt),yes)
+all-subdirs += crypt
+rpath-dirs += crypt
+endif
 
 ifndef avoid-generated
 # sysd-sorted itself will contain rules making the sysd-sorted target

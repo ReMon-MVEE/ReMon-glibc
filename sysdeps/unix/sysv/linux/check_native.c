@@ -1,5 +1,5 @@
 /* Determine whether interfaces use native transport.  Linux version.
-   Copyright (C) 2007-2018 Free Software Foundation, Inc.
+   Copyright (C) 2007-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -69,7 +69,7 @@ __check_native (uint32_t a1_index, int *a1_native,
   req.nlh.nlmsg_type = RTM_GETLINK;
   req.nlh.nlmsg_flags = NLM_F_ROOT | NLM_F_MATCH | NLM_F_REQUEST;
   req.nlh.nlmsg_pid = 0;
-  req.nlh.nlmsg_seq = time (NULL);
+  req.nlh.nlmsg_seq = time_now ();
   req.g.rtgen_family = AF_UNSPEC;
 
   assert (sizeof (req) - offsetof (struct req, pad) == 3);

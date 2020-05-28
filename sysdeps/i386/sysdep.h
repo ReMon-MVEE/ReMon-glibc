@@ -1,5 +1,5 @@
 /* Assembler macros for i386.
-   Copyright (C) 1991-2018 Free Software Foundation, Inc.
+   Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdeps/x86/sysdep.h>
 
@@ -61,7 +61,7 @@ lose: SYSCALL_PIC_SETUP							      \
 
 # define SETUP_PIC_REG(reg) \
   .ifndef GET_PC_THUNK(reg);						      \
-  .section .gnu.linkonce.t.GET_PC_THUNK(reg),"ax",@progbits;		      \
+  .section .text.GET_PC_THUNK(reg),"axG",@progbits,GET_PC_THUNK(reg),comdat;  \
   .globl GET_PC_THUNK(reg);						      \
   .hidden GET_PC_THUNK(reg);						      \
   .p2align 4;								      \
@@ -97,7 +97,8 @@ GET_PC_THUNK(reg):							      \
 
 # define SETUP_PIC_REG_STR(reg)						\
   ".ifndef " GET_PC_THUNK_STR (reg) "\n"				\
-  ".section .gnu.linkonce.t." GET_PC_THUNK_STR (reg) ",\"ax\",@progbits\n" \
+  ".section .text." GET_PC_THUNK_STR (reg) ",\"axG\",@progbits,"	\
+    GET_PC_THUNK_STR (reg) ",comdat\n"					\
   ".globl " GET_PC_THUNK_STR (reg) "\n"					\
   ".hidden " GET_PC_THUNK_STR (reg) "\n"				\
   ".p2align 4\n"							\

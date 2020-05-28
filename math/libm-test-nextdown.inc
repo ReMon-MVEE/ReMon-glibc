@@ -1,5 +1,5 @@
 /* Test nextdown.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "libm-test-driver.c"
 
@@ -65,11 +65,6 @@ nextdown_test (void)
 {
   ALL_RM_TEST (nextdown, 1, nextdown_test_data, RUN_TEST_LOOP_f_f, END);
 }
-
-
-/* Note, the second argument is always typed as long double.  The j type
-   argument to TEST_ indicates the literal should not be post-processed by
-   gen-libm-test.pl.  */
 
 static void
 do_test (void)

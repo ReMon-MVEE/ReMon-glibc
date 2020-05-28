@@ -1,6 +1,6 @@
 /* Test that passing a NULL value does not hang environment traversal in
    tunables.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* The test is useful only when the source is configured with
    --enable-hardcoded-path-in-tests since otherwise the execve just picks up
@@ -53,6 +53,5 @@ do_test (int argc, char **argv)
   return 1;
 }
 
-#define TIMEOUT 3
 #define TEST_FUNCTION_ARGV do_test
 #include <support/test-driver.c>

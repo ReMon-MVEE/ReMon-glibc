@@ -1,5 +1,5 @@
 /* Support functionality for using threads.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef SUPPORT_THREAD_H
 #define SUPPORT_THREAD_H
@@ -41,6 +41,9 @@ void xpthread_check_return (const char *function, int value);
 void xpthread_barrier_init (pthread_barrier_t *barrier,
                             pthread_barrierattr_t *attr, unsigned int count);
 void xpthread_barrier_destroy (pthread_barrier_t *barrier);
+void xpthread_barrierattr_destroy (pthread_barrierattr_t *);
+void xpthread_barrierattr_init (pthread_barrierattr_t *);
+void xpthread_barrierattr_setpshared (pthread_barrierattr_t *, int pshared);
 void xpthread_mutexattr_destroy (pthread_mutexattr_t *);
 void xpthread_mutexattr_init (pthread_mutexattr_t *);
 void xpthread_mutexattr_setprotocol (pthread_mutexattr_t *, int);
@@ -65,10 +68,20 @@ void xpthread_attr_destroy (pthread_attr_t *attr);
 void xpthread_attr_init (pthread_attr_t *attr);
 void xpthread_attr_setdetachstate (pthread_attr_t *attr,
 				   int detachstate);
+void xpthread_attr_setstack (pthread_attr_t *attr, void *stackaddr,
+			     size_t stacksize);
 void xpthread_attr_setstacksize (pthread_attr_t *attr,
 				 size_t stacksize);
 void xpthread_attr_setguardsize (pthread_attr_t *attr,
 				 size_t guardsize);
+
+/* Set the stack size in ATTR to a small value, but still large enough
+   to cover most internal glibc stack usage.  */
+void support_set_small_thread_stack_size (pthread_attr_t *attr);
+
+/* Return a pointer to a thread attribute which requests a small
+   stack.  The caller must not free this pointer.  */
+pthread_attr_t *support_small_stack_thread_attribute (void);
 
 /* This function returns non-zero if pthread_barrier_wait returned
    PTHREAD_BARRIER_SERIAL_THREAD.  */
@@ -81,6 +94,7 @@ void xpthread_rwlockattr_setkind_np (pthread_rwlockattr_t *attr, int pref);
 void xpthread_rwlock_wrlock (pthread_rwlock_t *rwlock);
 void xpthread_rwlock_rdlock (pthread_rwlock_t *rwlock);
 void xpthread_rwlock_unlock (pthread_rwlock_t *rwlock);
+void xpthread_rwlock_destroy (pthread_rwlock_t *rwlock);
 
 __END_DECLS
 

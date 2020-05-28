@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Zack Weinberg <zack@rabi.phys.columbia.edu>, 1998.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -178,8 +178,8 @@ grantpt (int fd)
      owner.  For security reasons, make it writable by the group only
      when originally writable and when the group of the device is that
      special group.  */
-  mode_t mode = S_IRUSR|S_IWUSR|
-	        ((st.st_gid == gid) ? (st.st_mode & S_IWGRP) : 0);
+  mode_t mode = S_IRUSR|S_IWUSR
+	        |((st.st_gid == gid) ? (st.st_mode & S_IWGRP) : 0);
 #endif
 
   if ((st.st_mode & ACCESSPERMS) != mode)

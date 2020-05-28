@@ -1,5 +1,5 @@
 /* memrchr optimized with AVX2.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #if IS_IN (libc)
 
@@ -32,10 +32,10 @@ ENTRY (__memrchr_avx2)
 	vmovd	%esi, %xmm0
 	vpbroadcastb %xmm0, %ymm0
 
-	subq	$VEC_SIZE, %rdx
+	sub	$VEC_SIZE, %RDX_LP
 	jbe	L(last_vec_or_less)
 
-	addq	%rdx, %rdi
+	add	%RDX_LP, %RDI_LP
 
 	/* Check the last VEC_SIZE bytes.  */
 	vpcmpeqb (%rdi), %ymm0, %ymm1

@@ -1,5 +1,5 @@
 /* Special .init and .fini section support for x86.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -31,7 +31,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* crti.S puts a function prologue at the beginning of the .init and
    .fini sections and defines global symbols for those addresses, so
@@ -58,8 +58,10 @@
 	.section .init,"ax",@progbits
 	.p2align 2
 	.globl _init
+	.hidden	_init
 	.type _init, @function
 _init:
+	_CET_ENDBR
 	pushl %ebx
 	/* Maintain 16-byte stack alignment for called functions.  */
 	subl $8, %esp
@@ -77,8 +79,10 @@ _init:
 	.section .fini,"ax",@progbits
 	.p2align 2
 	.globl _fini
+	.hidden	_fini
 	.type _fini, @function
 _fini:
+	_CET_ENDBR
 	pushl %ebx
 	subl $8, %esp
 	LOAD_PIC_REG (bx)

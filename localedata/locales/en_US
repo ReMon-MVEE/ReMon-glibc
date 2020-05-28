@@ -14,7 +14,7 @@ escape_char /
 LC_IDENTIFICATION
 title      "English locale for the USA"
 source     "Free Software Foundation, Inc."
-address    "http:////www.gnu.org//software//libc//"
+address    "https:////www.gnu.org//software//libc//"
 contact    ""
 email      "bug-glibc-locales@gnu.org"
 tel        ""
@@ -116,6 +116,9 @@ t_fmt   "%r"
 %
 % Appropriate AM/PM time representation (%r)
 t_fmt_ampm "%I:%M:%S %p"
+%
+% Appropriate date and time representation for date(1)
+date_fmt "%a %d %b %Y %r %Z"
 %
 % Strings for AM/PM
 %

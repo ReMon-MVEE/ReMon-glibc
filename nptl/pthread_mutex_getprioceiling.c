@@ -1,5 +1,5 @@
 /* Get current priority ceiling of pthread_mutex_t.
-   Copyright (C) 2006-2018 Free Software Foundation, Inc.
+   Copyright (C) 2006-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>, 2006.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <pthreadP.h>
@@ -24,7 +24,9 @@
 int
 pthread_mutex_getprioceiling (const pthread_mutex_t *mutex, int *prioceiling)
 {
-  if (__builtin_expect ((mutex->__data.__kind
+  /* See concurrency notes regarding __kind in struct __pthread_mutex_s
+     in sysdeps/nptl/bits/thread-shared-types.h.  */
+  if (__builtin_expect ((atomic_load_relaxed (&(mutex->__data.__kind))
 			 & PTHREAD_MUTEX_PRIO_PROTECT_NP) == 0, 0))
     return EINVAL;
 

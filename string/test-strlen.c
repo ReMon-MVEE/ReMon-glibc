@@ -1,5 +1,5 @@
 /* Test and measure STRLEN functions.
-   Copyright (C) 1999-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Jakub Jelinek <jakub@redhat.com>, 1999.
    Added wcslen support by Liubov Dmitrieva <liubov.dmitrieva@gmail.com>, 2011
@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #ifndef WIDE
@@ -80,7 +80,7 @@ do_test (size_t align, size_t len)
   size_t i;
 
   align &= 63;
-  if (align + sizeof(CHAR) * len >= page_size)
+  if (align + sizeof (CHAR) * len >= page_size)
     return;
 
   CHAR *buf = (CHAR *) (buf1);
@@ -97,7 +97,7 @@ static void
 do_random_tests (void)
 {
   size_t i, j, n, align, len;
-  CHAR *p = (CHAR *) (buf1 + page_size - 512 * sizeof(CHAR));
+  CHAR *p = (CHAR *) (buf1 + page_size - 512 * sizeof (CHAR));
 
   for (n = 0; n < ITERATIONS; n++)
     {
@@ -148,16 +148,16 @@ test_main (void)
 
   for (i = 1; i < 8; ++i)
   {
-    do_test (sizeof(CHAR) * i, i);
+    do_test (sizeof (CHAR) * i, i);
     do_test (0, i);
   }
 
   for (i = 2; i <= 12; ++i)
     {
       do_test (0, 1 << i);
-      do_test (sizeof(CHAR) * 7, 1 << i);
-      do_test (sizeof(CHAR) * i, 1 << i);
-      do_test (sizeof(CHAR) * i, (size_t)((1 << i) / 1.5));
+      do_test (sizeof (CHAR) * 7, 1 << i);
+      do_test (sizeof (CHAR) * i, 1 << i);
+      do_test (sizeof (CHAR) * i, (size_t)((1 << i) / 1.5));
     }
 
   do_random_tests ();

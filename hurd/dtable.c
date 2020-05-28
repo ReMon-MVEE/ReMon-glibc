@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <hurd.h>
 #include <hurd/term.h>
@@ -266,24 +266,24 @@ reauth_dtable (void)
       __spin_lock (&d->port.lock);
 
       /* Reauthenticate the descriptor's port.  */
-      if (d->port.port != MACH_PORT_NULL &&
-	  ! __io_reauthenticate (d->port.port,
-				 ref, MACH_MSG_TYPE_MAKE_SEND) &&
-	  ! __USEPORT (AUTH, __auth_user_authenticate
-		       (port,
-			ref, MACH_MSG_TYPE_MAKE_SEND,
-			&new)))
+      if (d->port.port != MACH_PORT_NULL
+	  && ! __io_reauthenticate (d->port.port,
+				    ref, MACH_MSG_TYPE_MAKE_SEND)
+	  && ! __USEPORT (AUTH, __auth_user_authenticate
+			  (port,
+			   ref, MACH_MSG_TYPE_MAKE_SEND,
+			   &new)))
 	{
 	  /* Replace the port in the descriptor cell
 	     with the newly reauthenticated port.  */
 
-	  if (d->ctty.port != MACH_PORT_NULL &&
-	      ! __io_reauthenticate (d->ctty.port,
-				     ref, MACH_MSG_TYPE_MAKE_SEND) &&
-	      ! __USEPORT (AUTH, __auth_user_authenticate
-			   (port,
-			    ref, MACH_MSG_TYPE_MAKE_SEND,
-			    &newctty)))
+	  if (d->ctty.port != MACH_PORT_NULL
+	      && ! __io_reauthenticate (d->ctty.port,
+					ref, MACH_MSG_TYPE_MAKE_SEND)
+	      && ! __USEPORT (AUTH, __auth_user_authenticate
+			      (port,
+			       ref, MACH_MSG_TYPE_MAKE_SEND,
+			       &newctty)))
 	    _hurd_port_set (&d->ctty, newctty);
 
 	  _hurd_port_locked_set (&d->port, new);

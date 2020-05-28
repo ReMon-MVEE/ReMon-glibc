@@ -1,5 +1,5 @@
 /* Free resources stored in thread-local variables on thread exit.
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,18 +14,26 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#include <stdlib.h>
 #include <libc-internal.h>
-#include <set-hooks.h>
+#include <malloc-internal.h>
+#include <resolv/resolv-internal.h>
+#include <rpc/rpc.h>
+#include <string.h>
 
-#ifdef _LIBC_REENTRANT
-DEFINE_HOOK (__libc_thread_subfreeres, (void));
-
-void __attribute__ ((section ("__libc_thread_freeres_fn")))
+/* Thread shutdown function.  Note that this function must be called
+   for threads during shutdown for correctness reasons.  Unlike
+   __libc_subfreeres, skipping calls to it is not a valid optimization.
+   This is called directly from pthread_create as the thread exits.  */
+void
 __libc_thread_freeres (void)
 {
-  RUN_HOOK (__libc_thread_subfreeres, ());
+  call_function_static_weak (__rpc_thread_destroy);
+  call_function_static_weak (__res_thread_freeres);
+  call_function_static_weak (__strerror_thread_freeres);
+
+  /* This should come last because it shuts down malloc for this
+     thread and the other shutdown functions might well call free.  */
+  call_function_static_weak (__malloc_arena_thread_freeres);
 }
-#endif

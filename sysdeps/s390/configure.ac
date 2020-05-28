@@ -80,6 +80,61 @@ then
   AC_DEFINE(HAVE_S390_VX_GCC_SUPPORT)
 fi
 
+AC_CACHE_CHECK(for S390 arch13 zarch instruction support,
+	       libc_cv_asm_s390_arch13, [dnl
+cat > conftest.c <<\EOF
+void testinsn (char *buf)
+{
+    __asm__ (".machine \"arch13\" \n\t"
+	     ".machinemode \"zarch_nohighgprs\" \n\t"
+	     "lghi %%r0,16 \n\t"
+	     "mvcrl 0(%0),32(%0)" : : "a" (buf) : "memory", "r0");
+}
+EOF
+dnl test, if assembler supports S390 arch13 instructions
+if AC_TRY_COMMAND([${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS --shared conftest.c
+			-o conftest.o &> /dev/null]) ;
+then
+  libc_cv_asm_s390_arch13=yes
+else
+  libc_cv_asm_s390_arch13=no
+fi
+rm -f conftest* ])
+if test "$libc_cv_asm_s390_arch13" = yes ;
+then
+  AC_DEFINE(HAVE_S390_ARCH13_ASM_SUPPORT)
+fi
+
+
+AC_CACHE_CHECK(for S390 z10 zarch instruction support as default,
+	       libc_cv_asm_s390_min_z10_zarch, [dnl
+cat > conftest.c <<\EOF
+void testinsn (void *a, void *b, int n)
+{
+    __asm__ ("exrl %2,1f \n\t"
+	     "j 2f \n\t"
+	     "1: mvc 0(1,%0),0(%1) \n\t"
+	     "2:"
+	     : : "a" (a), "a" (b), "d" (n)
+	     : "memory", "cc");
+}
+EOF
+dnl
+dnl test, if assembler supports S390 z10 zarch instructions as default
+if AC_TRY_COMMAND([${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS --shared conftest.c
+			-o conftest.o &> /dev/null]) ;
+then
+  libc_cv_asm_s390_min_z10_zarch=yes
+else
+  libc_cv_asm_s390_min_z10_zarch=no
+fi
+rm -f conftest* ])
+
+if test "$libc_cv_asm_s390_min_z10_zarch" = yes ;
+then
+  AC_DEFINE(HAVE_S390_MIN_Z10_ZARCH_ASM_SUPPORT)
+fi
+
 AC_CACHE_CHECK(for S390 z196 zarch instruction support as default,
 	       libc_cv_asm_s390_min_z196_zarch, [dnl
 cat > conftest.c <<\EOF
@@ -104,6 +159,57 @@ rm -f conftest* ])
 if test "$libc_cv_asm_s390_min_z196_zarch" = yes ;
 then
   AC_DEFINE(HAVE_S390_MIN_Z196_ZARCH_ASM_SUPPORT)
+fi
+
+AC_CACHE_CHECK(for S390 z13 zarch instruction support as default,
+	       libc_cv_asm_s390_min_z13_zarch, [dnl
+cat > conftest.c <<\EOF
+int testinsn (void)
+{
+    int i;
+    __asm__ ("vl %%v16,0(%%r15)\n\t"
+	     "vlgvf %0,%%v16,0"
+	     : "=d" (i) : : "memory", "v16");
+    return i;
+}
+EOF
+dnl
+dnl test, if assembler supports S390 z13 zarch instructions as default
+if AC_TRY_COMMAND([${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS --shared conftest.c
+			-o conftest.o &> /dev/null]) ;
+then
+  libc_cv_asm_s390_min_z13_zarch=yes
+else
+  libc_cv_asm_s390_min_z13_zarch=no
+fi
+rm -f conftest* ])
+
+if test "$libc_cv_asm_s390_min_z13_zarch" = yes ;
+then
+  AC_DEFINE(HAVE_S390_MIN_Z13_ZARCH_ASM_SUPPORT)
+fi
+
+AC_CACHE_CHECK(for S390 arch13 zarch instruction support as default,
+	       libc_cv_asm_s390_min_arch13_zarch, [dnl
+cat > conftest.c <<\EOF
+void testinsn (char *buf)
+{
+    __asm__ ("lghi %%r0,16 \n\t"
+	     "mvcrl 0(%0),32(%0)" : : "a" (buf) : "memory", "r0");
+}
+EOF
+dnl test, if assembler supports S390 arch13 zarch instructions as default
+if AC_TRY_COMMAND([${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS --shared conftest.c
+			-o conftest.o &> /dev/null]) ;
+then
+  libc_cv_asm_s390_min_arch13_zarch=yes
+else
+  libc_cv_asm_s390_min_arch13_zarch=no
+fi
+rm -f conftest* ])
+if test "$libc_cv_asm_s390_min_arch13_zarch" = yes ;
+then
+  AC_DEFINE(HAVE_S390_MIN_ARCH13_ZARCH_ASM_SUPPORT)
 fi
 
 test -n "$critic_missing" && AC_MSG_ERROR([

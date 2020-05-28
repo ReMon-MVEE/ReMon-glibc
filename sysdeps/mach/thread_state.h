@@ -1,5 +1,5 @@
 /* Generic definitions for dealing with Mach thread states.
-   Copyright (C) 1994-2018 Free Software Foundation, Inc.
+   Copyright (C) 1994-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 
 /* Everything else is called `thread_state', but CMU's header file is
@@ -82,8 +82,8 @@ machine_get_basic_state (thread_t thread,
   count = MACHINE_THREAD_STATE_COUNT;
   if (__thread_get_state (thread, MACHINE_THREAD_STATE_FLAVOR,
 			  (natural_t *) &state->basic,
-			  &count) != KERN_SUCCESS ||
-      count != MACHINE_THREAD_STATE_COUNT)
+			  &count) != KERN_SUCCESS
+      || count != MACHINE_THREAD_STATE_COUNT)
     /* What kind of thread?? */
     return 0;			/* XXX */
 

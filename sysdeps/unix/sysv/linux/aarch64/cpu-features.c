@@ -1,6 +1,6 @@
 /* Initialize CPU feature data.  AArch64 version.
    This file is part of the GNU C Library.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <cpu-features.h>
 #include <sys/auxv.h>
@@ -35,6 +35,10 @@ static struct cpu_list cpu_list[] = {
       {"thunderxt88",	 0x430F0A10},
       {"thunderx2t99",   0x431F0AF0},
       {"thunderx2t99p1", 0x420F5160},
+      {"phecda",	 0x680F0000},
+      {"ares",		 0x411FD0C0},
+      {"emag",		 0x503F0001},
+      {"kunpeng920", 	 0x481FD010},
       {"generic", 	 0x0}
 };
 
@@ -52,14 +56,11 @@ get_midr_from_mcpu (const char *mcpu)
 static inline void
 init_cpu_features (struct cpu_features *cpu_features)
 {
-  uint64_t hwcap_mask = GET_HWCAP_MASK();
-  uint64_t hwcap = GLRO (dl_hwcap) & hwcap_mask;
-
   register uint64_t midr = UINT64_MAX;
 
 #if HAVE_TUNABLES
   /* Get the tunable override.  */
-  const char *mcpu = TUNABLE_GET (glibc, tune, cpu, const char *, NULL);
+  const char *mcpu = TUNABLE_GET (glibc, cpu, name, const char *, NULL);
   if (mcpu != NULL)
     midr = get_midr_from_mcpu (mcpu);
 #endif
@@ -68,7 +69,7 @@ init_cpu_features (struct cpu_features *cpu_features)
      allows it.  */
   if (midr == UINT64_MAX)
     {
-      if (hwcap & HWCAP_CPUID)
+      if (GLRO (dl_hwcap) & HWCAP_CPUID)
 	asm volatile ("mrs %0, midr_el1" : "=r"(midr));
       else
 	midr = 0;

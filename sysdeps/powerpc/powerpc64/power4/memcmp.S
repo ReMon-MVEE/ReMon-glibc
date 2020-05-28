@@ -1,5 +1,5 @@
 /* Optimized memcmp implementation for PowerPC64.
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
@@ -26,7 +26,14 @@
 # define MEMCMP memcmp
 #endif
 
+#ifndef __LITTLE_ENDIAN__
 	.machine power4
+#else
+/* Little endian is only available since POWER8, so it's safe to
+   specify .machine as power8 (or older), even though this is a POWER4
+   file.  Since the little-endian code uses 'ldbrx', power7 is enough. */
+	.machine power7
+#endif
 ENTRY_TOCLESS (MEMCMP, 4)
 	CALL_MCOUNT 3
 

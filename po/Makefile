@@ -1,4 +1,4 @@
-# Copyright (C) 1996-2018 Free Software Foundation, Inc.
+# Copyright (C) 1996-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 # Makefile for installing libc message catalogs.
 
@@ -96,6 +96,10 @@ WGET = wget
 update-translations:
 	$(WGET) -qO- $(TRANSLATIONS_URL) | sed -n 's|.*href="\([^"]\+po\)".*|\1|p' | \
 	  while read f; do \
-	    $(WGET) -O $(objdir)/$$f-tmp $(TRANSLATIONS_URL)/$$f && \
-	    mv -f $(objdir)/$$f-tmp $$f; \
+	    $(WGET) -O $(objdir)/$$f-tmp2 $(TRANSLATIONS_URL)/$$f && \
+	    msgmerge --previous --no-wrap $(objdir)/$$f-tmp2 libc.pot > \
+	      $(objdir)/$$f-tmp && \
+	    msgattrib --translated --no-fuzzy --no-obsolete --no-wrap \
+	      $(objdir)/$$f-tmp > $(objdir)/$$f-tmp0 && \
+	    mv -f $(objdir)/$$f-tmp0 $$f; \
 	  done

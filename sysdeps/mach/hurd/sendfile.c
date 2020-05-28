@@ -1,5 +1,5 @@
 /* sendfile -- copy data directly from one file descriptor to another
-   Copyright (C) 2002-2018 Free Software Foundation, Inc.
+   Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sys/sendfile.h>
 #include <stddef.h>
@@ -25,11 +25,11 @@ ssize_t
 sendfile (int out_fd, int in_fd, off_t *offset, size_t count)
 {
   if (offset == NULL || sizeof (off_t) == sizeof (off64_t))
-    return sendfile64 (out_fd, in_fd, (off64_t *) offset, count);
+    return __sendfile64 (out_fd, in_fd, (off64_t *) offset, count);
   else
     {
       off64_t ofs = *offset;
-      ssize_t ret = sendfile64 (out_fd, in_fd, &ofs, count);
+      ssize_t ret = __sendfile64 (out_fd, in_fd, &ofs, count);
       *offset = ofs;
       return ret;
     }

@@ -1,5 +1,5 @@
 /* Implementation of gamma function according to ISO C.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997 and
 		  Jakub Jelinek <jj@ultra.linux.cz, 1999.
@@ -16,12 +16,14 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <math.h>
 #include <math_private.h>
+#include <fenv_private.h>
 #include <math-underflow.h>
 #include <float.h>
+#include <libm-alias-finite.h>
 
 /* Coefficients B_2k / 2k(2k-1) of x^-(2k-1) inside exp in Stirling's
    approximation to gamma function.  */
@@ -68,7 +70,7 @@ gammal_positive (_Float128 x, int *exp2_adj)
     {
       /* Adjust into the range for using exp (lgamma).  */
       *exp2_adj = 0;
-      _Float128 n = __ceill (x - L(1.5));
+      _Float128 n = ceill (x - L(1.5));
       _Float128 x_adj = x - n;
       _Float128 eps;
       _Float128 prod = __gamma_productl (x_adj, 0, n, &eps);
@@ -85,7 +87,7 @@ gammal_positive (_Float128 x, int *exp2_adj)
 	{
 	  /* Adjust into the range for applying Stirling's
 	     approximation.  */
-	  _Float128 n = __ceill (24 - x);
+	  _Float128 n = ceill (24 - x);
 	  x_adj = x + n;
 	  x_eps = (x - (x_adj - n));
 	  prod = __gamma_productl (x_adj - n, x_eps, n, &eps);
@@ -95,7 +97,7 @@ gammal_positive (_Float128 x, int *exp2_adj)
 	 starting by computing pow (X_ADJ, X_ADJ) with a power of 2
 	 factored out.  */
       _Float128 exp_adj = -eps;
-      _Float128 x_adj_int = __roundl (x_adj);
+      _Float128 x_adj_int = roundl (x_adj);
       _Float128 x_adj_frac = x_adj - x_adj_int;
       int x_adj_log2;
       _Float128 x_adj_mant = __frexpl (x_adj, &x_adj_log2);
@@ -135,7 +137,7 @@ __ieee754_gammal_r (_Float128 x, int *signgamp)
       *signgamp = 0;
       return 1.0 / x;
     }
-  if (hx < 0 && (uint64_t) hx < 0xffff000000000000ULL && __rintl (x) == x)
+  if (hx < 0 && (uint64_t) hx < 0xffff000000000000ULL && rintl (x) == x)
     {
       /* Return value for integer x < 0 is NaN with invalid exception.  */
       *signgamp = 0;
@@ -178,8 +180,8 @@ __ieee754_gammal_r (_Float128 x, int *signgamp)
 	}
       else
 	{
-	  _Float128 tx = __truncl (x);
-	  *signgamp = (tx == 2 * __truncl (tx / 2)) ? -1 : 1;
+	  _Float128 tx = truncl (x);
+	  *signgamp = (tx == 2 * truncl (tx / 2)) ? -1 : 1;
 	  if (x <= -1775)
 	    /* Underflow.  */
 	    ret = LDBL_MIN * LDBL_MIN;
@@ -202,18 +204,18 @@ __ieee754_gammal_r (_Float128 x, int *signgamp)
   if (isinf (ret) && x != 0)
     {
       if (*signgamp < 0)
-	return -(-__copysignl (LDBL_MAX, ret) * LDBL_MAX);
+	return -(-copysignl (LDBL_MAX, ret) * LDBL_MAX);
       else
-	return __copysignl (LDBL_MAX, ret) * LDBL_MAX;
+	return copysignl (LDBL_MAX, ret) * LDBL_MAX;
     }
   else if (ret == 0)
     {
       if (*signgamp < 0)
-	return -(-__copysignl (LDBL_MIN, ret) * LDBL_MIN);
+	return -(-copysignl (LDBL_MIN, ret) * LDBL_MIN);
       else
-	return __copysignl (LDBL_MIN, ret) * LDBL_MIN;
+	return copysignl (LDBL_MIN, ret) * LDBL_MIN;
     }
   else
     return ret;
 }
-strong_alias (__ieee754_gammal_r, __gammal_r_finite)
+libm_alias_finite (__ieee754_gammal_r, __gammal_r)

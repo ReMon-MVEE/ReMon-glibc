@@ -1,6 +1,6 @@
 /* memchr - find a character in a memory zone
 
-   Copyright (C) 2015-2018 Free Software Foundation, Inc.
+   Copyright (C) 2015-2020 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
@@ -25,6 +25,10 @@
  * ARMv8-a, AArch64
  * Neon Available.
  */
+
+#ifndef MEMCHR
+# define MEMCHR __memchr
+#endif
 
 /* Arguments and results.  */
 #define srcin		x0
@@ -59,7 +63,7 @@
  * identify exactly which byte has matched.
  */
 
-ENTRY (__memchr)
+ENTRY (MEMCHR)
 	/* Do not dereference srcin if no bytes to compare.  */
 	cbz	cntin, L(zero_length)
 	/*
@@ -152,6 +156,6 @@ L(tail):
 L(zero_length):
 	mov	result, #0
 	ret
-END (__memchr)
-weak_alias (__memchr, memchr)
+END (MEMCHR)
+weak_alias (MEMCHR, memchr)
 libc_hidden_builtin_def (memchr)

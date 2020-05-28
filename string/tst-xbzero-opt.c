@@ -1,5 +1,5 @@
 /* Test that explicit_bzero block clears are not optimized out.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This test is conceptually based on a test designed by Matthew
    Dempsky for the OpenBSD regression suite:
@@ -97,16 +97,39 @@ static const unsigned char test_pattern[16] =
 
 static ucontext_t uc_main, uc_co;
 
+static __attribute__ ((noinline, noclone)) int
+use_test_buffer (unsigned char *buf)
+{
+  unsigned int sum = 0;
+
+  for (unsigned int i = 0; i < PATTERN_REPS; i++)
+    sum += buf[i * PATTERN_SIZE];
+
+  return (sum == 2 * PATTERN_REPS) ? 0 : 1;
+}
+
 /* Always check the test buffer immediately after filling it; this
    makes externally visible side effects depend on the buffer existing
    and having been filled in.  */
-static inline __attribute__  ((always_inline)) void
+#if defined __CET__ && !__glibc_has_attribute (__indirect_return__)
+/* Note: swapcontext returns via indirect branch when SHSTK is enabled.
+   Without indirect_return attribute, swapcontext is marked with
+   returns_twice attribute, which prevents always_inline to work.  */
+# define ALWAYS_INLINE
+#else
+# define ALWAYS_INLINE	__attribute__ ((always_inline))
+#endif
+static inline ALWAYS_INLINE void
 prepare_test_buffer (unsigned char *buf)
 {
   for (unsigned int i = 0; i < PATTERN_REPS; i++)
     memcpy (buf + i*PATTERN_SIZE, test_pattern, PATTERN_SIZE);
 
   if (swapcontext (&uc_co, &uc_main))
+    abort ();
+
+  /* Force the compiler to really copy the pattern to buf.  */
+  if (use_test_buffer (buf))
     abort ();
 }
 

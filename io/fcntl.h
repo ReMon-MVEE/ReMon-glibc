@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /*
  *	POSIX Standard: 6.5 File Control Operations	<fcntl.h>
@@ -157,6 +157,11 @@ typedef __pid_t pid_t;
 #  define AT_NO_AUTOMOUNT	0x800	/* Suppress terminal automount
 					   traversal.  */
 #  define AT_EMPTY_PATH		0x1000	/* Allow empty relative pathname.  */
+#  define AT_STATX_SYNC_TYPE	0x6000
+#  define AT_STATX_SYNC_AS_STAT	0x0000
+#  define AT_STATX_FORCE_SYNC	0x2000
+#  define AT_STATX_DONT_SYNC	0x4000
+#  define AT_RECURSIVE		0x8000	/* Apply to the entire subtree.  */
 # endif
 # define AT_EACCESS		0x200	/* Test access permitted for
 					   effective IDs, not real IDs.  */
@@ -167,7 +172,18 @@ typedef __pid_t pid_t;
 
    This function is a cancellation point and therefore not marked with
    __THROW.  */
+#ifndef __USE_FILE_OFFSET64
 extern int fcntl (int __fd, int __cmd, ...);
+#else
+# ifdef __REDIRECT
+extern int __REDIRECT (fcntl, (int __fd, int __cmd, ...), fcntl64);
+# else
+#  define fcntl fcntl64
+# endif
+#endif
+#ifdef __USE_LARGEFILE64
+extern int fcntl64 (int __fd, int __cmd, ...);
+#endif
 
 /* Open FILE and return a new file descriptor for it, or -1 on error.
    OFLAG determines the type of access used.  If O_CREAT or O_TMPFILE is set

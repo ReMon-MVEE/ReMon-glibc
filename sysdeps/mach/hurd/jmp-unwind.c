@@ -1,5 +1,5 @@
 /* _longjmp_unwind -- Clean up stack frames unwound by longjmp.  Hurd version.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <jmpbuf-unwind.h>
 #include <hurd/userlink.h>
@@ -54,8 +54,8 @@ _longjmp_unwind (jmp_buf env, int val)
   __spin_lock (&ss->critical_section_lock);
 
   /* Remove local signal preemptors being unwound past.  */
-  while (ss->preemptors &&
-	 _JMPBUF_UNWINDS (env[0].__jmpbuf, ss->preemptors, demangle_ptr))
+  while (ss->preemptors
+	 && _JMPBUF_UNWINDS (env[0].__jmpbuf, ss->preemptors, demangle_ptr))
     ss->preemptors = ss->preemptors->next;
 
   __spin_unlock (&ss->lock);

@@ -1,5 +1,5 @@
 /* Store current representation for exceptions.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Denis Joseph Barrow (djbarrow@de.ibm.com).
 
@@ -15,26 +15,14 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#include <fenv_libc.h>
-#include <fpu_control.h>
+#include <fenv_private.h>
 
 int
 fegetexceptflag (fexcept_t *flagp, int excepts)
 {
-  fexcept_t temp, newexcepts;
-
-  /* Get the current exceptions.  */
-  _FPU_GETCW (temp);
-  newexcepts = excepts << FPC_FLAGS_SHIFT;
-  if ((temp & FPC_NOT_FPU_EXCEPTION) == 0)
-    /* Bits 6, 7 of dxc-byte are zero,
-       thus bits 0-5 of dxc-byte correspond to the flag-bits.
-       Evaluate flags and last dxc-exception-code.  */
-    newexcepts |= excepts << FPC_DXC_SHIFT;
-
-  *flagp = temp & newexcepts;
+  *flagp = libc_fetestexcept_s390 (excepts);
 
   /* Success.  */
   return 0;

@@ -1,5 +1,5 @@
-/* Copyright (C) 2015-2018 Free Software Foundation, Inc.
-
+/* gettimeofday - set time.  Linux version.
+   Copyright (C) 2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,26 +14,45 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#include <errno.h>
-#include <sys/time.h>
+/* Optimize the function call by setting the PLT directly to vDSO symbol.  */
+#ifdef USE_IFUNC_GETTIMEOFDAY
+# include <time.h>
+# include <string.h>
+# include <sysdep.h>
+# include <sysdep-vdso.h>
 
-#undef __gettimeofday
+# ifdef SHARED
+#  include <dl-vdso.h>
+# include <libc-vdso.h>
 
-#ifdef HAVE_GETTIMEOFDAY_VSYSCALL
-# define HAVE_VSYSCALL
-#endif
-#include <sysdep-vdso.h>
-
-/* Get the current time of day and timezone information,
-   putting it into *tv and *tz.  If tz is null, *tz is not filled.
-   Returns 0 on success, -1 on errors.  */
-int
-__gettimeofday (struct timeval *tv, struct timezone *tz)
+static int
+__gettimeofday_syscall (struct timeval *restrict tv, void *restrict tz)
 {
+  if (__glibc_unlikely (tz != 0))
+    memset (tz, 0, sizeof *tz);
+  return INLINE_SYSCALL_CALL (gettimeofday, tv, tz);
+}
+
+# undef INIT_ARCH
+# define INIT_ARCH() \
+  void *vdso_gettimeofday = dl_vdso_vsym (HAVE_GETTIMEOFDAY_VSYSCALL)
+libc_ifunc (__gettimeofday,
+	    vdso_gettimeofday ? VDSO_IFUNC_RET (vdso_gettimeofday)
+			      : (void *) __gettimeofday_syscall)
+
+# else
+int
+__gettimeofday (struct timeval *restrict tv, void *restrict tz)
+{
+  if (__glibc_unlikely (tz != 0))
+    memset (tz, 0, sizeof *tz);
+
   return INLINE_VSYSCALL (gettimeofday, 2, tv, tz);
 }
-libc_hidden_def (__gettimeofday)
+# endif
 weak_alias (__gettimeofday, gettimeofday)
-libc_hidden_weak (gettimeofday)
+#else /* USE_IFUNC_GETTIMEOFDAY  */
+# include <time/gettimeofday.c>
+#endif

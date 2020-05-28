@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by David Huggins-Daines <dhd@debian.org>, 2000.
    Based on the Alpha version by Richard Henderson <rth@tamu.edu>, 1996.
@@ -15,12 +15,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* clone() is even more special than fork() as it mucks with stacks
    and invokes a function in the right context after its all over.  */
 
-#include <asm/unistd.h>
 #include <sysdep.h>
 #define _ERRNO_H	1
 #include <bits/errno.h>
@@ -73,13 +72,18 @@ ENTRY(__clone)
 #endif
 
 	/* Sanity check arguments.  */
-	comib,=,n  0, %arg0, .LerrorSanity        /* no NULL function pointers */
-	comib,=,n  0, %arg1, .LerrorSanity        /* no NULL stack pointers */
+	comib,=,n	0,%arg0,.LerrorSanity	/* no NULL function pointers */
+	comib,=,n	0,%arg1,.LerrorSanity	/* no NULL stack pointers */
+
+	/* Ensure stack argument is 8-byte aligned.  */
+	ldo		7(%r25),%r25
+	depi		0,31,3,%r25
 
 	/* Save the function pointer, arg, and flags on the new stack.  */
 	stwm    %r26, 64(%r25)
 	stw	%r23, -60(%r25)
 	stw     %r24, -56(%r25)
+
 	/* Clone arguments are (int flags, void * child_stack) */
 	copy	%r24, %r26		/* flags are first */
 	/* User stack pointer is in the correct register already */

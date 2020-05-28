@@ -1,5 +1,5 @@
 /* Main worker function for the test driver.
-   Copyright (C) 1998-2018 Free Software Foundation, Inc.
+   Copyright (C) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,11 +14,12 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <support/test-driver.h>
 #include <support/check.h>
 #include <support/temp_file-internal.h>
+#include <support/support.h>
 
 #include <assert.h>
 #include <errno.h>
@@ -30,10 +31,13 @@
 #include <string.h>
 #include <sys/param.h>
 #include <sys/resource.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+
+#include <xstdio.h>
 
 static const struct option default_options[] =
 {
@@ -86,6 +90,21 @@ static pid_t test_pid;
 /* The cleanup handler passed to test_main.  */
 static void (*cleanup_function) (void);
 
+static void
+print_timestamp (const char *what, struct timespec tv)
+{
+  struct tm tm;
+  /* Casts of tv.tv_nsec below are necessary because the type of
+     tv_nsec is not literally long int on all supported platforms.  */
+  if (gmtime_r (&tv.tv_sec, &tm) == NULL)
+    printf ("%s: %lld.%09ld\n",
+            what, (long long int) tv.tv_sec, (long int) tv.tv_nsec);
+  else
+    printf ("%s: %04d-%02d-%02dT%02d:%02d:%02d.%09ld\n",
+            what, 1900 + tm.tm_year, tm.tm_mon + 1, tm.tm_mday,
+            tm.tm_hour, tm.tm_min, tm.tm_sec, (long int) tv.tv_nsec);
+}
+
 /* Timeout handler.  We kill the child and exit with an error.  */
 static void
 __attribute__ ((noreturn))
@@ -93,6 +112,13 @@ signal_handler (int sig)
 {
   int killed;
   int status;
+
+  /* Do this first to avoid further interference from the
+     subprocess.  */
+  struct timespec now;
+  clock_gettime (CLOCK_REALTIME, &now);
+  struct stat64 st;
+  bool st_available = fstat64 (STDOUT_FILENO, &st) == 0 && st.st_mtime != 0;
 
   assert (test_pid > 1);
   /* Kill the whole process group.  */
@@ -144,14 +170,63 @@ signal_handler (int sig)
     printf ("Timed out: killed the child process but it exited %d\n",
             WEXITSTATUS (status));
 
+  print_timestamp ("Termination time", now);
+  if (st_available)
+    print_timestamp ("Last write to standard output", st.st_mtim);
+
   /* Exit with an error.  */
   exit (1);
 }
+
+/* This must be volatile as it will be modified by the debugger.  */
+static volatile int wait_for_debugger = 0;
 
 /* Run test_function or test_function_argv.  */
 static int
 run_test_function (int argc, char **argv, const struct test_config *config)
 {
+  const char *wfd = getenv("WAIT_FOR_DEBUGGER");
+  if (wfd != NULL)
+    wait_for_debugger = atoi (wfd);
+  if (wait_for_debugger)
+    {
+      pid_t mypid;
+      FILE *gdb_script;
+      char *gdb_script_name;
+      int inside_container = 0;
+
+      mypid = getpid();
+      if (mypid < 3)
+	{
+	  const char *outside_pid = getenv("PID_OUTSIDE_CONTAINER");
+	  if (outside_pid)
+	    {
+	      mypid = atoi (outside_pid);
+	      inside_container = 1;
+	    }
+	}
+
+      gdb_script_name = (char *) xmalloc (strlen (argv[0]) + strlen (".gdb") + 1);
+      sprintf (gdb_script_name, "%s.gdb", argv[0]);
+      gdb_script = xfopen (gdb_script_name, "w");
+
+      fprintf (stderr, "Waiting for debugger, test process is pid %d\n", mypid);
+      fprintf (stderr, "gdb -x %s\n", gdb_script_name);
+      if (inside_container)
+	fprintf (gdb_script, "set sysroot %s/testroot.root\n", support_objdir_root);
+      fprintf (gdb_script, "file\n");
+      fprintf (gdb_script, "file %s\n", argv[0]);
+      fprintf (gdb_script, "symbol-file %s\n", argv[0]);
+      fprintf (gdb_script, "exec-file %s\n", argv[0]);
+      fprintf (gdb_script, "attach %ld\n", (long int) mypid);
+      fprintf (gdb_script, "set wait_for_debugger = 0\n");
+      fclose (gdb_script);
+    }
+
+  /* Wait for the debugger to set wait_for_debugger to zero.  */
+  while (wait_for_debugger)
+    usleep (1000);
+
   if (config->test_function != NULL)
     return config->test_function ();
   else if (config->test_function_argv != NULL)
@@ -200,6 +275,11 @@ support_test_main (int argc, char **argv, const struct test_config *config)
   int opt;
   unsigned int timeoutfactor = 1;
   pid_t termpid;
+
+  /* If we're debugging the test, we need to disable timeouts and use
+     the initial pid (esp if we're running inside a container).  */
+  if (getenv("WAIT_FOR_DEBUGGER") != NULL)
+    direct = 1;
 
   if (!config->no_mallopt)
     {
@@ -270,7 +350,8 @@ support_test_main (int argc, char **argv, const struct test_config *config)
     timeout =  DEFAULT_TIMEOUT;
 
   /* Make sure we see all message, even those on stdout.  */
-  setvbuf (stdout, NULL, _IONBF, 0);
+  if (!config->no_setvbuf)
+    setvbuf (stdout, NULL, _IONBF, 0);
 
   /* Make sure temporary files are deleted.  */
   if (support_delete_temp_files != NULL)

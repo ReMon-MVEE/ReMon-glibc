@@ -1,5 +1,5 @@
 /* Processor capability information handling macros - aarch64 version.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _DL_PROCINFO_H
 #define _DL_PROCINFO_H	1
@@ -27,9 +27,8 @@
 /* We cannot provide a general printing function.  */
 #define _dl_procinfo(type, word) -1
 
-/* HWCAP_CPUID should be available by default to influence IFUNC as well as
-   library search.  */
-#define HWCAP_IMPORTANT HWCAP_CPUID
+/* No additional library search paths.  */
+#define HWCAP_IMPORTANT HWCAP_ATOMICS
 
 static inline const char *
 __attribute__ ((unused))

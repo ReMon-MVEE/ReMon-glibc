@@ -1,5 +1,5 @@
 /* Helper macros for long double variants of type generic functions of libm.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _MATH_TYPE_MACROS_LDOUBLE
 #define _MATH_TYPE_MACROS_LDOUBLE
@@ -28,6 +28,7 @@
 #define M_STRTO_NAN __strtold_nan
 
 #include <libm-alias-ldouble.h>
+#include <math-nan-payload-ldouble.h>
 
 #ifndef declare_mgen_alias
 # define declare_mgen_alias(from, to) libm_alias_ldouble (from, to)
@@ -42,7 +43,7 @@
 
 /* Do not use the type-generic wrapper templates if compatibility with
    SVID error handling is needed.  */
-#include <math-svid-compat.h>
+#include <math/math-svid-compat.h>
 #define __USE_WRAPPER_TEMPLATE !LIBM_SVID_COMPAT
 
 #endif

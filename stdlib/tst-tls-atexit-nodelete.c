@@ -1,7 +1,7 @@
 /* Verify that a RTLD_NODELETE DSO is not unloaded even if its TLS objects are
    destroyed.
 
-   Copyright (C) 2015-2018 Free Software Foundation, Inc.
+   Copyright (C) 2015-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define NO_DELETE 1
 #define H2_RTLD_FLAGS (RTLD_LAZY | RTLD_NODELETE)

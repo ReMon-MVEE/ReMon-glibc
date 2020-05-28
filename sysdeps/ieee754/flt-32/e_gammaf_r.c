@@ -1,5 +1,5 @@
 /* Implementation of gamma function according to ISO C.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -15,13 +15,15 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <math.h>
 #include <math-narrow-eval.h>
 #include <math_private.h>
+#include <fenv_private.h>
 #include <math-underflow.h>
 #include <float.h>
+#include <libm-alias-finite.h>
 
 /* Coefficients B_2k / 2k(2k-1) of x^-(2k-1) inside exp in Stirling's
    approximation to gamma function.  */
@@ -70,7 +72,7 @@ gammaf_positive (float x, int *exp2_adj)
 	{
 	  /* Adjust into the range for applying Stirling's
 	     approximation.  */
-	  float n = __ceilf (4.0f - x);
+	  float n = ceilf (4.0f - x);
 	  x_adj = math_narrow_eval (x + n);
 	  x_eps = (x - (x_adj - n));
 	  prod = __gamma_productf (x_adj - n, x_eps, n, &eps);
@@ -80,7 +82,7 @@ gammaf_positive (float x, int *exp2_adj)
 	 starting by computing pow (X_ADJ, X_ADJ) with a power of 2
 	 factored out.  */
       float exp_adj = -eps;
-      float x_adj_int = __roundf (x_adj);
+      float x_adj_int = roundf (x_adj);
       float x_adj_frac = x_adj - x_adj_int;
       int x_adj_log2;
       float x_adj_mant = __frexpf (x_adj, &x_adj_log2);
@@ -120,7 +122,7 @@ __ieee754_gammaf_r (float x, int *signgamp)
       return 1.0 / x;
     }
   if (__builtin_expect (hx < 0, 0)
-      && (uint32_t) hx < 0xff800000 && __rintf (x) == x)
+      && (uint32_t) hx < 0xff800000 && rintf (x) == x)
     {
       /* Return value for integer x < 0 is NaN with invalid exception.  */
       *signgamp = 0;
@@ -164,8 +166,8 @@ __ieee754_gammaf_r (float x, int *signgamp)
 	}
       else
 	{
-	  float tx = __truncf (x);
-	  *signgamp = (tx == 2.0f * __truncf (tx / 2.0f)) ? -1 : 1;
+	  float tx = truncf (x);
+	  *signgamp = (tx == 2.0f * truncf (tx / 2.0f)) ? -1 : 1;
 	  if (x <= -42.0f)
 	    /* Underflow.  */
 	    ret = FLT_MIN * FLT_MIN;
@@ -190,25 +192,25 @@ __ieee754_gammaf_r (float x, int *signgamp)
     {
       if (*signgamp < 0)
 	{
-	  ret = math_narrow_eval (-__copysignf (FLT_MAX, ret) * FLT_MAX);
+	  ret = math_narrow_eval (-copysignf (FLT_MAX, ret) * FLT_MAX);
 	  ret = -ret;
 	}
       else
-	ret = math_narrow_eval (__copysignf (FLT_MAX, ret) * FLT_MAX);
+	ret = math_narrow_eval (copysignf (FLT_MAX, ret) * FLT_MAX);
       return ret;
     }
   else if (ret == 0)
     {
       if (*signgamp < 0)
 	{
-	  ret = math_narrow_eval (-__copysignf (FLT_MIN, ret) * FLT_MIN);
+	  ret = math_narrow_eval (-copysignf (FLT_MIN, ret) * FLT_MIN);
 	  ret = -ret;
 	}
       else
-	ret = math_narrow_eval (__copysignf (FLT_MIN, ret) * FLT_MIN);
+	ret = math_narrow_eval (copysignf (FLT_MIN, ret) * FLT_MIN);
       return ret;
     }
   else
     return ret;
 }
-strong_alias (__ieee754_gammaf_r, __gammaf_r_finite)
+libm_alias_finite (__ieee754_gammaf_r, __gammaf_r)

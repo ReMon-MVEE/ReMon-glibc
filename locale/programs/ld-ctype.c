@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gnu.org>, 1995.
 
@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -842,8 +842,6 @@ no input digits defined and none of the standard names in the charmap"));
   for (cnt = 0; cnt < 10; ++cnt)
     if (ctype->mboutdigits[cnt] == NULL)
       {
-	static struct charseq replace[2];
-
 	if (!warned)
 	  {
 	    record_error (0, 0, _("\
@@ -851,10 +849,12 @@ not all characters used in `outdigit' are available in the charmap"));
 	    warned = 1;
 	  }
 
-	replace[0].nbytes = 1;
-	replace[0].bytes[0] = '?';
-	replace[0].bytes[1] = '\0';
-	ctype->mboutdigits[cnt] = &replace[0];
+	static const struct charseq replace =
+	  {
+	     .nbytes = 1,
+	     .bytes = "?",
+	  };
+	ctype->mboutdigits[cnt] = (struct charseq *) &replace;
       }
 
   warned = 0;
@@ -1396,7 +1396,8 @@ charclass_symbolic_ellipsis (struct linereader *ldfile,
 		   (int) (now->val.str.lenmb - (cp - last_str)),
 		   from);
 
-	  get_character (now, charmap, repertoire, &seq, &wch);
+	  if (get_character (now, charmap, repertoire, &seq, &wch))
+	    goto invalid_range;
 
 	  if (seq != NULL && seq->nbytes == 1)
 	    /* Yep, we can store information about this byte sequence.  */
@@ -3148,11 +3149,12 @@ set_class_defaults (struct locale_ctype_t *ctype,
         the keywords `upper', `lower', `alpha', `digit', `xdigit' and `punct',
 	shall belong to this character class."  [P1003.2, 2.5.2.1]  */
     {
-      unsigned long int mask = BIT (tok_upper) | BIT (tok_lower) |
-	BIT (tok_alpha) | BIT (tok_digit) | BIT (tok_xdigit) | BIT (tok_punct);
-      unsigned long int maskw = BITw (tok_upper) | BITw (tok_lower) |
-	BITw (tok_alpha) | BITw (tok_digit) | BITw (tok_xdigit) |
-	BITw (tok_punct);
+      unsigned long int mask = BIT (tok_upper) | BIT (tok_lower)
+	| BIT (tok_alpha) | BIT (tok_digit) | BIT (tok_xdigit)
+	| BIT (tok_punct);
+      unsigned long int maskw = BITw (tok_upper) | BITw (tok_lower)
+	| BITw (tok_alpha) | BITw (tok_digit) | BITw (tok_xdigit)
+	| BITw (tok_punct);
 
       for (size_t cnt = 0; cnt < ctype->class_collection_act; ++cnt)
 	if ((ctype->class_collection[cnt] & maskw) != 0)
@@ -3169,11 +3171,12 @@ set_class_defaults (struct locale_ctype_t *ctype,
 	and the <space> character shall belong to this character class."
 	[P1003.2, 2.5.2.1]  */
     {
-      unsigned long int mask = BIT (tok_upper) | BIT (tok_lower) |
-	BIT (tok_alpha) | BIT (tok_digit) | BIT (tok_xdigit) | BIT (tok_punct);
-      unsigned long int maskw = BITw (tok_upper) | BITw (tok_lower) |
-	BITw (tok_alpha) | BITw (tok_digit) | BITw (tok_xdigit) |
-	BITw (tok_punct);
+      unsigned long int mask = BIT (tok_upper) | BIT (tok_lower)
+	| BIT (tok_alpha) | BIT (tok_digit) | BIT (tok_xdigit)
+	| BIT (tok_punct);
+      unsigned long int maskw = BITw (tok_upper) | BITw (tok_lower)
+	| BITw (tok_alpha) | BITw (tok_digit) | BITw (tok_xdigit)
+	| BITw (tok_punct);
       struct charseq *seq;
 
       for (size_t cnt = 0; cnt < ctype->class_collection_act; ++cnt)

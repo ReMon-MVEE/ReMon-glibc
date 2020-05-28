@@ -1,5 +1,5 @@
 /* Compute x * y + z as ternary operation.
-   Copyright (C) 2011-2018 Free Software Foundation, Inc.
+   Copyright (C) 2011-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by David Flaherty <flaherty@linux.vnet.ibm.com>.
 
@@ -15,13 +15,14 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <fenv.h>
 #include <float.h>
 #include <math.h>
 #include <math-barriers.h>
 #include <math_private.h>
+#include <fenv_private.h>
 #include <math-underflow.h>
 #include <math_ldbl_opt.h>
 #include <mul_split.h>
@@ -243,7 +244,7 @@ __fmal (long double x, long double y, long double z)
   scale_val = math_opt_barrier (scale_val);
   scale_val = __scalbn (scale_val, scale_exp);
   if (fabs (scale_val) == DBL_MAX)
-    return __copysignl (LDBL_MAX, scale_val);
+    return copysignl (LDBL_MAX, scale_val);
   math_check_force_underflow (scale_val);
   return scale_val;
 

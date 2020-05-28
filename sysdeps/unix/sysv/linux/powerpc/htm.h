@@ -2,7 +2,7 @@
    compilers and assemblers that do not support the intrinsics and instructions
    yet.
 
-   Copyright (C) 2015-2018 Free Software Foundation, Inc.
+   Copyright (C) 2015-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,7 +17,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _HTM_H
 #define _HTM_H 1
@@ -50,7 +50,7 @@
 
 #else
 
-#include <endian.h>
+#include <bits/endian.h>
 
 /* Official HTM intrinsics interface matching GCC, but works
    on older GCC compatible compilers and binutils.

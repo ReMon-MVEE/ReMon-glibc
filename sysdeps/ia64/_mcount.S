@@ -1,5 +1,5 @@
 /* Machine-specific calling sequence for `mcount' profiling function.  ia64
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
      Contributed by David Mosberger <davidm@hpl.hp.com>
    This file is part of the GNU C Library.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Assembly stub to invoke _mcount().  Compiler generated code calls
    this stub before executing a function's prologue and without saving

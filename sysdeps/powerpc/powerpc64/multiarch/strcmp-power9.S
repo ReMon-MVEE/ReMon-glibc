@@ -1,5 +1,5 @@
 /* Optimized strcmp implementation for POWER9/PPC64.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,13 +14,13 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#if IS_IN (libc)
+#if defined __LITTLE_ENDIAN__ && IS_IN (libc)
 #define STRCMP __strcmp_power9
 
 #undef libc_hidden_builtin_def
 #define libc_hidden_builtin_def(name)
 
-#include <sysdeps/powerpc/powerpc64/power9/strcmp.S>
+#include <sysdeps/powerpc/powerpc64/le/power9/strcmp.S>
 #endif

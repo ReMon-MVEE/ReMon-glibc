@@ -1,6 +1,6 @@
 /* Multiple versions of stpcpy.
    All versions must be listed in ifunc-impl-list.c.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Define multiple versions only for the definition in libc.  */
 #if IS_IN (libc)
@@ -28,15 +28,15 @@
 # undef __stpcpy
 
 # define SYMBOL_NAME stpcpy
-# include "ifunc-unaligned-ssse3.h"
+# include "ifunc-strcpy.h"
 
 libc_ifunc_redirected (__redirect_stpcpy, __stpcpy, IFUNC_SELECTOR ());
 
 weak_alias (__stpcpy, stpcpy)
 # ifdef SHARED
 __hidden_ver1 (__stpcpy, __GI___stpcpy, __redirect___stpcpy)
-  __attribute__ ((visibility ("hidden")));
+  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (stpcpy);
 __hidden_ver1 (stpcpy, __GI_stpcpy, __redirect_stpcpy)
-  __attribute__ ((visibility ("hidden")));
+  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (stpcpy);
 # endif
 #endif

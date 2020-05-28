@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stddef.h>
 #include <errno.h>
@@ -23,6 +23,7 @@
 #include <hurd/signal.h>
 #include <hurd/sigpreempt.h>
 #include <hurd/msg_request.h>
+#include <mach.h>
 #include <mach/message.h>
 
 /* XXX Temporary cheezoid implementation of ITIMER_REAL/SIGALRM.  */
@@ -79,6 +80,7 @@ timer_thread (void)
       struct
 	{
 	  mach_msg_header_t header;
+	  mach_msg_type_t return_code_type;
 	  error_t return_code;
 	} msg;
 
@@ -88,9 +90,9 @@ timer_thread (void)
 	 _hurd_itimerval.  */
       err = __mach_msg (&msg.header,
 			MACH_RCV_MSG|MACH_RCV_TIMEOUT|MACH_RCV_INTERRUPT,
-			0, 0, _hurd_itimer_port,
-			_hurd_itimerval.it_value.tv_sec * 1000 +
-			_hurd_itimerval.it_value.tv_usec / 1000,
+			0, sizeof(msg), _hurd_itimer_port,
+			_hurd_itimerval.it_value.tv_sec * 1000
+			+ _hurd_itimerval.it_value.tv_usec / 1000,
 			MACH_PORT_NULL);
       switch (err)
 	{
@@ -128,7 +130,8 @@ timer_thread (void)
 
 /* Forward declaration.  */
 static int setitimer_locked (const struct itimerval *new,
-			     struct itimerval *old, void *crit);
+			     struct itimerval *old, void *crit,
+			     int hurd_siglocked);
 
 static sighandler_t
 restart_itimer (struct hurd_signal_preemptor *preemptor,
@@ -142,7 +145,7 @@ restart_itimer (struct hurd_signal_preemptor *preemptor,
   /* Either reload or disable the itimer.  */
   __spin_lock (&_hurd_itimer_lock);
   it.it_value = it.it_interval = _hurd_itimerval.it_interval;
-  setitimer_locked (&it, NULL, NULL);
+  setitimer_locked (&it, NULL, NULL, 1);
 
   /* Continue with normal delivery (or hold, etc.) of SIGALRM.  */
   return SIG_ERR;
@@ -154,7 +157,7 @@ restart_itimer (struct hurd_signal_preemptor *preemptor,
 
 static int
 setitimer_locked (const struct itimerval *new, struct itimerval *old,
-		  void *crit)
+		  void *crit, int hurd_siglocked)
 {
   struct itimerval newval;
   struct timeval now, remaining, elapsed;
@@ -192,16 +195,19 @@ setitimer_locked (const struct itimerval *new, struct itimerval *old,
 	 run `restart_itimer' each time a SIGALRM would arrive.  */
       static struct hurd_signal_preemptor preemptor =
 	{
-	  __sigmask (SIGALRM), 0, 0,
+	  __sigmask (SIGALRM), SI_TIMER, SI_TIMER,
 	  &restart_itimer,
 	};
-      __mutex_lock (&_hurd_siglock);
+      if (!hurd_siglocked)
+	__mutex_lock (&_hurd_siglock);
       if (! preemptor.next && _hurdsig_preemptors != &preemptor)
 	{
 	  preemptor.next = _hurdsig_preemptors;
 	  _hurdsig_preemptors = &preemptor;
+	  _hurdsig_preempted_set |= preemptor.signals;
 	}
-      __mutex_unlock (&_hurd_siglock);
+      if (!hurd_siglocked)
+	__mutex_unlock (&_hurd_siglock);
 
       if (_hurd_itimer_port == MACH_PORT_NULL)
 	{
@@ -221,11 +227,12 @@ setitimer_locked (const struct itimerval *new, struct itimerval *old,
 	    goto out;
 	  _hurd_itimer_thread_stack_base = 0; /* Anywhere.  */
 	  _hurd_itimer_thread_stack_size = __vm_page_size; /* Small stack.  */
-	  if (err = __mach_setup_thread (__mach_task_self (),
+	  if ((err = __mach_setup_thread (__mach_task_self (),
 					 _hurd_itimer_thread,
 					 &timer_thread,
 					 &_hurd_itimer_thread_stack_base,
 					 &_hurd_itimer_thread_stack_size))
+	      || (err = __mach_setup_tls(_hurd_itimer_thread)))
 	    {
 	      __thread_terminate (_hurd_itimer_thread);
 	      _hurd_itimer_thread = MACH_PORT_NULL;
@@ -238,12 +245,12 @@ setitimer_locked (const struct itimerval *new, struct itimerval *old,
   if ((newval.it_value.tv_sec | newval.it_value.tv_usec) != 0 || old != NULL)
     {
       /* Calculate how much time is remaining for the pending alarm.  */
-      if (__gettimeofday (&now, NULL) < 0)
-	{
-	  __spin_unlock (&_hurd_itimer_lock);
-	  _hurd_critical_section_unlock (crit);
-	  return -1;
-	}
+      {
+	time_value_t tv;
+	__host_get_time (__mach_host_self (), &tv);
+	now.tv_sec = tv.seconds;
+	now.tv_usec = tv.microseconds;
+      }
       elapsed = now;
       subtract_timeval (&elapsed, &_hurd_itimer_started);
       remaining = _hurd_itimerval.it_value;
@@ -277,8 +284,8 @@ setitimer_locked (const struct itimerval *new, struct itimerval *old,
 	     kernel context so that when the thread is resumed, mach_msg
 	     will return to timer_thread (below) and it will fetch new
 	     values from _hurd_itimerval.  */
-	  if ((err = __thread_suspend (_hurd_itimer_thread)) ||
-	      (err = __thread_abort (_hurd_itimer_thread)))
+	  if ((err = __thread_suspend (_hurd_itimer_thread))
+	      || (err = __thread_abort (_hurd_itimer_thread)))
 	    /* If we can't save it for later, nuke it.  */
 	    kill_itimer_thread ();
 	  else
@@ -286,8 +293,8 @@ setitimer_locked (const struct itimerval *new, struct itimerval *old,
 	}
     }
   /* See if the timeout changed.  If so, we must alert the itimer thread.  */
-  else if (remaining.tv_sec != newval.it_value.tv_sec ||
-	   remaining.tv_usec != newval.it_value.tv_usec)
+  else if (remaining.tv_sec != newval.it_value.tv_sec
+	   || remaining.tv_usec != newval.it_value.tv_usec)
     {
       /* The timeout value is changing.  Tell the itimer thread to
 	 reexamine it and start counting down.  If the itimer thread is
@@ -348,7 +355,7 @@ __setitimer (enum __itimer_which which, const struct itimerval *new,
 
   crit = _hurd_critical_section_lock ();
   __spin_lock (&_hurd_itimer_lock);
-  return setitimer_locked (new, old, crit);
+  return setitimer_locked (new, old, crit, 0);
 }
 
 static void
@@ -363,7 +370,7 @@ fork_itimer (void)
   it = _hurd_itimerval;
   it.it_value = it.it_interval;
 
-  setitimer_locked (&it, NULL, NULL);
+  setitimer_locked (&it, NULL, NULL, 0);
 
   (void) &fork_itimer;		/* Avoid gcc optimizing out the function.  */
 }

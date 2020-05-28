@@ -1,6 +1,6 @@
 /* Multiple versions of strcmp.
    All versions must be listed in ifunc-impl-list.c.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Define multiple versions only for the definition in libc.  */
 #if IS_IN (libc)
@@ -29,11 +29,17 @@
 extern __typeof (REDIRECT_NAME) OPTIMIZE (sse2) attribute_hidden;
 extern __typeof (REDIRECT_NAME) OPTIMIZE (sse2_unaligned) attribute_hidden;
 extern __typeof (REDIRECT_NAME) OPTIMIZE (ssse3) attribute_hidden;
+extern __typeof (REDIRECT_NAME) OPTIMIZE (avx2) attribute_hidden;
 
 static inline void *
 IFUNC_SELECTOR (void)
 {
   const struct cpu_features* cpu_features = __get_cpu_features ();
+
+  if (!CPU_FEATURES_ARCH_P (cpu_features, Prefer_No_VZEROUPPER)
+      && CPU_FEATURES_ARCH_P (cpu_features, AVX2_Usable)
+      && CPU_FEATURES_ARCH_P (cpu_features, AVX_Fast_Unaligned_Load))
+    return OPTIMIZE (avx2);
 
   if (CPU_FEATURES_ARCH_P (cpu_features, Fast_Unaligned_Load))
     return OPTIMIZE (sse2_unaligned);
@@ -48,6 +54,6 @@ libc_ifunc_redirected (__redirect_strcmp, strcmp, IFUNC_SELECTOR ());
 
 # ifdef SHARED
 __hidden_ver1 (strcmp, __GI_strcmp, __redirect_strcmp)
-  __attribute__ ((visibility ("hidden")));
+  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (strcmp);
 # endif
 #endif

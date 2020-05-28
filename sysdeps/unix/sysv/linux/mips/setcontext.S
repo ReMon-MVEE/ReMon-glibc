@@ -1,5 +1,5 @@
 /* Set current context.
-   Copyright (C) 2009-2018 Free Software Foundation, Inc.
+   Copyright (C) 2009-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Maciej W. Rozycki <macro@codesourcery.com>.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 #include <sys/asm.h>
@@ -76,12 +76,6 @@ NESTED (__setcontext, FRAMESZ, ra)
 	jal	_mcount
 	.set	at
 #endif
-
-	/* Check for the magic flag.  */
-	li	v0, 1
-	/* zero */
-	REG_L	v1, (MCONTEXT_GREGOFF + 0 * MCONTEXT_GREGSZ + MCONTEXT_GREGS)(a0)
-	bne	v0, v1, 98f
 
 	REG_S	a0, A0OFF(sp)
 
@@ -154,38 +148,6 @@ NESTED (__setcontext, FRAMESZ, ra)
 	move	v0, zero
 	jr	t9
 
-98:
-	/* This is a context obtained from a signal handler.
-	   Perform a full restore by pushing the context
-	   passed onto a simulated signal frame on the stack
-	   and call the signal return syscall as if a signal
-	   handler exited normally.  */
-	PTR_ADDIU sp, -((RT_SIGFRAME_SIZE + ALSZ) & ALMASK)
-	cfi_adjust_cfa_offset ((RT_SIGFRAME_SIZE + ALSZ) & ALMASK)
-
-	/* Only ucontext is referred to from rt_sigreturn,
-	   copy it.  */
-	PTR_ADDIU t1, sp, RT_SIGFRAME_UCONTEXT
-	li	t3, ((UCONTEXT_SIZE + SZREG - 1) / SZREG) - 1
-0:
-	REG_L	t2, (a0)
-	PTR_ADDIU a0, SZREG
-	REG_S	t2, (t1)
-	PTR_ADDIU t1, SZREG
-	.set	noreorder
-	bgtz	t3, 0b
-	 addiu	t3, -1
-	.set	reorder
-
-/* rt_sigreturn () -- no arguments, sp points to struct rt_sigframe.  */
-	li	v0, SYS_ify (rt_sigreturn)
-	syscall
-
-	/* Restore the stack and fall through to the error
-	   path.  Successful rt_sigreturn never returns to
-	   its calling place.  */
-	PTR_ADDIU sp, ((RT_SIGFRAME_SIZE + ALSZ) & ALMASK)
-	cfi_adjust_cfa_offset (-((RT_SIGFRAME_SIZE + ALSZ) & ALMASK))
 99:
 #ifdef __PIC__
 	PTR_LA	t9, JUMPTARGET (__syscall_error)

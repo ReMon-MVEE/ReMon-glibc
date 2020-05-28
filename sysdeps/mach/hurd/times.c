@@ -1,5 +1,5 @@
 /* Return CPU and real time used by process and its children.  Hurd version.
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+   Copyright (C) 2001-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <stddef.h>
@@ -42,7 +42,7 @@ __times (struct tms *tms)
   struct task_basic_info bi;
   struct task_thread_times_info tti;
   mach_msg_type_number_t count;
-  union { time_value_t tvt; struct timeval tv; } now;
+  time_value_t now;
   error_t err;
 
   count = TASK_BASIC_INFO_COUNT;
@@ -65,10 +65,9 @@ __times (struct tms *tms)
   /* XXX This can't be implemented until getrusage(RUSAGE_CHILDREN) can be.  */
   tms->tms_cutime = tms->tms_cstime = 0;
 
-  if (__gettimeofday (&now.tv, NULL) < 0)
-    return -1;
+  __host_get_time (__mach_host_self (), &now);
 
-  return (clock_from_time_value (&now.tvt)
+  return (clock_from_time_value (&now)
 	  - clock_from_time_value (&bi.creation_time));
 }
 weak_alias (__times, times)

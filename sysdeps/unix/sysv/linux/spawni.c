@@ -1,5 +1,5 @@
 /* POSIX spawn interface.  Linux version.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <spawn.h>
 #include <fcntl.h>
@@ -101,11 +101,11 @@ maybe_script_execute (struct posix_spawn_args *args)
       ptrdiff_t argc = args->argc;
 
       /* Construct an argument list for the shell.  */
-      char *new_argv[argc + 1];
+      char *new_argv[argc + 2];
       new_argv[0] = (char *) _PATH_BSHELL;
       new_argv[1] = (char *) args->file;
       if (argc > 1)
-	memcpy (new_argv + 2, argv + 1, argc * sizeof(char *));
+	memcpy (new_argv + 2, argv + 1, argc * sizeof (char *));
       else
 	new_argv[2] = NULL;
 
@@ -138,11 +138,11 @@ __spawni_child (void *arguments)
   for (int sig = 1; sig < _NSIG; ++sig)
     {
       if ((attr->__flags & POSIX_SPAWN_SETSIGDEF)
-	  && sigismember (&attr->__sd, sig))
+	  && __sigismember (&attr->__sd, sig))
 	{
 	  sa.sa_handler = SIG_DFL;
 	}
-      else if (sigismember (&hset, sig))
+      else if (__sigismember (&hset, sig))
 	{
 	  if (__is_internal_signal (sig))
 	    sa.sa_handler = SIG_IGN;
@@ -253,9 +253,31 @@ __spawni_child (void *arguments)
 	      break;
 
 	    case spawn_do_dup2:
-	      if (__dup2 (action->action.dup2_action.fd,
-			  action->action.dup2_action.newfd)
-		  != action->action.dup2_action.newfd)
+	      /* Austin Group issue #411 requires adddup2 action with source
+		 and destination being equal to remove close-on-exec flag.  */
+	      if (action->action.dup2_action.fd
+		  == action->action.dup2_action.newfd)
+		{
+		  int fd = action->action.dup2_action.newfd;
+		  int flags = __fcntl (fd, F_GETFD, 0);
+		  if (flags == -1)
+		    goto fail;
+		  if (__fcntl (fd, F_SETFD, flags & ~FD_CLOEXEC) == -1)
+		    goto fail;
+		}
+	      else if (__dup2 (action->action.dup2_action.fd,
+			       action->action.dup2_action.newfd)
+		       != action->action.dup2_action.newfd)
+		goto fail;
+	      break;
+
+	    case spawn_do_chdir:
+	      if (__chdir (action->action.chdir_action.path) != 0)
+		goto fail;
+	      break;
+
+	    case spawn_do_fchdir:
+	      if (__fchdir (action->action.fchdir_action.fd) != 0)
 		goto fail;
 	      break;
 	    }
@@ -404,6 +426,8 @@ __spawni (pid_t * pid, const char *file,
 	  const posix_spawnattr_t * attrp, char *const argv[],
 	  char *const envp[], int xflags)
 {
+  /* It uses __execvpex to avoid run ENOEXEC in non compatibility mode (it
+     will be handled by maybe_script_execute).  */
   return __spawnix (pid, file, acts, attrp, argv, envp, xflags,
-		    xflags & SPAWN_XFLAGS_USE_PATH ? __execvpe : __execve);
+		    xflags & SPAWN_XFLAGS_USE_PATH ? __execvpex :__execve);
 }

@@ -1,5 +1,5 @@
 /* Profiling of shared libraries.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
    Based on the BSD mcount implementation.
@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -35,6 +35,7 @@
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <atomic.h>
+#include <not-cancel.h>
 
 /* The LD_PROFILE feature has to be implemented different to the
    normal profiling using the gmon/ functions.  The problem is that an
@@ -324,7 +325,7 @@ _dl_start_profile (void)
   *cp++ = '/';
   __stpcpy (__stpcpy (cp, GLRO(dl_profile)), ".profile");
 
-  fd = __open (filename, O_RDWR | O_CREAT | O_NOFOLLOW, DEFFILEMODE);
+  fd = __open64_nocancel (filename, O_RDWR|O_CREAT|O_NOFOLLOW, DEFFILEMODE);
   if (fd == -1)
     {
       char buf[400];
@@ -335,7 +336,7 @@ _dl_start_profile (void)
     print_error:
       errnum = errno;
       if (fd != -1)
-	__close (fd);
+	__close_nocancel (fd);
       _dl_error_printf (errstr, filename,
 			__strerror_r (errnum, buf, sizeof buf));
       return;
@@ -364,15 +365,14 @@ _dl_start_profile (void)
 	  goto print_error;
 	}
 
-      if (TEMP_FAILURE_RETRY (__libc_write (fd, buf, (expected_size
-						      & (GLRO(dl_pagesize)
-							 - 1))))
+      if (TEMP_FAILURE_RETRY
+	  (__write_nocancel (fd, buf, (expected_size & (GLRO(dl_pagesize) - 1))))
 	  < 0)
 	goto cannot_create;
     }
   else if (st.st_size != expected_size)
     {
-      __close (fd);
+      __close_nocancel (fd);
     wrong_format:
 
       if (addr != NULL)
@@ -392,7 +392,7 @@ _dl_start_profile (void)
     }
 
   /* We don't need the file descriptor anymore.  */
-  __close (fd);
+  __close_nocancel (fd);
 
   /* Pointer to data after the header.  */
   hist = (char *) (addr + 1);

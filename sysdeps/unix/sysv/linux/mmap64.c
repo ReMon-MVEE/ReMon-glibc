@@ -1,5 +1,5 @@
 /* mmap - map files or devices into memory.  Linux version.
-   Copyright (C) 1999-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>, 1999.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <unistd.h>
@@ -23,11 +23,18 @@
 #include <sysdep.h>
 #include <mmap_internal.h>
 
+#ifdef __NR_mmap2
 /* To avoid silent truncation of offset when using mmap2, do not accept
    offset larger than 1 << (page_shift + off_t bits).  For archictures with
    32 bits off_t and page size of 4096 it would be 1^44.  */
-#define MMAP_OFF_HIGH_MASK \
+# define MMAP_OFF_HIGH_MASK \
   ((-(MMAP2_PAGE_UNIT << 1) << (8 * sizeof (off_t) - 1)))
+#else
+/* Some ABIs might use __NR_mmap while having sizeof (off_t) smaller than
+   sizeof (off64_t) (currently only MIPS64n32).  For this case just set
+   zero the higher bits so mmap with large offset does not fail.  */
+# define MMAP_OFF_HIGH_MASK  0x0
+#endif
 
 #define MMAP_OFF_MASK (MMAP_OFF_HIGH_MASK | MMAP_OFF_LOW_MASK)
 

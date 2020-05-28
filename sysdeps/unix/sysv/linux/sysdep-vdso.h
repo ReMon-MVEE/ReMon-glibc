@@ -1,5 +1,5 @@
 /* vDSO common definition for Linux.
-   Copyright (C) 2015-2018 Free Software Foundation, Inc.
+   Copyright (C) 2015-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,33 +14,26 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef SYSDEP_VDSO_LINUX_H
 # define SYSDEP_VDSO_LINUX_H
 
-#define VDSO_SYMBOL(__name) __vdso_##__name
+#include <ldsodefs.h>
 
 #ifndef INTERNAL_VSYSCALL_CALL
 # define INTERNAL_VSYSCALL_CALL(funcptr, err, nr, args...)		      \
      funcptr (args)
 #endif
 
-#ifdef SHARED
-
-# ifdef HAVE_VSYSCALL
-
-#  include <libc-vdso.h>
-
-#  define INLINE_VSYSCALL(name, nr, args...)				      \
+#define INLINE_VSYSCALL(name, nr, args...)				      \
   ({									      \
     __label__ out;							      \
     __label__ iserr;							      \
     INTERNAL_SYSCALL_DECL (sc_err);					      \
     long int sc_ret;							      \
 									      \
-    __typeof (__vdso_##name) vdsop = __vdso_##name;			      \
-    PTR_DEMANGLE (vdsop);						      \
+    __typeof (GLRO(dl_vdso_##name)) vdsop = GLRO(dl_vdso_##name);	      \
     if (vdsop != NULL)							      \
       {									      \
 	sc_ret = INTERNAL_VSYSCALL_CALL (vdsop, sc_err, nr, ##args);	      \
@@ -60,39 +53,5 @@
   out:									      \
     sc_ret;								      \
   })
-
-#  define INTERNAL_VSYSCALL(name, err, nr, args...)			      \
-  ({									      \
-    __label__ out;							      \
-    long v_ret;								      \
-									      \
-    __typeof (__vdso_##name) vdsop = __vdso_##name;			      \
-    PTR_DEMANGLE (vdsop);						      \
-    if (vdsop != NULL)							      \
-      {									      \
-	v_ret = INTERNAL_VSYSCALL_CALL (vdsop, err, nr, ##args);	      \
-	if (!INTERNAL_SYSCALL_ERROR_P (v_ret, err)			      \
-	    || INTERNAL_SYSCALL_ERRNO (v_ret, err) != ENOSYS)		      \
-	  goto out;							      \
-      }									      \
-    v_ret = INTERNAL_SYSCALL (name, err, nr, ##args);			      \
-  out:									      \
-    v_ret;								      \
-  })
-# else
-#  define INLINE_VSYSCALL(name, nr, args...) \
-    INLINE_SYSCALL (name, nr, ##args)
-#  define INTERNAL_VSYSCALL(name, err, nr, args...) \
-    INTERNAL_SYSCALL (name, err, nr, ##args)
-# endif /* HAVE_VSYSCALL  */
-
-# else /* SHARED  */
-
-#  define INLINE_VSYSCALL(name, nr, args...) \
-    INLINE_SYSCALL (name, nr, ##args)
-#  define INTERNAL_VSYSCALL(name, err, nr, args...) \
-    INTERNAL_SYSCALL (name, err, nr, ##args)
-
-#endif /* SHARED  */
 
 #endif /* SYSDEP_VDSO_LINUX_H  */

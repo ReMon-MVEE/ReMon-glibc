@@ -8,7 +8,7 @@ endif
 
 ifeq ($(subdir),math)
 libm-routines += s_nexttowardfd
-routines += math_ldbl_opt nldbl-compat
+routines += nldbl-compat
 
 extra-libs += libnldbl
 libnldbl-calls = asprintf dprintf fprintf fscanf fwprintf fwscanf iovfscanf \
@@ -45,7 +45,7 @@ libnldbl-calls = asprintf dprintf fprintf fscanf fwprintf fwscanf iovfscanf \
 		 nextup nextdown totalorder totalordermag getpayload \
 		 canonicalize setpayload setpayloadsig llogb fmaxmag fminmag \
 		 roundeven fromfp ufromfp fromfpx ufromfpx fadd dadd \
-		 fsub dsub
+		 fdiv ddiv fmul dmul fsub dsub
 libnldbl-routines = $(libnldbl-calls:%=nldbl-%)
 libnldbl-inhibit-o = $(object-suffixes)
 libnldbl-static-only-routines = $(libnldbl-routines)
@@ -88,6 +88,8 @@ CFLAGS-nldbl-csqrt.c = -fno-builtin-csqrtl
 CFLAGS-nldbl-ctan.c = -fno-builtin-ctanl
 CFLAGS-nldbl-ctanh.c = -fno-builtin-ctanhl
 CFLAGS-nldbl-dadd.c = -fno-builtin-daddl
+CFLAGS-nldbl-ddiv.c = -fno-builtin-ddivl
+CFLAGS-nldbl-dmul.c = -fno-builtin-dmull
 CFLAGS-nldbl-dsub.c = -fno-builtin-dsubl
 CFLAGS-nldbl-erf.c = -fno-builtin-erfl
 CFLAGS-nldbl-erfc.c = -fno-builtin-erfcl
@@ -98,6 +100,7 @@ CFLAGS-nldbl-expm1.c = -fno-builtin-expm1l
 CFLAGS-nldbl-fabs.c = -fno-builtin-fabsl
 CFLAGS-nldbl-fadd.c = -fno-builtin-faddl
 CFLAGS-nldbl-fdim.c = -fno-builtin-fdiml
+CFLAGS-nldbl-fdiv.c = -fno-builtin-fdivl
 CFLAGS-nldbl-finite.c = -fno-builtin-finitel
 CFLAGS-nldbl-floor.c = -fno-builtin-floorl
 CFLAGS-nldbl-fma.c = -fno-builtin-fmal
@@ -106,6 +109,7 @@ CFLAGS-nldbl-fmaxmag.c = -fno-builtin-fmaxmagl
 CFLAGS-nldbl-fmin.c = -fno-builtin-fminl
 CFLAGS-nldbl-fminmag.c = -fno-builtin-fminmagl
 CFLAGS-nldbl-fmod.c = -fno-builtin-fmodl
+CFLAGS-nldbl-fmul.c = -fno-builtin-fmull
 CFLAGS-nldbl-frexp.c = -fno-builtin-frexpl
 CFLAGS-nldbl-fromfp.c = -fno-builtin-fromfpl
 CFLAGS-nldbl-fromfpx.c = -fno-builtin-fromfpxl
@@ -168,7 +172,36 @@ CFLAGS-nldbl-y0.c = -fno-builtin-y0l
 CFLAGS-nldbl-y1.c = -fno-builtin-y1l
 CFLAGS-nldbl-yn.c = -fno-builtin-ynl
 
-tests += test-narrow-macros-ldbl-64
+tests += test-narrow-macros-ldbl-64 test-nldbl-redirect
 CFLAGS-test-narrow-macros-ldbl-64.c += -mlong-double-64
+CFLAGS-test-nldbl-redirect.c += -mlong-double-64
 
+$(objpfx)test-nldbl-redirect: $(objpfx)libnldbl_nonshared.a
+
+endif
+
+# Tests for argp.h functions (reusing the relevant tests from argp/)
+ifeq ($(subdir),argp)
+tests-internal += tst-nldbl-argp
+
+$(objpfx)tst-nldbl-argp.c: tst-ldbl-argp.c
+	cp $< $@
+
+CFLAGS-tst-nldbl-argp.c += -mlong-double-64
+endif
+
+# Tests for err.h and error.h functions (reusing the relevant tests from
+# misc/).
+ifeq ($(subdir), misc)
+tests-internal += tst-nldbl-warn
+tests-internal += tst-nldbl-error
+
+$(objpfx)tst-nldbl-warn.c: tst-ldbl-warn.c
+	cp $< $@
+
+$(objpfx)tst-nldbl-error.c: tst-ldbl-error.c
+	cp $< $@
+
+CFLAGS-tst-nldbl-warn.c += -mlong-double-64
+CFLAGS-tst-nldbl-error.c += -mlong-double-64
 endif

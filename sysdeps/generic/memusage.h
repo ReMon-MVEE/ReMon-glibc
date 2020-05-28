@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 
 #include <limits.h>
@@ -26,14 +26,14 @@
 #endif
 
 #ifndef GETTIME
-# define GETTIME(low,high) \
-  {									      \
-    struct timeval tval;						      \
-    uint64_t usecs;							      \
-    gettimeofday (&tval, NULL);						      \
-    usecs = (uint64_t) tval.tv_usec + (uint64_t) tval.tv_usec * 1000000;      \
-    low = usecs & 0xffffffff;						      \
-    high = usecs >> 32;							      \
+# define GETTIME(low,high)						   \
+  {									   \
+    struct timespec now;						   \
+    uint64_t usecs;							   \
+    clock_gettime (CLOCK_REALTIME, &now);				   \
+    usecs = (uint64_t)now.tv_nsec / 1000 + (uint64_t)now.tv_sec * 1000000; \
+    low = usecs & 0xffffffff;						   \
+    high = usecs >> 32;							   \
   }
 #endif
 

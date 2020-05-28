@@ -1,5 +1,5 @@
 /* Multiple versions of powf.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define powf __redirect_powf
 #define __DECL_SIMD___redirect_powf
@@ -23,6 +23,7 @@
 
 #define SYMBOL_NAME powf
 #include "ifunc-sse2.h"
+#include <libm-alias-finite.h>
 
 libc_ifunc_redirected (__redirect_powf, __powf, IFUNC_SELECTOR ());
 
@@ -31,7 +32,6 @@ libc_ifunc_redirected (__redirect_powf, __powf, IFUNC_SELECTOR ());
 __hidden_ver1 (__powf_ia32, __GI___powf, __redirect_powf)
   __attribute__ ((visibility ("hidden")));
 
-# include <shlib-compat.h>
 versioned_symbol (libm, __powf, powf, GLIBC_2_27);
 libm_alias_float_other (__pow, pow)
 #else
@@ -39,7 +39,7 @@ libm_alias_float (__pow, pow)
 #endif
 
 strong_alias (__powf, __ieee754_powf)
-strong_alias (__powf, __powf_finite)
+libm_alias_finite (__ieee754_powf, __powf)
 
 #define __powf __powf_ia32
 #include <sysdeps/ieee754/flt-32/e_powf.c>

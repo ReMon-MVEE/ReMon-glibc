@@ -1,7 +1,7 @@
 /* SPARC v9 __mpn_addmul_1 -- Multiply a limb vector with a single limb and
    add the product to a second limb vector.
 
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
 
    This file is part of the GNU MP Library.
 
@@ -17,7 +17,7 @@
 
    You should have received a copy of the GNU Lesser General Public License
    along with the GNU MP Library; see the file COPYING.LIB.  If not,
-   see <http://www.gnu.org/licenses/>.  */
+   see <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 

@@ -1,5 +1,5 @@
 /* List of types and symbols in libpthread examined by libthread_db.
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef DB_STRUCT_ARRAY_FIELD
 # define DB_STRUCT_ARRAY_FIELD(type, field) DB_STRUCT_FIELD (type, field)
@@ -110,7 +110,7 @@ DB_RTLD_GLOBAL_FIELD (dl_tls_dtv_slotinfo_list)
 DB_STRUCT (dtv_slotinfo_list)
 DB_STRUCT_FIELD (dtv_slotinfo_list, len)
 DB_STRUCT_FIELD (dtv_slotinfo_list, next)
-DB_STRUCT_ARRAY_FIELD (dtv_slotinfo_list, slotinfo)
+DB_STRUCT_FLEXIBLE_ARRAY (dtv_slotinfo_list, slotinfo)
 
 DB_STRUCT (dtv_slotinfo)
 DB_STRUCT_FIELD (dtv_slotinfo, gen)

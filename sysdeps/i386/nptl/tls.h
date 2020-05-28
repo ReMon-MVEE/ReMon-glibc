@@ -1,5 +1,5 @@
 /* Definition for thread-local data handling.  nptl/i386 version.
-   Copyright (C) 2002-2018 Free Software Foundation, Inc.
+   Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _TLS_H
 #define _TLS_H	1
@@ -41,16 +41,21 @@ typedef struct
   uintptr_t stack_guard;
   uintptr_t pointer_guard;
   int gscope_flag;
-#ifndef __ASSUME_PRIVATE_FUTEX
-  int private_futex;
-#else
-  int __glibc_reserved1;
-#endif
+  /* Bit 0: X86_FEATURE_1_IBT.
+     Bit 1: X86_FEATURE_1_SHSTK.
+   */
+  unsigned int feature_1;
   /* Reservation of some values for the TM ABI.  */
-  void *__private_tm[4];
+  void *__private_tm[3];
   /* GCC split stack support.  */
   void *__private_ss;
+  /* The lowest address of shadow stack,  */
+  unsigned long ssp_base;
 } tcbhead_t;
+
+/* morestack.S in libgcc uses offset 0x30 to access __private_ss,   */
+_Static_assert (offsetof (tcbhead_t, __private_ss) == 0x30,
+		"offset of __private_ss != 0x30");
 
 # define TLS_MULTIPLE_THREADS_IN_TCB 1
 
@@ -355,43 +360,6 @@ tls_fill_user_desc (union user_desc_init *desc,
 			 "i" (offsetof (struct pthread, member)),	      \
 			 "r" (idx));					      \
        }})
-
-
-/* Atomic compare and exchange on TLS, returning old value.  */
-#define THREAD_ATOMIC_CMPXCHG_VAL(descr, member, newval, oldval) \
-  ({ __typeof (descr->member) __ret;					      \
-     __typeof (oldval) __old = (oldval);				      \
-     if (sizeof (descr->member) == 4)					      \
-       asm volatile (LOCK_PREFIX "cmpxchgl %2, %%gs:%P3"		      \
-		     : "=a" (__ret)					      \
-		     : "0" (__old), "r" (newval),			      \
-		       "i" (offsetof (struct pthread, member)));	      \
-     else								      \
-       /* Not necessary for other sizes in the moment.  */		      \
-       abort ();							      \
-     __ret; })
-
-
-/* Atomic logical and.  */
-#define THREAD_ATOMIC_AND(descr, member, val) \
-  (void) ({ if (sizeof ((descr)->member) == 4)				      \
-	      asm volatile (LOCK_PREFIX "andl %1, %%gs:%P0"		      \
-			    :: "i" (offsetof (struct pthread, member)),	      \
-			       "ir" (val));				      \
-	    else							      \
-	      /* Not necessary for other sizes in the moment.  */	      \
-	      abort (); })
-
-
-/* Atomic set bit.  */
-#define THREAD_ATOMIC_BIT_SET(descr, member, bit) \
-  (void) ({ if (sizeof ((descr)->member) == 4)				      \
-	      asm volatile (LOCK_PREFIX "orl %1, %%gs:%P0"		      \
-			    :: "i" (offsetof (struct pthread, member)),	      \
-			       "ir" (1 << (bit)));			      \
-	    else							      \
-	      /* Not necessary for other sizes in the moment.  */	      \
-	      abort (); })
 
 
 /* Set the stack guard field in TCB head.  */

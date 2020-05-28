@@ -1,5 +1,5 @@
 /* Save current context and jump to a new context.
-   Copyright (C) 2005-2018 Free Software Foundation, Inc.
+   Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This is the common implementation of setcontext for powerpc32.
    It not complete in itself should be included in to a framework that
@@ -265,10 +265,6 @@ ENTRY(__CONTEXT_FUNC_NAME)
 # endif /* __CONTEXT_ENABLE_VRS */
 #endif /* __CONTEXT_ENABLE_FPRS */
 
-#ifdef __CONTEXT_ENABLE_E500
-	getcontext_e500
-#endif
-
 /* Restore ucontext (parm1) from stack.  */
 	lwz	r12,_FRAME_PARM_SAVE1(r1)
 	lwz	r4,_FRAME_PARM_SAVE2(r1)
@@ -280,22 +276,8 @@ ENTRY(__CONTEXT_FUNC_NAME)
 	cmpwi	r3,0
 	bne	3f	/* L(error_exit) */
 
-	/*
-	 * If the new ucontext refers to the point where we were interrupted
-	 * by a signal, we have to use the rt_sigreturn system call to
-	 * return to the context so we get both LR and CTR restored.
-	 *
-	 * Otherwise, the context we are restoring is either just after
-	 * a procedure call (getcontext/swapcontext) or at the beginning
-	 * of a procedure call (makecontext), so we don't need to restore
-	 * r0, xer, ctr.  We don't restore r2 since it will be used as
-	 * the TLS pointer.
-	 */
 	lwz	r4,_FRAME_PARM_SAVE2(r1)
 	lwz	r31,_UC_REGS_PTR(r4)
-	lwz	r0,_UC_GREGS+(PT_MSR*4)(r31)
-	cmpwi	r0,0
-	bne	4f	/* L(do_sigret) */
 
 #ifdef __CONTEXT_ENABLE_FPRS
 # ifdef __CONTEXT_ENABLE_VRS
@@ -468,10 +450,6 @@ ENTRY(__CONTEXT_FUNC_NAME)
 	lfd	fp31,_UC_FREGS+(31*8)(r31)
 #endif /* __CONTEXT_ENABLE_FPRS */
 
-#ifdef __CONTEXT_ENABLE_E500
-	setcontext_e500
-#endif
-
 	/* Restore LR and CCR, and set CTR to the NIP value */
 	lwz	r3,_UC_GREGS+(PT_LNK*4)(r31)
 	lwz	r4,_UC_GREGS+(PT_NIP*4)(r31)
@@ -519,11 +497,5 @@ ENTRY(__CONTEXT_FUNC_NAME)
 	addi	r1,r1,16
 	mtlr	r0
 	blr
-
-4:/*L(do_sigret):*/
-	addi	r1,r4,-0xd0
-	li	r0,SYS_ify(rt_sigreturn)
-	sc
-	/* NOTREACHED */
 
 END(__CONTEXT_FUNC_NAME)

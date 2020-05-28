@@ -1,5 +1,5 @@
 /* Global test failure counter.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <support/check.h>
 #include <support/support.h>
@@ -103,4 +103,12 @@ support_record_failure_reset (void)
      synchronization, but use release MO for consistency.  */
   __atomic_store_n (&state->failed, 0, __ATOMIC_RELAXED);
   __atomic_add_fetch (&state->counter, 0, __ATOMIC_RELAXED);
+}
+
+int
+support_record_failure_is_failed (void)
+{
+  /* Relaxed MO is sufficient because we need (blocking) external
+     synchronization for reliable test error reporting anyway.  */
+  return __atomic_load_n (&state->failed, __ATOMIC_RELAXED);
 }

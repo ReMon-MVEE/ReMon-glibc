@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2018 Free Software Foundation, Inc.
+# Copyright (C) 1991-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 #
 #	Sub-makefile for misc portion of the library.
@@ -36,7 +36,8 @@ headers	:= sys/uio.h bits/uio-ext.h bits/uio_lim.h \
 	   syslog.h sys/syslog.h \
 	   bits/syslog.h bits/syslog-ldbl.h bits/syslog-path.h bits/error.h \
 	   bits/select2.h bits/hwcap.h sys/auxv.h \
-	   sys/sysmacros.h bits/sysmacros.h bits/types/struct_iovec.h
+	   sys/sysmacros.h bits/sysmacros.h bits/types/struct_iovec.h \
+	   bits/err-ldbl.h bits/error-ldbl.h
 
 routines := brk sbrk sstk ioctl \
 	    readv writev preadv preadv64 pwritev pwritev64 \
@@ -70,25 +71,35 @@ routines := brk sbrk sstk ioctl \
 	    getloadavg getclktck \
 	    fgetxattr flistxattr fremovexattr fsetxattr getxattr \
 	    listxattr lgetxattr llistxattr lremovexattr lsetxattr \
-	    removexattr setxattr getauxval ifunc-impl-list makedev
+	    removexattr setxattr getauxval ifunc-impl-list makedev \
+	    allocate_once
 
-generated += tst-error1.mtrace tst-error1-mem.out
+generated += tst-error1.mtrace tst-error1-mem.out \
+  tst-allocate_once.mtrace tst-allocate_once-mem.out
 
 aux := init-misc
 install-lib := libg.a
 gpl2lgpl := error.c error.h
 
-tests := tst-dirname tst-tsearch tst-fdset tst-efgcvt tst-mntent tst-hsearch \
+tests := tst-dirname tst-tsearch tst-fdset tst-mntent tst-hsearch \
 	 tst-error1 tst-pselect tst-insremque tst-mntent2 bug-hsearch1 \
 	 tst-mntent-blank-corrupt tst-mntent-blank-passno bug18240 \
 	 tst-preadvwritev tst-preadvwritev64 tst-makedev tst-empty \
-	 tst-preadvwritev2 tst-preadvwritev64v2
+	 tst-preadvwritev2 tst-preadvwritev64v2 tst-warn-wide \
+	 tst-ldbl-warn tst-ldbl-error tst-dbl-efgcvt tst-ldbl-efgcvt \
+	 tst-mntent-autofs tst-syscalls
 
-tests-internal := tst-atomic tst-atomic-long
+# Tests which need libdl.
+ifeq (yes,$(build-shared))
+tests += tst-gethostid
+endif
+
+tests-internal := tst-atomic tst-atomic-long tst-allocate_once
 tests-static := tst-empty
 
 ifeq ($(run-built-tests),yes)
-tests-special += $(objpfx)tst-error1-mem.out
+tests-special += $(objpfx)tst-error1-mem.out \
+  $(objpfx)tst-allocate_once-mem.out
 endif
 
 CFLAGS-select.c += -fexceptions -fasynchronous-unwind-tables
@@ -137,3 +148,10 @@ tst-error1-ARGS = $(objpfx)tst-error1.out
 $(objpfx)tst-error1-mem.out: $(objpfx)tst-error1.out
 	$(common-objpfx)malloc/mtrace $(objpfx)tst-error1.mtrace > $@; \
 	$(evaluate-test)
+
+tst-allocate_once-ENV = MALLOC_TRACE=$(objpfx)tst-allocate_once.mtrace
+$(objpfx)tst-allocate_once-mem.out: $(objpfx)tst-allocate_once.out
+	$(common-objpfx)malloc/mtrace $(objpfx)tst-allocate_once.mtrace > $@; \
+	$(evaluate-test)
+
+$(objpfx)tst-gethostid: $(libdl)

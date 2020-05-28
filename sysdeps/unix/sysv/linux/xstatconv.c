@@ -1,5 +1,5 @@
 /* Convert between the kernel's `struct stat' format, and libc's.
-   Copyright (C) 1991-2018 Free Software Foundation, Inc.
+   Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,12 +14,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <sys/stat.h>
 #include <kernel_stat.h>
-#include <kernel-features.h>
 
 #ifdef STAT_IS_KERNEL_STAT
 
@@ -189,24 +188,10 @@ __xstat32_conv (int vers, struct stat64 *kbuf, struct stat *buf)
 #ifdef _HAVE_STAT___PAD1
 	buf->__pad1 = 0;
 #endif
-#ifdef _HAVE_STAT64___ST_INO
-# if !__ASSUME_ST_INO_64_BIT
-	if (kbuf->st_ino == 0)
-	  buf->st_ino = kbuf->__st_ino;
-	else
-# endif
-	  {
-	    buf->st_ino = kbuf->st_ino;
-	    if (sizeof (buf->st_ino) != sizeof (kbuf->st_ino)
-		&& buf->st_ino != kbuf->st_ino)
-	      return INLINE_SYSCALL_ERROR_RETURN_VALUE (EOVERFLOW);
-	  }
-#else
 	buf->st_ino = kbuf->st_ino;
 	if (sizeof (buf->st_ino) != sizeof (kbuf->st_ino)
 	    && buf->st_ino != kbuf->st_ino)
 	  return INLINE_SYSCALL_ERROR_RETURN_VALUE (EOVERFLOW);
-#endif
 	buf->st_mode = kbuf->st_mode;
 	buf->st_nlink = kbuf->st_nlink;
 	buf->st_uid = kbuf->st_uid;

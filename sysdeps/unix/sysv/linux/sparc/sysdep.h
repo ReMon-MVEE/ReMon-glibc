@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>, 2000.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _LINUX_SPARC_SYSDEP_H
 #define _LINUX_SPARC_SYSDEP_H 1
@@ -33,6 +33,24 @@
 #define	MOVE(x,y)	mov x, y
 
 #else	/* __ASSEMBLER__ */
+
+#define INTERNAL_VSYSCALL_CALL(funcptr, err, nr, args...)		\
+  ({									\
+    long _ret = funcptr (args);						\
+    err = ((unsigned long) (_ret) >= (unsigned long) -4095L);		\
+    _ret;								\
+  })
+
+# define VDSO_NAME  "LINUX_2.6"
+# define VDSO_HASH  61765110
+
+/* List of system calls which are supported as vsyscalls.  */
+# ifdef __arch64__
+#  define HAVE_CLOCK_GETTIME64_VSYSCALL	"__vdso_clock_gettime"
+# else
+#  define HAVE_CLOCK_GETTIME_VSYSCALL	"__vdso_clock_gettime"
+# endif
+# define HAVE_GETTIMEOFDAY_VSYSCALL	"__vdso_gettimeofday"
 
 #undef INLINE_SYSCALL
 #define INLINE_SYSCALL(name, nr, args...) 				\

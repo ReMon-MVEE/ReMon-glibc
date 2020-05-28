@@ -1,5 +1,5 @@
 /* Machine-dependent ELF dynamic relocation inline functions.  PA-RISC version.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    Contributed by David Huggins-Daines <dhd@debian.org>
    This file is part of the GNU C Library.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef dl_machine_h
 #define dl_machine_h 1
@@ -47,6 +47,14 @@
 #define SIZEOF_PLT_STUB (7*4)
 #define GOT_FROM_PLT_STUB (4*4)
 #define PLT_ENTRY_SIZE (2*4)
+
+/* The gp slot in the function descriptor contains the relocation offset
+   before resolution.  To distinguish between a resolved gp value and an
+   unresolved relocation offset we set an unused bit in the relocation
+   offset.  This would allow us to do a synchronzied two word update
+   using this bit (interlocked update), but instead of waiting for the
+   update we simply recompute the gp value given that we know the ip.  */
+#define PA_GP_RELOC 1
 
 /* Initialize the function descriptor table before relocations */
 static inline void
@@ -117,10 +125,28 @@ elf_machine_fixup_plt (struct link_map *map, lookup_t t,
   volatile Elf32_Addr *rfdesc = reloc_addr;
   /* map is the link_map for the caller, t is the link_map for the object
      being called */
-  rfdesc[1] = value.gp;
-  /* Need to ensure that the gp is visible before the code
-     entry point is updated */
-  rfdesc[0] = value.ip;
+
+  /* We would like the function descriptor to be double word aligned.  This
+     helps performance (ip and gp then reside on the same cache line) and
+     we can update the pair atomically with a single store.  The linker
+     now ensures this alignment but we still have to handle old code.  */
+  if ((unsigned int)reloc_addr & 7)
+    {
+      /* Need to ensure that the gp is visible before the code
+         entry point is updated */
+      rfdesc[1] = value.gp;
+      atomic_full_barrier();
+      rfdesc[0] = value.ip;
+    }
+  else
+    {
+      /* Update pair atomically with floating point store.  */
+      union { ElfW(Word) v[2]; double d; } u;
+
+      u.v[0] = value.ip;
+      u.v[1] = value.gp;
+      *(volatile double *)rfdesc = u.d;
+    }
   return value;
 }
 
@@ -166,7 +192,7 @@ elf_machine_runtime_setup (struct link_map *l, int lazy, int profile)
       /* FIXME: Search for the got, but backwards through the relocs, technically we should
 	 find it on the first try. However, assuming the relocs got out of order the
 	 routine is made a bit more robust by searching them all in case of failure. */
-      for (iplt = (end_jmprel - sizeof(Elf32_Rela)); iplt >= jmprel; iplt -= sizeof (Elf32_Rela))
+      for (iplt = (end_jmprel - sizeof (Elf32_Rela)); iplt >= jmprel; iplt -= sizeof (Elf32_Rela))
 	{
 
 	  reloc = (const Elf32_Rela *) iplt;
@@ -265,7 +291,7 @@ elf_machine_runtime_setup (struct link_map *l, int lazy, int profile)
 		     here.  The trampoline code will load the proper
 		     LTP and pass the reloc offset to the fixup
 		     function.  */
-		  fptr->gp = iplt - jmprel;
+		  fptr->gp = (iplt - jmprel) | PA_GP_RELOC;
 		} /* r_sym != 0 */
 	      else
 		{

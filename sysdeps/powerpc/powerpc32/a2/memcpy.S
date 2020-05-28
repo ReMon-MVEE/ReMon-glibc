@@ -1,5 +1,5 @@
 /* Optimized memcpy implementation for PowerPC A2.
-   Copyright (C) 2010-2018 Free Software Foundation, Inc.
+   Copyright (C) 2010-2020 Free Software Foundation, Inc.
    Contributed by Michael Brutman <brutman@us.ibm.com>.
    This file is part of the GNU C Library.
 
@@ -15,9 +15,10 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <rtld-global-offsets.h>
 
 #define PREFETCH_AHEAD 4        /* no cache lines SRC prefetching ahead  */
 #define ZERO_AHEAD 2            /* no cache lines DST zeroing ahead  */
@@ -106,25 +107,23 @@ EALIGN (memcpy, 5, 0)
 L(dst_aligned):
 
 
-#ifdef SHARED
+#ifdef PIC
 	mflr    r0
-/* Establishes GOT addressability so we can load __cache_line_size
-   from static. This value was set from the aux vector during startup.  */
+/* Establishes GOT addressability so we can load the cache line size
+   from rtld_global_ro.  This value was set from the aux vector during
+   startup.  */
 	SETUP_GOT_ACCESS(r9,got_label)
-	addis   r9,r9,__cache_line_size-got_label@ha
-	lwz     r9,__cache_line_size-got_label@l(r9)
-	mtlr    r0
-#else
-/* Load __cache_line_size from static. This value was set from the
-   aux vector during startup.  */
-	lis     r9,__cache_line_size@ha
-	lwz     r9,__cache_line_size@l(r9)
+	addis	r9,r9,_GLOBAL_OFFSET_TABLE_-got_label@ha
+	addi	r9,r9,_GLOBAL_OFFSET_TABLE_-got_label@l
+	mtlr	r0
 #endif
+	__GLRO(r9, r9, _dl_cache_line_size,
+	       RTLD_GLOBAL_RO_DL_CACHE_LINE_SIZE_OFFSET)
 
 	cmplwi  cr5, r9, 0
 	bne+    cr5,L(cachelineset)
 
-/* __cache_line_size not set: generic byte copy without much optimization */
+/* Cache line size not set: generic byte copy without much optimization */
 	andi.	r0,r5,1		/* If length is odd copy one byte.  */
 	beq	L(cachelinenotset_align)
 	lbz	r7,0(r4)	/* Read one byte from source.  */

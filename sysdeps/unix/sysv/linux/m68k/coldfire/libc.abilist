@@ -116,6 +116,24 @@ GLIBC_2.27 wcstof32x F
 GLIBC_2.27 wcstof32x_l F
 GLIBC_2.27 wcstof64 F
 GLIBC_2.27 wcstof64_l F
+GLIBC_2.28 fcntl F
+GLIBC_2.28 fcntl64 F
+GLIBC_2.28 renameat2 F
+GLIBC_2.28 statx F
+GLIBC_2.28 thrd_current F
+GLIBC_2.28 thrd_equal F
+GLIBC_2.28 thrd_sleep F
+GLIBC_2.28 thrd_yield F
+GLIBC_2.29 getcpu F
+GLIBC_2.29 posix_spawn_file_actions_addchdir_np F
+GLIBC_2.29 posix_spawn_file_actions_addfchdir_np F
+GLIBC_2.30 getdents64 F
+GLIBC_2.30 gettid F
+GLIBC_2.30 tgkill F
+GLIBC_2.30 twalk_r F
+GLIBC_2.31 msgctl F
+GLIBC_2.31 semctl F
+GLIBC_2.31 shmctl F
 GLIBC_2.4 _Exit F
 GLIBC_2.4 _IO_2_1_stderr_ D 0x98
 GLIBC_2.4 _IO_2_1_stdin_ D 0x98
@@ -740,6 +758,11 @@ GLIBC_2.4 clntudp_bufcreate F
 GLIBC_2.4 clntudp_create F
 GLIBC_2.4 clntunix_create F
 GLIBC_2.4 clock F
+GLIBC_2.4 clock_getcpuclockid F
+GLIBC_2.4 clock_getres F
+GLIBC_2.4 clock_gettime F
+GLIBC_2.4 clock_nanosleep F
+GLIBC_2.4 clock_settime F
 GLIBC_2.4 clone F
 GLIBC_2.4 close F
 GLIBC_2.4 closedir F

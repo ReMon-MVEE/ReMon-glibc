@@ -1,5 +1,5 @@
 /* Processor capability information handling macros.  PowerPC version.
-   Copyright (C) 2005-2018 Free Software Foundation, Inc.
+   Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _DL_PROCINFO_H
 #define _DL_PROCINFO_H 1
@@ -147,6 +147,37 @@ _dl_string_platform (const char *str)
 }
 
 #if IS_IN (rtld)
+static inline void
+cache_geometry (const char * name, unsigned long int geometry)
+{
+  unsigned long int assocty, line;
+
+  _dl_printf ("%s", name);
+
+  line = geometry & 0xffff;
+  assocty = (geometry >> 16) & 0xffff;
+
+  if (line == 0)
+    _dl_printf ("Unknown line size, ");
+  else
+    _dl_printf ("%luB line size, ", line);
+
+  switch (assocty)
+    {
+    case 0:
+      _dl_printf ("Unknown associativity");
+      break;
+    case 1:
+      _dl_printf ("Directly mapped");
+      break;
+    case 0xffff:
+      _dl_printf ("Fully associative");
+      break;
+    default:
+      _dl_printf ("%lu-way set associative", assocty);
+    }
+}
+
 static inline int
 __attribute__ ((unused))
 _dl_procinfo (unsigned int type, unsigned long int word)
@@ -154,7 +185,7 @@ _dl_procinfo (unsigned int type, unsigned long int word)
   switch(type)
     {
     case AT_HWCAP:
-      _dl_printf ("AT_HWCAP:       ");
+      _dl_printf ("AT_HWCAP:            ");
 
       for (int i = 0; i <= _DL_HWCAP_LAST; ++i)
        if (word & (1 << i))
@@ -164,7 +195,7 @@ _dl_procinfo (unsigned int type, unsigned long int word)
       {
        unsigned int offset = _DL_HWCAP_LAST + 1;
 
-       _dl_printf ("AT_HWCAP2:      ");
+       _dl_printf ("AT_HWCAP2:           ");
 
         /* We have to go through them all because the kernel added the
           AT_HWCAP2 features starting with the high bits.  */
@@ -173,8 +204,28 @@ _dl_procinfo (unsigned int type, unsigned long int word)
            _dl_printf (" %s", _dl_hwcap_string (offset + i));
        break;
       }
+    case AT_L1I_CACHEGEOMETRY:
+      {
+	cache_geometry ("AT_L1I_CACHEGEOMETRY: ", word);
+	break;
+      }
+    case AT_L1D_CACHEGEOMETRY:
+      {
+	cache_geometry ("AT_L1D_CACHEGEOMETRY: ", word);
+	break;
+      }
+    case AT_L2_CACHEGEOMETRY:
+      {
+	cache_geometry ("AT_L2_CACHEGEOMETRY:  ", word);
+	break;
+      }
+    case AT_L3_CACHEGEOMETRY:
+      {
+	cache_geometry ("AT_L3_CACHEGEOMETRY:  ", word);
+	break;
+      }
     default:
-      /* This should not happen.  */
+      /* Fallback to generic output mechanism.  */
       return -1;
     }
    _dl_printf ("\n");

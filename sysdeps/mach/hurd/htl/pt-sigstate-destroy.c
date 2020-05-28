@@ -1,5 +1,5 @@
 /* Destroy the signal state.  Hurd on Mach version.
-   Copyright (C) 2002-2018 Free Software Foundation, Inc.
+   Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,13 +14,15 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library;  if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <pthread.h>
+#include <hurd/signal.h>
 
 #include <pt-internal.h>
 
 void
 __pthread_sigstate_destroy (struct __pthread *thread)
 {
+  _hurd_sigstate_delete (thread->kernel_thread);
 }

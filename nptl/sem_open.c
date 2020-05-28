@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -215,10 +215,11 @@ sem_open (const char *name, int oflag, ...)
       sem.newsem.data = value;
 #else
       sem.newsem.value = value << SEM_VALUE_SHIFT;
-      /* pad is used as a mutex on pre-v9 sparc and ignored otherwise.  */
-      sem.newsem.pad = 0;
       sem.newsem.nwaiters = 0;
 #endif
+      /* pad is used as a mutex on pre-v9 sparc and ignored otherwise.  */
+      sem.newsem.pad = 0;
+
       /* This always is a shared semaphore.  */
       sem.newsem.private = FUTEX_SHARED;
 

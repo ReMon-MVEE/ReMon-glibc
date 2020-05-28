@@ -1,5 +1,5 @@
 /* Save current context.
-   Copyright (C) 2009-2018 Free Software Foundation, Inc.
+   Copyright (C) 2009-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Maciej W. Rozycki <macro@codesourcery.com>.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 #include <sys/asm.h>
@@ -77,11 +77,6 @@ NESTED (__getcontext, FRAMESZ, ra)
 	jal	_mcount
 	.set	at
 #endif
-
-	/* Store a magic flag.	*/
-	li	v1, 1
-	/* zero */
-	REG_S	v1, (MCONTEXT_GREGOFF + 0 * MCONTEXT_GREGSZ + MCONTEXT_GREGS)(a0)
 
 	REG_S	s0, (MCONTEXT_GREGOFF + 16 * MCONTEXT_GREGSZ + MCONTEXT_GREGS)(a0)
 	REG_S	s1, (MCONTEXT_GREGOFF + 17 * MCONTEXT_GREGSZ + MCONTEXT_GREGS)(a0)

@@ -1,5 +1,5 @@
 /* Return error detail for failing <dlfcn.h> functions.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <dlfcn.h>
 #include <libintl.h>
@@ -24,6 +24,7 @@
 #include <string.h>
 #include <libc-lock.h>
 #include <ldsodefs.h>
+#include <libc-symbols.h>
 
 #if !defined SHARED && IS_IN (libdl)
 
@@ -71,9 +72,16 @@ __dlerror (void)
   __libc_once (once, init);
 
   /* Get error string.  */
-  result = (struct dl_action_result *) __libc_getspecific (key);
-  if (result == NULL)
-    result = &last_result;
+  if (static_buf != NULL)
+    result = static_buf;
+  else
+    {
+      /* init () has been run and we don't use the static buffer.
+	 So we have a valid key.  */
+      result = (struct dl_action_result *) __libc_getspecific (key);
+      if (result == NULL)
+	result = &last_result;
+    }
 
   /* Test whether we already returned the string.  */
   if (result->returned != 0)
@@ -197,7 +205,10 @@ check_free (struct dl_action_result *rec)
       Dl_info info;
       if (_dl_addr (check_free, &info, &map, NULL) != 0 && map->l_ns == 0)
 #endif
-	free ((char *) rec->errstring);
+	{
+	  free ((char *) rec->errstring);
+	  rec->errstring = NULL;
+	}
     }
 }
 
@@ -221,6 +232,25 @@ free_key_mem (void *mem)
 }
 
 # ifdef SHARED
+
+/* Free the dlerror-related resources.  */
+void
+__dlerror_main_freeres (void)
+{
+  /* Free the global memory if used.  */
+  check_free (&last_result);
+
+  if (__libc_once_get (once) && static_buf == NULL)
+    {
+      /* init () has been run and we don't use the static buffer.
+	 So we have a valid key.  */
+      void *mem;
+      /* Free the TSD memory if used.  */
+      mem = __libc_getspecific (key);
+      if (mem != NULL)
+	free_key_mem (mem);
+    }
+}
 
 struct dlfcn_hook *_dlfcn_hook __attribute__((nocommon));
 libdl_hidden_data_def (_dlfcn_hook)

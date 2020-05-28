@@ -1,5 +1,5 @@
 /* Function exp vectorized with SSE4.
-   Copyright (C) 2014-2018 Free Software Foundation, Inc.
+   Copyright (C) 2014-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 #include "svml_d_exp_data.h"
@@ -207,7 +207,7 @@ ENTRY (_ZGVbN2v_exp_sse4)
         shlq      $4, %r15
         movsd     200(%rsp,%r15), %xmm0
 
-        call      JUMPTARGET(__exp_finite)
+        call      JUMPTARGET(exp)
 
         movsd     %xmm0, 264(%rsp,%r15)
         jmp       .LBL_1_8
@@ -217,7 +217,7 @@ ENTRY (_ZGVbN2v_exp_sse4)
         shlq      $4, %r15
         movsd     192(%rsp,%r15), %xmm0
 
-        call      JUMPTARGET(__exp_finite)
+        call      JUMPTARGET(exp)
 
         movsd     %xmm0, 256(%rsp,%r15)
         jmp       .LBL_1_7

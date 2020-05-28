@@ -1,5 +1,5 @@
 /* Measure strtod implementation.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #define TEST_NAME "strtod"
@@ -24,7 +24,7 @@
 #include "bench-timing.h"
 
 #undef INNER_LOOP_ITERS
-#define INNER_LOOP_ITERS 65536
+#define INNER_LOOP_ITERS 131072
 
 static const char *inputs[] =
 {
@@ -89,9 +89,6 @@ int
 do_bench (void)
 {
   const size_t iters = INNER_LOOP_ITERS;
-  timing_t res __attribute__ ((unused));
-
-  TIMING_INIT (res);
 
   for (size_t i = 0; inputs[i] != NULL; ++i)
     {
@@ -113,8 +110,5 @@ do_bench (void)
 }
 
 #define TEST_FUNCTION do_bench ()
-
-/* On slower platforms this test needs more than the default 2 seconds.  */
-#define TIMEOUT 10
 
 #include "../test-skeleton.c"

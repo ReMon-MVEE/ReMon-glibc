@@ -1,5 +1,5 @@
 /* Relocate a shared object and resolve its references to other loaded objects.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <libintl.h>
@@ -200,17 +200,6 @@ _dl_relocate_object (struct link_map *l, struct r_scope_elem *scope[],
 	    newp->start = PTR_ALIGN_DOWN (ph->p_vaddr, GLRO(dl_pagesize))
 			  + (caddr_t) l->l_addr;
 
-	    if (__mprotect (newp->start, newp->len, PROT_READ|PROT_WRITE) < 0)
-	      {
-		errstring = N_("cannot make segment writable for relocation");
-	      call_error:
-		_dl_signal_error (errno, l->l_name, NULL, errstring);
-	      }
-
-#if (PF_R | PF_W | PF_X) == 7 && (PROT_READ | PROT_WRITE | PROT_EXEC) == 7
-	    newp->prot = (PF_TO_PROT
-			  >> ((ph->p_flags & (PF_R | PF_W | PF_X)) * 4)) & 0xf;
-#else
 	    newp->prot = 0;
 	    if (ph->p_flags & PF_R)
 	      newp->prot |= PROT_READ;
@@ -218,7 +207,14 @@ _dl_relocate_object (struct link_map *l, struct r_scope_elem *scope[],
 	      newp->prot |= PROT_WRITE;
 	    if (ph->p_flags & PF_X)
 	      newp->prot |= PROT_EXEC;
-#endif
+
+	    if (__mprotect (newp->start, newp->len, newp->prot|PROT_WRITE) < 0)
+	      {
+		errstring = N_("cannot make segment writable for relocation");
+	      call_error:
+		_dl_signal_error (errno, l->l_name, NULL, errstring);
+	      }
+
 	    newp->next = textrels;
 	    textrels = newp;
 	  }
@@ -248,7 +244,8 @@ _dl_relocate_object (struct link_map *l, struct r_scope_elem *scope[],
 	       v = (version);						      \
 	     _lr = _dl_lookup_symbol_x (strtab + (*ref)->st_name, l, (ref),   \
 					scope, v, _tc,			      \
-					DL_LOOKUP_ADD_DEPENDENCY, NULL);      \
+					DL_LOOKUP_ADD_DEPENDENCY	      \
+					| DL_LOOKUP_FOR_RELOCATE, NULL);      \
 	     l->l_lookup_cache.ret = (*ref);				      \
 	     l->l_lookup_cache.value = _lr; }))				      \
      : l)

@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Martin Schwidefsky <schwidefsky@de.ibm.com>, 2003.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <endian.h>
 #include <errno.h>
@@ -378,6 +378,7 @@ __condvar_cleanup_waiting (void *arg)
 */
 static __always_inline int
 __pthread_cond_wait_common (pthread_cond_t *cond, pthread_mutex_t *mutex,
+    clockid_t clockid,
     const struct timespec *abstime)
 {
   const int maxspin = 0;
@@ -385,6 +386,11 @@ __pthread_cond_wait_common (pthread_cond_t *cond, pthread_mutex_t *mutex,
   int result = 0;
 
   LIBC_PROBE (cond_wait, 2, cond, mutex);
+
+  /* clockid will already have been checked by
+     __pthread_cond_clockwait or pthread_condattr_setclock, or we
+     don't use it if abstime is NULL, so we don't need to check it
+     here. */
 
   /* Acquire a position (SEQ) in the waiter sequence (WSEQ).  We use an
      atomic operation because signals and broadcasts may update the group
@@ -509,35 +515,11 @@ __pthread_cond_wait_common (pthread_cond_t *cond, pthread_mutex_t *mutex,
 		 values despite them being valid.  */
 	      if (__glibc_unlikely (abstime->tv_sec < 0))
 	        err = ETIMEDOUT;
-
-	      else if ((flags & __PTHREAD_COND_CLOCK_MONOTONIC_MASK) != 0)
-		{
-		  /* CLOCK_MONOTONIC is requested.  */
-		  struct timespec rt;
-		  if (__clock_gettime (CLOCK_MONOTONIC, &rt) != 0)
-		    __libc_fatal ("clock_gettime does not support "
-				  "CLOCK_MONOTONIC");
-		  /* Convert the absolute timeout value to a relative
-		     timeout.  */
-		  rt.tv_sec = abstime->tv_sec - rt.tv_sec;
-		  rt.tv_nsec = abstime->tv_nsec - rt.tv_nsec;
-		  if (rt.tv_nsec < 0)
-		    {
-		      rt.tv_nsec += 1000000000;
-		      --rt.tv_sec;
-		    }
-		  /* Did we already time out?  */
-		  if (__glibc_unlikely (rt.tv_sec < 0))
-		    err = ETIMEDOUT;
-		  else
-		    err = futex_reltimed_wait_cancelable
-			(cond->__data.__g_signals + g, 0, &rt, private);
-		}
 	      else
 		{
-		  /* Use CLOCK_REALTIME.  */
 		  err = futex_abstimed_wait_cancelable
-		      (cond->__data.__g_signals + g, 0, abstime, private);
+                    (cond->__data.__g_signals + g, 0, clockid, abstime,
+                     private);
 		}
 	    }
 
@@ -652,7 +634,8 @@ __pthread_cond_wait_common (pthread_cond_t *cond, pthread_mutex_t *mutex,
 int
 __pthread_cond_wait (pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
-  return __pthread_cond_wait_common (cond, mutex, NULL);
+  /* clockid is unused when abstime is NULL. */
+  return __pthread_cond_wait_common (cond, mutex, 0, NULL);
 }
 
 /* See __pthread_cond_wait_common.  */
@@ -662,12 +645,35 @@ __pthread_cond_timedwait (pthread_cond_t *cond, pthread_mutex_t *mutex,
 {
   /* Check parameter validity.  This should also tell the compiler that
      it can assume that abstime is not NULL.  */
-  if (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000)
+  if (! valid_nanoseconds (abstime->tv_nsec))
     return EINVAL;
-  return __pthread_cond_wait_common (cond, mutex, abstime);
-}
 
+  /* Relaxed MO is suffice because clock ID bit is only modified
+     in condition creation.  */
+  unsigned int flags = atomic_load_relaxed (&cond->__data.__wrefs);
+  clockid_t clockid = (flags & __PTHREAD_COND_CLOCK_MONOTONIC_MASK)
+                    ? CLOCK_MONOTONIC : CLOCK_REALTIME;
+  return __pthread_cond_wait_common (cond, mutex, clockid, abstime);
+}
 versioned_symbol (libpthread, __pthread_cond_wait, pthread_cond_wait,
 		  GLIBC_2_3_2);
 versioned_symbol (libpthread, __pthread_cond_timedwait, pthread_cond_timedwait,
 		  GLIBC_2_3_2);
+
+/* See __pthread_cond_wait_common.  */
+int
+__pthread_cond_clockwait (pthread_cond_t *cond, pthread_mutex_t *mutex,
+			  clockid_t clockid,
+			  const struct timespec *abstime)
+{
+  /* Check parameter validity.  This should also tell the compiler that
+     it can assume that abstime is not NULL.  */
+  if (! valid_nanoseconds (abstime->tv_nsec))
+    return EINVAL;
+
+  if (!futex_abstimed_supported_clockid (clockid))
+    return EINVAL;
+
+  return __pthread_cond_wait_common (cond, mutex, clockid, abstime);
+}
+weak_alias (__pthread_cond_clockwait, pthread_cond_clockwait);

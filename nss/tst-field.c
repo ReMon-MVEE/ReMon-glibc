@@ -1,5 +1,5 @@
 /* Test for invalid field handling in file-style NSS databases.  [BZ #18724]
-   Copyright (C) 2015-2018 Free Software Foundation, Inc.
+   Copyright (C) 2015-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This test needs to be statically linked because it access hidden
    functions.  */
@@ -50,7 +50,8 @@ check_rewrite (const char *input, const char *expected)
   if (result != NULL && strcmp (result, expected) != 0)
     {
       printf ("FAIL: rewrite \"%s\" -> \"%s\", expected \"%s\"\n",
-	      input, result, expected);
+	      (input == NULL) ? "(null)" : input, result,
+	      (expected == NULL) ? "(null)" : expected);
       errors = true;
     }
   free (to_free);

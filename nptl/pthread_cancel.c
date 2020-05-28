@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <signal.h>
@@ -63,7 +63,6 @@ __pthread_cancel (pthread_t th)
 						    oldval))
 	    goto again;
 
-#ifdef SIGCANCEL
 	  /* The cancellation handler will take care of marking the
 	     thread as canceled.  */
 	  pid_t pid = __getpid ();
@@ -73,12 +72,6 @@ __pthread_cancel (pthread_t th)
 					   SIGCANCEL);
 	  if (INTERNAL_SYSCALL_ERROR_P (val, err))
 	    result = INTERNAL_SYSCALL_ERRNO (val, err);
-#else
-          /* It should be impossible to get here at all, since
-             pthread_setcanceltype should never have allowed
-             PTHREAD_CANCEL_ASYNCHRONOUS to be set.  */
-          abort ();
-#endif
 
 	  break;
 	}

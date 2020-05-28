@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 #include <shlib-compat.h>
@@ -45,9 +45,9 @@ ENTRY(__ieee754_sqrt)
 END(__ieee754_sqrt)
 
 #if SHLIB_COMPAT (libm, GLIBC_2_15, GLIBC_2_18)
-strong_alias(__ieee754_sqrt, __sqrt_finite1)
-compat_symbol(libm, __sqrt_finite1, __sqrt_finite, GLIBC_2_15)
-versioned_symbol(libm, __ieee754_sqrt, __sqrt_finite, GLIBC_2_18)
-#else
-strong_alias(__ieee754_sqrt, __sqrt_finite)
+strong_alias(__ieee754_sqrt, __sqrt_dummy)
+compat_symbol(libm, __sqrt_dummy, __sqrt_finite, GLIBC_2_15)
+#endif
+#if SHLIB_COMPAT (libm, GLIBC_2_18, GLIBC_2_31)
+compat_symbol(libm, __ieee754_sqrt, __sqrt_finite, GLIBC_2_18)
 #endif

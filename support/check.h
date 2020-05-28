@@ -1,5 +1,5 @@
 /* Functionality for reporting test results.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef SUPPORT_CHECK_H
 #define SUPPORT_CHECK_H
@@ -63,6 +63,8 @@ __BEGIN_DECLS
       support_test_verify_exit_impl                             \
         (1, __FILE__, __LINE__, #expr);                         \
   })
+
+
 
 int support_print_failure_impl (const char *file, int line,
                                 const char *format, ...)
@@ -141,12 +143,49 @@ void support_test_compare_failure (const char *file, int line,
                                    int right_size);
 
 
+/* Compare [LEFT, LEFT + LEFT_LENGTH) with [RIGHT, RIGHT +
+   RIGHT_LENGTH) and report a test failure if the arrays are
+   different.  LEFT_LENGTH and RIGHT_LENGTH are measured in bytes.  If
+   the length is null, the corresponding pointer is ignored (i.e., it
+   can be NULL).  The blobs should be reasonably short because on
+   mismatch, both are printed.  */
+#define TEST_COMPARE_BLOB(left, left_length, right, right_length)       \
+  (support_test_compare_blob (left, left_length, right, right_length,   \
+                              __FILE__, __LINE__,                       \
+                              #left, #left_length, #right, #right_length))
+
+void support_test_compare_blob (const void *left,
+                                unsigned long int left_length,
+                                const void *right,
+                                unsigned long int right_length,
+                                const char *file, int line,
+                                const char *left_exp, const char *left_len_exp,
+                                const char *right_exp,
+                                const char *right_len_exp);
+
+/* Compare the strings LEFT and RIGHT and report a test failure if
+   they are different.  Also report failure if one of the arguments is
+   a null pointer and the other is not.  The strings should be
+   reasonably short because on mismatch, both are printed.  */
+#define TEST_COMPARE_STRING(left, right)                         \
+  (support_test_compare_string (left, right, __FILE__, __LINE__, \
+                                #left, #right))
+
+void support_test_compare_string (const char *left, const char *right,
+                                  const char *file, int line,
+                                  const char *left_expr,
+                                  const char *right_expr);
+
 /* Internal function called by the test driver.  */
 int support_report_failure (int status)
   __attribute__ ((weak, warn_unused_result));
 
 /* Internal function used to test the failure recording framework.  */
 void support_record_failure_reset (void);
+
+/* Returns true or false depending on whether there have been test
+   failures or not.  */
+int support_record_failure_is_failed (void);
 
 __END_DECLS
 

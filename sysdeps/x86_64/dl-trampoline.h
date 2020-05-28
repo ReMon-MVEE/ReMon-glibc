@@ -1,5 +1,5 @@
 /* PLT trampolines.  x86-64 version.
-   Copyright (C) 2009-2018 Free Software Foundation, Inc.
+   Copyright (C) 2009-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 	.text
 #ifdef _dl_runtime_resolve
@@ -64,6 +64,7 @@
 	cfi_startproc
 _dl_runtime_resolve:
 	cfi_adjust_cfa_offset(16) # Incorporate PLT
+	_CET_ENDBR
 # if DL_RUNTIME_RESOLVE_REALIGN_STACK
 #  if LOCAL_STORAGE_AREA != 8
 #   error LOCAL_STORAGE_AREA must be 8
@@ -168,6 +169,7 @@ _dl_runtime_resolve:
 _dl_runtime_profile:
 	cfi_startproc
 	cfi_adjust_cfa_offset(16) # Incorporate PLT
+	_CET_ENDBR
 	/* The La_x86_64_regs data structure pointed to by the
 	   fourth paramater must be VEC_SIZE-byte aligned.  This must
 	   be explicitly enforced.  We have the set up a dynamically

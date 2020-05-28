@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <hurd.h>
 #include <hurd/fd.h>
@@ -34,8 +34,9 @@ _hurd_port2fd (struct hurd_fd *d, io_t dport, int flags)
   if (!(flags & O_IGNORE_CTTY))
     __USEPORT (CTTYID,
 	       ({
-		 if (port != MACH_PORT_NULL && /* Do we have a ctty? */
-		     ! __term_getctty (dport, &cttyid))	/* Could this be it? */
+		 if (port != MACH_PORT_NULL /* Do we have a ctty? */
+		     && ! __term_getctty (dport, &cttyid))
+		   /* Could this be it? */
 		   {
 		     __mach_port_deallocate (__mach_task_self (), cttyid);
 		     /* This port is capable of being a controlling tty.

@@ -1,5 +1,5 @@
 /* DNS test framework and libresolv redirection.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef SUPPORT_RESOLV_TEST_H
 #define SUPPORT_RESOLV_TEST_H
@@ -133,6 +133,9 @@ struct resolv_response_flags
 
   /* If true, the TC (truncation) flag will be set.  */
   bool tc;
+
+  /* If true, the AD (authenticated data) flag will be set.  */
+  bool ad;
 
   /* Initial section count values.  Can be used to artificially
      increase the counts, for malformed packet testing.*/

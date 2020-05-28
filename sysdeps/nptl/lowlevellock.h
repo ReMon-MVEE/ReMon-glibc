@@ -1,5 +1,5 @@
 /* Low-level lock implementation.  Generic futex-based version.
-   Copyright (C) 2005-2018 Free Software Foundation, Inc.
+   Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,13 +14,14 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _LOWLEVELLOCK_H
 #define _LOWLEVELLOCK_H	1
 
 #include <atomic.h>
 #include <lowlevellock-futex.h>
+#include <time.h>
 
 /* Low-level locks use a combination of atomic operations (to acquire and
    release lock ownership) and futex operations (to block until the state
@@ -63,8 +64,10 @@
 /* If LOCK is 0 (not acquired), set to 1 (acquired with no waiters) and return
    0.  Otherwise leave lock unchanged and return non-zero to indicate that the
    lock was not acquired.  */
+#define __lll_trylock(lock)	\
+  __glibc_unlikely (atomic_compare_and_exchange_bool_acq ((lock), 1, 0))
 #define lll_trylock(lock)	\
-  __glibc_unlikely (atomic_compare_and_exchange_bool_acq (&(lock), 1, 0))
+   __lll_trylock (&(lock))
 
 /* If LOCK is 0 (not acquired), set to 2 (acquired, possibly with waiters) and
    return 0.  Otherwise leave lock unchanged and return non-zero to indicate
@@ -119,24 +122,36 @@ extern void __lll_lock_wait (int *futex, int private) attribute_hidden;
 #define lll_cond_lock(futex, private) __lll_cond_lock (&(futex), private)
 
 
-extern int __lll_timedlock_wait (int *futex, const struct timespec *,
+extern int __lll_clocklock_wait (int *futex, int val, clockid_t,
+				 const struct timespec *,
 				 int private) attribute_hidden;
 
+#define lll_timedwait(futex, val, clockid, abstime, private)		\
+  __lll_clocklock_wait (futex, val, clockid, abstime, private)
 
-/* As __lll_lock, but with a timeout.  If the timeout occurs then return
-   ETIMEDOUT.  If ABSTIME is invalid, return EINVAL.  */
-#define __lll_timedlock(futex, abstime, private)                \
+/* As __lll_lock, but with an absolute timeout measured against the clock
+   specified in CLOCKID.  If the timeout occurs then return ETIMEDOUT. If
+   ABSTIME is invalid, return EINVAL.  */
+#define __lll_clocklock(futex, clockid, abstime, private)       \
   ({                                                            \
     int *__futex = (futex);                                     \
     int __val = 0;                                              \
                                                                 \
     if (__glibc_unlikely                                        \
         (atomic_compare_and_exchange_bool_acq (__futex, 1, 0))) \
-      __val = __lll_timedlock_wait (__futex, abstime, private); \
+      {								\
+	while (atomic_exchange_acq (futex, 2) != 0)		\
+	  {							\
+	    __val = __lll_clocklock_wait (__futex, 2, clockid, 	\
+					  abstime, private);	\
+	    if (__val == EINVAL || __val == ETIMEDOUT)		\
+	      break;						\
+	  }							\
+      }								\
     __val;                                                      \
   })
-#define lll_timedlock(futex, abstime, private)  \
-  __lll_timedlock (&(futex), abstime, private)
+#define lll_clocklock(futex, clockid, abstime, private)         \
+  __lll_clocklock (&(futex), clockid, abstime, private)
 
 
 /* This is an expression rather than a statement even though its value is
@@ -174,34 +189,5 @@ extern int __lll_timedlock_wait (int *futex, const struct timespec *,
 /* Initializers for lock.  */
 #define LLL_LOCK_INITIALIZER		(0)
 #define LLL_LOCK_INITIALIZER_LOCKED	(1)
-
-
-/* The kernel notifies a process which uses CLONE_CHILD_CLEARTID via futex
-   wake-up when the clone terminates.  The memory location contains the
-   thread ID while the clone is running and is reset to zero by the kernel
-   afterwards.  The kernel up to version 3.16.3 does not use the private futex
-   operations for futex wake-up when the clone terminates.  */
-#define lll_wait_tid(tid) \
-  do {					\
-    __typeof (tid) __tid;		\
-    while ((__tid = atomic_load_acquire(&(tid))) != 0 || mvee_should_sync_tid()) { \
-		lll_futex_syscall(4, &(tid), __lll_private_flag(mvee_should_sync_tid() ? MVEE_FUTEX_WAIT_TID : FUTEX_WAIT, LLL_SHARED), __tid, NULL); \
-				   if (tid == 0) break; \
-	}\
-  } while (0)
-
-extern int __lll_timedwait_tid (int *, const struct timespec *)
-     attribute_hidden;
-
-/* As lll_wait_tid, but with a timeout.  If the timeout occurs then return
-   ETIMEDOUT.  If ABSTIME is invalid, return EINVAL.  */
-#define lll_timedwait_tid(tid, abstime) \
-  ({							\
-    int __res = 0;					\
-    if (atomic_load_acquire(&(tid)) != 0 || mvee_should_sync_tid())	\
-      __res = __lll_timedwait_tid (&(tid), (abstime));	\
-    __res;						\
-  })
-
 
 #endif	/* lowlevellock.h */

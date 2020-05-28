@@ -1,5 +1,5 @@
 /* Machine-dependent ELF dynamic relocation inline functions.  MIPS version.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Kazumoto Kojima <kkojima@info.kanagawa-u.ac.jp>.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /*  FIXME: Profiling of shared libraries is not implemented yet.  */
 #ifndef dl_machine_h
@@ -712,8 +712,8 @@ elf_machine_reloc (struct link_map *map, ElfW(Addr) r_info,
 	 it's totally unnecessary.  */
       if (ELFW(R_SYM) (r_info) == 0)
 	break;
-      /* Fall through.  */
 #endif
+      /* Fall through.  */
     default:
       _dl_reloc_bad_type (map, r_type, 0);
       break;

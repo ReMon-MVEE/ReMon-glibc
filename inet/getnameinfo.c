@@ -1,5 +1,5 @@
 /* Convert socket address to string using Name Service Switch modules.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* The Inner Net License, Version 2.00
 
@@ -71,10 +71,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/utsname.h>
 #include <libc-lock.h>
 #include <scratch_buffer.h>
-
-#ifdef HAVE_LIBIDN
-# include <idna.h>
-#endif
+#include <net-internal.h>
 
 #ifndef min
 # define min(x,y) (((x) > (y)) ? (y) : (x))
@@ -82,6 +79,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 libc_freeres_ptr (static char *domain);
 
+/* Former NI_IDN_ALLOW_UNASSIGNED, NI_IDN_USE_STD3_ASCII_RULES flags,
+   now ignored.  */
+#define DEPRECATED_NI_IDN 192
 
 static char *
 nrl_domainname (void)
@@ -282,41 +282,28 @@ gni_host_inet_name (struct scratch_buffer *tmpbuf,
 	/* Terminate the string after the prefix.  */
 	*c = '\0';
 
-#ifdef HAVE_LIBIDN
       /* If requested, convert from the IDN format.  */
-      if (flags & NI_IDN)
+      bool do_idn = flags & NI_IDN;
+      char *h_name;
+      if (do_idn)
 	{
-	  int idn_flags = 0;
-	  if  (flags & NI_IDN_ALLOW_UNASSIGNED)
-	    idn_flags |= IDNA_ALLOW_UNASSIGNED;
-	  if (flags & NI_IDN_USE_STD3_ASCII_RULES)
-	    idn_flags |= IDNA_USE_STD3_ASCII_RULES;
-
-	  char *out;
-	  int rc = __idna_to_unicode_lzlz (h->h_name, &out,
-					   idn_flags);
-	  if (rc != IDNA_SUCCESS)
-	    {
-	      if (rc == IDNA_MALLOC_ERROR)
-		return EAI_MEMORY;
-	      if (rc == IDNA_DLOPEN_ERROR)
-		return EAI_SYSTEM;
-	      return EAI_IDN_ENCODE;
-	    }
-
-	  if (out != h->h_name)
-	    {
-	      h->h_name = strdupa (out);
-	      free (out);
-	    }
+	  int rc = __idna_from_dns_encoding (h->h_name, &h_name);
+	  if (rc == EAI_IDN_ENCODE)
+	    /* Use the punycode name as a fallback.  */
+	    do_idn = false;
+	  else if (rc != 0)
+	    return rc;
 	}
-#endif
+      if (!do_idn)
+	h_name = h->h_name;
 
-      size_t len = strlen (h->h_name) + 1;
+      size_t len = strlen (h_name) + 1;
       if (len > hostlen)
 	return EAI_OVERFLOW;
+      memcpy (host, h_name, len);
 
-      memcpy (host, h->h_name, len);
+      if (do_idn)
+	free (h_name);
 
       return 0;
     }
@@ -498,10 +485,7 @@ getnameinfo (const struct sockaddr *sa, socklen_t addrlen, char *host,
 	     int flags)
 {
   if (flags & ~(NI_NUMERICHOST|NI_NUMERICSERV|NI_NOFQDN|NI_NAMEREQD|NI_DGRAM
-#ifdef HAVE_LIBIDN
-		|NI_IDN|NI_IDN_ALLOW_UNASSIGNED|NI_IDN_USE_STD3_ASCII_RULES
-#endif
-		))
+		|NI_IDN|DEPRECATED_NI_IDN))
     return EAI_BADFLAGS;
 
   if (sa == NULL || addrlen < sizeof (sa_family_t))

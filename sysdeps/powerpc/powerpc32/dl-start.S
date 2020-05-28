@@ -1,5 +1,5 @@
 /* Machine-dependent ELF startup code.  PowerPC version.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
@@ -34,6 +34,9 @@ ENTRY(_start)
    _dl_start to save the link register).  */
 	li	r4,0
 	addi	r1,r1,-16
+	cfi_adjust_cfa_offset (16)
+/* Mark lr as undefined to stop unwinding.  */
+	cfi_undefined (lr)
 	stw	r4,0(r1)
 	bl	_dl_start@local
 

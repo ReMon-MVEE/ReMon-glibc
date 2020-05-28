@@ -1,5 +1,5 @@
 /* memcmp/wmemcmp optimized with AVX2.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #if IS_IN (libc)
 
@@ -58,9 +58,12 @@
 	.section .text.avx,"ax",@progbits
 ENTRY (MEMCMP)
 # ifdef USE_AS_WMEMCMP
-	shl	$2, %rdx
+	shl	$2, %RDX_LP
+# elif defined __ILP32__
+	/* Clear the upper 32 bits.  */
+	movl	%edx, %edx
 # endif
-	cmpq	$VEC_SIZE, %rdx
+	cmp	$VEC_SIZE, %RDX_LP
 	jb	L(less_vec)
 
 	/* From VEC to 2 * VEC.  No branch when size == VEC_SIZE.  */

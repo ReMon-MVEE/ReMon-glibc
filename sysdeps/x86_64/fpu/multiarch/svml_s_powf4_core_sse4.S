@@ -1,5 +1,5 @@
 /* Function powf vectorized with SSE4.
-   Copyright (C) 2014-2018 Free Software Foundation, Inc.
+   Copyright (C) 2014-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 #include "svml_s_powf_data.h"
@@ -356,7 +356,7 @@ ENTRY (_ZGVbN4vv_powf_sse4)
         movss     68(%rsp,%r15,8), %xmm0
         movss     132(%rsp,%r15,8), %xmm1
 
-        call      JUMPTARGET(__powf_finite)
+        call      JUMPTARGET(powf)
 
         movss     %xmm0, 196(%rsp,%r15,8)
         jmp       .LBL_1_8
@@ -366,7 +366,7 @@ ENTRY (_ZGVbN4vv_powf_sse4)
         movss     64(%rsp,%r15,8), %xmm0
         movss     128(%rsp,%r15,8), %xmm1
 
-        call      JUMPTARGET(__powf_finite)
+        call      JUMPTARGET(powf)
 
         movss     %xmm0, 192(%rsp,%r15,8)
         jmp       .LBL_1_7

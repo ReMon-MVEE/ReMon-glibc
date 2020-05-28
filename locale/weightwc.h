@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Ulrich Drepper, <drepper@cygnus.com>.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _WEIGHTWC_H_
 #define _WEIGHTWC_H_	1
@@ -109,7 +109,7 @@ findidx (const int32_t *table,
 	      break;
 	  DIAG_POP_NEEDS_COMMENT;
 
-	  if (cnt < nhere - 1)
+	  if (cnt < nhere - 1 || cnt == len)
 	    {
 	      cp += 2 * nhere;
 	      continue;
@@ -121,14 +121,14 @@ findidx (const int32_t *table,
 	     same reason as described above.  */
 	  DIAG_PUSH_NEEDS_COMMENT;
 	  DIAG_IGNORE_Os_NEEDS_COMMENT (7, "-Wmaybe-uninitialized");
-	  if (cp[nhere - 1] > usrc[nhere -1])
+	  if (cp[nhere - 1] > usrc[nhere - 1])
 	    {
 	      cp += 2 * nhere;
 	      continue;
 	    }
 	  DIAG_POP_NEEDS_COMMENT;
 
-	  if (cp[2 * nhere - 1] < usrc[nhere -1])
+	  if (cp[2 * nhere - 1] < usrc[nhere - 1])
 	    {
 	      cp += 2 * nhere;
 	      continue;

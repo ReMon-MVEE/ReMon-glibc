@@ -1,5 +1,5 @@
 /* memcpy with SSSE3 and REP string
-   Copyright (C) 2010-2018 Free Software Foundation, Inc.
+   Copyright (C) 2010-2020 Free Software Foundation, Inc.
    Contributed by Intel Corporation.
    This file is part of the GNU C Library.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
@@ -39,34 +39,39 @@
   lea		TABLE(%rip), %r11;				\
   movslq	(%r11, INDEX, SCALE), INDEX;			\
   lea		(%r11, INDEX), INDEX;				\
-  jmp		*INDEX;						\
+  _CET_NOTRACK jmp *INDEX;					\
   ud2
 
 	.section .text.ssse3,"ax",@progbits
 #if !defined USE_AS_MEMPCPY && !defined USE_AS_MEMMOVE
 ENTRY (MEMPCPY_CHK)
-	cmpq	%rdx, %rcx
+	cmp	%RDX_LP, %RCX_LP
 	jb	HIDDEN_JUMPTARGET (__chk_fail)
 END (MEMPCPY_CHK)
 
 ENTRY (MEMPCPY)
-	movq	%rdi, %rax
-	addq	%rdx, %rax
+	mov	%RDI_LP, %RAX_LP
+	add	%RDX_LP, %RAX_LP
 	jmp	L(start)
 END (MEMPCPY)
 #endif
 
 #if !defined USE_AS_BCOPY
 ENTRY (MEMCPY_CHK)
-	cmpq	%rdx, %rcx
+	cmp	%RDX_LP, %RCX_LP
 	jb	HIDDEN_JUMPTARGET (__chk_fail)
 END (MEMCPY_CHK)
 #endif
 
 ENTRY (MEMCPY)
-	mov	%rdi, %rax
+	mov	%RDI_LP, %RAX_LP
 #ifdef USE_AS_MEMPCPY
-	add	%rdx, %rax
+	add	%RDX_LP, %RAX_LP
+#endif
+
+#ifdef __ILP32__
+	/* Clear the upper 32 bits.  */
+	mov	%edx, %edx
 #endif
 
 #ifdef USE_AS_MEMMOVE
@@ -125,7 +130,7 @@ L(144bytesormore):
 	sub	$0x80, %rdx
 	movslq	(%r11, %r9, 4), %r9
 	add	%r11, %r9
-	jmp	*%r9
+	_CET_NOTRACK jmp *%r9
 	ud2
 
 	.p2align 4
@@ -155,7 +160,7 @@ L(copy_backward):
 	sub	$0x80, %rdx
 	movslq	(%r11, %r9, 4), %r9
 	add	%r11, %r9
-	jmp	*%r9
+	_CET_NOTRACK jmp *%r9
 	ud2
 
 	.p2align 4

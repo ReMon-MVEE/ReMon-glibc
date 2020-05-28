@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,23 +13,24 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdarg.h>
-#include <stdio.h>
-#include <libioP.h>
-#include <wchar.h>
+#include <libio/strfile.h>
 
 /* Read formatted input from S, according to the format string FORMAT.  */
-/* VARARGS2 */
+
 int
 __isoc99_swscanf (const wchar_t *s, const wchar_t *format, ...)
 {
   va_list arg;
   int done;
+  _IO_strfile sf;
+  struct _IO_wide_data wd;
+  FILE *f = _IO_strfile_readw (&sf, &wd, s);
 
   va_start (arg, format);
-  done = __isoc99_vswscanf (s, format, arg);
+  done = __vfwscanf_internal (f, format, arg, SCANF_ISOC99_A);
   va_end (arg);
 
   return done;

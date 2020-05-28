@@ -1,5 +1,5 @@
 /* Measure strcasecmp functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <ctype.h>
 #define TEST_MAIN
@@ -23,9 +23,7 @@
 
 typedef int (*proto_t) (const char *, const char *);
 static int simple_strcasecmp (const char *, const char *);
-static int stupid_strcasecmp (const char *, const char *);
 
-IMPL (stupid_strcasecmp, 0)
 IMPL (simple_strcasecmp, 0)
 IMPL (strcasecmp, 1)
 
@@ -38,24 +36,6 @@ simple_strcasecmp (const char *s1, const char *s2)
 		 - (unsigned char) tolower (*s2))) == 0
 	 && *s1++)
     ++s2;
-  return ret;
-}
-
-static int
-stupid_strcasecmp (const char *s1, const char *s2)
-{
-  size_t ns1 = strlen (s1) + 1, ns2 = strlen (s2) + 1;
-  size_t n = ns1 < ns2 ? ns1 : ns2;
-  int ret = 0;
-
-  while (n--)
-    {
-      if ((ret = ((unsigned char) tolower (*s1)
-		  - (unsigned char) tolower (*s2))) != 0)
-	break;
-      ++s1;
-      ++s2;
-    }
   return ret;
 }
 

@@ -1,5 +1,5 @@
 /* Test for posix_memalign.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,13 +14,14 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <libc-diag.h>
 
 static int errors = 0;
 
@@ -41,9 +42,18 @@ do_test (void)
 
   p = NULL;
 
+  DIAG_PUSH_NEEDS_COMMENT;
+#if __GNUC_PREREQ (7, 0)
+  /* GCC 7 warns about too-large allocations; here we want to test
+     that they fail.  */
+  DIAG_IGNORE_NEEDS_COMMENT (7, "-Walloc-size-larger-than=");
+#endif
   /* An attempt to allocate a huge value should return ENOMEM and
      p should remain NULL.  */
   ret = posix_memalign (&p, sizeof (void *), -1);
+#if __GNUC_PREREQ (7, 0)
+  DIAG_POP_NEEDS_COMMENT;
+#endif
 
   if (ret != ENOMEM)
     merror ("posix_memalign (&p, sizeof (void *), -1) succeeded.");

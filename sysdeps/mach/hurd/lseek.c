@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,16 +13,26 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <unistd.h>
 #include <sys/types.h>
+#include <errno.h>
 
 /* Seek to OFFSET on FD, starting from WHENCE.  */
 off_t
 __libc_lseek (int fd, off_t offset, int whence)
 {
-  return __libc_lseek64 (fd, (off64_t) offset, whence);
+  off64_t res64 = __libc_lseek64 (fd, (off64_t) offset, whence);
+  off_t res = (off_t) res64;
+
+  if (sizeof res != sizeof res64 && res != res64)
+    {
+      __set_errno (EOVERFLOW);
+      return (off_t) -1;
+    }
+
+  return res;
 }
 
 weak_alias (__libc_lseek, __lseek)

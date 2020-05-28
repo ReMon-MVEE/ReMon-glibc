@@ -1,7 +1,7 @@
 /*
  * UFC-crypt: ultra fast crypt(3) implementation
  *
- * Copyright (C) 1991-2018 Free Software Foundation, Inc.
+ * Copyright (C) 1991-2020 Free Software Foundation, Inc.
  *
  * The GNU C Library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with the GNU C Library; if not, see
- * <http://www.gnu.org/licenses/>.
+ * <https://www.gnu.org/licenses/>.
  *
  * crypt entry points
  *
@@ -35,6 +35,7 @@
 #endif
 
 #include "crypt-private.h"
+#include <shlib-compat.h>
 
 /* Prototypes for local functions.  */
 #ifndef __GNU_LIBRARY__
@@ -176,17 +177,7 @@ crypt (const char *key, const char *salt)
   return __crypt_r (key, salt, &_ufc_foobar);
 }
 
-
-/*
- * To make fcrypt users happy.
- * They don't need to call init_des.
- */
-#ifdef _LIBC
+#if SHLIB_COMPAT (libcrypt, GLIBC_2_0, GLIBC_2_28)
 weak_alias (crypt, fcrypt)
-#else
-char *
-__fcrypt (const char *key, const char *salt)
-{
-  return crypt (key, salt);
-}
+compat_symbol (libcrypt, fcrypt, fcrypt, GLIBC_2_0);
 #endif

@@ -1,5 +1,5 @@
 /* Internal defenitions for pthreads library.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library;  if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _PT_INTERNAL_H
 #define _PT_INTERNAL_H	1
@@ -37,6 +37,8 @@
 # include <ldsodefs.h>
 #endif
 
+#include <tls.h>
+
 /* Thread state.  */
 enum pthread_state
 {
@@ -57,16 +59,6 @@ enum pthread_state
 #ifndef PTHREAD_SYSDEP_MEMBERS
 # define PTHREAD_SYSDEP_MEMBERS
 #endif
-
-#if !(IS_IN (libpthread))
-/* Type of the TCB.  */
-typedef struct
-{
-  void *tcb;			/* Points to this structure.  */
-  void *dtv;			/* Vector of pointers to TLS data.  */
-  thread_t self;		/* This thread's control port.  */
-} tcbhead_t;
-#endif /* ! IS_IN (libpthread) */
 
 /* This structure describes a POSIX thread.  */
 struct __pthread
@@ -181,12 +173,14 @@ extern int __pthread_concurrency;
    brain-dead users of the pthread interface incorrectly assume that 0
    is an invalid pthread id.)  */
 extern struct __pthread **__pthread_threads;
+extern int __pthread_max_threads;
 extern pthread_rwlock_t __pthread_threads_lock;
 
 #define __pthread_getid(thread) \
-  ({ struct __pthread *__t;                                                  \
+  ({ struct __pthread *__t = NULL;                                           \
      __pthread_rwlock_rdlock (&__pthread_threads_lock);                      \
-     __t = __pthread_threads[thread - 1];                                    \
+     if (thread <= __pthread_max_threads)                                    \
+       __t = __pthread_threads[thread - 1];                                  \
      __pthread_rwlock_unlock (&__pthread_threads_lock);                      \
      __t; })
 

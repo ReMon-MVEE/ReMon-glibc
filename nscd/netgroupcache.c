@@ -1,5 +1,5 @@
 /* Cache handling for netgroup lookup.
-   Copyright (C) 2011-2018 Free Software Foundation, Inc.
+   Copyright (C) 2011-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gmail.com>, 2011.
 
@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #include <alloca.h>
 #include <assert.h>
@@ -113,7 +113,8 @@ do_notfound (struct database_dyn *db, int fd, request_header *req,
 static time_t
 addgetnetgrentX (struct database_dyn *db, int fd, request_header *req,
 		 const char *key, uid_t uid, struct hashentry *he,
-		 struct datahead *dh, struct dataset **resultp)
+		 struct datahead *dh, struct dataset **resultp,
+		 void **tofreep)
 {
   if (__glibc_unlikely (debug_level > 0))
     {
@@ -139,9 +140,10 @@ addgetnetgrentX (struct database_dyn *db, int fd, request_header *req,
   size_t group_len = strlen (key) + 1;
   struct name_list *first_needed
     = alloca (sizeof (struct name_list) + group_len);
+  *tofreep = NULL;
 
   if (netgroup_database == NULL
-      && __nss_database_lookup ("netgroup", NULL, NULL, &netgroup_database))
+      && __nss_database_lookup2 ("netgroup", NULL, NULL, &netgroup_database))
     {
       /* No such service.  */
       cacheable = do_notfound (db, fd, req, key, &dataset, &total, &timeout,
@@ -151,6 +153,7 @@ addgetnetgrentX (struct database_dyn *db, int fd, request_header *req,
 
   memset (&data, '\0', sizeof (data));
   buffer = xmalloc (buflen);
+  *tofreep = buffer;
   first_needed->next = first_needed;
   memcpy (first_needed->name, key, group_len);
   data.needed_groups = first_needed;
@@ -413,33 +416,7 @@ addgetnetgrentX (struct database_dyn *db, int fd, request_header *req,
 	 since while inserting this thread might block and so would
 	 unnecessarily let the receiver wait.  */
     writeout:
-#ifdef HAVE_SENDFILE
-      if (__builtin_expect (db->mmap_used, 1) && cacheable)
-	{
-	  assert (db->wr_fd != -1);
-	  assert ((char *) &dataset->resp > (char *) db->data);
-	  assert ((char *) dataset - (char *) db->head + total
-		  <= (sizeof (struct database_pers_head)
-		      + db->head->module * sizeof (ref_t)
-		      + db->head->data_size));
-# ifndef __ASSUME_SENDFILE
-	  ssize_t written =
-# endif
-	    sendfileall (fd, db->wr_fd, (char *) &dataset->resp
-			 - (char *) db->head, dataset->head.recsize);
-# ifndef __ASSUME_SENDFILE
-	  if (written == -1 && errno == ENOSYS)
-	    goto use_write;
-# endif
-	}
-      else
-#endif
-	{
-#if defined HAVE_SENDFILE && !defined __ASSUME_SENDFILE
-	use_write:
-#endif
-	  writeall (fd, &dataset->resp, dataset->head.recsize);
-	}
+      writeall (fd, &dataset->resp, dataset->head.recsize);
     }
 
   if (cacheable)
@@ -465,8 +442,6 @@ addgetnetgrentX (struct database_dyn *db, int fd, request_header *req,
     }
 
  out:
-  free (buffer);
-
   *resultp = dataset;
 
   return timeout;
@@ -503,8 +478,12 @@ addinnetgrX (struct database_dyn *db, int fd, request_header *req,
 							    group, group_len,
 							    db, uid);
   time_t timeout;
+  void *tofree;
   if (result != NULL)
-    timeout = result->head.timeout;
+    {
+      timeout = result->head.timeout;
+      tofree = NULL;
+    }
   else
     {
       request_header req_get =
@@ -513,7 +492,7 @@ addinnetgrX (struct database_dyn *db, int fd, request_header *req,
 	  .key_len = group_len
 	};
       timeout = addgetnetgrentX (db, -1, &req_get, group, uid, NULL, NULL,
-				 &result);
+				 &result, &tofree);
     }
 
   struct indataset
@@ -586,7 +565,7 @@ addinnetgrX (struct database_dyn *db, int fd, request_header *req,
       ++dh->nreloads;
       if (cacheable)
         pthread_rwlock_unlock (&db->lock);
-      return timeout;
+      goto out;
     }
 
   if (he == NULL)
@@ -594,36 +573,9 @@ addinnetgrX (struct database_dyn *db, int fd, request_header *req,
       /* We write the dataset before inserting it to the database
 	 since while inserting this thread might block and so would
 	 unnecessarily let the receiver wait.  */
-       assert (fd != -1);
+      assert (fd != -1);
 
-#ifdef HAVE_SENDFILE
-      if (__builtin_expect (db->mmap_used, 1) && cacheable)
-	{
-	  assert (db->wr_fd != -1);
-	  assert ((char *) &dataset->resp > (char *) db->data);
-	  assert ((char *) dataset - (char *) db->head + sizeof (*dataset)
-		  <= (sizeof (struct database_pers_head)
-		      + db->head->module * sizeof (ref_t)
-		      + db->head->data_size));
-# ifndef __ASSUME_SENDFILE
-	  ssize_t written =
-# endif
-	    sendfileall (fd, db->wr_fd,
-			 (char *) &dataset->resp - (char *) db->head,
-			 sizeof (innetgroup_response_header));
-# ifndef __ASSUME_SENDFILE
-	  if (written == -1 && errno == ENOSYS)
-	    goto use_write;
-# endif
-	}
-      else
-#endif
-	{
-#if defined HAVE_SENDFILE && !defined __ASSUME_SENDFILE
-	use_write:
-#endif
-	  writeall (fd, &dataset->resp, sizeof (innetgroup_response_header));
-	}
+      writeall (fd, &dataset->resp, sizeof (innetgroup_response_header));
     }
 
   if (cacheable)
@@ -649,17 +601,30 @@ addinnetgrX (struct database_dyn *db, int fd, request_header *req,
 	dh->usable = false;
     }
 
+ out:
+  free (tofree);
   return timeout;
 }
 
+
+static time_t
+addgetnetgrentX_ignore (struct database_dyn *db, int fd, request_header *req,
+			const char *key, uid_t uid, struct hashentry *he,
+			struct datahead *dh)
+{
+  struct dataset *ignore;
+  void *tofree;
+  time_t timeout = addgetnetgrentX (db, fd, req, key, uid, he, dh,
+				    &ignore, &tofree);
+  free (tofree);
+  return timeout;
+}
 
 void
 addgetnetgrent (struct database_dyn *db, int fd, request_header *req,
 		void *key, uid_t uid)
 {
-  struct dataset *ignore;
-
-  addgetnetgrentX (db, fd, req, key, uid, NULL, NULL, &ignore);
+  addgetnetgrentX_ignore (db, fd, req, key, uid, NULL, NULL);
 }
 
 
@@ -672,10 +637,8 @@ readdgetnetgrent (struct database_dyn *db, struct hashentry *he,
       .type = GETNETGRENT,
       .key_len = he->len
     };
-  struct dataset *ignore;
-
-  return addgetnetgrentX (db, -1, &req, db->data + he->key, he->owner, he, dh,
-			  &ignore);
+  return addgetnetgrentX_ignore
+    (db, -1, &req, db->data + he->key, he->owner, he, dh);
 }
 
 

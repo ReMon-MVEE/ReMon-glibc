@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2001-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ryan S. Arnold <rsa@us.ibm.com>
                   Sean Curry <spcurry@us.ibm.com>
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <stdio.h>
@@ -63,7 +63,7 @@ ElfW(Addr) query_auxv(int type)
 
       do
 	{
-	  fread(&auxv_struct, sizeof(ElfW(auxv_t)), 1, auxv_f);
+	  fread (&auxv_struct, sizeof (ElfW(auxv_t)), 1, auxv_f);
 	  auxv[i] = auxv_struct;
 	  i++;
 	} while(auxv_struct.a_type != AT_NULL);
@@ -97,9 +97,7 @@ typedef unsigned int si_fpscr_t __attribute__ ((__mode__ (__SI__)));
 /* Macros for accessing the hardware control word on Power6[x].  */
 #define _GET_DI_FPSCR(__fpscr)						\
   ({union { double d; di_fpscr_t fpscr; } u;				\
-    register double fr;							\
-    __asm__ ("mffs %0" : "=f" (fr));					\
-    u.d = fr;								\
+    u.d = __builtin_mffs ();						\
     (__fpscr) = u.fpscr;						\
     u.fpscr;								\
   })
@@ -121,9 +119,7 @@ typedef unsigned int si_fpscr_t __attribute__ ((__mode__ (__SI__)));
 
 # define _GET_SI_FPSCR(__fpscr)						\
   ({union { double d; di_fpscr_t fpscr; } u;				\
-    register double fr;							\
-    __asm__ ("mffs %0" : "=f" (fr));					\
-    u.d = fr;								\
+    u.d = __builtin_mffs ();						\
     (__fpscr) = (si_fpscr_t) u.fpscr;					\
     (si_fpscr_t) u.fpscr;						\
   })
@@ -137,7 +133,7 @@ typedef unsigned int si_fpscr_t __attribute__ ((__mode__ (__SI__)));
     u.fpscr = 0xfff80000ULL << 32;					\
     u.fpscr |= __fpscr & 0xffffffffULL;					\
     fr = u.d;								\
-    __asm__ ("mtfsf 255,%0" : : "f" (fr));				\
+    __builtin_mtfsf (255, fr);						\
     fr = 0.0;								\
   }
 

@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <alloca.h>
 #include <errno.h>
@@ -38,11 +38,6 @@ __if_nametoindex (const char *ifname)
   return 0;
 #else
   struct ifreq ifr;
-  int fd = __opensock ();
-
-  if (fd < 0)
-    return 0;
-
   if (strlen (ifname) >= IFNAMSIZ)
     {
       __set_errno (ENODEV);
@@ -50,6 +45,12 @@ __if_nametoindex (const char *ifname)
     }
 
   strncpy (ifr.ifr_name, ifname, sizeof (ifr.ifr_name));
+
+  int fd = __opensock ();
+
+  if (fd < 0)
+    return 0;
+
   if (__ioctl (fd, SIOCGIFINDEX, &ifr) < 0)
     {
       int saved_errno = errno;

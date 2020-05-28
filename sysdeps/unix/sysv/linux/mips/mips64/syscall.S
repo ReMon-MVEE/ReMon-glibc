@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2001-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,14 +13,14 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
 #include <sys/asm.h>
 
 /* Usage:
-   long syscall (syscall_number, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+   long int syscall (syscall_number, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 
    We need to do some arg shifting, syscall_number will be in v0.  */
 

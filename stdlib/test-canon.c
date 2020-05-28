@@ -1,5 +1,5 @@
 /* Test program for returning the canonical absolute name of a given file.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by David Mosberger <davidm@azstarnet.com>.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This file must be run from within a directory called "stdlib".  */
 
@@ -124,7 +124,7 @@ do_test (int argc, char ** argv)
   int i, errors = 0;
   char buf[PATH_MAX];
 
-  getcwd (cwd, sizeof(buf));
+  getcwd (cwd, sizeof (buf));
   cwd_len = strlen (cwd);
 
   errno = 0;
@@ -204,7 +204,7 @@ do_test (int argc, char ** argv)
       free (result2);
     }
 
-  getcwd (buf, sizeof(buf));
+  getcwd (buf, sizeof (buf));
   if (strcmp (buf, cwd))
     {
       printf ("%s: current working directory changed from %s to %s\n",

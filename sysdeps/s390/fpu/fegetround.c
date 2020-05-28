@@ -1,5 +1,5 @@
 /* Return current rounding direction.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Denis Joseph Barrow (djbarrow@de.ibm.com).
 
@@ -15,19 +15,14 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#include <fenv_libc.h>
-#include <fpu_control.h>
+#include <get-rounding-mode.h>
 
 int
 __fegetround (void)
 {
-  fexcept_t cw;
-
-  _FPU_GETCW (cw);
-
-  return cw & FPC_RM_MASK;
+  return get_rounding_mode ();
 }
 libm_hidden_def (__fegetround)
 weak_alias (__fegetround, fegetround)

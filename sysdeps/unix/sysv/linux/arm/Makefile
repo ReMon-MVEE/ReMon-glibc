@@ -1,11 +1,10 @@
 ifeq ($(subdir),elf)
-sysdep_routines += dl-vdso
 sysdep-rtld-routines += aeabi_read_tp libc-do-syscall
 endif
 
 ifeq ($(subdir),misc)
 sysdep_routines += ioperm
-sysdep_headers += sys/elf.h sys/io.h
+sysdep_headers += sys/elf.h
 endif
 
 ifeq ($(subdir),signal)

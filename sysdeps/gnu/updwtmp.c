@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Mark Kettenis <kettenis@phys.uva.nl>, 1998.
 
@@ -14,16 +14,18 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <string.h>
 #include <unistd.h>
 
-#define TRANSFORM_UTMP_FILE_NAME(file_name) \
-    ((strcmp (file_name, _PATH_UTMP "x") == 0 \
-      && __access (_PATH_UTMP "x", F_OK) != 0) ? _PATH_UTMP : \
-     ((strcmp (file_name, _PATH_WTMP "x") == 0 \
-       && __access (_PATH_WTMP "x", F_OK) != 0) ? _PATH_WTMP : \
-      file_name))
+#define TRANSFORM_UTMP_FILE_NAME(file_name)	\
+  ((strcmp (file_name, _PATH_UTMP "x") == 0	\
+    && __access (_PATH_UTMP "x", F_OK) != 0)	\
+   ? _PATH_UTMP					\
+   : ((strcmp (file_name, _PATH_WTMP "x") == 0	\
+       && __access (_PATH_WTMP "x", F_OK) != 0)	\
+      ? _PATH_WTMP				\
+      : file_name))
 
 #include <login/updwtmp.c>

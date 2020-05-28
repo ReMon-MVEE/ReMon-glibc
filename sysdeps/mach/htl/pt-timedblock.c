@@ -1,5 +1,5 @@
 /* Block a thread with a timeout.  Mach version.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library;  if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -39,7 +39,7 @@ __pthread_timedblock (struct __pthread *thread,
   /* We have an absolute time and now we have to convert it to a
      relative time.  Arg.  */
 
-  err = clock_gettime (clock_id, &now);
+  err = __clock_gettime (clock_id, &now);
   assert (!err);
 
   if (now.tv_sec > abstime->tv_sec

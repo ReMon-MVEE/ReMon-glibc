@@ -1,4 +1,4 @@
-/* Copyright (C) 1999-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Andreas Jaeger <aj@suse.de>, 1999.
 
@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #define PROCINFO_CLASS static
 #include <alloca.h>
@@ -325,7 +325,7 @@ print_version (FILE *stream, struct argp_state *state)
 Copyright (C) %s Free Software Foundation, Inc.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\
-"), "2018");
+"), "2020");
   fprintf (stream, gettext ("Written by %s.\n"),
 	   "Andreas Jaeger");
 }
@@ -1079,9 +1079,10 @@ parse_conf (const char *filename, bool do_chroot)
 
   if (file == NULL)
     {
-      error (0, errno, _("\
+      if (errno != ENOENT)
+	error (0, errno, _("\
 Warning: ignoring configuration file that cannot be opened: %s"),
-	     canon);
+	       canon);
       if (canon != filename)
 	free ((char *) canon);
       return;
@@ -1228,6 +1229,7 @@ parse_conf_include (const char *config_file, unsigned int lineno,
 
     case GLOB_NOSPACE:
       errno = ENOMEM;
+      /* Fall through.  */
     case GLOB_ABORTED:
       if (opt_verbose)
 	error (0, errno, _("%s:%u: cannot read directory %s"),

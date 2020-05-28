@@ -1,4 +1,4 @@
-/* Copyright (C) 2004-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2004-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 2004.
 
@@ -13,13 +13,12 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #include <alloca.h>
 
 /* This file uses the getaddrinfo code but it compiles it without NSCD
    support.  We just need a few symbol renames.  */
-#define __inet_aton inet_aton
 #define __ioctl ioctl
 #define __getsockname getsockname
 #define __socket socket
@@ -42,9 +41,6 @@
 /* Support code.  */
 #include <check_pf.c>
 #include <check_native.c>
-#ifdef HAVE_LIBIDN
-# include <libidn/idn-stub.c>
-#endif
 
 /* Some variables normally defined in libc.  */
 service_user *__nss_hosts_database attribute_hidden;

@@ -1,5 +1,5 @@
 /* strcpy with SSSE3
-   Copyright (C) 2011-2018 Free Software Foundation, Inc.
+   Copyright (C) 2011-2020 Free Software Foundation, Inc.
    Contributed by Intel Corporation.
    This file is part of the GNU C Library.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #if IS_IN (libc)
 
@@ -31,13 +31,13 @@ ENTRY (STRCPY)
 
 	mov	%rsi, %rcx
 #  ifdef USE_AS_STRNCPY
-	mov	%rdx, %r8
+	mov	%RDX_LP, %R8_LP
 #  endif
 	mov	%rdi, %rdx
 #  ifdef USE_AS_STRNCPY
-	test	%r8, %r8
+	test	%R8_LP, %R8_LP
 	jz	L(Exit0)
-	cmp	$8, %r8
+	cmp	$8, %R8_LP
 	jbe	L(StrncpyExit8Bytes)
 # endif
 	cmpb	$0, (%rcx)

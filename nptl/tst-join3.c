@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <pthread.h>
@@ -22,7 +22,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <support/check.h>
+#include <support/timespec.h>
+#include <support/xthread.h>
+#include <support/xtime.h>
 
+
+#define CLOCK_USE_TIMEDJOIN (-1)
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -30,93 +36,64 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static void *
 tf (void *arg)
 {
-  if (pthread_mutex_lock (&lock) != 0)
-    {
-      puts ("child: mutex_lock failed");
-      return NULL;
-    }
+  xpthread_mutex_lock (&lock);
+  xpthread_mutex_unlock (&lock);
 
   return (void *) 42l;
 }
 
 
 static int
-do_test (void)
+do_test_clock (clockid_t clockid)
 {
-  pthread_t th;
+  const clockid_t clockid_for_get =
+    (clockid == CLOCK_USE_TIMEDJOIN) ? CLOCK_REALTIME : clockid;
 
-  if (pthread_mutex_lock (&lock) != 0)
-    {
-      puts ("mutex_lock failed");
-      exit (1);
-    }
-
-  if (pthread_create (&th, NULL, tf, NULL) != 0)
-    {
-      puts ("mutex_create failed");
-      exit (1);
-    }
+  xpthread_mutex_lock (&lock);
+  pthread_t th = xpthread_create (NULL, tf, NULL);
 
   void *status;
-  struct timespec ts;
-  struct timeval tv;
-  (void) gettimeofday (&tv, NULL);
-  TIMEVAL_TO_TIMESPEC (&tv, &ts);
-  ts.tv_nsec += 200000000;
-  if (ts.tv_nsec >= 1000000000)
-    {
-      ts.tv_nsec -= 1000000000;
-      ++ts.tv_sec;
-    }
-  int val = pthread_timedjoin_np (th, &status, &ts);
-  if (val == 0)
-    {
-      puts ("1st timedjoin succeeded");
-      exit (1);
-    }
-  else if (val != ETIMEDOUT)
-    {
-      puts ("1st timedjoin didn't return ETIMEDOUT");
-      exit (1);
-    }
+  struct timespec timeout = timespec_add (xclock_now (clockid_for_get),
+                                          make_timespec (0, 200000000));
 
-  if (pthread_mutex_unlock (&lock) != 0)
-    {
-      puts ("mutex_unlock failed");
-      exit (1);
-    }
+  int val;
+  if (clockid == CLOCK_USE_TIMEDJOIN)
+    val = pthread_timedjoin_np (th, &status, &timeout);
+  else
+    val = pthread_clockjoin_np (th, &status, clockid, &timeout);
+
+  TEST_COMPARE (val, ETIMEDOUT);
+
+  xpthread_mutex_unlock (&lock);
 
   while (1)
     {
-      (void) gettimeofday (&tv, NULL);
-      TIMEVAL_TO_TIMESPEC (&tv, &ts);
-      ts.tv_nsec += 200000000;
-      if (ts.tv_nsec >= 1000000000)
-	{
-	  ts.tv_nsec -= 1000000000;
-	  ++ts.tv_sec;
-	}
+      timeout = timespec_add (xclock_now (clockid_for_get),
+                              make_timespec (0, 200000000));
 
-      val = pthread_timedjoin_np (th, &status, &ts);
+      if (clockid == CLOCK_USE_TIMEDJOIN)
+        val = pthread_timedjoin_np (th, &status, &timeout);
+      else
+        val = pthread_clockjoin_np (th, &status, clockid, &timeout);
       if (val == 0)
 	break;
 
-      if (val != ETIMEDOUT)
-	{
-	  printf ("timedjoin returned %s (%d), expected only 0 or ETIMEDOUT\n",
-		  strerror (val), val);
-	  exit (1);
-	}
+      TEST_COMPARE (val, ETIMEDOUT);
     }
 
   if (status != (void *) 42l)
-    {
-      printf ("return value %p, expected %p\n", status, (void *) 42l);
-      exit (1);
-    }
+    FAIL_EXIT1 ("return value %p, expected %p\n", status, (void *) 42l);
 
   return 0;
 }
 
-#define TEST_FUNCTION do_test ()
-#include "../test-skeleton.c"
+static int
+do_test (void)
+{
+  do_test_clock (CLOCK_USE_TIMEDJOIN);
+  do_test_clock (CLOCK_REALTIME);
+  do_test_clock (CLOCK_MONOTONIC);
+  return 0;
+}
+
+#include <support/test-driver.c>

@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by H.J. Lu <hjl@gnu.ai.mit.edu>, 1997.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -29,7 +29,6 @@
 #include "nsswitch.h"
 
 #ifdef USE_NSCD
-# define inet_aton __inet_aton
 # include <nscd/nscd_proto.h>
 #endif
 
@@ -160,7 +159,7 @@ __nss_hostname_digits_dots_context (struct resolv_context *ctx,
 		     255.255.255.255?  The test below will succeed
 		     spuriously... ???  */
 		  if (af == AF_INET)
-		    ok = __inet_aton (name, (struct in_addr *) host_addr);
+		    ok = __inet_aton_exact (name, (struct in_addr *) host_addr);
 		  else
 		    {
 		      assert (af == AF_INET6);

@@ -1,6 +1,6 @@
  # Alpha EV5 __mpn_rshift --
 
- # Copyright (C) 1994-2018 Free Software Foundation, Inc.
+ # Copyright (C) 1994-2020 Free Software Foundation, Inc.
 
  # This file is part of the GNU MP Library.
 
@@ -15,7 +15,7 @@
  # License for more details.
 
  # You should have received a copy of the GNU Lesser General Public License
- # along with the GNU MP Library.  If not, see <http://www.gnu.org/licenses/>.
+ # along with the GNU MP Library.  If not, see <https://www.gnu.org/licenses/>.
 
 
  # INPUT PARAMETERS

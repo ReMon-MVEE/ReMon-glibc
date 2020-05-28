@@ -1,6 +1,6 @@
 /* Common definition for ifunc resolvers.  Linux/ARM version.
    This file is part of the GNU C Library.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 #include <ifunc-init.h>
@@ -27,7 +27,8 @@
 #if defined SHARED
 # define arm_libc_ifunc_hidden_def(redirect_name, name) \
   __hidden_ver1 (name, __GI_##name, redirect_name) \
-    __attribute__ ((visibility ("hidden")))
+    __attribute__ ((visibility ("hidden"))) \
+    __attribute_copy__ (name)
 #else
 # define arm_libc_ifunc_hidden_def(redirect_name, name)
 #endif

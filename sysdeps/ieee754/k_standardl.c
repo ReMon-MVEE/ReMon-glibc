@@ -1,5 +1,5 @@
 /* Implement __kernel_standard_l.
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    Parts based on k_standard.c from fdlibm: */
 
@@ -32,7 +32,6 @@
 
 #include <math.h>
 #include <math-barriers.h>
-#include <math_private.h>
 #include <math-svid-compat.h>
 #include <fenv.h>
 #include <float.h>
@@ -73,14 +72,14 @@ __kernel_standard_l (long double x, long double y, int type)
 	{
 	  exc.retval = HUGE;
 	  y *= 0.5;
-	  if (x < zero && __rintl (y) != y)
+	  if (x < zero && rintl (y) != y)
 	    exc.retval = -HUGE;
 	}
       else
 	{
 	  exc.retval = HUGE_VAL;
 	  y *= 0.5;
-	  if (x < zero && __rintl (y) != y)
+	  if (x < zero && rintl (y) != y)
 	    exc.retval = -HUGE_VAL;
 	}
       if (_LIB_VERSION == _POSIX_)
@@ -97,7 +96,7 @@ __kernel_standard_l (long double x, long double y, int type)
       exc.name = (char *) "powl";
       exc.retval = zero;
       y *= 0.5;
-      if (x < zero && __rintl (y) != y)
+      if (x < zero && rintl (y) != y)
 	exc.retval = -zero;
       if (_LIB_VERSION == _POSIX_)
 	__set_errno (ERANGE);

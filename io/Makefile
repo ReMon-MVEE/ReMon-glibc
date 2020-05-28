@@ -1,4 +1,4 @@
-# Copyright (C) 1992-2018 Free Software Foundation, Inc.
+# Copyright (C) 1992-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 #
 #	Sub-makefile for I/O portion of the library.
@@ -25,13 +25,15 @@ include ../Makeconfig
 headers := sys/stat.h bits/stat.h sys/statfs.h bits/statfs.h sys/vfs.h \
 	   sys/statvfs.h bits/statvfs.h fcntl.h sys/fcntl.h bits/fcntl.h \
 	   poll.h sys/poll.h bits/poll.h bits/fcntl2.h bits/poll2.h \
+	   bits/statx.h bits/statx-generic.h bits/types/struct_statx.h \
+	   bits/types/struct_statx_timestamp.h \
 	   utime.h ftw.h fts.h sys/sendfile.h
 
 routines :=								\
 	utime								\
 	mkfifo mkfifoat							\
 	stat fstat lstat stat64 fstat64 lstat64 fstatat fstatat64	\
-	xstat fxstat lxstat xstat64 fxstat64 lxstat64			\
+	xstat fxstat lxstat xstat64 fxstat64 lxstat64 statx		\
 	mknod mknodat xmknod xmknodat					\
 	fxstatat fxstatat64						\
 	statfs fstatfs statfs64 fstatfs64				\
@@ -40,7 +42,7 @@ routines :=								\
 	mkdir mkdirat							\
 	open open_2 open64 open64_2 openat openat_2 openat64 openat64_2	\
 	read write lseek lseek64 access euidaccess faccessat		\
-	fcntl flock lockf lockf64					\
+	fcntl fcntl64 flock lockf lockf64				\
 	close dup dup2 dup3 pipe pipe2					\
 	creat creat64							\
 	chdir fchdir							\
@@ -71,12 +73,11 @@ tests		:= test-utime test-stat test-stat2 test-lfs tst-getcwd \
 		   tst-mknodat tst-mkfifoat tst-ttyname_r bug-ftw5 \
 		   tst-posix_fallocate tst-posix_fallocate64 \
 		   tst-fts tst-fts-lfs tst-open-tmpfile \
-		   tst-copy_file_range tst-getcwd-abspath \
+		   tst-copy_file_range tst-getcwd-abspath tst-lockf \
+		   tst-ftw-lnk
 
-# This test includes the compat implementation of copy_file_range,
-# which uses internal, unexported libc functions.
-tests-static += tst-copy_file_range-compat
-tests-internal += tst-copy_file_range-compat
+# Likewise for statx, but we do not need static linking here.
+tests-internal += tst-statx
 
 ifeq ($(run-built-tests),yes)
 tests-special += $(objpfx)ftwtest.out
@@ -89,6 +90,7 @@ CFLAGS-open64.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-creat.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-creat64.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-fcntl.c += -fexceptions -fasynchronous-unwind-tables
+CFLAGS-fcntl64.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-poll.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-ppoll.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-lockf.c += -fexceptions

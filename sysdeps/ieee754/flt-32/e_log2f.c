@@ -1,5 +1,5 @@
 /* Single-precision log2 function.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,11 +14,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <math.h>
 #include <stdint.h>
-#include <shlib-compat.h>
+#include <libm-alias-finite.h>
 #include <libm-alias-float.h>
 #include "math_config.h"
 
@@ -89,7 +89,7 @@ __log2f (float x)
 }
 #ifndef __log2f
 strong_alias (__log2f, __ieee754_log2f)
-strong_alias (__log2f, __log2f_finite)
+libm_alias_finite (__ieee754_log2f, __log2f)
 versioned_symbol (libm, __log2f, log2f, GLIBC_2_27);
 libm_alias_float_other (__log2, log2)
 #endif

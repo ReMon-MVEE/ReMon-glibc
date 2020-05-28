@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gnu.ai.mit.edu>, 1995.
 
@@ -14,47 +14,41 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#include <stddef.h>
 #include <wchar.h>
+#include <loop_unroll.h>
 
 
-#ifndef WCSCPY
-# define WCSCPY wcscpy
+#ifdef WCSCPY
+# define __wcscpy WCSCPY
 #endif
 
 /* Copy SRC to DEST.  */
 wchar_t *
-WCSCPY (wchar_t *dest, const wchar_t *src)
+__wcscpy (wchar_t *dest, const wchar_t *src)
 {
-  wint_t c;
-  wchar_t *wcp;
+#ifndef UNROLL_NTIMES
+  return __wmemcpy (dest, src, __wcslen (src) + 1);
+#else
+  /* Some architectures might have costly tail function call (powerpc
+     for instance) where wmemcpy call overhead for smalls sizes might
+     be more costly than just unrolling the main loop.  */
+  wchar_t *wcp = dest;
 
-  if (__alignof__ (wchar_t) >= sizeof (wchar_t))
-    {
-      const ptrdiff_t off = dest - src - 1;
+#define ITERATION(index)		\
+  ({					\
+     wchar_t c = *src++;		\
+     *wcp++ = c;			\
+     c != L'\0';			\
+  })
 
-      wcp = (wchar_t *) src;
-
-      do
-	{
-	  c = *wcp++;
-	  wcp[off] = c;
-	}
-      while (c != L'\0');
-    }
-  else
-    {
-      wcp = dest;
-
-      do
-	{
-	  c = *src++;
-	  *wcp++ = c;
-	}
-      while (c != L'\0');
-    }
-
+  while (1)
+    UNROLL_REPEAT(UNROLL_NTIMES, ITERATION);
   return dest;
+#endif
 }
+#ifndef WCSCPY
+weak_alias (__wcscpy, wcscpy)
+libc_hidden_def (__wcscpy)
+#endif

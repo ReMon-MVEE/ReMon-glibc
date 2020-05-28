@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <unistd.h>
@@ -25,9 +25,9 @@
 /* Add an action to FILE-ACTIONS which tells the implementation to call
    `open' for the given file during the `spawn' call.  */
 int
-posix_spawn_file_actions_addopen (posix_spawn_file_actions_t *file_actions,
-				  int fd, const char *path, int oflag,
-				  mode_t mode)
+__posix_spawn_file_actions_addopen (posix_spawn_file_actions_t *file_actions,
+				    int fd, const char *path, int oflag,
+				    mode_t mode)
 {
   struct __spawn_action *rec;
 
@@ -60,3 +60,5 @@ posix_spawn_file_actions_addopen (posix_spawn_file_actions_t *file_actions,
 
   return 0;
 }
+weak_alias (__posix_spawn_file_actions_addopen,
+	    posix_spawn_file_actions_addopen)

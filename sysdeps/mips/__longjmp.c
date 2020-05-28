@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Brendan Kehoe (brendan@zen.org).
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <setjmp.h>
 #include <stdlib.h>
@@ -81,4 +81,9 @@ ____longjmp (__jmp_buf env_arg, int val_arg)
   for (;;);
 }
 
-strong_alias (____longjmp, __longjmp);
+/* Not using strong_alias because the nomips16 attribute cannot be
+   copied from ____longjmp to __longjmp, because of the
+   architecture-independent declaration of __longjmp without the
+   attribute and compiler errors for such attributes not being the
+   same on all declarations.  */
+extern __typeof (____longjmp) __longjmp __attribute__ ((alias ("____longjmp")));

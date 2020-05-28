@@ -1,5 +1,5 @@
 /* Query filename corresponding to an open FD.  Linux version.
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+   Copyright (C) 2001-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,32 +14,24 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
+#include <string.h>
 #include <_itoa.h>
 
+#define FD_TO_FILENAME_SIZE ((sizeof ("/proc/self/fd/") - 1) \
+			     + (sizeof ("4294967295") - 1) + 1)
+
 static inline const char *
-fd_to_filename (int fd)
+fd_to_filename (unsigned int fd, char *buf)
 {
-  char *ret = malloc (30);
+  *_fitoa_word (fd, __stpcpy (buf, "/proc/self/fd/"), 10, 0) = '\0';
 
-  if (ret != NULL)
-    {
-      struct stat64 st;
-
-      *_fitoa_word (fd, __stpcpy (ret, "/proc/self/fd/"), 10, 0) = '\0';
-
-      /* We must make sure the file exists.  */
-      if (__lxstat64 (_STAT_VER, ret, &st) < 0)
-	{
-	  /* /proc is not mounted or something else happened.  Don't
-	     return the file name.  */
-	  free (ret);
-	  ret = NULL;
-	}
-    }
-  return ret;
+  /* We must make sure the file exists.  */
+  struct stat64 st;
+  if (__lxstat64 (_STAT_VER, buf, &st) < 0)
+    /* /proc is not mounted or something else happened.  */
+    return NULL;
+  return buf;
 }

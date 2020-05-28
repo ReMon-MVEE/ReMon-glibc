@@ -1,5 +1,5 @@
 /* Private function declarations for libm.
-   Copyright (C) 2011-2018 Free Software Foundation, Inc.
+   Copyright (C) 2011-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define __MSUF_X(x, suffix) x ## suffix
 #define __MSUF_S(...) __MSUF_X (__VA_ARGS__)
@@ -75,15 +75,6 @@ extern int __MSUF (__kernel_rem_pio2) (_Mdouble_ *, _Mdouble_ *, int,
 #endif
 
 /* Internal functions.  */
-#if !defined __MATH_DECLARING_LONG_DOUBLE || !defined NO_LONG_DOUBLE
-extern _Mdouble_ __MSUF (__copysign) (_Mdouble_ x, _Mdouble_ __y);
-
-extern inline _Mdouble_
-__MSUF (__copysign) (_Mdouble_ x, _Mdouble_ __y)
-{
-  return __MSUF (__builtin_copysign) (x, __y);
-}
-#endif
 
 /* Return X^2 + Y^2 - 1, computed without large cancellation error.
    It is given that 1 > X >= Y >= epsilon / 2, and that X^2 + Y^2 >=

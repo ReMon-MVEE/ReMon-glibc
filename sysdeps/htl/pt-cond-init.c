@@ -1,5 +1,5 @@
 /* pthread_cond_init.  Generic version.
-   Copyright (C) 2002-2018 Free Software Foundation, Inc.
+   Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library;  if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <pthread.h>
 #include <assert.h>
@@ -25,10 +25,12 @@
 int
 __pthread_cond_init (pthread_cond_t *cond, const pthread_condattr_t * attr)
 {
+  ASSERT_TYPE_SIZE (pthread_cond_t, __SIZEOF_PTHREAD_COND_T);
+
   *cond = (pthread_cond_t) __PTHREAD_COND_INITIALIZER;
 
   if (attr == NULL
-      || memcmp (attr, &__pthread_default_condattr, sizeof (*attr) == 0))
+      || memcmp (attr, &__pthread_default_condattr, sizeof (*attr)) == 0)
     /* Use the default attributes.  */
     return 0;
 

@@ -1,5 +1,5 @@
 /* Data for processor capability information.  PowerPC version.
-   Copyright (C) 2005-2018 Free Software Foundation, Inc.
+   Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This information must be kept in sync with the _DL_HWCAP_COUNT
    definition in procinfo.h.
@@ -88,6 +88,23 @@ PROCINFO_CLASS const char _dl_powerpc_cap_flags[64][15]
 #else
 ,
 #endif
+
+#if !IS_IN (ldconfig)
+# if !defined PROCINFO_DECL && defined SHARED
+     ._dl_cache_line_size
+# else
+PROCINFO_CLASS int _dl_cache_line_size
+# endif
+# ifndef PROCINFO_DECL
+     = 0
+# endif
+# if !defined SHARED || defined PROCINFO_DECL
+;
+# else
+,
+# endif
+#endif
+
 
 #undef PROCINFO_DECL
 #undef PROCINFO_CLASS

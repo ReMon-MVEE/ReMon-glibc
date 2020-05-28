@@ -1,5 +1,5 @@
 /* Round a 32-bit floating point value to the nearest integer.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,30 +14,16 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
+#define NO_MATH_REDIRECT
 #include <math.h>
 #include <libm-alias-float.h>
+#include <round_to_integer.h>
 
 float
 __rintf (float x)
 {
-  static const float TWO23 = 8388608.0;
-
-  if (fabsf (x) < TWO23)
-    {
-      if (x > 0.0)
-	{
-	  x += TWO23;
-	  x -= TWO23;
-	}
-      else if (x < 0.0)
-	{
-	  x = TWO23 - x;
-	  x = -(x - TWO23);
-	}
-    }
-
-  return x;
+  return round_to_integer_float (RINT, x);
 }
 libm_alias_float (__rint, rint)

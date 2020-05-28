@@ -1,5 +1,5 @@
 /* Acquire a rwlock for reading.  Generic version.
-   Copyright (C) 2002-2018 Free Software Foundation, Inc.
+   Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,10 +14,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library;  if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <pthread.h>
 #include <assert.h>
+#include <time.h>
 
 #include <pt-internal.h>
 
@@ -60,7 +61,7 @@ __pthread_rwlock_timedrdlock_internal (struct __pthread_rwlock *rwlock,
   /* Better be blocked by a writer.  */
   assert (rwlock->__readers == 0);
 
-  if (abstime != NULL && (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000))
+  if (abstime != NULL && ! valid_nanoseconds (abstime->tv_nsec))
     return EINVAL;
 
   self = _pthread_self ();

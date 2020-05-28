@@ -1,5 +1,5 @@
 /* MIPS syscall wrappers.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 #include <sys/asm.h>
@@ -22,9 +22,9 @@
 	.text
 	.set	nomips16
 
-/* long long __mips_syscall6 (long arg1, long arg2, long arg3, long arg4,
-			      long arg5, long arg6,
-			      long number)  */
+/* long long int __mips_syscall6 (long int arg1, long int arg2, long int arg3,
+				  long int arg4, long int arg5, long int arg6,
+				  long int number)  */
 
 ENTRY(__mips_syscall6)
 	lw	v0, 24(sp)

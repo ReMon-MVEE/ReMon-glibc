@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1998.
 
@@ -14,11 +14,12 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <math.h>
 #include <math_private.h>
 #include <float.h>
+#include <libm-alias-finite.h>
 
 long double
 __ieee754_exp10l (long double arg)
@@ -30,4 +31,4 @@ __ieee754_exp10l (long double arg)
        replaced sometime (soon?).  */
     return __ieee754_expl (M_LN10l * arg);
 }
-strong_alias (__ieee754_exp10l, __exp10l_finite)
+libm_alias_finite (__ieee754_exp10, __exp10)

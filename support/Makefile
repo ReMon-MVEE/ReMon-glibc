@@ -1,5 +1,5 @@
 # Makefile for support library, used only at build and test time
-# Copyright (C) 2016-2018 Free Software Foundation, Inc.
+# Copyright (C) 2016-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 subdir := support
 
@@ -25,6 +25,7 @@ extra-libs-others = $(extra-libs)
 extra-libs-noinstall := $(extra-libs)
 
 libsupport-routines = \
+  blob_repeat \
   check \
   check_addrinfo \
   check_dns_packet \
@@ -43,6 +44,9 @@ libsupport-routines = \
   support_capture_subprocess \
   support_capture_subprocess_check \
   support_chroot \
+  support_copy_file_range \
+  support_descriptor_supports_holes \
+  support_descriptors \
   support_enter_mount_namespace \
   support_enter_network_namespace \
   support_format_address_family \
@@ -52,15 +56,27 @@ libsupport-routines = \
   support_format_hostent \
   support_format_netent \
   support_isolate_in_subprocess \
+  support_ptrace \
   support_openpty \
+  support_paths \
+  support_quote_blob \
+  support_quote_string \
   support_record_failure \
   support_run_diff \
+  support_set_small_thread_stack_size \
   support_shared_allocate \
+  support_small_stack_thread_attribute \
+  support_subprocess \
+  support_test_compare_blob \
   support_test_compare_failure \
+  support_test_compare_string \
   support_write_file_string \
   support_test_main \
   support_test_verify_impl \
   temp_file \
+  timespec \
+  timespec-add \
+  timespec-sub \
   write_message \
   xaccept \
   xaccept4 \
@@ -68,9 +84,12 @@ libsupport-routines = \
   xbind \
   xcalloc \
   xchroot \
+  xclock_gettime \
   xclose \
   xconnect \
+  xcopy_file_range \
   xdlfcn \
+  xdlmopen \
   xdup2 \
   xfclose \
   xfopen \
@@ -82,20 +101,26 @@ libsupport-routines = \
   xmalloc \
   xmemstream \
   xmkdir \
+  xmkdirp \
   xmmap \
   xmprotect \
   xmunmap \
   xopen \
   xpipe \
   xpoll \
+  xposix_memalign \
   xpthread_attr_destroy \
   xpthread_attr_init \
   xpthread_attr_setdetachstate \
   xpthread_attr_setguardsize \
+  xpthread_attr_setstack \
   xpthread_attr_setstacksize \
   xpthread_barrier_destroy \
   xpthread_barrier_init \
   xpthread_barrier_wait \
+  xpthread_barrierattr_destroy \
+  xpthread_barrierattr_init \
+  xpthread_barrierattr_setpshared \
   xpthread_cancel \
   xpthread_check_return \
   xpthread_cond_wait \
@@ -115,6 +140,7 @@ libsupport-routines = \
   xpthread_mutexattr_settype \
   xpthread_once \
   xpthread_rwlock_init \
+  xpthread_rwlock_destroy \
   xpthread_rwlock_rdlock \
   xpthread_rwlock_unlock \
   xpthread_rwlock_wrlock \
@@ -128,12 +154,18 @@ libsupport-routines = \
   xrealloc \
   xrecvfrom \
   xsendto \
+  xsetlocale \
   xsetsockopt \
   xsigaction \
   xsignal \
+  xsigstack \
   xsocket \
+  xposix_spawn \
+  xposix_spawn_file_actions_addclose \
+  xposix_spawn_file_actions_adddup2 \
   xstrdup \
   xstrndup \
+  xsymlink \
   xsysconf \
   xunlink \
   xwaitpid \
@@ -146,14 +178,59 @@ ifeq ($(build-shared),yes)
 libsupport-inhibit-o += .o
 endif
 
+CFLAGS-support_paths.c = \
+		-DSRCDIR_PATH=\"`cd .. ; pwd`\" \
+		-DOBJDIR_PATH=\"`cd $(objpfx)/..; pwd`\" \
+		-DOBJDIR_ELF_LDSO_PATH=\"`cd $(objpfx)/..; pwd`/elf/$(rtld-installed-name)\" \
+		-DINSTDIR_PATH=\"$(prefix)\" \
+		-DLIBDIR_PATH=\"$(libdir)\" \
+		-DBINDIR_PATH=\"$(bindir)\" \
+		-DSBINDIR_PATH=\"$(sbindir)\" \
+		-DROOTSBINDIR_PATH=\"$(rootsbindir)\"
+
+ifeq (,$(CXX))
+LINKS_DSO_PROGRAM = links-dso-program-c
+else
+LINKS_DSO_PROGRAM = links-dso-program
+LDLIBS-links-dso-program = -lstdc++ -lgcc -lgcc_s $(libunwind)
+endif
+
+ifeq (yes,$(have-selinux))
+LDLIBS-$(LINKS_DSO_PROGRAM) += -lselinux
+endif
+
+
+LDLIBS-test-container = $(libsupport)
+
+others += test-container
+others-noinstall += test-container
+
+others += shell-container echo-container true-container
+others-noinstall += shell-container echo-container true-container
+
+others += $(LINKS_DSO_PROGRAM)
+others-noinstall += $(LINKS_DSO_PROGRAM)
+
+$(objpfx)test-container : $(libsupport)
+$(objpfx)shell-container : $(libsupport)
+$(objpfx)echo-container : $(libsupport)
+$(objpfx)true-container : $(libsupport)
+
 tests = \
   README-testing \
   tst-support-namespace \
+  tst-support_blob_repeat \
   tst-support_capture_subprocess \
+  tst-support_descriptors \
   tst-support_format_dns_packet \
+  tst-support_quote_blob \
+  tst-support_quote_string \
   tst-support_record_failure \
   tst-test_compare \
+  tst-test_compare_blob \
+  tst-test_compare_string \
   tst-xreadlink \
+  tst-xsigstack \
 
 ifeq ($(run-built-tests),yes)
 tests-special = \
@@ -168,5 +245,7 @@ $(objpfx)tst-support_record_failure-2.out: tst-support_record_failure-2.sh \
 endif
 
 $(objpfx)tst-support_format_dns_packet: $(common-objpfx)resolv/libresolv.so
+
+tst-support_capture_subprocess-ARGS = -- $(host-test-program-cmd)
 
 include ../Rules

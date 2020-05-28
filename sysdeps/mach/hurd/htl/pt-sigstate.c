@@ -1,5 +1,5 @@
 /* Set a thread's signal state.  Hurd on Mach version.
-   Copyright (C) 2002-2018 Free Software Foundation, Inc.
+   Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,12 +14,13 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library;  if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <pthread.h>
 #include <assert.h>
 #include <signal.h>
 #include <hurd/signal.h>
+#include <hurd/msg.h>
 
 #include <pt-internal.h>
 
@@ -29,11 +30,12 @@ __pthread_sigstate (struct __pthread *thread, int how,
 {
   error_t err = 0;
   struct hurd_sigstate *ss;
+  sigset_t pending;
 
   ss = _hurd_thread_sigstate (thread->kernel_thread);
   assert (ss);
 
-  __spin_lock (&ss->lock);
+  _hurd_sigstate_lock (ss);
 
   if (oset != NULL)
     *oset = ss->blocked;
@@ -64,7 +66,13 @@ __pthread_sigstate (struct __pthread *thread, int how,
   if (!err && clear_pending)
     __sigemptyset (&ss->pending);
 
-  __spin_unlock (&ss->lock);
+  pending = _hurd_sigstate_pending (ss) & ~ss->blocked;
+  _hurd_sigstate_unlock (ss);
+
+  if (!err && pending)
+    /* Send a message to the signal thread so it
+       will wake up and check for pending signals.  */
+    __msg_sig_post (_hurd_msgport, 0, 0, __mach_task_self ());
 
   return err;
 }

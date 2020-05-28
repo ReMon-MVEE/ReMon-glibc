@@ -1,5 +1,5 @@
 /* Measure __strcpy_chk functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef STRCPY_RESULT
 # define STRCPY_RESULT(dst, len) dst
@@ -77,7 +77,7 @@ do_one_test (impl_t *impl, char *dst, const char *src,
 	     size_t len, size_t dlen)
 {
   char *res;
-  size_t i, iters = INNER_LOOP_ITERS;
+  size_t i, iters = INNER_LOOP_ITERS8;
   timing_t start, stop, cur;
 
   if (dlen <= len)

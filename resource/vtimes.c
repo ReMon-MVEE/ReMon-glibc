@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stddef.h>
 #include <sys/vtimes.h>
@@ -22,8 +22,8 @@
 /* Return the number of 1/VTIMES_UNITS_PER_SECOND-second
    units in the `struct timeval' TV.  */
 #define TIMEVAL_TO_VTIMES(tv) \
-  ((tv.tv_sec * VTIMES_UNITS_PER_SECOND) + \
-   (tv.tv_usec * VTIMES_UNITS_PER_SECOND / 1000000))
+  ((tv.tv_sec * VTIMES_UNITS_PER_SECOND) \
+   + (tv.tv_usec * VTIMES_UNITS_PER_SECOND / 1000000))
 
 /* If VT is not NULL, write statistics for WHO into *VT.
    Return 0 for success, -1 for failure.  */

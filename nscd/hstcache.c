@@ -1,5 +1,5 @@
 /* Cache handling for host lookup.
-   Copyright (C) 1998-2018 Free Software Foundation, Inc.
+   Copyright (C) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1998.
 
@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #include <alloca.h>
 #include <assert.h>
@@ -34,12 +34,10 @@
 #include <arpa/nameser.h>
 #include <sys/mman.h>
 #include <stackinfo.h>
+#include <scratch_buffer.h>
 
 #include "nscd.h"
 #include "dbg_log.h"
-#ifdef HAVE_SENDFILE
-# include <kernel-features.h>
-#endif
 
 
 /* This is the standard reply in case the service is disabled.  */
@@ -136,9 +134,9 @@ cache_addhst (struct database_dyn *db, int fd, request_header *req,
 	  const hst_response_header *resp = (errval == EAGAIN
 					     ? &tryagain : &notfound);
 
-	  if (fd != -1 &&
-	      TEMP_FAILURE_RETRY (send (fd, resp, total,
-					MSG_NOSIGNAL)) != total)
+	  if (fd != -1
+	      && TEMP_FAILURE_RETRY (send (fd, resp, total,
+					   MSG_NOSIGNAL)) != total)
 	    all_written = false;
 
 	  /* If we have a transient error or cannot permanently store
@@ -352,37 +350,9 @@ cache_addhst (struct database_dyn *db, int fd, request_header *req,
 	     unnecessarily keep the receiver waiting.  */
 	  assert (fd != -1);
 
-#ifdef HAVE_SENDFILE
-	  if (__builtin_expect (db->mmap_used, 1) && !alloca_used)
-	    {
-	      assert (db->wr_fd != -1);
-	      assert ((char *) &dataset->resp > (char *) db->data);
-	      assert ((char *) dataset - (char *) db->head
-		      + total
-		      <= (sizeof (struct database_pers_head)
-			  + db->head->module * sizeof (ref_t)
-			  + db->head->data_size));
-	      ssize_t written = sendfileall (fd, db->wr_fd,
-					     (char *) &dataset->resp
-					     - (char *) db->head,
-					     dataset->head.recsize);
-	      if (written != dataset->head.recsize)
-		{
-# ifndef __ASSUME_SENDFILE
-		  if (written == -1 && errno == ENOSYS)
-		    goto use_write;
-# endif
-		  all_written = false;
-		}
-	    }
-	  else
-# ifndef __ASSUME_SENDFILE
-	  use_write:
-# endif
-#endif
-	    if (writeall (fd, &dataset->resp, dataset->head.recsize)
-		!= dataset->head.recsize)
-	      all_written = false;
+	  if (writeall (fd, &dataset->resp, dataset->head.recsize)
+	      != dataset->head.recsize)
+	    all_written = false;
 	}
 
       /* Add the record to the database.  But only if it has not been
@@ -463,11 +433,8 @@ addhstbyX (struct database_dyn *db, int fd, request_header *req,
      look again in the table whether the dataset is now available.  We
      simply insert it.  It does not matter if it is in there twice.  The
      pruning function only will look at the timestamp.  */
-  int buflen = 1024;
-  char *buffer = (char *) alloca (buflen);
   struct hostent resultbuf;
   struct hostent *hst;
-  bool use_malloc = false;
   int errval = 0;
   int32_t ttl = INT32_MAX;
 
@@ -487,46 +454,30 @@ addhstbyX (struct database_dyn *db, int fd, request_header *req,
 	dbg_log (_("Reloading \"%s\" in hosts cache!"), (char *) str);
     }
 
-  while (lookup (req->type, key, &resultbuf, buffer, buflen, &hst, &ttl) != 0
+  struct scratch_buffer tmpbuf;
+  scratch_buffer_init (&tmpbuf);
+
+  while (lookup (req->type, key, &resultbuf,
+		 tmpbuf.data, tmpbuf.length, &hst, &ttl) != 0
 	 && h_errno == NETDB_INTERNAL
 	 && (errval = errno) == ERANGE)
-    {
-      errno = 0;
-
-      if (__glibc_unlikely (buflen > 32768))
-	{
-	  char *old_buffer = buffer;
-	  buflen *= 2;
-	  buffer = (char *) realloc (use_malloc ? buffer : NULL, buflen);
-	  if (buffer == NULL)
-	    {
-	      /* We ran out of memory.  We cannot do anything but
-		 sending a negative response.  In reality this should
-		 never happen.  */
-	      hst = NULL;
-	      buffer = old_buffer;
-
-	      /* We set the error to indicate this is (possibly) a
-		 temporary error and that it does not mean the entry
-		 is not available at all.  */
-	      h_errno = TRY_AGAIN;
-	      errval = EAGAIN;
-	      break;
-	    }
-	  use_malloc = true;
-	}
-      else
-	/* Allocate a new buffer on the stack.  If possible combine it
-	   with the previously allocated buffer.  */
-	buffer = (char *) extend_alloca (buffer, buflen, 2 * buflen);
-    }
+    if (!scratch_buffer_grow (&tmpbuf))
+      {
+	/* We ran out of memory.  We cannot do anything but sending a
+	   negative response.  In reality this should never
+	   happen.  */
+	hst = NULL;
+	/* We set the error to indicate this is (possibly) a temporary
+	   error and that it does not mean the entry is not
+	   available at all.  */
+	h_errno = TRY_AGAIN;
+	errval = EAGAIN;
+	break;
+      }
 
   time_t timeout = cache_addhst (db, fd, req, key, hst, uid, he, dh,
 				 h_errno == TRY_AGAIN ? errval : 0, ttl);
-
-  if (use_malloc)
-    free (buffer);
-
+  scratch_buffer_free (&tmpbuf);
   return timeout;
 }
 

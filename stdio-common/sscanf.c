@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,29 +13,31 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
+
+/* This file defines one of the deprecated scanf variants.  */
+#include <features.h>
+#undef __GLIBC_USE_DEPRECATED_SCANF
+#define __GLIBC_USE_DEPRECATED_SCANF 1
 
 #include <stdarg.h>
-#include <stdio.h>
-#include <libioP.h>
-#define __vsscanf(s, f, a) _IO_vsscanf (s, f, a)
+#include <libio/strfile.h>
 
 /* Read formatted input from S, according to the format string FORMAT.  */
-/* VARARGS2 */
+
 int
 __sscanf (const char *s, const char *format, ...)
 {
   va_list arg;
   int done;
+  _IO_strfile sf;
+  FILE *f = _IO_strfile_read (&sf, s);
 
   va_start (arg, format);
-  done = __vsscanf (s, format, arg);
+  done = __vfscanf_internal (f, format, arg, 0);
   va_end (arg);
 
   return done;
 }
-ldbl_hidden_def (__sscanf, sscanf)
 ldbl_strong_alias (__sscanf, sscanf)
-#undef _IO_sscanf
-/* This is for libg++.  */
 ldbl_strong_alias (__sscanf, _IO_sscanf)

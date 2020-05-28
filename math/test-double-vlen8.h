@@ -1,5 +1,5 @@
 /* Definitions for double vector tests with vector length 8.
-   Copyright (C) 2014-2018 Free Software Foundation, Inc.
+   Copyright (C) 2014-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,13 +14,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "test-double.h"
 #include "test-math-no-inline.h"
 #include "test-math-vector.h"
-
-#define ROUNDING_TESTS_double(MODE) ((MODE) == FE_TONEAREST)
 
 #define VEC_SUFF _vlen8
 #define VEC_LEN 8

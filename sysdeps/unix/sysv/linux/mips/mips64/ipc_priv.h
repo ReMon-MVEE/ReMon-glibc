@@ -1,5 +1,5 @@
 /* Old SysV permission definition for Linux.  MIPS64 version.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,19 +14,8 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#include <sys/ipc.h>
-
-#define __IPC_64	0x100
-
-struct __old_ipc_perm
-{
-  __key_t __key;		/* Key.  */
-  int uid;			/* Owner's user ID.  */
-  int gid;			/* Owner's group ID.  */
-  int cuid;			/* Creator's user ID.  */
-  int cgid;			/* Creator's group ID.  */
-  int mode;			/* Read/write permission.  */
-  unsigned short int __seq;	/* Sequence number.  */
-};
+#define __OLD_IPC_ID_TYPE    int
+#define __OLD_IPC_MODE_TYPE  int
+#include <sysdeps/unix/sysv/linux/ipc_priv.h>

@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2001-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _LINUX_X86_64_SYSDEP_H
 #define _LINUX_X86_64_SYSDEP_H 1
@@ -32,16 +32,6 @@
    so we have to redefine the `SYS_ify' macro here.  */
 #undef SYS_ify
 #define SYS_ify(syscall_name)	__NR_##syscall_name
-
-/* This is a kludge to make syscalls.list find these under the names
-   pread and pwrite, since some kernel headers define those names
-   and some define the *64 names for the same system calls.  */
-#if !defined __NR_pread && defined __NR_pread64
-# define __NR_pread __NR_pread64
-#endif
-#if !defined __NR_pwrite && defined __NR_pwrite64
-# define __NR_pwrite __NR_pwrite64
-#endif
 
 /* This is to help the old kernel headers where __NR_semtimedop is not
    available.  */
@@ -71,13 +61,31 @@
 #  define SYSCALL_ERROR_LABEL syscall_error
 # endif
 
+/* PSEUDO and T_PSEUDO macros have 2 extra arguments for unsigned long
+   int arguments.  */
+# define PSEUDOS_HAVE_ULONG_INDICES 1
+
+# ifndef SYSCALL_ULONG_ARG_1
+#  define SYSCALL_ULONG_ARG_1 0
+#  define SYSCALL_ULONG_ARG_2 0
+# endif
+
 # undef	PSEUDO
-# define PSEUDO(name, syscall_name, args)				      \
-  .text;								      \
-  ENTRY (name)								      \
-    DO_CALL (syscall_name, args);					      \
-    cmpq $-4095, %rax;							      \
+# if SYSCALL_ULONG_ARG_1
+#  define PSEUDO(name, syscall_name, args, ulong_arg_1, ulong_arg_2) \
+  .text;							      \
+  ENTRY (name)							      \
+    DO_CALL (syscall_name, args, ulong_arg_1, ulong_arg_2);	      \
+    cmpq $-4095, %rax;						      \
     jae SYSCALL_ERROR_LABEL
+# else
+#  define PSEUDO(name, syscall_name, args) \
+  .text;							      \
+  ENTRY (name)							      \
+    DO_CALL (syscall_name, args, 0, 0);				      \
+    cmpq $-4095, %rax;						      \
+    jae SYSCALL_ERROR_LABEL
+# endif
 
 # undef	PSEUDO_END
 # define PSEUDO_END(name)						      \
@@ -85,10 +93,17 @@
   END (name)
 
 # undef	PSEUDO_NOERRNO
-# define PSEUDO_NOERRNO(name, syscall_name, args) \
-  .text;								      \
-  ENTRY (name)								      \
-    DO_CALL (syscall_name, args)
+# if SYSCALL_ULONG_ARG_1
+#  define PSEUDO_NOERRNO(name, syscall_name, args, ulong_arg_1, ulong_arg_2) \
+  .text;							      \
+  ENTRY (name)							      \
+    DO_CALL (syscall_name, args, ulong_arg_1, ulong_arg_2)
+# else
+#  define PSEUDO_NOERRNO(name, syscall_name, args) \
+  .text;							      \
+  ENTRY (name)							      \
+    DO_CALL (syscall_name, args, 0, 0)
+# endif
 
 # undef	PSEUDO_END_NOERRNO
 # define PSEUDO_END_NOERRNO(name) \
@@ -97,11 +112,19 @@
 # define ret_NOERRNO ret
 
 # undef	PSEUDO_ERRVAL
-# define PSEUDO_ERRVAL(name, syscall_name, args) \
-  .text;								      \
-  ENTRY (name)								      \
-    DO_CALL (syscall_name, args);					      \
+# if SYSCALL_ULONG_ARG_1
+#  define PSEUDO_ERRVAL(name, syscall_name, args, ulong_arg_1, ulong_arg_2) \
+  .text;							\
+  ENTRY (name)							\
+    DO_CALL (syscall_name, args, ulong_arg_1, ulong_arg_2);	\
     negq %rax
+# else
+#  define PSEUDO_ERRVAL(name, syscall_name, args) \
+  .text;							\
+  ENTRY (name)							\
+    DO_CALL (syscall_name, args, 0, 0);				\
+    negq %rax
+# endif
 
 # undef	PSEUDO_END_ERRVAL
 # define PSEUDO_END_ERRVAL(name) \
@@ -173,8 +196,10 @@
     Syscalls of more than 6 arguments are not supported.  */
 
 # undef	DO_CALL
-# define DO_CALL(syscall_name, args)		\
+# define DO_CALL(syscall_name, args, ulong_arg_1, ulong_arg_2) \
     DOARGS_##args				\
+    ZERO_EXTEND_##ulong_arg_1			\
+    ZERO_EXTEND_##ulong_arg_2			\
     movl $SYS_ify (syscall_name), %eax;		\
     syscall;
 
@@ -185,6 +210,14 @@
 # define DOARGS_4 movq %rcx, %r10;
 # define DOARGS_5 DOARGS_4
 # define DOARGS_6 DOARGS_5
+
+# define ZERO_EXTEND_0 /* nothing */
+# define ZERO_EXTEND_1 /* nothing */
+# define ZERO_EXTEND_2 /* nothing */
+# define ZERO_EXTEND_3 /* nothing */
+# define ZERO_EXTEND_4 /* nothing */
+# define ZERO_EXTEND_5 /* nothing */
+# define ZERO_EXTEND_6 /* nothing */
 
 #else	/* !__ASSEMBLER__ */
 /* Define a macro which expands inline into the wrapper code for a system
@@ -220,12 +253,15 @@
 /* Registers clobbered by syscall.  */
 # define REGISTERS_CLOBBERED_BY_SYSCALL "cc", "r11", "cx"
 
-/* Create a variable 'name' based on type 'X' to avoid explicit types.
-   This is mainly used set use 64-bits arguments in x32.   */
-#define TYPEFY(X, name) __typeof__ ((X) - (X)) name
-/* Explicit cast the argument to avoid integer from pointer warning on
-   x32.  */
-#define ARGIFY(X) ((__typeof__ ((X) - (X))) (X))
+/* NB: This also works when X is an array.  For an array X,  type of
+   (X) - (X) is ptrdiff_t, which is signed, since size of ptrdiff_t
+   == size of pointer, cast is a NOP.   */
+#define TYPEFY1(X) __typeof__ ((X) - (X))
+/* Explicit cast the argument.  */
+#define ARGIFY(X) ((TYPEFY1 (X)) (X))
+/* Create a variable 'name' based on type of variable 'X' to avoid
+   explicit types.  */
+#define TYPEFY(X, name) __typeof__ (ARGIFY (X)) name
 
 #undef INTERNAL_SYSCALL
 #define INTERNAL_SYSCALL(name, err, nr, args...)			\
@@ -370,10 +406,15 @@
 # undef INTERNAL_SYSCALL_ERRNO
 # define INTERNAL_SYSCALL_ERRNO(val, err)	(-(val))
 
+# define VDSO_NAME  "LINUX_2.6"
+# define VDSO_HASH  61765110
+
 /* List of system calls which are supported as vsyscalls.  */
-# define HAVE_CLOCK_GETTIME_VSYSCALL    1
-# define HAVE_GETTIMEOFDAY_VSYSCALL     1
-# define HAVE_GETCPU_VSYSCALL		1
+# define HAVE_CLOCK_GETTIME64_VSYSCALL  "__vdso_clock_gettime"
+# define HAVE_GETTIMEOFDAY_VSYSCALL     "__vdso_gettimeofday"
+# define HAVE_TIME_VSYSCALL             "__vdso_time"
+# define HAVE_GETCPU_VSYSCALL		"__vdso_getcpu"
+# define HAVE_CLOCK_GETRES64_VSYSCALL   "__vdso_clock_getres"
 
 # define SINGLE_THREAD_BY_GLOBAL		1
 
@@ -422,5 +463,10 @@
 /* How to pass the off{64}_t argument on p{readv,writev}{64}.  */
 #undef LO_HI_LONG
 #define LO_HI_LONG(val) (val), 0
+
+/* Each shadow stack slot takes 8 bytes.  Assuming that each stack
+   frame takes 256 bytes, this is used to compute shadow stack size
+   from stack size.  */
+#define STACK_SIZE_TO_SHADOW_STACK_SIZE_SHIFT 5
 
 #endif /* linux/x86_64/sysdep.h */

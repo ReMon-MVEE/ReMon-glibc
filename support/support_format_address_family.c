@@ -1,5 +1,5 @@
 /* Convert an address family to a string.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <support/format_nss.h>
 
@@ -29,6 +29,10 @@ support_format_address_family (int family)
       return xstrdup ("INET");
     case AF_INET6:
       return xstrdup ("INET6");
+    case AF_LOCAL:
+      return xstrdup ("LOCAL");
+    case AF_UNSPEC:
+      return xstrdup ("UNSPEC");
     default:
       return xasprintf ("<unknown address family %d>", family);
     }

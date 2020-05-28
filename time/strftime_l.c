@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -434,7 +434,7 @@ static CHAR_T const month_name[][10] =
 #endif
 
 static size_t __strftime_internal (CHAR_T *, size_t, const CHAR_T *,
-				   const struct tm *, bool *
+				   const struct tm *, int, bool *
 				   ut_argument_spec
 				   LOCALE_PARAM) __THROW;
 
@@ -457,7 +457,7 @@ my_strftime (CHAR_T *s, size_t maxsize, const CHAR_T *format,
   tp = &tmcopy;
 #endif
   bool tzset_called = false;
-  return __strftime_internal (s, maxsize, format, tp, &tzset_called
+  return __strftime_internal (s, maxsize, format, tp, 0, &tzset_called
 			      ut_argument LOCALE_ARG);
 }
 #ifdef _LIBC
@@ -466,7 +466,7 @@ libc_hidden_def (my_strftime)
 
 static size_t
 __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
-		     const struct tm *tp, bool *tzset_called
+		     const struct tm *tp, int yr_spec, bool *tzset_called
 		     ut_argument_spec LOCALE_PARAM)
 {
 #if defined _LIBC && defined USE_IN_EXTENDED_LOCALE_MODEL
@@ -562,7 +562,7 @@ __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
       int pad = 0;		/* Padding for number ('-', '_', or 0).  */
       int modifier;		/* Field modifier ('E', 'O', or 0).  */
       int digits;		/* Max digits for numeric format.  */
-      int number_value; 	/* Numeric value to be printed.  */
+      int number_value;		/* Numeric value to be printed.  */
       int negative_number;	/* 1 if the number is negative.  */
       const CHAR_T *subfmt;
       CHAR_T *bufp;
@@ -820,7 +820,7 @@ __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
 	  if (modifier == L_('O'))
 	    goto bad_format;
 #ifdef _NL_CURRENT
-	  if (! (modifier == 'E'
+	  if (! (modifier == L_('E')
 		 && (*(subfmt =
 		       (const CHAR_T *) _NL_CURRENT (LC_TIME,
 						     NLW(ERA_D_T_FMT)))
@@ -838,11 +838,11 @@ __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
 	  {
 	    CHAR_T *old_start = p;
 	    size_t len = __strftime_internal (NULL, (size_t) -1, subfmt,
-					      tp, tzset_called ut_argument
-					      LOCALE_ARG);
+					      tp, yr_spec, tzset_called
+					      ut_argument LOCALE_ARG);
 	    add (len, __strftime_internal (p, maxsize - i, subfmt,
-					   tp, tzset_called ut_argument
-					   LOCALE_ARG));
+					   tp, yr_spec, tzset_called
+					   ut_argument LOCALE_ARG));
 
 	    if (to_uppcase)
 	      while (old_start < p)
@@ -917,7 +917,7 @@ __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
 #ifdef _NL_CURRENT
 	  if (! (modifier == L_('E')
 		 && (*(subfmt =
-		       (const CHAR_T *)_NL_CURRENT (LC_TIME, NLW(ERA_D_FMT)))
+		       (const CHAR_T *) _NL_CURRENT (LC_TIME, NLW(ERA_D_FMT)))
 		     != L_('\0'))))
 	    subfmt = (const CHAR_T *) _NL_CURRENT (LC_TIME, NLW(D_FMT));
 	  goto subformat;
@@ -992,7 +992,7 @@ __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
 	    do
 	      *--bufp = u % 10 + L_('0');
 	    while ((u /= 10) != 0);
-  	  }
+	  }
 
 	do_number_sign_and_padding:
 	  if (negative_number)
@@ -1136,7 +1136,7 @@ __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
 	  DO_NUMBER (2, tp->tm_sec);
 
 	case L_('s'):		/* GNU extension.  */
-  	  {
+	  {
 	    struct tm ltm;
 	    time_t t;
 
@@ -1262,7 +1262,7 @@ __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
 	  DO_NUMBER (1, tp->tm_wday);
 
 	case L_('Y'):
-	  if (modifier == 'E')
+	  if (modifier == L_('E'))
 	    {
 #if HAVE_STRUCT_ERA_ENTRY
 	      struct era_entry *era = _nl_get_era_entry (tp HELPER_LOCALE_ARG);
@@ -1273,6 +1273,8 @@ __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
 # else
 		  subfmt = era->era_format;
 # endif
+		  if (pad != 0)
+		    yr_spec = pad;
 		  goto subformat;
 		}
 #else
@@ -1294,7 +1296,9 @@ __strftime_internal (CHAR_T *s, size_t maxsize, const CHAR_T *format,
 	      if (era)
 		{
 		  int delta = tp->tm_year - era->start_date[0];
-		  DO_NUMBER (1, (era->offset
+		  if (yr_spec != 0)
+		    pad = yr_spec;
+		  DO_NUMBER (2, (era->offset
 				 + delta * era->absolute_direction));
 		}
 #else

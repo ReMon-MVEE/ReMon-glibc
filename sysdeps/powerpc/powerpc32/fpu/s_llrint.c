@@ -1,5 +1,5 @@
 /* Round a double value to a long long in the current rounding mode.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <limits.h>
 #include <math.h>
@@ -26,7 +26,13 @@
 long long int
 __llrint (double x)
 {
-  double rx = __rint (x);
+#ifdef _ARCH_PWR4
+  /* Assume powerpc64 instructions availability.  */
+  long long int ret;
+  __asm__ ("fctid %0, %1" : "=d" (ret) : "d" (x));
+  return ret;
+#else
+  double rx = rint (x);
   if (HAVE_PPC_FCTIDZ || rx != x)
     return (long long int) rx;
   else
@@ -53,5 +59,8 @@ __llrint (double x)
       else
 	return (long long int) (long int) rx << 32;
     }
+#endif
 }
+#ifndef __llrint
 libm_alias_double (__llrint, llrint)
+#endif

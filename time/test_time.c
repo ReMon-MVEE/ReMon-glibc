@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,7 +67,7 @@ main (int argc, char **argv)
 	  puts("localtime() failed.");
 	  lose = 1;
 	}
-      else if (strftime(buf, sizeof(buf), "%a %b %d %X %Z %Y", tp) == 0)
+      else if (strftime (buf, sizeof (buf), "%a %b %d %X %Z %Y", tp) == 0)
 	{
 	  puts("strftime() failed.");
 	  lose = 1;

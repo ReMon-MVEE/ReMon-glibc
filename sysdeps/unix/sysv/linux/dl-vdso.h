@@ -1,5 +1,5 @@
 /* ELF symbol resolve functions for VDSO objects.
-   Copyright (C) 2005-2018 Free Software Foundation, Inc.
+   Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,42 +14,45 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _DL_VDSO_H
 #define _DL_VDSO_H	1
 
-#include <assert.h>
 #include <ldsodefs.h>
 #include <dl-hash.h>
 
-/* Create version number record for lookup.  */
-#define PREPARE_VERSION(var, vname, vhash) \
-  struct r_found_version var;						      \
-  var.name = vname;							      \
-  var.hidden = 1;							      \
-  var.hash = vhash;							      \
-  assert (var.hash == _dl_elf_hash (var.name));				      \
-  /* We don't have a specific file where the symbol can be found.  */	      \
-  var.filename = NULL
+/* If the architecture support vDSO it should define which is the expected
+   kernel version and hash value through both VDSO_NAME and VDSO_HASH
+   (usually defined at architecture sysdep.h).  */
 
-/* Use this for the known version sets defined below, where we
-   record their precomputed hash values only once, in this file.  */
-#define PREPARE_VERSION_KNOWN(var, vname) \
-  PREPARE_VERSION (var, VDSO_NAME_##vname, VDSO_HASH_##vname)
-
-#define VDSO_NAME_LINUX_2_6	"LINUX_2.6"
-#define VDSO_HASH_LINUX_2_6	61765110
-#define VDSO_NAME_LINUX_2_6_15	"LINUX_2.6.15"
-#define VDSO_HASH_LINUX_2_6_15	123718565
-#define VDSO_NAME_LINUX_2_6_29	"LINUX_2.6.29"
-#define VDSO_HASH_LINUX_2_6_29	123718585
-#define VDSO_NAME_LINUX_4_15	"LINUX_4.15"
-#define VDSO_HASH_LINUX_4_15	182943605
+#ifndef VDSO_NAME
+# define VDSO_NAME "LINUX_0.0"
+#endif
+#ifndef VDSO_HASH
+# define VDSO_HASH 0
+#endif
 
 /* Functions for resolving symbols in the VDSO link map.  */
-extern void *_dl_vdso_vsym (const char *name,
-			    const struct r_found_version *version)
-      attribute_hidden;
+static inline void *
+dl_vdso_vsym (const char *name)
+{
+  struct link_map *map = GLRO (dl_sysinfo_map);
+  if (map == NULL)
+    return NULL;
+
+  /* Use a WEAK REF so we don't error out if the symbol is not found.  */
+  ElfW (Sym) wsym = { 0 };
+  wsym.st_info = (unsigned char) ELFW (ST_INFO (STB_WEAK, STT_NOTYPE));
+
+  struct r_found_version rfv = { VDSO_NAME, VDSO_HASH, 1, NULL };
+
+  /* Search the scope of the vdso map.  */
+  const ElfW (Sym) *ref = &wsym;
+  lookup_t result = GLRO (dl_lookup_symbol_x) (name, map, &ref,
+					       map->l_local_scope,
+					       &rfv, 0, 0, NULL);
+  return ref != NULL ? DL_SYMBOL_ADDRESS (result, ref) : NULL;
+}
 
 #endif /* dl-vdso.h */

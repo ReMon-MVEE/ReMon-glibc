@@ -1,6 +1,6 @@
 /* Verify that condition variables synchronized by PI mutexes don't hang on
    on cancellation.
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <pthread.h>
 #include <stdio.h>
@@ -285,5 +285,4 @@ do_test (int argc, char **argv)
   return do_test_wait (timed_waiter);
 }
 
-#define TIMEOUT 5
 #include "../test-skeleton.c"

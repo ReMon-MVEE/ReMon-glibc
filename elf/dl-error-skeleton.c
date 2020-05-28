@@ -1,5 +1,5 @@
 /* Template for error handling for runtime dynamic linker.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* The following macro needs to be defined before including this
    skeleton file:
@@ -173,6 +173,18 @@ int
 _dl_catch_exception (struct dl_exception *exception,
 		     void (*operate) (void *), void *args)
 {
+  /* If exception is NULL, temporarily disable exception handling.
+     Exceptions during operate (args) are fatal.  */
+  if (exception == NULL)
+    {
+      struct catch *const old = catch_hook;
+      catch_hook = NULL;
+      operate (args);
+      /* If we get here, the operation was successful.  */
+      catch_hook = old;
+      return 0;
+    }
+
   /* We need not handle `receiver' since setting a `catch' is handled
      before it.  */
 

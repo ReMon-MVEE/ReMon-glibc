@@ -1,5 +1,5 @@
 /* Machine-dependent ELF dynamic relocation functions.  PowerPC version.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <unistd.h>
 #include <string.h>
@@ -24,11 +24,6 @@
 #include <elf/dynamic-link.h>
 #include <dl-machine.h>
 #include <_itoa.h>
-
-/* The value __cache_line_size is defined in dl-sysdep.c and is initialised
-   by _dl_sysdep_start via DL_PLATFORM_INIT.  */
-extern int __cache_line_size attribute_hidden;
-
 
 /* Stuff for the PLT.  */
 #define PLT_INITIAL_ENTRY_WORDS 18
@@ -309,14 +304,14 @@ __elf_machine_runtime_setup (struct link_map *map, int lazy, int profile)
 
 	 Assumes that dcbst and icbi apply to lines of 16 bytes or
 	 more.  Current known line sizes are 16, 32, and 128 bytes.
-	 The following gets the __cache_line_size, when available.  */
+	 The following gets the cache line size, when available.  */
 
       /* Default minimum 4 words per cache line.  */
       int line_size_words = 4;
 
-      if (lazy && __cache_line_size != 0)
+      if (lazy && GLRO(dl_cache_line_size) != 0)
 	/* Convert bytes to words.  */
-	line_size_words = __cache_line_size / 4;
+	line_size_words = GLRO(dl_cache_line_size) / 4;
 
       size_modified = lazy ? rel_offset_words : 6;
       for (i = 0; i < size_modified; i += line_size_words)
@@ -348,7 +343,7 @@ __elf_machine_fixup_plt (struct link_map *map,
       Elf32_Word index, offset, num_plt_entries;
 
       num_plt_entries = (map->l_info[DT_PLTRELSZ]->d_un.d_val
-			 / sizeof(Elf32_Rela));
+			 / sizeof (Elf32_Rela));
       plt = (Elf32_Word *) D_PTR (map, l_info[DT_PLTGOT]);
       offset = reloc_addr - plt;
       index = (offset - PLT_INITIAL_ENTRY_WORDS)/2;
@@ -414,7 +409,7 @@ __process_machine_rela (struct link_map *map,
 			const Elf32_Sym *refsym,
 			Elf32_Addr *const reloc_addr,
 			Elf32_Addr const finaladdr,
-			int rinfo)
+			int rinfo, bool skip_ifunc)
 {
   union unaligned
     {
@@ -434,7 +429,8 @@ __process_machine_rela (struct link_map *map,
       return;
 
     case R_PPC_IRELATIVE:
-      *reloc_addr = ((Elf32_Addr (*) (void)) finaladdr) ();
+      if (__glibc_likely (!skip_ifunc))
+	*reloc_addr = ((Elf32_Addr (*) (void)) finaladdr) ();
       return;
 
     case R_PPC_UADDR32:
@@ -538,7 +534,7 @@ __process_machine_rela (struct link_map *map,
 	      {
 		index = (offset - PLT_INITIAL_ENTRY_WORDS)/2;
 		num_plt_entries = (map->l_info[DT_PLTRELSZ]->d_un.d_val
-				   / sizeof(Elf32_Rela));
+				   / sizeof (Elf32_Rela));
 		data_words = plt + PLT_DATA_START_WORDS (num_plt_entries);
 		data_words[index] = finaladdr;
 		reloc_addr[0] = OPCODE_LI (11, index * 4);

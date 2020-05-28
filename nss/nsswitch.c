@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <ctype.h>
 #include <dlfcn.h>
@@ -115,8 +115,8 @@ static void (*nscd_init_cb) (size_t, struct traced_file *);
 /* -1 == database not found
     0 == database entry pointer stored */
 int
-__nss_database_lookup (const char *database, const char *alternate_name,
-		       const char *defconfig, service_user **ni)
+__nss_database_lookup2 (const char *database, const char *alternate_name,
+			const char *defconfig, service_user **ni)
 {
   /* Prevent multiple threads to change the service table.  */
   __libc_lock_lock (lock);
@@ -185,7 +185,7 @@ __nss_database_lookup (const char *database, const char *alternate_name,
 
   return *ni != NULL ? 0 : -1;
 }
-libc_hidden_def (__nss_database_lookup)
+libc_hidden_def (__nss_database_lookup2)
 
 
 /* -1 == not found
@@ -235,7 +235,7 @@ __nss_next2 (service_user **ni, const char *fct_name, const char *fct2_name,
       /* This is really only for debugging.  */
       if (__builtin_expect (NSS_STATUS_TRYAGAIN > status
 			    || status > NSS_STATUS_RETURN, 0))
-	 __libc_fatal ("illegal status in __nss_next");
+	 __libc_fatal ("Illegal status in __nss_next.\n");
 
        if (nss_next_action (*ni, status) == NSS_ACTION_RETURN)
 	 return 1;
@@ -259,16 +259,6 @@ __nss_next2 (service_user **ni, const char *fct_name, const char *fct2_name,
   return *fctp != NULL ? 0 : -1;
 }
 libc_hidden_def (__nss_next2)
-
-
-int
-attribute_compat_text_section
-__nss_next (service_user **ni, const char *fct_name, void **fctp, int status,
-	    int all_values)
-{
-  return __nss_next2 (ni, fct_name, NULL, fctp, status, all_values);
-}
-
 
 int
 __nss_configure_lookup (const char *dbname, const char *service_line)
@@ -835,7 +825,7 @@ nss_load_all_libraries (const char *service, const char *def)
 {
   service_user *ni = NULL;
 
-  if (__nss_database_lookup (service, NULL, def, &ni) == 0)
+  if (__nss_database_lookup2 (service, NULL, def, &ni) == 0)
     while (ni != NULL)
       {
 	nss_load_library (ni);

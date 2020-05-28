@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <signal.h>
 #include <time.h>
@@ -33,10 +33,10 @@ __sleep (unsigned int seconds)
 
   recv = __mach_reply_port ();
 
-  before = time ((time_t *) NULL);
+  before = time_now ();
   (void) __mach_msg (NULL, MACH_RCV_MSG|MACH_RCV_TIMEOUT|MACH_RCV_INTERRUPT,
 		     0, 0, recv, seconds * 1000, MACH_PORT_NULL);
-  after = time ((time_t *) NULL);
+  after = time_now ();
   __mach_port_destroy (__mach_task_self (), recv);
 
   return seconds - (after - before);

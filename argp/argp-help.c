@@ -1,5 +1,5 @@
 /* Hierarchial argument parsing help output
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _GNU_SOURCE
 # define _GNU_SOURCE	1
@@ -1540,7 +1540,7 @@ argp_doc (const struct argp *argp, const struct argp_state *state,
 }
 
 /* Output a usage message for ARGP to STREAM.  If called from
-   argp_state_help, STATE is the relevent parsing state.  FLAGS are from the
+   argp_state_help, STATE is the relevant parsing state.  FLAGS are from the
    set ARGP_HELP_*.  NAME is what to use wherever a `program name' is
    needed. */
 static void
@@ -1750,7 +1750,8 @@ weak_alias (__argp_state_help, argp_state_help)
    by the program name and `:', to stderr, and followed by a `Try ... --help'
    message, then exit (1).  */
 void
-__argp_error (const struct argp_state *state, const char *fmt, ...)
+__argp_error_internal (const struct argp_state *state, const char *fmt,
+		       va_list ap, unsigned int mode_flags)
 {
   if (!state || !(state->flags & ARGP_NO_ERRS))
     {
@@ -1758,18 +1759,14 @@ __argp_error (const struct argp_state *state, const char *fmt, ...)
 
       if (stream)
 	{
-	  va_list ap;
-
 #if _LIBC || (HAVE_FLOCKFILE && HAVE_FUNLOCKFILE)
 	  __flockfile (stream);
 #endif
 
-	  va_start (ap, fmt);
-
 #ifdef _LIBC
 	  char *buf;
 
-	  if (_IO_vasprintf (&buf, fmt, ap) < 0)
+	  if (__vasprintf_internal (&buf, fmt, ap, mode_flags) < 0)
 	    buf = NULL;
 
 	  __fxprintf (stream, "%s: %s\n",
@@ -1789,13 +1786,19 @@ __argp_error (const struct argp_state *state, const char *fmt, ...)
 
 	  __argp_state_help (state, stream, ARGP_HELP_STD_ERR);
 
-	  va_end (ap);
-
 #if _LIBC || (HAVE_FLOCKFILE && HAVE_FUNLOCKFILE)
 	  __funlockfile (stream);
 #endif
 	}
     }
+}
+void
+__argp_error (const struct argp_state *state, const char *fmt, ...)
+{
+  va_list ap;
+  va_start (ap, fmt);
+  __argp_error_internal (state, fmt, ap, 0);
+  va_end (ap);
 }
 #ifdef weak_alias
 weak_alias (__argp_error, argp_error)
@@ -1810,8 +1813,9 @@ weak_alias (__argp_error, argp_error)
    *parsing errors*, and the former is for other problems that occur during
    parsing but don't reflect a (syntactic) problem with the input.  */
 void
-__argp_failure (const struct argp_state *state, int status, int errnum,
-		const char *fmt, ...)
+__argp_failure_internal (const struct argp_state *state, int status,
+			 int errnum, const char *fmt, va_list ap,
+			 unsigned int mode_flags)
 {
   if (!state || !(state->flags & ARGP_NO_ERRS))
     {
@@ -1833,13 +1837,10 @@ __argp_failure (const struct argp_state *state, int status, int errnum,
 
 	  if (fmt)
 	    {
-	      va_list ap;
-
-	      va_start (ap, fmt);
 #ifdef _LIBC
 	      char *buf;
 
-	      if (_IO_vasprintf (&buf, fmt, ap) < 0)
+	      if (__vasprintf_internal (&buf, fmt, ap, mode_flags) < 0)
 		buf = NULL;
 
 	      __fxprintf (stream, ": %s", buf);
@@ -1851,8 +1852,6 @@ __argp_failure (const struct argp_state *state, int status, int errnum,
 
 	      vfprintf (stream, fmt, ap);
 #endif
-
-	      va_end (ap);
 	    }
 
 	  if (errnum)
@@ -1873,9 +1872,11 @@ __argp_failure (const struct argp_state *state, int status, int errnum,
 #endif
 	    }
 
+#ifdef _LIBC
 	  if (_IO_fwide (stream, 0) > 0)
 	    putwc_unlocked (L'\n', stream);
 	  else
+#endif
 	    putc_unlocked ('\n', stream);
 
 #if _LIBC || (HAVE_FLOCKFILE && HAVE_FUNLOCKFILE)
@@ -1886,6 +1887,15 @@ __argp_failure (const struct argp_state *state, int status, int errnum,
 	    exit (status);
 	}
     }
+}
+void
+__argp_failure (const struct argp_state *state, int status, int errnum,
+		const char *fmt, ...)
+{
+  va_list ap;
+  va_start (ap, fmt);
+  __argp_failure_internal (state, status, errnum, fmt, ap, 0);
+  va_end (ap);
 }
 #ifdef weak_alias
 weak_alias (__argp_failure, argp_failure)

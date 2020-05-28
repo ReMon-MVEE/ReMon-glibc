@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <string.h>
 #include <stdint.h>
@@ -30,8 +30,8 @@
 size_t
 STRCSPN (const char *str, const char *reject)
 {
-  if (__glibc_unlikely (reject[0] == '\0') ||
-      __glibc_unlikely (reject[1] == '\0'))
+  if (__glibc_unlikely (reject[0] == '\0')
+      || __glibc_unlikely (reject[1] == '\0'))
     return __strchrnul (str, reject [0]) - str;
 
   /* Use multiple small memsets to enable inlining on most targets.  */

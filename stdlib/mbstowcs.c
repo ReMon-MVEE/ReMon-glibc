@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdlib.h>
 #include <string.h>
@@ -22,12 +22,7 @@
 
 /* Convert the string of multibyte characters in S to `wchar_t's in
    PWCS, writing no more than N.  Return the number written,
-   or (size_t) -1 if an invalid multibyte character is encountered.
-
-   Attention: this function should NEVER be intentionally used.
-   The interface is completely stupid.  The state is shared between
-   all conversion functions.  You should use instead the restartable
-   version `mbsrtowcs'.  */
+   or (size_t) -1 if an invalid multibyte character is encountered.  */
 size_t
 mbstowcs (wchar_t *pwcs, const char *s, size_t n)
 {

@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,22 +13,15 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <libioP.h>
 #include <stdio.h>
 #include <wchar.h>
 
 /* Read formatted input from STDIN according to the format string FORMAT.  */
-/* VARARGS2 */
 int
 __isoc99_vwscanf (const wchar_t *format, va_list args)
 {
-  int done;
-
-  _IO_acquire_lock_clear_flags2 (stdin);
-  stdin->_flags2 |= _IO_FLAGS2_SCANF_STD;
-  done = _IO_vfwscanf (stdin, format, args, NULL);
-  _IO_release_lock (stdin);
-  return done;
+  return __vfwscanf_internal (stdin, format, args, SCANF_ISOC99_A);
 }

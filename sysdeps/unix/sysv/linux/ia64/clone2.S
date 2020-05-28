@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 
 #include <sysdep.h>
@@ -58,7 +58,7 @@ ENTRY(__clone2)
 	 */
 	mov r15=SYS_ify (clone2)
 	.save rp, r0
-	break __BREAK_SYSCALL
+	break __IA64_BREAK_SYSCALL
 	.body
 	cmp.eq p6,p0=-1,r10
 	cmp.eq CHILD,PARENT=0,r8 /* Are we the child?   */
@@ -78,7 +78,7 @@ ENTRY(__clone2)
 	mov gp=loc0
 	mov r15=SYS_ify (exit)
 	.save rp, r0
-	break __BREAK_SYSCALL
+	break __IA64_BREAK_SYSCALL
 	ret			/* Not reached.		*/
 PSEUDO_END(__clone2)
 

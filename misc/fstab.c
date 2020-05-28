@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <fstab.h>
 #include <mntent.h>
@@ -163,12 +163,12 @@ fstab_convert (struct fstab_state *state)
   f->fs_file = m->mnt_dir;
   f->fs_vfstype = m->mnt_type;
   f->fs_mntops = m->mnt_opts;
-  f->fs_type = (__hasmntopt (m, FSTAB_RW) ? FSTAB_RW :
-		__hasmntopt (m, FSTAB_RQ) ? FSTAB_RQ :
-		__hasmntopt (m, FSTAB_RO) ? FSTAB_RO :
-		__hasmntopt (m, FSTAB_SW) ? FSTAB_SW :
-		__hasmntopt (m, FSTAB_XX) ? FSTAB_XX :
-		"??");
+  f->fs_type = (__hasmntopt (m, FSTAB_RW) ? FSTAB_RW
+		: __hasmntopt (m, FSTAB_RQ) ? FSTAB_RQ
+		: __hasmntopt (m, FSTAB_RO) ? FSTAB_RO
+		: __hasmntopt (m, FSTAB_SW) ? FSTAB_SW
+		: __hasmntopt (m, FSTAB_XX) ? FSTAB_XX
+		: "??");
   f->fs_freq = m->mnt_freq;
   f->fs_passno = m->mnt_passno;
   return f;

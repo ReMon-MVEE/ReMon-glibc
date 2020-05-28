@@ -1,5 +1,5 @@
 /* Test and measure strcasestr functions.
-   Copyright (C) 2010-2018 Free Software Foundation, Inc.
+   Copyright (C) 2010-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Ulrich Drepper <drepper@redhat.com>, 2010.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #define TEST_NAME "strcasestr"
@@ -25,6 +25,7 @@
 #define STRCASESTR simple_strcasestr
 #define NO_ALIAS
 #define __strncasecmp strncasecmp
+#define __strnlen strnlen
 #include "strcasestr.c"
 
 
@@ -66,7 +67,8 @@ check_result (impl_t *impl, const char *s1, const char *s2,
   if (result != exp_result)
     {
       error (0, 0, "Wrong result in function %s %s %s", impl->name,
-	     result, exp_result);
+	     (result == NULL) ? "(null)" : result,
+	     (exp_result == NULL) ? "(null)" : exp_result);
       ret = 1;
       return -1;
     }

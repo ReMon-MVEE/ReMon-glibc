@@ -1,5 +1,5 @@
 /* Install given floating-point environment.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Denis Joseph Barrow (djbarrow@de.ibm.com).
 
@@ -15,30 +15,15 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#include <fenv_libc.h>
-#include <fpu_control.h>
-#include <stddef.h>
-#include <unistd.h>
+#include <fenv_private.h>
 
 int
 __fesetenv (const fenv_t *envp)
 {
-  fenv_t env;
-
-  if (envp == FE_DFL_ENV)
-    {
-      env.__fpc = _FPU_DEFAULT;
-    }
-  else if (envp == FE_NOMASK_ENV)
-    {
-      env.__fpc = FPC_EXCEPTION_MASK;
-    }
-  else
-    env = (*envp);
-
-  _FPU_SETCW (env.__fpc);
+  fenv_t env = libc_handle_user_fenv_s390 (envp);
+  libc_fesetenv_s390 (&env);
 
   /* Success.  */
   return 0;

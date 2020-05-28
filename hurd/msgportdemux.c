@@ -1,5 +1,5 @@
 /* Demux messages sent on the signal port.
-   Copyright (C) 1991-2018 Free Software Foundation, Inc.
+   Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <hurd.h>
 #include <hurd/signal.h>
@@ -46,8 +46,8 @@ msgport_server (mach_msg_header_t *inp,
     if ((*d->demux) (inp, outp))
       return 1;
 
-  return (_S_exc_server (inp, outp) ||
-	  _S_msg_server (inp, outp));
+  return (_S_exc_server (inp, outp)
+	  || _S_msg_server (inp, outp));
 }
 
 /* This is the code that the signal thread runs.  */

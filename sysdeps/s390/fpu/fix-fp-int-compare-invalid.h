@@ -1,6 +1,6 @@
 /* Fix for missing "invalid" exceptions from floating-point
    comparisons.  s390 version.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef FIX_FP_INT_COMPARE_INVALID_H
 #define FIX_FP_INT_COMPARE_INVALID_H	1
@@ -27,10 +27,12 @@
    <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=77918>.
    There exists an equivalent gcc bugzilla for Intel:
    <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52451>.
-   Once the s390 gcc bug is fixed, the definition of FIX_COMPARE_INVALID
-   should have a __GNUC_PREREQ conditional added so that e.g. the workaround
-   to call feraiseexcept (FE_INVALID) in math/s_iseqsig_template.c can be
-   avoided.  */
-#define FIX_COMPARE_INVALID 1
+   This s390 gcc bug is fixed with gcc 10, thus we don't need the workaround
+   to call feraiseexcept (FE_INVALID) in math/s_iseqsig_template.c.  */
+#if __GNUC_PREREQ (10, 0)
+# define FIX_COMPARE_INVALID 0
+#else
+# define FIX_COMPARE_INVALID 1
+#endif
 
 #endif /* fix-fp-int-compare-invalid.h */

@@ -1,5 +1,5 @@
 /* Internal definitions for pthreads library.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library;  if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _PT_MUTEX_H
 #define _PT_MUTEX_H	1
@@ -27,8 +27,8 @@
 #define ROBUST_LOCK(self, mtxp, cb, ...)   \
   if (mtxp->__owner_id == NOTRECOVERABLE_ID)   \
     return ENOTRECOVERABLE;   \
-  else if (mtxp->__owner_id == self->thread &&   \
-      __getpid () == (int)(mtxp->__lock & LLL_OWNER_MASK))   \
+  else if (mtxp->__owner_id == self->thread   \
+	   && __getpid () == (int)(mtxp->__lock & LLL_OWNER_MASK))   \
     {   \
       if (mtxp->__type == PT_MTX_RECURSIVE)   \
         {   \
@@ -63,9 +63,9 @@
 /* Check that a thread owns the mutex. For non-robust, task-shared
  * objects, we have to check the thread *and* process-id. */
 #define mtx_owned_p(mtx, pt, flags)   \
-  ((mtx)->__owner_id == (pt)->thread &&   \
-    (((flags) & GSYNC_SHARED) == 0 ||   \
-      (mtx)->__shpid == __getpid ()))
+  ((mtx)->__owner_id == (pt)->thread   \
+   && (((flags) & GSYNC_SHARED) == 0   \
+       || (mtx)->__shpid == __getpid ()))
 
 /* Record a thread as the owner of the mutex. */
 #define mtx_set_owner(mtx, pt, flags)   \

@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@vt.uni-paderborn.de>, 1997.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <string.h>
 #include <time.h>
@@ -97,9 +97,9 @@ __nis_findfastest_with_timeout (dir_binding *bind,
   for (i = 0; i < bind->server_len; i++)
     for (j = 0; j < bind->server_val[i].ep.ep_len; ++j)
       if (strcmp (bind->server_val[i].ep.ep_val[j].family, "inet") == 0)
-	if ((bind->server_val[i].ep.ep_val[j].proto == NULL) ||
-	    (bind->server_val[i].ep.ep_val[j].proto[0] == '-') ||
-	    (bind->server_val[i].ep.ep_val[j].proto[0] == '\0'))
+	if ((bind->server_val[i].ep.ep_val[j].proto == NULL)
+	    || (bind->server_val[i].ep.ep_val[j].proto[0] == '-')
+	    || (bind->server_val[i].ep.ep_val[j].proto[0] == '\0'))
 	  {
 	    sin.sin_addr.s_addr =
 	      inetstr2int (bind->server_val[i].ep.ep_val[j].uaddr);
@@ -127,7 +127,7 @@ __nis_findfastest_with_timeout (dir_binding *bind,
 	      }
 	    memcpy ((char *) &pings[pings_count].sin, (char *) &sin,
 		    sizeof (sin));
-	    memcpy ((char *)&saved_sin, (char *)&sin, sizeof(sin));
+	    memcpy ((char *)&saved_sin, (char *)&sin, sizeof (sin));
 	    pings[pings_count].xid = xid_seed + pings_count;
 	    pings[pings_count].server_nr = i;
 	    pings[pings_count].server_ep = j;

@@ -1,5 +1,5 @@
 /* Test program for argp argument parser
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -123,7 +123,7 @@ static const char doc[] = "Test program for argp."
 static void
 popt (int key, char *arg)
 {
-  char buf[10];
+  char buf[12];
   if (isprint (key))
     sprintf (buf, "%c", key);
   else

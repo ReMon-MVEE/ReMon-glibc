@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <unistd.h>
 #include <sys/param.h>
@@ -29,9 +29,5 @@ __readlink_chk (const char *path, void *buf, size_t len, size_t buflen)
   if (len > buflen)
     __chk_fail ();
 
-#ifdef HAVE_INLINED_SYSCALLS
-  return INLINE_SYSCALL (readlink, 3, path, buf, len);
-#else
   return __readlink (path, buf, len);
-#endif
 }

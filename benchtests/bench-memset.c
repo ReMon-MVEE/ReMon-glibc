@@ -1,5 +1,5 @@
 /* Measure memset functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,86 +14,30 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
-#ifdef TEST_BZERO
-# define TEST_NAME "bzero"
+#ifndef WIDE
+# define TEST_NAME "memset"
 #else
-# ifndef WIDE
-#  define TEST_NAME "memset"
-# else
-#  define TEST_NAME "wmemset"
-# endif /* WIDE */
-#endif /* !TEST_BZERO */
+# define TEST_NAME "wmemset"
+# define generic_memset generic_wmemset
+#endif /* WIDE */
 #define MIN_PAGE_SIZE 131072
 #include "bench-string.h"
 
-#ifndef WIDE
-# define MEMSET memset
-# define CHAR char
-# define SIMPLE_MEMSET simple_memset
-# define MEMCMP memcmp
-#else
-# include <wchar.h>
-# define MEMSET wmemset
-# define CHAR wchar_t
-# define SIMPLE_MEMSET simple_wmemset
-# define MEMCMP wmemcmp
-#endif /* WIDE */
-
 #include "json-lib.h"
 
-CHAR *SIMPLE_MEMSET (CHAR *, int, size_t);
-
-#ifdef TEST_BZERO
-typedef void (*proto_t) (char *, size_t);
-void simple_bzero (char *, size_t);
-void builtin_bzero (char *, size_t);
-
-IMPL (simple_bzero, 0)
-IMPL (builtin_bzero, 0)
-IMPL (bzero, 1)
-
-void
-simple_bzero (char *s, size_t n)
-{
-  SIMPLE_MEMSET (s, 0, n);
-}
-
-void
-builtin_bzero (char *s, size_t n)
-{
-  __builtin_bzero (s, n);
-}
+#ifdef WIDE
+CHAR *generic_wmemset (CHAR *, CHAR, size_t);
 #else
-typedef CHAR *(*proto_t) (CHAR *, int, size_t);
+void *generic_memset (void *, int, size_t);
+#endif
 
-IMPL (SIMPLE_MEMSET, 0)
-# ifndef WIDE
-char *builtin_memset (char *, int, size_t);
-IMPL (builtin_memset, 0)
-# endif /* !WIDE */
+typedef void *(*proto_t) (void *, int, size_t);
+
 IMPL (MEMSET, 1)
-
-# ifndef WIDE
-char *
-builtin_memset (char *s, int c, size_t n)
-{
-  return __builtin_memset (s, c, n);
-}
-# endif /* !WIDE */
-#endif /* !TEST_BZERO */
-
-CHAR *
-inhibit_loop_to_libcall
-SIMPLE_MEMSET (CHAR *s, int c, size_t n)
-{
-  CHAR *r = s, *end = s + n;
-  while (r < end)
-    *r++ = c;
-  return s;
-}
+IMPL (generic_memset, 0)
 
 static void
 do_one_test (json_ctx_t *json_ctx, impl_t *impl, CHAR *s,
@@ -105,11 +49,7 @@ do_one_test (json_ctx_t *json_ctx, impl_t *impl, CHAR *s,
   TIMING_NOW (start);
   for (i = 0; i < iters; ++i)
     {
-#ifdef TEST_BZERO
-      CALL (impl, s, n);
-#else
       CALL (impl, s, c, n);
-#endif /* !TEST_BZERO */
     }
   TIMING_NOW (stop);
 
@@ -134,7 +74,7 @@ do_test (json_ctx_t *json_ctx, size_t align, int c, size_t len)
   FOR_EACH_IMPL (impl, 0)
     {
       do_one_test (json_ctx, impl, (CHAR *) (buf1) + align, c, len);
-      realloc_bufs ();
+      alloc_bufs ();
     }
 
   json_array_end (json_ctx);
@@ -166,9 +106,7 @@ test_main (void)
 
   json_array_begin (&json_ctx, "results");
 
-#ifndef TEST_BZERO
   for (c = -65; c <= 130; c += 65)
-#endif
     {
       for (i = 0; i < 18; ++i)
 	do_test (&json_ctx, 0, c, 1 << i);
@@ -203,3 +141,16 @@ test_main (void)
 }
 
 #include <support/test-driver.c>
+
+#define libc_hidden_builtin_def(X)
+#define libc_hidden_def(X)
+#define libc_hidden_weak(X)
+#define weak_alias(X,Y)
+#ifndef WIDE
+# undef MEMSET
+# define MEMSET generic_memset
+# include <string/memset.c>
+#else
+# define WMEMSET generic_wmemset
+# include <wcsmbs/wmemset.c>
+#endif

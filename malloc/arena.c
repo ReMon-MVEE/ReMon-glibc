@@ -1,5 +1,5 @@
 /* Malloc implementation for multiple threads without lock contention.
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+   Copyright (C) 2001-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Wolfram Gloger <wg@malloc.de>, 2001.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; see the file COPYING.LIB.  If
-   not, see <http://www.gnu.org/licenses/>.  */
+   not, see <https://www.gnu.org/licenses/>.  */
 
 #include <stdbool.h>
 
@@ -207,7 +207,6 @@ __malloc_fork_unlock_child (void)
 }
 
 #if HAVE_TUNABLES
-static inline int do_set_mallopt_check (int32_t value);
 void
 TUNABLE_CALLBACK (set_mallopt_check) (tunable_val_t *valp)
 {
@@ -237,6 +236,7 @@ TUNABLE_CALLBACK_FNDECL (set_tcache_max, size_t)
 TUNABLE_CALLBACK_FNDECL (set_tcache_count, size_t)
 TUNABLE_CALLBACK_FNDECL (set_tcache_unsorted_limit, size_t)
 #endif
+TUNABLE_CALLBACK_FNDECL (set_mxfast, size_t)
 #else
 /* Initialization routine. */
 #include <string.h>
@@ -324,6 +324,7 @@ ptmalloc_init (void)
   TUNABLE_GET (tcache_unsorted_limit, size_t,
 	       TUNABLE_CALLBACK (set_tcache_unsorted_limit));
 # endif
+  TUNABLE_GET (mxfast, size_t, TUNABLE_CALLBACK (set_mxfast));
 #else
   const char *s = NULL;
   if (__glibc_likely (_environ != NULL))
@@ -597,7 +598,7 @@ heap_trim (heap_info *heap, size_t pad)
 {
   mstate ar_ptr = heap->ar_ptr;
   unsigned long pagesz = GLRO (dl_pagesize);
-  mchunkptr top_chunk = top (ar_ptr), p, bck, fwd;
+  mchunkptr top_chunk = top (ar_ptr), p;
   heap_info *prev_heap;
   long new_size, top_size, top_area, extra, prev_size, misalign;
 
@@ -626,7 +627,7 @@ heap_trim (heap_info *heap, size_t pad)
       if (!prev_inuse (p)) /* consolidate backward */
         {
           p = prev_chunk (p);
-          unlink (ar_ptr, p, bck, fwd);
+          unlink_chunk (ar_ptr, p);
         }
       assert (((unsigned long) ((char *) p + new_size) & (pagesz - 1)) == 0);
       assert (((char *) p + new_size) == ((char *) heap + heap->size));
@@ -942,8 +943,8 @@ arena_get_retry (mstate ar_ptr, size_t bytes)
   return ar_ptr;
 }
 
-static void __attribute__ ((section ("__libc_thread_freeres_fn")))
-arena_thread_freeres (void)
+void
+__malloc_arena_thread_freeres (void)
 {
   /* Shut down the thread cache first.  This could deallocate data for
      the thread arena, so do this before we put the arena on the free
@@ -967,7 +968,6 @@ arena_thread_freeres (void)
       __libc_lock_unlock (free_list_lock);
     }
 }
-text_set_element (__libc_thread_subfreeres, arena_thread_freeres);
 
 /*
  * Local variables:

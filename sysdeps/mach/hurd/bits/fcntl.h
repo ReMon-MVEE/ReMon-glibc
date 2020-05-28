@@ -1,5 +1,5 @@
 /* O_*, F_*, FD_* bit values for GNU.
-   Copyright (C) 1993-2018 Free Software Foundation, Inc.
+   Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _FCNTL_H
 # error "Never use <bits/fcntl.h> directly; include <fcntl.h> instead."
@@ -163,9 +163,18 @@
 # define F_GETOWN	5	/* Get owner (receiver of SIGIO).  */
 # define F_SETOWN	6	/* Set owner (receiver of SIGIO).  */
 #endif
-#define	F_GETLK		7	/* Get record locking info.  */
-#define	F_SETLK		8	/* Set record locking info (non-blocking).  */
-#define	F_SETLKW	9	/* Set record locking info (blocking).  */
+#ifdef __USE_FILE_OFFSET64
+# define	F_GETLK		F_GETLK64
+# define	F_SETLK		F_SETLK64
+# define	F_SETLKW	F_SETLKW64
+#else
+# define	F_GETLK		7	/* Get record locking info.  */
+# define	F_SETLK		8	/* Set record locking info (non-blocking).  */
+# define	F_SETLKW	9	/* Set record locking info (blocking).  */
+#endif
+#define	F_GETLK64	10	/* Get record locking info.  */
+#define	F_SETLK64	11	/* Set record locking info (non-blocking).  */
+#define	F_SETLKW64	12	/* Set record locking info (blocking).  */
 
 #ifdef __USE_XOPEN2K8
 # define F_DUPFD_CLOEXEC 1030	/* Duplicate, set FD_CLOEXEC on new one.  */

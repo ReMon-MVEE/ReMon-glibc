@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -32,11 +32,6 @@ pthread_condattr_setclock (pthread_condattr_t *attr, clockid_t clock_id)
     /* If more clocks are allowed some day the storing of the clock ID
        in the pthread_cond_t structure needs to be adjusted.  */
     return EINVAL;
-
-  /* If we do not support waiting using CLOCK_MONOTONIC, return an error.  */
-  if (clock_id == CLOCK_MONOTONIC
-      && !futex_supports_exact_relative_timeouts())
-    return ENOTSUP;
 
   /* Make sure the value fits in the bits we reserved.  */
   assert (clock_id < (1 << COND_CLOCK_BITS));

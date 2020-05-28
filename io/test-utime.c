@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <fcntl.h>
 #include <stdint.h>
@@ -27,23 +27,17 @@
 int
 main (int argc, char *argv[])
 {
-  char file[L_tmpnam];
+  char file[] = "/tmp/test-utime.XXXXXX";
   struct utimbuf ut;
   struct stat st;
   struct stat stnow;
   time_t now1, now2;
   int fd;
 
-  if (tmpnam (file) == 0)
-    {
-      perror ("tmpnam");
-      return 1;
-    }
-
-  fd = creat (file, 0666);
+  fd = mkstemp (file);
   if (fd < 0)
     {
-      perror ("creat");
+      perror ("mkstemp");
       return 1;
     }
   close (fd);

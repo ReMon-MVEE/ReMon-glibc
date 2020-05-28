@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -37,8 +37,8 @@ __gets_chk (char *buf, size_t size)
   if (size == 0)
     __chk_fail ();
 
-  _IO_acquire_lock (_IO_stdin);
-  ch = _IO_getc_unlocked (_IO_stdin);
+  _IO_acquire_lock (stdin);
+  ch = _IO_getc_unlocked (stdin);
   if (ch == EOF)
     {
       retval = NULL;
@@ -51,24 +51,24 @@ __gets_chk (char *buf, size_t size)
       /* This is very tricky since a file descriptor may be in the
 	 non-blocking mode. The error flag doesn't mean much in this
 	 case. We return an error only when there is a new error. */
-      int old_error = _IO_stdin->_flags & _IO_ERR_SEEN;
-      _IO_stdin->_flags &= ~_IO_ERR_SEEN;
+      int old_error = stdin->_flags & _IO_ERR_SEEN;
+      stdin->_flags &= ~_IO_ERR_SEEN;
       buf[0] = (char) ch;
-      count = _IO_getline (_IO_stdin, buf + 1, size - 1, '\n', 0) + 1;
-      if (_IO_stdin->_flags & _IO_ERR_SEEN)
+      count = _IO_getline (stdin, buf + 1, size - 1, '\n', 0) + 1;
+      if (stdin->_flags & _IO_ERR_SEEN)
 	{
 	  retval = NULL;
 	  goto unlock_return;
 	}
       else
-	_IO_stdin->_flags |= old_error;
+	stdin->_flags |= old_error;
     }
   if (count >= size)
     __chk_fail ();
   buf[count] = 0;
   retval = buf;
 unlock_return:
-  _IO_release_lock (_IO_stdin);
+  _IO_release_lock (stdin);
   return retval;
 }
 

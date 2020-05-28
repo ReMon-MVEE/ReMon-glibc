@@ -1,5 +1,5 @@
 /* Load a shared object at runtime, relocate it, and run its initializer.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -33,8 +33,10 @@
 #include <stap-probe.h>
 #include <atomic.h>
 #include <libc-internal.h>
+#include <array_length.h>
 
 #include <dl-dst.h>
+#include <dl-prop.h>
 
 
 /* We must be careful not to leave us in an inconsistent state.  Thus we
@@ -49,22 +51,38 @@ struct dl_open_args
   struct link_map *map;
   /* Namespace ID.  */
   Lmid_t nsid;
+
+  /* Original value of _ns_global_scope_pending_adds.  Set by
+     dl_open_worker.  Only valid if nsid is a real namespace
+     (non-negative).  */
+  unsigned int original_global_scope_pending_adds;
+
   /* Original parameters to the program and the current environment.  */
   int argc;
   char **argv;
   char **env;
 };
 
-
-static int
-add_to_global (struct link_map *new)
+/* Called in case the global scope cannot be extended.  */
+static void __attribute__ ((noreturn))
+add_to_global_resize_failure (struct link_map *new)
 {
-  struct link_map **new_global;
-  unsigned int to_add = 0;
-  unsigned int cnt;
+  _dl_signal_error (ENOMEM, new->l_libname->name, NULL,
+		    N_ ("cannot extend global scope"));
+}
+
+/* Grow the global scope array for the namespace, so that all the new
+   global objects can be added later in add_to_global_update, without
+   risk of memory allocation failure.  add_to_global_resize raises
+   exceptions for memory allocation errors.  */
+static void
+add_to_global_resize (struct link_map *new)
+{
+  struct link_namespaces *ns = &GL (dl_ns)[new->l_ns];
 
   /* Count the objects we have to put in the global scope.  */
-  for (cnt = 0; cnt < new->l_searchlist.r_nlist; ++cnt)
+  unsigned int to_add = 0;
+  for (unsigned int cnt = 0; cnt < new->l_searchlist.r_nlist; ++cnt)
     if (new->l_searchlist.r_list[cnt]->l_global == 0)
       ++to_add;
 
@@ -82,47 +100,51 @@ add_to_global (struct link_map *new)
      in an realloc() call.  Therefore we allocate a completely new
      array the first time we have to add something to the locale scope.  */
 
-  struct link_namespaces *ns = &GL(dl_ns)[new->l_ns];
+  if (__builtin_add_overflow (ns->_ns_global_scope_pending_adds, to_add,
+			      &ns->_ns_global_scope_pending_adds))
+    add_to_global_resize_failure (new);
+
+  unsigned int new_size = 0; /* 0 means no new allocation.  */
+  void *old_global = NULL; /* Old allocation if free-able.  */
+
+  /* Minimum required element count for resizing.  Adjusted below for
+     an exponential resizing policy.  */
+  size_t required_new_size;
+  if (__builtin_add_overflow (ns->_ns_main_searchlist->r_nlist,
+			      ns->_ns_global_scope_pending_adds,
+			      &required_new_size))
+    add_to_global_resize_failure (new);
+
   if (ns->_ns_global_scope_alloc == 0)
     {
-      /* This is the first dynamic object given global scope.  */
-      ns->_ns_global_scope_alloc
-	= ns->_ns_main_searchlist->r_nlist + to_add + 8;
-      new_global = (struct link_map **)
-	malloc (ns->_ns_global_scope_alloc * sizeof (struct link_map *));
+      if (__builtin_add_overflow (required_new_size, 8, &new_size))
+	add_to_global_resize_failure (new);
+    }
+  else if (required_new_size > ns->_ns_global_scope_alloc)
+    {
+      if (__builtin_mul_overflow (required_new_size, 2, &new_size))
+	add_to_global_resize_failure (new);
+
+      /* The old array was allocated with our malloc, not the minimal
+	 malloc.  */
+      old_global = ns->_ns_main_searchlist->r_list;
+    }
+
+  if (new_size > 0)
+    {
+      size_t allocation_size;
+      if (__builtin_mul_overflow (new_size, sizeof (struct link_map *),
+				  &allocation_size))
+	add_to_global_resize_failure (new);
+      struct link_map **new_global = malloc (allocation_size);
       if (new_global == NULL)
-	{
-	  ns->_ns_global_scope_alloc = 0;
-	nomem:
-	  _dl_signal_error (ENOMEM, new->l_libname->name, NULL,
-			    N_("cannot extend global scope"));
-	  return 1;
-	}
+	add_to_global_resize_failure (new);
 
       /* Copy over the old entries.  */
-      ns->_ns_main_searchlist->r_list
-	= memcpy (new_global, ns->_ns_main_searchlist->r_list,
-		  (ns->_ns_main_searchlist->r_nlist
-		   * sizeof (struct link_map *)));
-    }
-  else if (ns->_ns_main_searchlist->r_nlist + to_add
-	   > ns->_ns_global_scope_alloc)
-    {
-      /* We have to extend the existing array of link maps in the
-	 main map.  */
-      struct link_map **old_global
-	= GL(dl_ns)[new->l_ns]._ns_main_searchlist->r_list;
-      size_t new_nalloc = ((ns->_ns_global_scope_alloc + to_add) * 2);
+      memcpy (new_global, ns->_ns_main_searchlist->r_list,
+	      ns->_ns_main_searchlist->r_nlist * sizeof (struct link_map *));
 
-      new_global = (struct link_map **)
-	malloc (new_nalloc * sizeof (struct link_map *));
-      if (new_global == NULL)
-	goto nomem;
-
-      memcpy (new_global, old_global,
-	      ns->_ns_global_scope_alloc * sizeof (struct link_map *));
-
-      ns->_ns_global_scope_alloc = new_nalloc;
+      ns->_ns_global_scope_alloc = new_size;
       ns->_ns_main_searchlist->r_list = new_global;
 
       if (!RTLD_SINGLE_THREAD_P)
@@ -130,16 +152,28 @@ add_to_global (struct link_map *new)
 
       free (old_global);
     }
+}
+
+/* Actually add the new global objects to the global scope.  Must be
+   called after add_to_global_resize.  This function cannot fail.  */
+static void
+add_to_global_update (struct link_map *new)
+{
+  struct link_namespaces *ns = &GL (dl_ns)[new->l_ns];
 
   /* Now add the new entries.  */
   unsigned int new_nlist = ns->_ns_main_searchlist->r_nlist;
-  for (cnt = 0; cnt < new->l_searchlist.r_nlist; ++cnt)
+  for (unsigned int cnt = 0; cnt < new->l_searchlist.r_nlist; ++cnt)
     {
       struct link_map *map = new->l_searchlist.r_list[cnt];
 
       if (map->l_global == 0)
 	{
 	  map->l_global = 1;
+
+	  /* The array has been resized by add_to_global_resize.  */
+	  assert (new_nlist < ns->_ns_global_scope_alloc);
+
 	  ns->_ns_main_searchlist->r_list[new_nlist++] = map;
 
 	  /* We modify the global scope.  Report this.  */
@@ -148,10 +182,15 @@ add_to_global (struct link_map *new)
 			      map->l_name, map->l_ns);
 	}
     }
+
+  /* Some of the pending adds have been performed by the loop above.
+     Adjust the counter accordingly.  */
+  unsigned int added = new_nlist - ns->_ns_main_searchlist->r_nlist;
+  assert (added <= ns->_ns_global_scope_pending_adds);
+  ns->_ns_global_scope_pending_adds -= added;
+
   atomic_write_barrier ();
   ns->_ns_main_searchlist->r_nlist = new_nlist;
-
-  return 0;
 }
 
 /* Search link maps in all namespaces for the DSO that contains the object at
@@ -175,6 +214,260 @@ _dl_find_dso_for_object (const ElfW(Addr) addr)
   return NULL;
 }
 rtld_hidden_def (_dl_find_dso_for_object);
+
+/* Return true if NEW is found in the scope for MAP.  */
+static size_t
+scope_has_map (struct link_map *map, struct link_map *new)
+{
+  size_t cnt;
+  for (cnt = 0; map->l_scope[cnt] != NULL; ++cnt)
+    if (map->l_scope[cnt] == &new->l_searchlist)
+      return true;
+  return false;
+}
+
+/* Return the length of the scope for MAP.  */
+static size_t
+scope_size (struct link_map *map)
+{
+  size_t cnt;
+  for (cnt = 0; map->l_scope[cnt] != NULL; )
+    ++cnt;
+  return cnt;
+}
+
+/* Resize the scopes of depended-upon objects, so that the new object
+   can be added later without further allocation of memory.  This
+   function can raise an exceptions due to malloc failure.  */
+static void
+resize_scopes (struct link_map *new)
+{
+  /* If the file is not loaded now as a dependency, add the search
+     list of the newly loaded object to the scope.  */
+  for (unsigned int i = 0; i < new->l_searchlist.r_nlist; ++i)
+    {
+      struct link_map *imap = new->l_searchlist.r_list[i];
+
+      /* If the initializer has been called already, the object has
+	 not been loaded here and now.  */
+      if (imap->l_init_called && imap->l_type == lt_loaded)
+	{
+	  if (scope_has_map (imap, new))
+	    /* Avoid duplicates.  */
+	    continue;
+
+	  size_t cnt = scope_size (imap);
+	  if (__glibc_unlikely (cnt + 1 >= imap->l_scope_max))
+	    {
+	      /* The l_scope array is too small.  Allocate a new one
+		 dynamically.  */
+	      size_t new_size;
+	      struct r_scope_elem **newp;
+
+	      if (imap->l_scope != imap->l_scope_mem
+		  && imap->l_scope_max < array_length (imap->l_scope_mem))
+		{
+		  /* If the current l_scope memory is not pointing to
+		     the static memory in the structure, but the
+		     static memory in the structure is large enough to
+		     use for cnt + 1 scope entries, then switch to
+		     using the static memory.  */
+		  new_size = array_length (imap->l_scope_mem);
+		  newp = imap->l_scope_mem;
+		}
+	      else
+		{
+		  new_size = imap->l_scope_max * 2;
+		  newp = (struct r_scope_elem **)
+		    malloc (new_size * sizeof (struct r_scope_elem *));
+		  if (newp == NULL)
+		    _dl_signal_error (ENOMEM, "dlopen", NULL,
+				      N_("cannot create scope list"));
+		}
+
+	      /* Copy the array and the terminating NULL.  */
+	      memcpy (newp, imap->l_scope,
+		      (cnt + 1) * sizeof (imap->l_scope[0]));
+	      struct r_scope_elem **old = imap->l_scope;
+
+	      imap->l_scope = newp;
+
+	      if (old != imap->l_scope_mem)
+		_dl_scope_free (old);
+
+	      imap->l_scope_max = new_size;
+	    }
+	}
+    }
+}
+
+/* Second stage of resize_scopes: Add NEW to the scopes.  Also print
+   debugging information about scopes if requested.
+
+   This function cannot raise an exception because all required memory
+   has been allocated by a previous call to resize_scopes.  */
+static void
+update_scopes (struct link_map *new)
+{
+  for (unsigned int i = 0; i < new->l_searchlist.r_nlist; ++i)
+    {
+      struct link_map *imap = new->l_searchlist.r_list[i];
+      int from_scope = 0;
+
+      if (imap->l_init_called && imap->l_type == lt_loaded)
+	{
+	  if (scope_has_map (imap, new))
+	    /* Avoid duplicates.  */
+	    continue;
+
+	  size_t cnt = scope_size (imap);
+	  /* Assert that resize_scopes has sufficiently enlarged the
+	     array.  */
+	  assert (cnt + 1 < imap->l_scope_max);
+
+	  /* First terminate the extended list.  Otherwise a thread
+	     might use the new last element and then use the garbage
+	     at offset IDX+1.  */
+	  imap->l_scope[cnt + 1] = NULL;
+	  atomic_write_barrier ();
+	  imap->l_scope[cnt] = &new->l_searchlist;
+
+	  from_scope = cnt;
+	}
+
+      /* Print scope information.  */
+      if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_SCOPES))
+	_dl_show_scope (imap, from_scope);
+    }
+}
+
+/* Call _dl_add_to_slotinfo with DO_ADD set to false, to allocate
+   space in GL (dl_tls_dtv_slotinfo_list).  This can raise an
+   exception.  The return value is true if any of the new objects use
+   TLS.  */
+static bool
+resize_tls_slotinfo (struct link_map *new)
+{
+  bool any_tls = false;
+  for (unsigned int i = 0; i < new->l_searchlist.r_nlist; ++i)
+    {
+      struct link_map *imap = new->l_searchlist.r_list[i];
+
+      /* Only add TLS memory if this object is loaded now and
+	 therefore is not yet initialized.  */
+      if (! imap->l_init_called && imap->l_tls_blocksize > 0)
+	{
+	  _dl_add_to_slotinfo (imap, false);
+	  any_tls = true;
+	}
+    }
+  return any_tls;
+}
+
+/* Second stage of TLS update, after resize_tls_slotinfo.  This
+   function does not raise any exception.  It should only be called if
+   resize_tls_slotinfo returned true.  */
+static void
+update_tls_slotinfo (struct link_map *new)
+{
+  unsigned int first_static_tls = new->l_searchlist.r_nlist;
+  for (unsigned int i = 0; i < new->l_searchlist.r_nlist; ++i)
+    {
+      struct link_map *imap = new->l_searchlist.r_list[i];
+
+      /* Only add TLS memory if this object is loaded now and
+	 therefore is not yet initialized.  */
+      if (! imap->l_init_called && imap->l_tls_blocksize > 0)
+	{
+	  _dl_add_to_slotinfo (imap, true);
+
+	  if (imap->l_need_tls_init
+	      && first_static_tls == new->l_searchlist.r_nlist)
+	    first_static_tls = i;
+	}
+    }
+
+  if (__builtin_expect (++GL(dl_tls_generation) == 0, 0))
+    _dl_fatal_printf (N_("\
+TLS generation counter wrapped!  Please report this."));
+
+  /* We need a second pass for static tls data, because
+     _dl_update_slotinfo must not be run while calls to
+     _dl_add_to_slotinfo are still pending.  */
+  for (unsigned int i = first_static_tls; i < new->l_searchlist.r_nlist; ++i)
+    {
+      struct link_map *imap = new->l_searchlist.r_list[i];
+
+      if (imap->l_need_tls_init
+	  && ! imap->l_init_called
+	  && imap->l_tls_blocksize > 0)
+	{
+	  /* For static TLS we have to allocate the memory here and
+	     now, but we can delay updating the DTV.  */
+	  imap->l_need_tls_init = 0;
+#ifdef SHARED
+	  /* Update the slot information data for at least the
+	     generation of the DSO we are allocating data for.  */
+
+	  /* FIXME: This can terminate the process on memory
+	     allocation failure.  It is not possible to raise
+	     exceptions from this context; to fix this bug,
+	     _dl_update_slotinfo would have to be split into two
+	     operations, similar to resize_scopes and update_scopes
+	     above.  This is related to bug 16134.  */
+	  _dl_update_slotinfo (imap->l_tls_modid);
+#endif
+
+	  GL(dl_init_static_tls) (imap);
+	  assert (imap->l_need_tls_init == 0);
+	}
+    }
+}
+
+/* Mark the objects as NODELETE if required.  This is delayed until
+   after dlopen failure is not possible, so that _dl_close can clean
+   up objects if necessary.  */
+static void
+activate_nodelete (struct link_map *new)
+{
+  /* It is necessary to traverse the entire namespace.  References to
+     objects in the global scope and unique symbol bindings can force
+     NODELETE status for objects outside the local scope.  */
+  for (struct link_map *l = GL (dl_ns)[new->l_ns]._ns_loaded; l != NULL;
+       l = l->l_next)
+    if (l->l_nodelete_pending)
+      {
+	if (__glibc_unlikely (GLRO (dl_debug_mask) & DL_DEBUG_FILES))
+	  _dl_debug_printf ("activating NODELETE for %s [%lu]\n",
+			    l->l_name, l->l_ns);
+
+	/* The flag can already be true at this point, e.g. a signal
+	   handler may have triggered lazy binding and set NODELETE
+	   status immediately.  */
+	l->l_nodelete_active = true;
+
+	/* This is just a debugging aid, to indicate that
+	   activate_nodelete has run for this map.  */
+	l->l_nodelete_pending = false;
+      }
+}
+
+/* struct dl_init_args and call_dl_init are used to call _dl_init with
+   exception handling disabled.  */
+struct dl_init_args
+{
+  struct link_map *new;
+  int argc;
+  char **argv;
+  char **env;
+};
+
+static void
+call_dl_init (void *closure)
+{
+  struct dl_init_args *args = closure;
+  _dl_init (args->new, args->argc, args->argv, args->env);
+}
 
 static void
 dl_open_worker (void *a)
@@ -207,6 +500,10 @@ dl_open_worker (void *a)
 	args->nsid = call_map->l_ns;
     }
 
+  /* Retain the old value, so that it can be restored.  */
+  args->original_global_scope_pending_adds
+    = GL (dl_ns)[args->nsid]._ns_global_scope_pending_adds;
+
   /* One might be tempted to assert that we are RT_CONSISTENT at this point, but that
      may not be true if this is a recursive call to dlopen.  */
   _dl_debug_initialize (0, args->nsid);
@@ -224,12 +521,6 @@ dl_open_worker (void *a)
       return;
     }
 
-  /* Mark the object as not deletable if the RTLD_NODELETE flags was passed.
-     Do this early so that we don't skip marking the object if it was
-     already loaded.  */
-  if (__glibc_unlikely (mode & RTLD_NODELETE))
-    new->l_flags_1 |= DF_1_NODELETE;
-
   if (__glibc_unlikely (mode & __RTLD_SPROF))
     /* This happens only if we load a DSO for 'sprof'.  */
     return;
@@ -245,15 +536,36 @@ dl_open_worker (void *a)
 	_dl_debug_printf ("opening file=%s [%lu]; direct_opencount=%u\n\n",
 			  new->l_name, new->l_ns, new->l_direct_opencount);
 
-      /* If the user requested the object to be in the global namespace
-	 but it is not so far, add it now.  */
+      /* If the user requested the object to be in the global
+	 namespace but it is not so far, prepare to add it now.  This
+	 can raise an exception to do a malloc failure.  */
       if ((mode & RTLD_GLOBAL) && new->l_global == 0)
-	(void) add_to_global (new);
+	add_to_global_resize (new);
+
+      /* Mark the object as not deletable if the RTLD_NODELETE flags
+	 was passed.  */
+      if (__glibc_unlikely (mode & RTLD_NODELETE))
+	{
+	  if (__glibc_unlikely (GLRO (dl_debug_mask) & DL_DEBUG_FILES)
+	      && !new->l_nodelete_active)
+	    _dl_debug_printf ("marking %s [%lu] as NODELETE\n",
+			      new->l_name, new->l_ns);
+	  new->l_nodelete_active = true;
+	}
+
+      /* Finalize the addition to the global scope.  */
+      if ((mode & RTLD_GLOBAL) && new->l_global == 0)
+	add_to_global_update (new);
 
       assert (_dl_debug_initialize (0, args->nsid)->r_state == RT_CONSISTENT);
 
       return;
     }
+
+  /* Schedule NODELETE marking for the directly loaded object if
+     requested.  */
+  if (__glibc_unlikely (mode & RTLD_NODELETE))
+    new->l_nodelete_pending = true;
 
   /* Load that object's dependencies.  */
   _dl_map_object_deps (new, NULL, 0, 0,
@@ -277,7 +589,10 @@ dl_open_worker (void *a)
 	  for (unsigned int cnt = 0; cnt < GLRO(dl_naudit); ++cnt)
 	    {
 	      if (afct->activity != NULL)
-		afct->activity (&head->l_audit[cnt].cookie, LA_ACT_CONSISTENT);
+		{
+		  struct auditstate *state = link_map_audit_state (head, cnt);
+		  afct->activity (&state->cookie, LA_ACT_CONSISTENT);
+		}
 
 	      afct = afct->next;
 	    }
@@ -290,6 +605,8 @@ dl_open_worker (void *a)
   r->r_state = RT_CONSISTENT;
   _dl_debug_state ();
   LIBC_PROBE (map_complete, 3, args->nsid, r, new);
+
+  _dl_open_check (new);
 
   /* Print scope information.  */
   if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_SCOPES))
@@ -326,6 +643,14 @@ dl_open_worker (void *a)
 
   int relocation_in_progress = 0;
 
+  /* Perform relocation.  This can trigger lazy binding in IFUNC
+     resolvers.  For NODELETE mappings, these dependencies are not
+     recorded because the flag has not been applied to the newly
+     loaded objects.  This means that upon dlopen failure, these
+     NODELETE objects can be unloaded despite existing references to
+     them.  However, such relocation dependencies in IFUNC resolvers
+     are undefined anyway, so this is not a problem.  */
+
   for (unsigned int i = nmaps; i-- > 0; )
     {
       l = maps[i];
@@ -355,7 +680,7 @@ dl_open_worker (void *a)
 	      _dl_start_profile ();
 
 	      /* Prevent unloading the object.  */
-	      GL(dl_profile_map)->l_flags_1 |= DF_1_NODELETE;
+	      GL(dl_profile_map)->l_nodelete_active = true;
 	    }
 	}
       else
@@ -363,133 +688,48 @@ dl_open_worker (void *a)
 	_dl_relocate_object (l, l->l_scope, reloc_mode, 0);
     }
 
-  /* If the file is not loaded now as a dependency, add the search
-     list of the newly loaded object to the scope.  */
-  bool any_tls = false;
-  unsigned int first_static_tls = new->l_searchlist.r_nlist;
-  for (unsigned int i = 0; i < new->l_searchlist.r_nlist; ++i)
-    {
-      struct link_map *imap = new->l_searchlist.r_list[i];
-      int from_scope = 0;
+  /* This only performs the memory allocations.  The actual update of
+     the scopes happens below, after failure is impossible.  */
+  resize_scopes (new);
 
-      /* If the initializer has been called already, the object has
-	 not been loaded here and now.  */
-      if (imap->l_init_called && imap->l_type == lt_loaded)
-	{
-	  struct r_scope_elem **runp = imap->l_scope;
-	  size_t cnt = 0;
+  /* Increase the size of the GL (dl_tls_dtv_slotinfo_list) data
+     structure.  */
+  bool any_tls = resize_tls_slotinfo (new);
 
-	  while (*runp != NULL)
-	    {
-	      if (*runp == &new->l_searchlist)
-		break;
-	      ++cnt;
-	      ++runp;
-	    }
+  /* Perform the necessary allocations for adding new global objects
+     to the global scope below.  */
+  if (mode & RTLD_GLOBAL)
+    add_to_global_resize (new);
 
-	  if (*runp != NULL)
-	    /* Avoid duplicates.  */
-	    continue;
+  /* Demarcation point: After this, no recoverable errors are allowed.
+     All memory allocations for new objects must have happened
+     before.  */
 
-	  if (__glibc_unlikely (cnt + 1 >= imap->l_scope_max))
-	    {
-	      /* The 'r_scope' array is too small.  Allocate a new one
-		 dynamically.  */
-	      size_t new_size;
-	      struct r_scope_elem **newp;
+  /* Finalize the NODELETE status first.  This comes before
+     update_scopes, so that lazy binding will not see pending NODELETE
+     state for newly loaded objects.  There is a compiler barrier in
+     update_scopes which ensures that the changes from
+     activate_nodelete are visible before new objects show up in the
+     local scope.  */
+  activate_nodelete (new);
 
-#define SCOPE_ELEMS(imap) \
-  (sizeof (imap->l_scope_mem) / sizeof (imap->l_scope_mem[0]))
+  /* Second stage after resize_scopes: Actually perform the scope
+     update.  After this, dlsym and lazy binding can bind to new
+     objects.  */
+  update_scopes (new);
 
-	      if (imap->l_scope != imap->l_scope_mem
-		  && imap->l_scope_max < SCOPE_ELEMS (imap))
-		{
-		  new_size = SCOPE_ELEMS (imap);
-		  newp = imap->l_scope_mem;
-		}
-	      else
-		{
-		  new_size = imap->l_scope_max * 2;
-		  newp = (struct r_scope_elem **)
-		    malloc (new_size * sizeof (struct r_scope_elem *));
-		  if (newp == NULL)
-		    _dl_signal_error (ENOMEM, "dlopen", NULL,
-				      N_("cannot create scope list"));
-		}
+  /* FIXME: It is unclear whether the order here is correct.
+     Shouldn't new objects be made available for binding (and thus
+     execution) only after there TLS data has been set up fully?
+     Fixing bug 16134 will likely make this distinction less
+     important.  */
 
-	      memcpy (newp, imap->l_scope, cnt * sizeof (imap->l_scope[0]));
-	      struct r_scope_elem **old = imap->l_scope;
-
-	      imap->l_scope = newp;
-
-	      if (old != imap->l_scope_mem)
-		_dl_scope_free (old);
-
-	      imap->l_scope_max = new_size;
-	    }
-
-	  /* First terminate the extended list.  Otherwise a thread
-	     might use the new last element and then use the garbage
-	     at offset IDX+1.  */
-	  imap->l_scope[cnt + 1] = NULL;
-	  atomic_write_barrier ();
-	  imap->l_scope[cnt] = &new->l_searchlist;
-
-	  /* Print only new scope information.  */
-	  from_scope = cnt;
-	}
-      /* Only add TLS memory if this object is loaded now and
-	 therefore is not yet initialized.  */
-      else if (! imap->l_init_called
-	       /* Only if the module defines thread local data.  */
-	       && __builtin_expect (imap->l_tls_blocksize > 0, 0))
-	{
-	  /* Now that we know the object is loaded successfully add
-	     modules containing TLS data to the slot info table.  We
-	     might have to increase its size.  */
-	  _dl_add_to_slotinfo (imap);
-
-	  if (imap->l_need_tls_init
-	      && first_static_tls == new->l_searchlist.r_nlist)
-	    first_static_tls = i;
-
-	  /* We have to bump the generation counter.  */
-	  any_tls = true;
-	}
-
-      /* Print scope information.  */
-      if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_SCOPES))
-	_dl_show_scope (imap, from_scope);
-    }
-
-  /* Bump the generation number if necessary.  */
-  if (any_tls && __builtin_expect (++GL(dl_tls_generation) == 0, 0))
-    _dl_fatal_printf (N_("\
-TLS generation counter wrapped!  Please report this."));
-
-  /* We need a second pass for static tls data, because _dl_update_slotinfo
-     must not be run while calls to _dl_add_to_slotinfo are still pending.  */
-  for (unsigned int i = first_static_tls; i < new->l_searchlist.r_nlist; ++i)
-    {
-      struct link_map *imap = new->l_searchlist.r_list[i];
-
-      if (imap->l_need_tls_init
-	  && ! imap->l_init_called
-	  && imap->l_tls_blocksize > 0)
-	{
-	  /* For static TLS we have to allocate the memory here and
-	     now, but we can delay updating the DTV.  */
-	  imap->l_need_tls_init = 0;
-#ifdef SHARED
-	  /* Update the slot information data for at least the
-	     generation of the DSO we are allocating data for.  */
-	  _dl_update_slotinfo (imap->l_tls_modid);
-#endif
-
-	  GL(dl_init_static_tls) (imap);
-	  assert (imap->l_need_tls_init == 0);
-	}
-    }
+  /* Second stage after resize_tls_slotinfo: Update the slotinfo data
+     structures.  */
+  if (any_tls)
+    /* FIXME: This calls _dl_update_slotinfo, which aborts the process
+       on memory allocation failure.  See bug 16134.  */
+    update_tls_slotinfo (new);
 
   /* Notify the debugger all new objects have been relocated.  */
   if (relocation_in_progress)
@@ -499,15 +739,28 @@ TLS generation counter wrapped!  Please report this."));
   DL_STATIC_INIT (new);
 #endif
 
-  /* Run the initializer functions of new objects.  */
-  _dl_init (new, args->argc, args->argv, args->env);
+  /* Perform the necessary allocations for adding new global objects
+     to the global scope below, via add_to_global_update.  */
+  if (mode & RTLD_GLOBAL)
+    add_to_global_resize (new);
+
+  /* Run the initializer functions of new objects.  Temporarily
+     disable the exception handler, so that lazy binding failures are
+     fatal.  */
+  {
+    struct dl_init_args init_args =
+      {
+        .new = new,
+        .argc = args->argc,
+        .argv = args->argv,
+        .env = args->env
+      };
+    _dl_catch_exception (NULL, call_dl_init, &init_args);
+  }
 
   /* Now we can make the new map available in the global scope.  */
   if (mode & RTLD_GLOBAL)
-    /* Move the object in the global namespace.  */
-    if (add_to_global (new) != 0)
-      /* It failed.  */
-      return;
+    add_to_global_update (new);
 
 #ifndef SHARED
   /* We must be the static _dl_open in libc.a.  A static program that
@@ -520,7 +773,6 @@ TLS generation counter wrapped!  Please report this."));
     _dl_debug_printf ("opening file=%s [%lu]; direct_opencount=%u\n\n",
 		      new->l_name, new->l_ns, new->l_direct_opencount);
 }
-
 
 void *
 _dl_open (const char *file, int mode, const void *caller_dlopen, Lmid_t nsid,
@@ -589,6 +841,19 @@ no more namespaces available for dlmopen()"));
   _dl_unload_cache ();
 #endif
 
+  /* Do this for both the error and success cases.  The old value has
+     only been determined if the namespace ID was assigned (i.e., it
+     is not __LM_ID_CALLER).  In the success case, we actually may
+     have consumed more pending adds than planned (because the local
+     scopes overlap in case of a recursive dlopen, the inner dlopen
+     doing some of the globalization work of the outer dlopen), so the
+     old pending adds value is larger than absolutely necessary.
+     Since it is just a conservative upper bound, this is harmless.
+     The top-level dlopen call will restore the field to zero.  */
+  if (args.nsid >= 0)
+    GL (dl_ns)[args.nsid]._ns_global_scope_pending_adds
+      = args.original_global_scope_pending_adds;
+
   /* See if an error occurred during loading.  */
   if (__glibc_unlikely (exception.errstring != NULL))
     {
@@ -607,6 +872,10 @@ no more namespaces available for dlmopen()"));
 	    GL(dl_tls_dtv_gaps) = true;
 
 	  _dl_close_worker (args.map, true);
+
+	  /* All l_nodelete_pending objects should have been deleted
+	     at this point, which is why it is not necessary to reset
+	     the flag here.  */
 	}
 
       assert (_dl_debug_initialize (0, args.nsid)->r_state == RT_CONSISTENT);

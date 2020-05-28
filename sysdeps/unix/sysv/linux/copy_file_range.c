@@ -1,5 +1,5 @@
 /* Linux implementation of copy_file_range.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,18 +14,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <sysdep-cancel.h>
 #include <unistd.h>
-
-/* Include the fallback implementation.  */
-#ifndef __ASSUME_COPY_FILE_RANGE
-#define COPY_FILE_RANGE_DECL static
-#define COPY_FILE_RANGE copy_file_range_compat
-#include <io/copy_file_range-compat.c>
-#endif
 
 ssize_t
 copy_file_range (int infd, __off64_t *pinoff,
@@ -33,14 +26,10 @@ copy_file_range (int infd, __off64_t *pinoff,
                  size_t length, unsigned int flags)
 {
 #ifdef __NR_copy_file_range
-  ssize_t ret = SYSCALL_CANCEL (copy_file_range, infd, pinoff, outfd, poutoff,
-                                length, flags);
-# ifndef __ASSUME_COPY_FILE_RANGE
-  if (ret == -1 && errno == ENOSYS)
-    ret = copy_file_range_compat (infd, pinoff, outfd, poutoff, length, flags);
-# endif
-  return ret;
-#else  /* !__NR_copy_file_range */
-  return copy_file_range_compat (infd, pinoff, outfd, poutoff, length, flags);
+  return SYSCALL_CANCEL (copy_file_range, infd, pinoff, outfd, poutoff,
+                         length, flags);
+#else
+  __set_errno (ENOSYS);
+  return -1;
 #endif
 }

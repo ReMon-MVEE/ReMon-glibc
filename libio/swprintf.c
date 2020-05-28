@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <libioP.h>
 #include <stdarg.h>
@@ -28,7 +28,7 @@ __swprintf (wchar_t *s, size_t n, const wchar_t *format, ...)
   int done;
 
   va_start (arg, format);
-  done = __vswprintf (s, n, format, arg);
+  done = __vswprintf_internal (s, n, format, arg, 0);
   va_end (arg);
 
   return done;

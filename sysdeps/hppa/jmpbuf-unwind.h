@@ -1,5 +1,5 @@
 /* Examine __jmp_buf for unwinding frames.  HPPA version.
-   Copyright (C) 2006-2018 Free Software Foundation, Inc.
+   Copyright (C) 2006-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <setjmp.h>
 #include <jmpbuf-offsets.h>
@@ -22,5 +22,5 @@
 /* Test if longjmp to JMPBUF would unwind the frame containing a local
    variable at ADDRESS.  */
 #define _JMPBUF_UNWINDS(_jmpbuf, _address, _demangle)			\
-  ((void *) (_address) >						\
-   (void *) _demangle ((((unsigned long *) _jmpbuf)[JB_SP])))
+  ((void *) (_address)							\
+   > (void *) _demangle ((((unsigned long *) _jmpbuf)[JB_SP])))

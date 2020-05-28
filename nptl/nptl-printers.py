@@ -1,6 +1,6 @@
 # Pretty printers for the NPTL lock types.
 #
-# Copyright (C) 2016-2018 Free Software Foundation, Inc.
+# Copyright (C) 2016-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 #
 # The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 """This file contains the gdb pretty printers for the following types:
 
@@ -155,7 +155,7 @@ class MutexPrinter(object):
         lock_value = self.lock
 
         if self.kind & PTHREAD_MUTEX_PRIO_PROTECT_NP:
-            lock_value &= ~(PTHREAD_MUTEX_PRIO_CEILING_MASK)
+            lock_value &= 0xffffffff & ~(PTHREAD_MUTEX_PRIO_CEILING_MASK)
 
         if lock_value == PTHREAD_MUTEX_UNLOCKED:
             self.values.append(('Status', 'Not acquired'))
@@ -274,6 +274,7 @@ class MutexAttributesPrinter(object):
         """
 
         mutexattr_type = (self.mutexattr
+                          & 0xffffffff
                           & ~PTHREAD_MUTEXATTR_FLAG_BITS
                           & ~PTHREAD_MUTEX_NO_ELISION_NP)
 

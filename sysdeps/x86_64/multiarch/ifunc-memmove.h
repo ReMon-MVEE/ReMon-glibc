@@ -1,6 +1,6 @@
 /* Common definition for memcpy, mempcpy and memmove implementation.
    All versions must be listed in ifunc-impl-list.c.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <init-arch.h>
 
@@ -41,7 +41,8 @@ IFUNC_SELECTOR (void)
 {
   const struct cpu_features* cpu_features = __get_cpu_features ();
 
-  if (CPU_FEATURES_ARCH_P (cpu_features, Prefer_ERMS))
+  if (CPU_FEATURES_ARCH_P (cpu_features, Prefer_ERMS)
+      || CPU_FEATURES_ARCH_P (cpu_features, Prefer_FSRM))
     return OPTIMIZE (erms);
 
   if (CPU_FEATURES_ARCH_P (cpu_features, AVX512F_Usable)

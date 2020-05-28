@@ -136,6 +136,10 @@ libc {
     __hurd_threadvar_location;
     _hurd_userlink_link; _hurd_userlink_unlink; _hurd_userlink_clear;
   }
+  GLIBC_2.29 {
+    # "quasi-internal" functions
+    _hurd_port_move;
+  }
 
   HURD_CTHREADS_0.3 {
     # weak refs to libthreads functions that libc calls iff libthreads in use
@@ -155,5 +159,12 @@ libc {
     __lll_abstimed_lock; __lll_robust_lock;
     __lll_robust_abstimed_lock; __lll_robust_trylock;
     __lll_robust_unlock;
+
+    # Used by libpthread.
+    _hurd_sigstate_set_global_rcv;
+    _hurd_sigstate_lock;
+    _hurd_sigstate_pending;
+    _hurd_sigstate_unlock;
+    _hurd_sigstate_delete;
   }
 }

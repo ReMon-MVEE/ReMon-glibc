@@ -1,4 +1,4 @@
-/* Copyright (C) 1999-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <stdlib.h>
@@ -35,6 +35,10 @@ __internal_atexit (void (*func) (void *), void *arg, void *d,
 		   struct exit_function_list **listp)
 {
   struct exit_function *new;
+
+  /* As a QoI issue we detect NULL early with an assertion instead
+     of a SIGSEGV at program exit when the handler is run (bug 20544).  */
+  assert (func != NULL);
 
   __libc_lock_lock (__exit_funcs_lock);
   new = __new_exitfn (listp);

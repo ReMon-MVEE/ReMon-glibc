@@ -1,5 +1,5 @@
 /* Multiple versions of strcmp. PowerPC64 version.
-   Copyright (C) 2014-2018 Free Software Foundation, Inc.
+   Copyright (C) 2014-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #if defined SHARED && IS_IN (libc)
 # define strcmp __redirect_strcmp
@@ -27,13 +27,17 @@
 extern __typeof (strcmp) __strcmp_ppc attribute_hidden;
 extern __typeof (strcmp) __strcmp_power7 attribute_hidden;
 extern __typeof (strcmp) __strcmp_power8 attribute_hidden;
+# ifdef __LITTLE_ENDIAN__
 extern __typeof (strcmp) __strcmp_power9 attribute_hidden;
+# endif
 
 # undef strcmp
 
 libc_ifunc_redirected (__redirect_strcmp, strcmp,
+# ifdef __LITTLE_ENDIAN__
 			(hwcap2 & PPC_FEATURE2_ARCH_3_00)
 			? __strcmp_power9 :
+# endif
 		       (hwcap2 & PPC_FEATURE2_ARCH_2_07)
 		       ? __strcmp_power8
 		       : (hwcap & PPC_FEATURE_HAS_VSX)

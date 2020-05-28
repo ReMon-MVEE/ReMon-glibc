@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@vt.uni-paderborn.de>, 1997.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -317,14 +317,15 @@ __do_niscall3 (dir_binding *dbp, u_long prog, xdrproc_t xargs, caddr_t req,
 	  switch (prog)
 	    {
 	    case NIS_IBLIST:
-	      if ((((nis_result *)resp)->status == NIS_CBRESULTS) &&
-		  (cb != NULL))
+	      if ((((nis_result *)resp)->status == NIS_CBRESULTS)
+		  && (cb != NULL))
 		{
 		  __nis_do_callback (dbp, &((nis_result *) resp)->cookie, cb);
 		  break;
 		}
 	      /* Yes, the missing break is correct. If we doesn't have to
 		 start a callback, look if we have to search another server */
+	      /* Fall through.  */
 	    case NIS_LOOKUP:
 	    case NIS_ADD:
 	    case NIS_MODIFY:
@@ -502,7 +503,7 @@ rec_dirsearch (const_nis_name name, directory_obj *dir, nis_error *status)
 	    return dir;
 	  }
 	nis_free_directory (dir);
-	obj = calloc (1, sizeof(directory_obj));
+	obj = calloc (1, sizeof (directory_obj));
 	if (obj == NULL)
 	  {
 	    __free_fdresult (fd_res);
@@ -708,6 +709,7 @@ __nisfind_server (const_nis_name name, int search_parent,
   nis_error status;
   directory_obj *obj;
   struct timeval now;
+  struct timespec ts;
   unsigned int server_used = ~0;
   unsigned int current_ep = ~0;
 
@@ -717,7 +719,8 @@ __nisfind_server (const_nis_name name, int search_parent,
   if (*dir != NULL)
     return NIS_SUCCESS;
 
-  (void) gettimeofday (&now, NULL);
+  __clock_gettime (CLOCK_REALTIME, &ts);
+  TIMESPEC_TO_TIMEVAL (&now, &ts);
 
   if ((flags & NO_CACHE) == 0)
     *dir = nis_server_cache_search (name, search_parent, &server_used,

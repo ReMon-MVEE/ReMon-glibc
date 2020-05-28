@@ -2,7 +2,7 @@
 
    This module uses the Z9-109 variants of the Convert Unicode
    instructions.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
 
    Author: Andreas Krebbel  <Andreas.Krebbel@de.ibm.com>
    Based on the work by Ulrich Drepper  <drepper@cygnus.com>, 1997.
@@ -22,7 +22,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <dlfcn.h>
 #include <stdint.h>
@@ -443,8 +443,8 @@ gconv_end (struct __gconv_step *data)
 	      }								\
 									\
 	    /* See Principles of Operations cu12.  */			\
-	    zabcd = (((inptr[0] & 0x7) << 2) |				\
-		     ((inptr[1] & 0x30) >> 4)) - 1;			\
+	    zabcd = (((inptr[0] & 0x7) << 2)				\
+		     | ((inptr[1] & 0x30) >> 4)) - 1;			\
 									\
 	    /* z-bit must be zero after subtracting 1.  */		\
 	    if (zabcd & 0x10)						\

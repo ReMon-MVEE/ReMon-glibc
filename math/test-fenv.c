@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Andreas Jaeger <aj@suse.de> and
    Ulrich Drepper <drepper@cygnus.com>, 1997.
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Tests for ISO C99 7.6: Floating-point environment  */
 
@@ -49,8 +49,8 @@
 #define OVERFLOW_EXC 0x08
 #define INVALID_EXC 0x10
 #define ALL_EXC \
-        (INEXACT_EXC | DIVBYZERO_EXC | UNDERFLOW_EXC | OVERFLOW_EXC | \
-         INVALID_EXC)
+        (INEXACT_EXC | DIVBYZERO_EXC | UNDERFLOW_EXC | OVERFLOW_EXC \
+         | INVALID_EXC)
 
 static int count_errors;
 

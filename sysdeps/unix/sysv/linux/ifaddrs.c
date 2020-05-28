@@ -1,5 +1,5 @@
 /* getifaddrs -- get names and addresses of all network interfaces
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <alloca.h>
 #include <assert.h>
@@ -102,7 +102,7 @@ __netlink_sendreq (struct netlink_handle *h, int type)
   struct sockaddr_nl nladdr;
 
   if (h->seq == 0)
-    h->seq = time (NULL);
+    h->seq = time_now ();
 
   req.nlh.nlmsg_len = sizeof (req);
   req.nlh.nlmsg_type = type;
@@ -369,6 +369,14 @@ getifaddrs_internal (struct ifaddrs **ifap)
 	  /* Check if the message is what we want.  */
 	  if ((pid_t) nlh->nlmsg_pid != nh.pid || nlh->nlmsg_seq != nlp->seq)
 	    continue;
+
+	  /* If the dump got interrupted, we can't rely on the results
+	     so try again. */
+	  if (nlh->nlmsg_flags & NLM_F_DUMP_INTR)
+	    {
+	      result = -EAGAIN;
+	      goto exit_free;
+	    }
 
 	  if (nlh->nlmsg_type == NLMSG_DONE)
 	    break;		/* ok */

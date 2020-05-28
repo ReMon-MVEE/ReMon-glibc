@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gmail.com>, 2011.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <fenv.h>
 #include <math.h>
@@ -23,10 +23,12 @@
 #include <libm-alias-double.h>
 
 
-#if LIBM_SVID_COMPAT
+#if LIBM_SVID_COMPAT && (SHLIB_COMPAT (libm, GLIBC_2_1, GLIBC_2_29) \
+			 || defined NO_LONG_DOUBLE \
+			 || defined LONG_DOUBLE_COMPAT)
 /* wrapper log2(x) */
 double
-__log2 (double x)
+__log2_compat (double x)
 {
   if (__builtin_expect (islessequal (x, 0.0), 0) && _LIB_VERSION != _IEEE_)
     {
@@ -44,5 +46,17 @@ __log2 (double x)
 
   return  __ieee754_log2 (x);
 }
-libm_alias_double (__log2, log2)
+# if SHLIB_COMPAT (libm, GLIBC_2_1, GLIBC_2_29)
+compat_symbol (libm, __log2_compat, log2, GLIBC_2_1);
+# endif
+# ifdef NO_LONG_DOUBLE
+weak_alias (__log2_compat, log2l)
+# endif
+# ifdef LONG_DOUBLE_COMPAT
+/* Work around gas bug "multiple versions for symbol".  */
+weak_alias (__log2_compat, __log2_compat_alias)
+
+LONG_DOUBLE_COMPAT_CHOOSE_libm_log2l (
+  compat_symbol (libm, __log2_compat_alias, log2l, FIRST_VERSION_libm_log2l), );
+# endif
 #endif

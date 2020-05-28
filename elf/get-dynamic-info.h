@@ -1,5 +1,5 @@
 /* Read the dynamic section at DYN and fill in INFO with indices DT_*.
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This file is included multiple times and therefore lacks a header
    file inclusion guard.  */
@@ -49,8 +49,8 @@ elf_get_dynamic_info (struct link_map *l, ElfW(Dyn) *temp)
     {
       if ((d_tag_utype) dyn->d_tag < DT_NUM)
 	info[dyn->d_tag] = dyn;
-      else if (dyn->d_tag >= DT_LOPROC &&
-	       dyn->d_tag < DT_LOPROC + DT_THISPROCNUM)
+      else if (dyn->d_tag >= DT_LOPROC
+	       && dyn->d_tag < DT_LOPROC + DT_THISPROCNUM)
 	{
 	  /* This does not violate the array bounds of l->l_info, but
 	     gcc 4.6 on sparc somehow does not see this.  */
@@ -163,6 +163,8 @@ elf_get_dynamic_info (struct link_map *l, ElfW(Dyn) *temp)
   if (info[VERSYMIDX (DT_FLAGS_1)] != NULL)
     {
       l->l_flags_1 = info[VERSYMIDX (DT_FLAGS_1)]->d_un.d_val;
+      if (l->l_flags_1 & DF_1_NODELETE)
+	l->l_nodelete_pending = true;
 
       /* Only DT_1_SUPPORTED_MASK bits are supported, and we would like
 	 to assert this, but we can't. Users have been setting

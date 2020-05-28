@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,11 +13,12 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <math.h>
 #include <math_private.h>
 #include "mathimpl.h"
+#include <libm-alias-finite.h>
 
 #ifndef SUFF
 #define SUFF
@@ -123,4 +124,4 @@ s(__ieee754_pow) (float_type x, float_type y)
     z = m81(__ieee754_exp) (y * m81(__ieee754_log) (x));
   return z;
 }
-strong_alias (s(__ieee754_pow), CONCATX (s(__pow), _finite))
+libm_alias_finite (s(__ieee754_pow), s (__pow))

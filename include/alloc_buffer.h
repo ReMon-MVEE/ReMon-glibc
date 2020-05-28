@@ -1,5 +1,5 @@
 /* Allocation from a fixed-size buffer.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Allocation buffers are used to carve out sub-allocations from a
    larger allocation.  Their primary application is in writing NSS
@@ -183,7 +183,7 @@ alloc_buffer_add_byte (struct alloc_buffer *buf, unsigned char b)
    NULL is returned if there is not enough room, and the buffer is
    marked as failed, or if the buffer has already failed.
    (Zero-length allocations from an empty buffer which has not yet
-   failed succeed.)  */
+   failed succeed.)  The buffer contents is not modified.  */
 static inline __attribute__ ((nonnull (1))) void *
 alloc_buffer_alloc_bytes (struct alloc_buffer *buf, size_t length)
 {
@@ -300,11 +300,32 @@ __alloc_buffer_next (struct alloc_buffer *buf, size_t align)
 /* Like alloc_buffer_alloc, but do not advance the pointer beyond the
    object (so a subseqent call to alloc_buffer_next or
    alloc_buffer_alloc returns the same pointer).  Note that the buffer
-   is still aligned according to the requirements of TYPE.  The effect
-   of this function is similar to allocating a zero-length array from
-   the buffer.  */
+   is still aligned according to the requirements of TYPE, potentially
+   consuming buffer space.  The effect of this function is similar to
+   allocating a zero-length array from the buffer.
+
+   It is possible to use the return pointer to write to the buffer and
+   consume the written bytes using alloc_buffer_alloc_bytes (which
+   does not change the buffer contents), but the calling code needs to
+   perform manual length checks using alloc_buffer_size.  For example,
+   to read as many int32_t values that are available in the input file
+   and can fit into the remaining buffer space, you can use this:
+
+     int32_t array = alloc_buffer_next (buf, int32_t);
+     size_t ret = fread (array, sizeof (int32_t),
+                         alloc_buffer_size (buf) / sizeof (int32_t), fp);
+     if (ferror (fp))
+       handle_error ();
+     alloc_buffer_alloc_array (buf, int32_t, ret);
+
+   The alloc_buffer_alloc_array call makes the actually-used part of
+   the buffer permanent.  The remaining part of the buffer (not filled
+   with data from the file) can be used for something else.
+
+   This manual length checking can easily introduce errors, so this
+   coding style is not recommended.  */
 #define alloc_buffer_next(buf, type)				\
-  ((const type *) __alloc_buffer_next				\
+  ((type *) __alloc_buffer_next					\
    (buf, __alloc_buffer_assert_align (__alignof__ (type))))
 
 /* Internal function.  Allocate an array.  */

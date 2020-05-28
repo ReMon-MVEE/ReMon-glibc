@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <signal.h>
@@ -30,10 +30,10 @@ __sigaction (int sig, const struct sigaction *act, struct sigaction *oact)
   struct sigaction a, old;
   sigset_t pending;
 
-  if (sig <= 0 || sig >= NSIG ||
-      (act != NULL && act->sa_handler != SIG_DFL &&
-       ((__sigmask (sig) & _SIG_CANT_MASK) ||
-	act->sa_handler == SIG_ERR)))
+  if (sig <= 0 || sig >= NSIG
+      || (act != NULL && act->sa_handler != SIG_DFL
+	  && ((__sigmask (sig) & _SIG_CANT_MASK)
+	      || act->sa_handler == SIG_ERR)))
     {
       errno = EINVAL;
       return -1;
@@ -46,15 +46,15 @@ __sigaction (int sig, const struct sigaction *act, struct sigaction *oact)
   ss = _hurd_self_sigstate ();
 
   __spin_lock (&ss->critical_section_lock);
-  __spin_lock (&ss->lock);
-  old = ss->actions[sig];
+  _hurd_sigstate_lock (ss);
+  old = _hurd_sigstate_actions (ss) [sig];
   if (act != NULL)
-    ss->actions[sig] = a;
+    _hurd_sigstate_actions (ss) [sig] = a;
 
-  if (act != NULL && sig == SIGCHLD &&
-      (a.sa_flags & SA_NOCLDSTOP) != (old.sa_flags & SA_NOCLDSTOP))
+  if (act != NULL && sig == SIGCHLD
+      && (a.sa_flags & SA_NOCLDSTOP) != (old.sa_flags & SA_NOCLDSTOP))
     {
-      __spin_unlock (&ss->lock);
+      _hurd_sigstate_unlock (ss);
 
       /* Inform the proc server whether or not it should send us SIGCHLD for
 	 stopped children.  We do this in a critical section so that no
@@ -62,8 +62,8 @@ __sigaction (int sig, const struct sigaction *act, struct sigaction *oact)
       __USEPORT (PROC,
 		 __proc_mod_stopchild (port, !(a.sa_flags & SA_NOCLDSTOP)));
 
-      __spin_lock (&ss->lock);
-      pending = ss->pending & ~ss->blocked;
+      _hurd_sigstate_lock (ss);
+      pending = _hurd_sigstate_pending (ss) & ~ss->blocked;
     }
   else if (act != NULL && (a.sa_handler == SIG_IGN || a.sa_handler == SIG_DFL))
     /* We are changing to an action that might be to ignore SIG signals.
@@ -72,11 +72,11 @@ __sigaction (int sig, const struct sigaction *act, struct sigaction *oact)
        back and then SIG is unblocked, the signal pending now should not
        arrive.  So wake up the signal thread to check the new state and do
        the right thing.  */
-    pending = ss->pending & __sigmask (sig);
+    pending = _hurd_sigstate_pending (ss) & __sigmask (sig);
   else
     pending = 0;
 
-  __spin_unlock (&ss->lock);
+  _hurd_sigstate_unlock (ss);
   __spin_unlock (&ss->critical_section_lock);
 
   if (pending)

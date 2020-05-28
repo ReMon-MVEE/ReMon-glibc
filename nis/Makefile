@@ -1,4 +1,4 @@
-# Copyright (C) 1996-2018 Free Software Foundation, Inc.
+# Copyright (C) 1996-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 #
 #	Makefile for NIS/NIS+ part.
@@ -21,6 +21,14 @@
 subdir	:= nis
 
 include ../Makeconfig
+
+ifndef have-GLIBC_2.28
+
+ifeq ($(build-obsolete-nsl),yes)
+$(error --enabe-obsolete-nsl is not available)
+endif
+
+else
 
 ifeq ($(build-obsolete-nsl),yes)
 headers			:= $(wildcard rpcsvc/*.[hx])
@@ -79,6 +87,8 @@ $(inst_libdir)/libnsl.so:
 libnsl-inhibit-o = $(filter-out .os,$(object-suffixes))
 
 endif # not $(build-obsolete-nsl)
+
+endif # have-GLIBC_2.28
 
 include ../Rules
 

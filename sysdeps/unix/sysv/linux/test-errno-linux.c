@@ -1,7 +1,7 @@
 /* Test that failing system calls do set errno to the correct value.
    Linux sycalls version.
 
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <array_length.h>
 #include <errno.h>
@@ -160,8 +160,9 @@ do_test (void)
   fails |= test_wrp (EINVAL, poll, &pollfd, -1, 0);
   /* quotactl returns ENOSYS for kernels not configured with
      CONFIG_QUOTA, and may return EPERM if called within certain types
-     of containers.  */
-  fails |= test_wrp2 (LIST (ENODEV, ENOSYS, EPERM),
+     of containers.  Linux 5.4 added additional argument validation
+     and can return EINVAL.  */
+  fails |= test_wrp2 (LIST (ENODEV, ENOSYS, EPERM, EINVAL),
 		      quotactl, Q_GETINFO, NULL, -1, (caddr_t) &dqblk);
   fails |= test_wrp (EINVAL, sched_getparam, -1, &sch_param);
   fails |= test_wrp (EINVAL, sched_getscheduler, -1);

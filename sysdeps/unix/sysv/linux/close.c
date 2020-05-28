@@ -1,5 +1,5 @@
 /* Linux close syscall implementation.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <unistd.h>
 #include <sysdep-cancel.h>
@@ -29,14 +29,3 @@ __close (int fd)
 libc_hidden_def (__close)
 strong_alias (__close, __libc_close)
 weak_alias (__close, close)
-
-# if !IS_IN (rtld)
-int
-__close_nocancel (int fd)
-{
-  return INLINE_SYSCALL_CALL (close, fd);
-}
-#else
-strong_alias (__libc_close, __close_nocancel)
-#endif
-libc_hidden_def (__close_nocancel)

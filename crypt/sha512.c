@@ -1,6 +1,6 @@
 /* Functions to compute SHA512 message digest of files or memory blocks.
    according to the definition of SHA512 in FIPS 180-2.
-   Copyright (C) 2007-2018 Free Software Foundation, Inc.
+   Copyright (C) 2007-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Written by Ulrich Drepper <drepper@redhat.com>, 2007.  */
 
@@ -149,8 +149,8 @@ __sha512_finish_ctx (struct sha512_ctx *ctx, void *resbuf)
 
   /* Put the 128-bit file length in *bits* at the end of the buffer.  */
   ctx->buffer64[(bytes + pad + 8) / 8] = SWAP (ctx->total[TOTAL128_low] << 3);
-  ctx->buffer64[(bytes + pad) / 8] = SWAP ((ctx->total[TOTAL128_high] << 3) |
-					   (ctx->total[TOTAL128_low] >> 61));
+  ctx->buffer64[(bytes + pad) / 8] = SWAP ((ctx->total[TOTAL128_high] << 3)
+					   | (ctx->total[TOTAL128_low] >> 61));
 
   /* Process last bytes.  */
   __sha512_process_block (ctx->buffer, bytes + pad + 16, ctx);

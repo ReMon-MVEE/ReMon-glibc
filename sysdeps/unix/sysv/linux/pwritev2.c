@@ -1,5 +1,5 @@
 /* Linux implementation of pwritev2.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sys/uio.h>
 #include <sysdep-cancel.h>
@@ -28,7 +28,7 @@ pwritev2 (int fd, const struct iovec *vector, int count, off_t offset,
 # ifdef __NR_pwritev2
   ssize_t result = SYSCALL_CANCEL (pwritev2, fd, vector, count,
 				   LO_HI_LONG (offset), flags);
-  if (result >= 0)
+  if (result >= 0 || errno != ENOSYS)
     return result;
 # endif
   /* Trying to emulate the pwritev2 syscall flags is troublesome:

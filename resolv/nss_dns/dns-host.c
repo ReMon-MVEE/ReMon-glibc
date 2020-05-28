@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Extended from original form by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Parts of this file are plain copies of the file `gethtnamadr.c' from
    the bind package and it has the following copyright.  */
@@ -78,6 +78,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <libc-pointer-arith.h>
 
 #include "nsswitch.h"
 #include <arpa/nameser.h>
@@ -274,11 +275,26 @@ gethostbyname3_context (struct resolv_context *ctx,
   return status;
 }
 
+/* Verify that the name looks like a host name.  There is no point in
+   sending a query which will not produce a usable name in the
+   response.  */
+static enum nss_status
+check_name (const char *name, int *h_errnop)
+{
+  if (res_hnok (name))
+    return NSS_STATUS_SUCCESS;
+  *h_errnop = HOST_NOT_FOUND;
+  return NSS_STATUS_NOTFOUND;
+}
+
 enum nss_status
 _nss_dns_gethostbyname2_r (const char *name, int af, struct hostent *result,
 			   char *buffer, size_t buflen, int *errnop,
 			   int *h_errnop)
 {
+  enum nss_status status = check_name (name, h_errnop);
+  if (status != NSS_STATUS_SUCCESS)
+    return status;
   return _nss_dns_gethostbyname3_r (name, af, result, buffer, buflen, errnop,
 				    h_errnop, NULL, NULL);
 }
@@ -289,6 +305,9 @@ _nss_dns_gethostbyname_r (const char *name, struct hostent *result,
 			  char *buffer, size_t buflen, int *errnop,
 			  int *h_errnop)
 {
+  enum nss_status status = check_name (name, h_errnop);
+  if (status != NSS_STATUS_SUCCESS)
+    return status;
   struct resolv_context *ctx = __resolv_context_get ();
   if (ctx == NULL)
     {
@@ -296,7 +315,7 @@ _nss_dns_gethostbyname_r (const char *name, struct hostent *result,
       *h_errnop = NETDB_INTERNAL;
       return NSS_STATUS_UNAVAIL;
     }
-  enum nss_status status = NSS_STATUS_NOTFOUND;
+  status = NSS_STATUS_NOTFOUND;
   if (res_use_inet6 ())
     status = gethostbyname3_context (ctx, name, AF_INET6, result, buffer,
 				     buflen, errnop, h_errnop, NULL, NULL);
@@ -313,6 +332,9 @@ _nss_dns_gethostbyname4_r (const char *name, struct gaih_addrtuple **pat,
 			   char *buffer, size_t buflen, int *errnop,
 			   int *herrnop, int32_t *ttlp)
 {
+  enum nss_status status = check_name (name, herrnop);
+  if (status != NSS_STATUS_SUCCESS)
+    return status;
   struct resolv_context *ctx = __resolv_context_get ();
   if (ctx == NULL)
     {
@@ -347,7 +369,6 @@ _nss_dns_gethostbyname4_r (const char *name, struct gaih_addrtuple **pat,
   int ans2p_malloced = 0;
 
   int olderr = errno;
-  enum nss_status status;
   int n = __res_context_search (ctx, name, C_IN, T_QUERY_A_AND_AAAA,
 				host_buffer.buf->buf, 2048, &host_buffer.ptr,
 				&ans2p, &nans2p, &resplen2, &ans2p_malloced);
@@ -686,9 +707,6 @@ getanswer_r (struct resolv_context *ctx,
       n = -1;
     }
 
-  if (n > 0 && bp[0] == '.')
-    bp[0] = '\0';
-
   if (__glibc_unlikely (n < 0))
     {
       *errnop = errno;
@@ -930,8 +948,18 @@ getanswer_r (struct resolv_context *ctx,
 	      linebuflen -= nn;
 	    }
 
-	  linebuflen -= sizeof (align) - ((u_long) bp % sizeof (align));
-	  bp += sizeof (align) - ((u_long) bp % sizeof (align));
+	  /* Provide sufficient alignment for both address
+	     families.  */
+	  enum { align = 4 };
+	  _Static_assert ((align % __alignof__ (struct in_addr)) == 0,
+			  "struct in_addr alignment");
+	  _Static_assert ((align % __alignof__ (struct in6_addr)) == 0,
+			  "struct in6_addr alignment");
+	  {
+	    char *new_bp = PTR_ALIGN_UP (bp, align);
+	    linebuflen -= new_bp - bp;
+	    bp = new_bp;
+	  }
 
 	  if (__glibc_unlikely (n > linebuflen))
 	    goto too_small;

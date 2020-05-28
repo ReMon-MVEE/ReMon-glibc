@@ -181,7 +181,7 @@ LC_TIME
 %
 % Abbreviated weekday names (%a)
 %
-abday    "aca";"etl";"tal";"arb";"kam";"gum";"sab"
+abday    "Aca";"Etl";"Tal";"Arb";"Kam";"Gum";"Sab"
 %
 % Full weekday names (%A)
 %
@@ -195,18 +195,18 @@ day      "Acaada";/
 %
 % Abbreviated month names (%b)
 %
-abmon    "qun";"nah";"cig";"agd";"cax";"qas";"qad";"leq";"way";"dit";"xim";"kax"
+abmon    "Qun";"Nah";"Cig";"Agd";"Cax";"Qas";"Qad";"Leq";"Way";"Dit";"Xim";"Kax"
 %
 % Full month names (%B)
 %
 mon      "Qunxa Garablu";/
-         "Kudo";/
+         "Naharsi Kudo";/
          "Ciggilta Kudo";/
-         "Agda Baxisso";/
+         "Agda Baxis";/
          "Caxah Alsa";/
          "Qasa Dirri";/
          "Qado Dirri";/
-         "Liiqen";/
+         "Leqeeni";/
          "Waysu";/
          "Diteli";/
          "Ximoli";/
@@ -220,10 +220,10 @@ am_pm    "saaku";"carra"
 d_fmt   "%d.%m.%Y"
 %
 % Appropriate time representation (%X)
-t_fmt "%l:%M:%S"
+t_fmt "%l:%M:%S %p"
 %
 % Appropriate AM/PM time representation (%r)
-t_fmt_ampm "%X %p"
+t_fmt_ampm "%l:%M:%S %p"
 %
 % Appropriate date and time representation (%c)
 d_t_fmt    "%a %d %b %Y %r %Z"

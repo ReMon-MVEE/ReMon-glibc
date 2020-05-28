@@ -1,5 +1,5 @@
 /* strcat with SSE2
-   Copyright (C) 2011-2018 Free Software Foundation, Inc.
+   Copyright (C) 2011-2020 Free Software Foundation, Inc.
    Contributed by Intel Corporation.
    This file is part of the GNU C Library.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 
 #if IS_IN (libc)
@@ -50,7 +50,7 @@
 	absolute address.  */	\
 	addl	(%ecx,INDEX,SCALE), %ecx;	\
 	/* We loaded the jump table and adjusted ECX. Go.  */	\
-	jmp	*%ecx
+	_CET_NOTRACK jmp *%ecx
 # else
 #  define JMPTBL(I, B) I
 
@@ -59,7 +59,7 @@
 	jump table.  SCALE is the scale of INDEX. */
 
 #  define BRANCH_TO_JMPTBL_ENTRY(TABLE, INDEX, SCALE)	\
-	jmp	*TABLE(,INDEX,SCALE)
+	_CET_NOTRACK jmp *TABLE(,INDEX,SCALE)
 # endif
 
 # ifndef STRCAT

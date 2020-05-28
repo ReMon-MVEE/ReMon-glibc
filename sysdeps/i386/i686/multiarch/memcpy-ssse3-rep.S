@@ -1,5 +1,5 @@
 /* memcpy with SSSE3 and REP string.
-   Copyright (C) 2010-2018 Free Software Foundation, Inc.
+   Copyright (C) 2010-2020 Free Software Foundation, Inc.
    Contributed by Intel Corporation.
    This file is part of the GNU C Library.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
@@ -71,7 +71,7 @@
        absolute address.  */					\
     addl	(%ebx,INDEX,SCALE), %ebx;			\
     /* We loaded the jump table.  Go.  */			\
-    jmp		*%ebx
+    _CET_NOTRACK jmp *%ebx
 
 # define BRANCH_TO_JMPTBL_ENTRY_VALUE(TABLE)			\
     addl	$(TABLE - .), %ebx
@@ -79,7 +79,7 @@
 # define BRANCH_TO_JMPTBL_ENTRY_TAIL(TABLE, INDEX, SCALE)	\
     addl	(%ebx,INDEX,SCALE), %ebx;			\
     /* We loaded the jump table.  Go.  */			\
-    jmp		*%ebx
+    _CET_NOTRACK jmp *%ebx
 #else
 # define PARMS		4
 # define ENTRANCE
@@ -91,12 +91,12 @@
    absolute offsets.  INDEX is a register contains the index into the
    jump table.  SCALE is the scale of INDEX. */
 # define BRANCH_TO_JMPTBL_ENTRY(TABLE, INDEX, SCALE)		\
-    jmp		*TABLE(,INDEX,SCALE)
+    _CET_NOTRACK jmp *TABLE(,INDEX,SCALE)
 
 # define BRANCH_TO_JMPTBL_ENTRY_VALUE(TABLE)
 
 # define BRANCH_TO_JMPTBL_ENTRY_TAIL(TABLE, INDEX, SCALE)		\
-    jmp		*TABLE(,INDEX,SCALE)
+    _CET_NOTRACK jmp *TABLE(,INDEX,SCALE)
 #endif
 
 	.section .text.ssse3,"ax",@progbits

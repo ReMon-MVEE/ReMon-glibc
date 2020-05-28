@@ -28,7 +28,7 @@
 
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, see
-    <http://www.gnu.org/licenses/>.  */
+    <https://www.gnu.org/licenses/>.  */
 
 /* __ieee754_powl(x,y) return x**y
  *
@@ -67,6 +67,7 @@
 #include <math.h>
 #include <math_private.h>
 #include <math-underflow.h>
+#include <libm-alias-finite.h>
 
 static const long double bp[] = {
   1.0L,
@@ -195,10 +196,10 @@ __ieee754_powl (long double x, long double y)
 	yisint = 2;		/* even integer y */
       else if (iy >= 0x3ff00000)	/* 1.0 */
 	{
-	  if (__floorl (y) == y)
+	  if (floorl (y) == y)
 	    {
 	      z = 0.5 * y;
-	      if (__floorl (z) == z)
+	      if (floorl (z) == z)
 		yisint = 2;
 	      else
 		yisint = 1;
@@ -392,7 +393,7 @@ __ieee754_powl (long double x, long double y)
   n = 0;
   if (i > 0x3fe00000)
     {				/* if |z| > 0.5, set n = [z+0.5] */
-      n = __floorl (z + 0.5L);
+      n = floorl (z + 0.5L);
       t = n;
       p_h -= t;
     }
@@ -413,4 +414,4 @@ __ieee754_powl (long double x, long double y)
   math_check_force_underflow (z);
   return z;
 }
-strong_alias (__ieee754_powl, __powl_finite)
+libm_alias_finite (__ieee754_powl, __powl)

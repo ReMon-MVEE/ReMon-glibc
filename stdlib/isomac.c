@@ -1,5 +1,5 @@
 /* Check system header files for ISO 9899:1990 (ISO C) compliance.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jens Schweikhardt <schweikh@noc.dfn.de>, 1996.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This is a simple minded program that tries to find illegal macro
    definitions in system header files. Illegal macro definitions are
@@ -74,10 +74,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define HEADER_MAX          256
 
-static const char *macrofile;
+static char macrofile[] = "/tmp/isomac.XXXXXX";
 
 /* ISO C header names including Amendment 1 (without ".h" suffix).  */
 static char *header[] =
@@ -219,6 +220,8 @@ main (int argc, char *argv[])
       result |= check_header (file_name, ignore_list);
     }
 
+  remove (macrofile);
+
   /* The test suite should return errors but for now this is not
      practical.  Give a warning and ask the user to correct the bugs.  */
   return result;
@@ -249,7 +252,13 @@ get_null_defines (void)
   FILE *input;
   int first = 1;
 
-  macrofile = tmpnam (NULL);
+  int fd = mkstemp (macrofile);
+  if (fd == -1)
+    {
+      printf ("mkstemp failed: %m\n");
+      exit (1);
+    }
+  close (fd);
 
   command = malloc (sizeof fmt + sizeof "/dev/null" + 2 * strlen (CC)
 		    + strlen (INC) + strlen (macrofile));
@@ -330,7 +339,6 @@ get_null_defines (void)
     }
   result[result_len] = NULL;
   fclose (input);
-  remove (macrofile);
 
   return (const char **) result;
 }
@@ -439,7 +447,6 @@ check_header (const char *file_name, const char **except)
 	}
     }
   fclose (input);
-  remove (macrofile);
 
   return result;
 }

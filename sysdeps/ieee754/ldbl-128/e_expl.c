@@ -1,5 +1,5 @@
 /* Quad-precision floating point e^x.
-   Copyright (C) 1999-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jj@ultra.linux.cz>
    Partly based on double-precision code
@@ -17,7 +17,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* The basic design here is from
    Abraham Ziv, "Fast Evaluation of Elementary Mathematical Functions with
@@ -69,6 +69,7 @@
 #include <math-underflow.h>
 #include <stdlib.h>
 #include "t_expl.h"
+#include <libm-alias-finite.h>
 
 static const _Float128 C[] = {
 /* Smallest integer x for which e^x overflows.  */
@@ -253,4 +254,4 @@ __ieee754_expl (_Float128 x)
     /* Return x, if x is a NaN or Inf; or overflow, otherwise.  */
     return TWO16383*x;
 }
-strong_alias (__ieee754_expl, __expl_finite)
+libm_alias_finite (__ieee754_expl, __expl)

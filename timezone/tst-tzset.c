@@ -1,5 +1,5 @@
 /* tzset tests with crafted time zone data.
-   Copyright (C) 2015-2018 Free Software Foundation, Inc.
+   Copyright (C) 2015-2020 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define _GNU_SOURCE 1
 
@@ -24,8 +24,8 @@
 #include <sys/resource.h>
 #include <time.h>
 #include <unistd.h>
+#include <support/check.h>
 
-#define TIMEOUT 5
 static int do_test (void);
 #define TEST_FUNCTION do_test ()
 #include "../test-skeleton.c"
@@ -38,6 +38,8 @@ create_tz_file (off64_t size)
   int fd = create_temp_file ("tst-tzset-", &path);
   if (fd < 0)
     exit (1);
+  if (!support_descriptor_supports_holes (fd))
+    FAIL_UNSUPPORTED ("File %s does not support holes", path);
 
   // Reopen for large-file support.
   close (fd);

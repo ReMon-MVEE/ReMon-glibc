@@ -1,5 +1,5 @@
 /* Jump to a new context powerpc32 common.
-   Copyright (C) 2005-2018 Free Software Foundation, Inc.
+   Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This is the common implementation of setcontext for powerpc32.
    It not complete in itself should be included in to a framework that
@@ -46,21 +46,6 @@ ENTRY(__CONTEXT_FUNC_NAME)
 	stw	r31,12(r1)
 	cfi_offset(r31,-4)
 	lwz	r31,_UC_REGS_PTR(r3)
-
-	/*
-	 * If this ucontext refers to the point where we were interrupted
-	 * by a signal, we have to use the rt_sigreturn system call to
-	 * return to the context so we get both LR and CTR restored.
-	 *
-	 * Otherwise, the context we are restoring is either just after
-	 * a procedure call (getcontext/swapcontext) or at the beginning
-	 * of a procedure call (makecontext), so we don't need to restore
-	 * r0, xer, ctr.  We don't restore r2 since it will be used as
-	 * the TLS pointer.
-	 */
-	lwz	r0,_UC_GREGS+(PT_MSR*4)(r31)
-	cmpwi	r0,0
-	bne	4f	/* L(do_sigret) */
 
 	/* Restore the signal mask */
 	li	r5,0
@@ -243,10 +228,6 @@ ENTRY(__CONTEXT_FUNC_NAME)
 	lfd	fp31,_UC_FREGS+(31*8)(r31)
 #endif /* __CONTEXT_ENABLE_FPRS */
 
-#ifdef __CONTEXT_ENABLE_E500
-	setcontext_e500
-#endif
-
 	/* Restore LR and CCR, and set CTR to the NIP value */
 	lwz	r3,_UC_GREGS+(PT_LNK*4)(r31)
 	lwz	r4,_UC_GREGS+(PT_NIP*4)(r31)
@@ -295,12 +276,5 @@ ENTRY(__CONTEXT_FUNC_NAME)
 	addi	r1,r1,16
 	mtlr	r0
 	blr
-
-
-4: /* L(do_sigret): */
-	addi	r1,r3,-0xd0
-	li	r0,SYS_ify(rt_sigreturn)
-	sc
-	/* NOTREACHED */
 
 END (__CONTEXT_FUNC_NAME)

@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -22,6 +22,7 @@
 #include "pthreadP.h"
 #include <lowlevellock.h>
 #include <stap-probe.h>
+#include <futex-internal.h>
 
 #ifndef lll_unlock_elision
 #define lll_unlock_elision(a,b,c) ({ lll_unlock (a,c); 0; })
@@ -35,9 +36,12 @@ int
 attribute_hidden
 __pthread_mutex_unlock_usercnt (pthread_mutex_t *mutex, int decr)
 {
+  /* See concurrency notes regarding mutex type which is loaded from __kind
+     in struct __pthread_mutex_s in sysdeps/nptl/bits/thread-shared-types.h.  */
   int type = PTHREAD_MUTEX_TYPE_ELISION (mutex);
-  if (__builtin_expect (type &
-		~(PTHREAD_MUTEX_KIND_MASK_NP|PTHREAD_MUTEX_ELISION_FLAGS_NP), 0))
+  if (__builtin_expect (type
+			& ~(PTHREAD_MUTEX_KIND_MASK_NP
+			    |PTHREAD_MUTEX_ELISION_FLAGS_NP), 0))
     return __pthread_mutex_unlock_full (mutex, decr);
 
   if (__builtin_expect (type, PTHREAD_MUTEX_TIMED_NP)
@@ -222,13 +226,19 @@ __pthread_mutex_unlock_full (pthread_mutex_t *mutex, int decr)
       /* If the previous owner died and the caller did not succeed in
 	 making the state consistent, mark the mutex as unrecoverable
 	 and make all waiters.  */
-      if ((mutex->__data.__kind & PTHREAD_MUTEX_ROBUST_NORMAL_NP) != 0
+      /* See concurrency notes regarding __kind in struct __pthread_mutex_s
+	 in sysdeps/nptl/bits/thread-shared-types.h.  */
+      if ((atomic_load_relaxed (&(mutex->__data.__kind))
+	   & PTHREAD_MUTEX_ROBUST_NORMAL_NP) != 0
 	  && __builtin_expect (mutex->__data.__owner
 			       == PTHREAD_MUTEX_INCONSISTENT, 0))
       pi_notrecoverable:
        newowner = PTHREAD_MUTEX_NOTRECOVERABLE;
 
-      if ((mutex->__data.__kind & PTHREAD_MUTEX_ROBUST_NORMAL_NP) != 0)
+      /* See concurrency notes regarding __kind in struct __pthread_mutex_s
+	 in sysdeps/nptl/bits/thread-shared-types.h.  */
+      if ((atomic_load_relaxed (&(mutex->__data.__kind))
+	   & PTHREAD_MUTEX_ROBUST_NORMAL_NP) != 0)
 	{
 	continue_pi_robust:
 	  /* Remove mutex from the list.
@@ -251,7 +261,10 @@ __pthread_mutex_unlock_full (pthread_mutex_t *mutex, int decr)
       /* Unlock.  Load all necessary mutex data before releasing the mutex
 	 to not violate the mutex destruction requirements (see
 	 lll_unlock).  */
-      int robust = mutex->__data.__kind & PTHREAD_MUTEX_ROBUST_NORMAL_NP;
+      /* See concurrency notes regarding __kind in struct __pthread_mutex_s
+	 in sysdeps/nptl/bits/thread-shared-types.h.  */
+      int robust = atomic_load_relaxed (&(mutex->__data.__kind))
+	& PTHREAD_MUTEX_ROBUST_NORMAL_NP;
       private = (robust
 		 ? PTHREAD_ROBUST_MUTEX_PSHARED (mutex)
 		 : PTHREAD_MUTEX_PSHARED (mutex));
@@ -265,9 +278,8 @@ __pthread_mutex_unlock_full (pthread_mutex_t *mutex, int decr)
 	  if (((l & FUTEX_WAITERS) != 0)
 	      || (l != THREAD_GETMEM (THREAD_SELF, tid)))
 	    {
-	      INTERNAL_SYSCALL_DECL (__err);
-	      INTERNAL_SYSCALL (futex, __err, 2, &mutex->__data.__lock,
-				__lll_private_flag (FUTEX_UNLOCK_PI, private));
+	      futex_unlock_pi ((unsigned int *) &mutex->__data.__lock,
+			       private);
 	      break;
 	    }
 	}

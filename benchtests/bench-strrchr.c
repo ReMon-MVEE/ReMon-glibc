@@ -1,5 +1,5 @@
 /* Measure STRCHR functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #ifdef WIDE
@@ -24,20 +24,13 @@
 #endif
 #include "bench-string.h"
 
+#define BIG_CHAR MAX_CHAR
+
 #ifdef WIDE
-# include <wchar.h>
 # define SIMPLE_STRRCHR simple_wcsrchr
-# define STRRCHR wcsrchr
-# define CHAR wchar_t
-# define UCHAR wchar_t
-# define BIG_CHAR WCHAR_MAX
 # define SMALL_CHAR 1273
 #else
 # define SIMPLE_STRRCHR simple_strrchr
-# define STRRCHR strrchr
-# define CHAR char
-# define UCHAR unsigned char
-# define BIG_CHAR CHAR_MAX
 # define SMALL_CHAR 127
 #endif
 
@@ -63,7 +56,7 @@ static void
 do_one_test (impl_t *impl, const CHAR *s, int c, CHAR *exp_res)
 {
   CHAR *res = CALL (impl, s, c);
-  size_t i, iters = INNER_LOOP_ITERS;
+  size_t i, iters = INNER_LOOP_ITERS8;
   timing_t start, stop, cur;
 
   if (res != exp_res)

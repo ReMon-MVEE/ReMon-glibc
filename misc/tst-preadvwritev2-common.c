@@ -1,5 +1,5 @@
 /* Common function for preadv2 and pwritev2 tests.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,14 +14,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <limits.h>
 #include <support/check.h>
 
-static void
-do_test_with_invalid_flags (void)
-{
 #ifndef RWF_HIPRI
 # define RWF_HIPRI 0
 #endif
@@ -39,6 +36,73 @@ do_test_with_invalid_flags (void)
 #endif
 #define RWF_SUPPORTED	(RWF_HIPRI | RWF_DSYNC | RWF_SYNC | RWF_NOWAIT \
 			 | RWF_APPEND)
+
+/* Generic uio_lim.h does not define IOV_MAX.  */
+#ifndef IOV_MAX
+# define IOV_MAX 1024
+#endif
+
+static void
+do_test_with_invalid_fd (void)
+{
+  char buf[256];
+  struct iovec iov = { buf, sizeof buf };
+
+  /* Check with flag being 0 to use the fallback code which calls pwritev
+     or writev.  */
+  TEST_VERIFY (preadv2 (-1, &iov, 1, -1, 0) == -1);
+  TEST_COMPARE (errno, EBADF);
+  TEST_VERIFY (pwritev2 (-1, &iov, 1, -1, 0) == -1);
+  TEST_COMPARE (errno, EBADF);
+
+  /* Same tests as before but with flags being different than 0.  Since
+     there is no emulation for any flag value, fallback code returns
+     ENOTSUP.  This is different running on a kernel with preadv2/pwritev2
+     support, where EBADF is returned).  */
+  TEST_VERIFY (preadv2 (-1, &iov, 1, 0, RWF_HIPRI) == -1);
+  TEST_VERIFY (errno == EBADF || errno == ENOTSUP);
+  TEST_VERIFY (pwritev2 (-1, &iov, 1, 0, RWF_HIPRI) == -1);
+  TEST_VERIFY (errno == EBADF || errno == ENOTSUP);
+}
+
+static void
+do_test_with_invalid_iov (void)
+{
+  {
+    char buf[256];
+    struct iovec iov;
+
+    iov.iov_base = buf;
+    iov.iov_len = (size_t)SSIZE_MAX + 1;
+
+    TEST_VERIFY (preadv2 (temp_fd, &iov, 1, 0, 0) == -1);
+    TEST_COMPARE (errno, EINVAL);
+    TEST_VERIFY (pwritev2 (temp_fd, &iov, 1, 0, 0) == -1);
+    TEST_COMPARE (errno, EINVAL);
+
+    /* Same as for invalid file descriptor tests, emulation fallback
+       first checks for flag value and return ENOTSUP.  */
+    TEST_VERIFY (preadv2 (temp_fd, &iov, 1, 0, RWF_HIPRI) == -1);
+    TEST_VERIFY (errno == EINVAL || errno == ENOTSUP);
+    TEST_VERIFY (pwritev2 (temp_fd, &iov, 1, 0, RWF_HIPRI) == -1);
+    TEST_VERIFY (errno == EINVAL || errno == ENOTSUP);
+  }
+
+  {
+    /* An invalid iovec buffer should trigger an invalid memory access
+       or an error (Linux for instance returns EFAULT).  */
+    struct iovec iov[IOV_MAX+1] = { 0 };
+
+    TEST_VERIFY (preadv2 (temp_fd, iov, IOV_MAX + 1, 0, RWF_HIPRI) == -1);
+    TEST_VERIFY (errno == EINVAL || errno == ENOTSUP);
+    TEST_VERIFY (pwritev2 (temp_fd, iov, IOV_MAX + 1, 0, RWF_HIPRI) == -1);
+    TEST_VERIFY (errno == EINVAL || errno == ENOTSUP);
+  }
+}
+
+static void
+do_test_with_invalid_flags (void)
+{
   /* Set the next bit from the mask of all supported flags.  */
   int invalid_flag = RWF_SUPPORTED != 0 ? __builtin_clz (RWF_SUPPORTED) : 2;
   invalid_flag = 0x1 << ((sizeof (int) * CHAR_BIT) - invalid_flag);

@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -21,6 +21,7 @@
 #include <hurd/fd.h>
 #include <stdarg.h>
 #include <sys/file.h>		/* XXX for LOCK_* */
+#include "f_setlk.h"
 
 /* Perform file control operations on FD.  */
 int
@@ -128,56 +129,111 @@ __libc_fcntl (int fd, int cmd, ...)
     case F_SETLK:
     case F_SETLKW:
       {
-	/* XXX
-	   We need new RPCs to support POSIX.1 fcntl file locking!!
-	   For the time being we support the whole-file case only,
-	   with all kinds of WRONG WRONG WRONG semantics,
-	   by using flock.  This is definitely the Wrong Thing,
-	   but it might be better than nothing (?).  */
 	struct flock *fl = va_arg (ap, struct flock *);
-	va_end (ap);
+
 	switch (cmd)
 	  {
 	  case F_GETLK:
-	    errno = ENOSYS;
-	    return -1;
+	    cmd = F_GETLK64;
+	    break;
 	  case F_SETLK:
-	    cmd = LOCK_NB;
+	    cmd = F_SETLK64;
 	    break;
-	  default:
-	    cmd = 0;
+	  case F_SETLKW:
+	    cmd = F_SETLKW64;
 	    break;
-	  }
-	switch (fl->l_type)
-	  {
-	  case F_RDLCK: cmd |= LOCK_SH; break;
-	  case F_WRLCK: cmd |= LOCK_EX; break;
-	  case F_UNLCK: cmd |= LOCK_UN; break;
-	  default:
-	    errno = EINVAL;
-	    return -1;
-	  }
-	switch (fl->l_whence)
-	  {
-	  case SEEK_SET:
-	    if (fl->l_start == 0 && fl->l_len == 0) /* Whole file request.  */
-	      break;
-	    /* It seems to be common for applications to lock the first
-	       byte of the file when they are really doing whole-file locking.
-	       So, since it's so wrong already, might as well do that too.  */
-	    if (fl->l_start == 0 && fl->l_len == 1)
-	      break;
-	    /* FALLTHROUGH */
-	  case SEEK_CUR:
-	  case SEEK_END:
-	    errno = ENOTSUP;
-	    return -1;
 	  default:
 	    errno = EINVAL;
 	    return -1;
 	  }
 
-	return __flock (fd, cmd);
+	struct flock64 fl64 = {
+	  .l_type = fl->l_type,
+	  .l_whence = fl->l_whence,
+	  .l_start = fl->l_start,
+	  .l_len = fl->l_len,
+	  .l_pid = fl->l_pid
+	};
+
+	err = HURD_FD_PORT_USE (d, __file_record_lock (port, cmd, &fl64,
+				MACH_PORT_NULL, MACH_MSG_TYPE_MAKE_SEND));
+
+	/* XXX: To remove once file_record_lock RPC is settled.  */
+	if (err == EMIG_BAD_ID || err == EOPNOTSUPP)
+	  {
+	    int wait = 0;
+	    va_end (ap);
+	    switch (cmd)
+	      {
+	      case F_GETLK64:
+		errno = ENOSYS;
+		return -1;
+	      case F_SETLKW64:
+		wait = 1;
+		/* FALLTHROUGH */
+	      case F_SETLK64:
+		return __f_setlk (fd, fl->l_type, fl->l_whence,
+				  fl->l_start, fl->l_len, wait);
+	      default:
+		errno = EINVAL;
+		return -1;
+	      }
+	  }
+	else if (cmd == F_GETLK64)
+	  {
+	    fl->l_type = fl64.l_type;
+	    fl->l_whence = fl64.l_whence;
+	    fl->l_start = fl64.l_start;
+	    fl->l_len = fl64.l_len;
+	    fl->l_pid = fl64.l_pid;
+
+	    if ((sizeof fl->l_start != sizeof fl64.l_start
+		 && fl->l_start != fl64.l_start)
+	     || (sizeof fl->l_len != sizeof fl64.l_len
+		 && fl->l_len != fl64.l_len))
+	      {
+		errno = EOVERFLOW;
+		return -1;
+	      }
+	  }
+
+	result = err ? __hurd_dfail (fd, err) : 0;
+	break;
+      }
+
+    case F_GETLK64:
+    case F_SETLK64:
+    case F_SETLKW64:
+      {
+	struct flock64 *fl = va_arg (ap, struct flock64 *);
+
+	err = HURD_FD_PORT_USE (d, __file_record_lock (port, cmd, fl,
+				MACH_PORT_NULL, MACH_MSG_TYPE_MAKE_SEND));
+
+	/* XXX: To remove once file_record_lock RPC is settled.  */
+	if (err == EMIG_BAD_ID || err == EOPNOTSUPP)
+	  {
+	    int wait = 0;
+	    va_end (ap);
+	    switch (cmd)
+	      {
+	      case F_GETLK64:
+		errno = ENOSYS;
+		return -1;
+	      case F_SETLKW64:
+		wait = 1;
+		/* FALLTHROUGH */
+	      case F_SETLK64:
+		return __f_setlk (fd, fl->l_type, fl->l_whence,
+				  fl->l_start, fl->l_len, wait);
+	      default:
+		errno = EINVAL;
+		return -1;
+	      }
+	  }
+
+	result = err ? __hurd_dfail (fd, err) : 0;
+	break;
       }
 
     case F_GETFL:		/* Get per-open flags.  */
@@ -210,3 +266,9 @@ libc_hidden_def (__libc_fcntl)
 weak_alias (__libc_fcntl, __fcntl)
 libc_hidden_weak (__fcntl)
 weak_alias (__libc_fcntl, fcntl)
+
+strong_alias (__libc_fcntl, __libc_fcntl64)
+libc_hidden_def (__libc_fcntl64)
+weak_alias (__libc_fcntl64, __fcntl64)
+libc_hidden_weak (__fcntl64)
+weak_alias (__fcntl64, fcntl64)

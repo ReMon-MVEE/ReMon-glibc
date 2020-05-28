@@ -1,5 +1,5 @@
 /* Special .init and .fini section support for 64 bit S/390.
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+   Copyright (C) 2001-2020 Free Software Foundation, Inc.
    Contributed by Martin Schwidefsky (schwidefsky@de.ibm.com).
    This file is part of the GNU C Library.
 
@@ -32,7 +32,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* crti.S puts a function prologue at the beginning of the .init and
    .fini sections and defines global symbols for those addresses, so
@@ -59,6 +59,7 @@
 	.section .init,"ax",@progbits
 	.align 4
 	.globl	_init
+	.hidden	_init
 	.type	_init,@function
 _init:
 	stmg	%r6,%r15,48(%r15)
@@ -81,6 +82,7 @@ _init:
 	.section .fini,"ax",@progbits
 	.align 4
 	.globl	_fini
+	.hidden	_fini
 	.type	_fini,@function
 _fini:
 	stmg	%r6,%r15,48(%r15)

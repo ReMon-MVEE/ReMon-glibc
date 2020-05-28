@@ -1,5 +1,5 @@
 /* Save current context, powerpc32 common.
-   Copyright (C) 2005-2018 Free Software Foundation, Inc.
+   Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This is the common implementation of getcontext for powerpc32.
    It not complete in itself should be included in to a framework that
@@ -260,10 +260,6 @@ ENTRY(__CONTEXT_FUNC_NAME)
 
 2: /* L(no_vec): */
 # endif
-#endif
-
-#ifdef __CONTEXT_ENABLE_E500
-	getcontext_e500
 #endif
 
 /* We need to set up parms and call sigprocmask which will clobber

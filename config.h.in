@@ -47,9 +47,6 @@
 #undef	STACK_PROTECTOR_LEVEL
 #endif
 
-/* Defined on SPARC if GCC emits GOTDATA relocations.  */
-#undef  HAVE_GCC_GOTDATA
-
 /* Define if the linker supports the -z combreloc option.  */
 #undef	HAVE_Z_COMBRELOC
 
@@ -62,8 +59,17 @@
 /* Define if assembler supports AVX512DQ.  */
 #undef  HAVE_AVX512DQ_ASM_SUPPORT
 
+/* Define if assembler supports z10 zarch instructions as default on S390.  */
+#undef  HAVE_S390_MIN_Z10_ZARCH_ASM_SUPPORT
+
 /* Define if assembler supports z196 zarch instructions as default on S390.  */
 #undef  HAVE_S390_MIN_Z196_ZARCH_ASM_SUPPORT
+
+/* Define if assembler supports z13 zarch instructions as default on S390.  */
+#undef  HAVE_S390_MIN_Z13_ZARCH_ASM_SUPPORT
+
+/* Define if assembler supports arch13 zarch instruction as default on S390.  */
+#undef  HAVE_S390_MIN_ARCH13_ZARCH_ASM_SUPPORT
 
 /* Define if assembler supports vector instructions on S390.  */
 #undef  HAVE_S390_VX_ASM_SUPPORT
@@ -71,6 +77,9 @@
 /* Define if gcc supports vector registers as clobbers in inline assembly
    on S390.  */
 #undef  HAVE_S390_VX_GCC_SUPPORT
+
+/* Define if assembler supports arch13 instructions on S390.  */
+#undef  HAVE_S390_ARCH13_ASM_SUPPORT
 
 /* Define if assembler supports Intel MPX.  */
 #undef  HAVE_MPX_SUPPORT
@@ -100,6 +109,12 @@
 /* AArch64 big endian ABI */
 #undef HAVE_AARCH64_BE
 
+/* C-SKY ABI version.  */
+#undef CSKYABI
+
+/* C-SKY floating-point ABI.  */
+#undef CSKY_HARD_FLOAT
+
 /* RISC-V integer ABI for ld.so.  */
 #undef RISCV_ABI_XLEN
 
@@ -123,9 +138,6 @@
 
 /* Mach/i386 specific: define if the `i386_set_gdt' RPC is available.  */
 #undef	HAVE_I386_SET_GDT
-
-/* Defined of libidn is available.  */
-#undef HAVE_LIBIDN
 
 /* Define if inlined system calls are available.  */
 #undef HAVE_INLINED_SYSCALLS

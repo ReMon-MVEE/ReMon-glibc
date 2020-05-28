@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <string.h>
@@ -48,11 +48,10 @@ __pthread_attr_init_2_1 (pthread_attr_t *attr)
 
   return 0;
 }
-versioned_symbol (libpthread, __pthread_attr_init_2_1, pthread_attr_init,
-		  GLIBC_2_1);
+versioned_symbol (libc, __pthread_attr_init_2_1, pthread_attr_init, GLIBC_2_1);
 
 
-#if SHLIB_COMPAT(libpthread, GLIBC_2_0, GLIBC_2_1)
+#if SHLIB_COMPAT(libc, GLIBC_2_0, GLIBC_2_1)
 int
 __pthread_attr_init_2_0 (pthread_attr_t *attr)
 {
@@ -81,6 +80,5 @@ __pthread_attr_init_2_0 (pthread_attr_t *attr)
      old attribute structure.  */
   return 0;
 }
-compat_symbol (libpthread, __pthread_attr_init_2_0, pthread_attr_init,
-	       GLIBC_2_0);
+compat_symbol (libc, __pthread_attr_init_2_0, pthread_attr_init, GLIBC_2_0);
 #endif

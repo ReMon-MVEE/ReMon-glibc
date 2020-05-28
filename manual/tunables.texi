@@ -32,6 +32,7 @@ their own namespace.
 * Tunable names::  The structure of a tunable name
 * Memory Allocation Tunables::  Tunables in the memory allocation subsystem
 * Elision Tunables::  Tunables in elision subsystem
+* POSIX Thread Tunables:: Tunables in the POSIX thread subsystem
 * Hardware Capability Tunables::  Tunables that modify the hardware
 				  capabilities seen by @theglibc{}
 @end menu
@@ -188,8 +189,8 @@ per-thread cache.  The default (and maximum) value is 1032 bytes on
 
 @deftp Tunable glibc.malloc.tcache_count
 The maximum number of chunks of each size to cache. The default is 7.
-There is no upper limit, other than available system memory.  If set
-to zero, the per-thread cache is effectively disabled.
+The upper limit is 65535.  If set to zero, the per-thread cache is effectively
+disabled.
 
 The approximate maximum overhead of the per-thread cache is thus equal
 to the number of bins times the chunk count in each bin times the size
@@ -211,6 +212,18 @@ bounded, the user may set this tunable to limit the number of chunks
 that are scanned from the unsorted list while searching for chunks to
 pre-fill the per-thread cache with.  The default, or when set to zero,
 is no limit.
+@end deftp
+
+@deftp Tunable glibc.malloc.mxfast
+One of the optimizations malloc uses is to maintain a series of ``fast
+bins'' that hold chunks up to a specific size.  The default and
+maximum size which may be held this way is 80 bytes on 32-bit systems
+or 160 bytes on 64-bit systems.  Applications which value size over
+speed may choose to reduce the size of requests which are serviced
+from fast bins with this tunable.  Note that the value specified
+includes malloc's internal overhead, which is normally the size of one
+pointer, so add 4 on 32-bit systems or 8 on 64-bit systems to the size
+passed to @code{malloc} for the largest bin size to enable.
 @end deftp
 
 @node Elision Tunables
@@ -281,6 +294,32 @@ of try lock attempts.
 The default value of this tunable is @samp{3}.
 @end deftp
 
+@node POSIX Thread Tunables
+@section POSIX Thread Tunables
+@cindex pthread mutex tunables
+@cindex thread mutex tunables
+@cindex mutex tunables
+@cindex tunables thread mutex
+
+@deftp {Tunable namespace} glibc.pthread
+The behavior of POSIX threads can be tuned to gain performance improvements
+according to specific hardware capabilities and workload characteristics by
+setting the following tunables in the @code{pthread} namespace:
+@end deftp
+
+@deftp Tunable glibc.pthread.mutex_spin_count
+The @code{glibc.pthread.mutex_spin_count} tunable sets the maximum number of times
+a thread should spin on the lock before calling into the kernel to block.
+Adaptive spin is used for mutexes initialized with the
+@code{PTHREAD_MUTEX_ADAPTIVE_NP} GNU extension.  It affects both
+@code{pthread_mutex_lock} and @code{pthread_mutex_timedlock}.
+
+The thread spins until either the maximum spin count is reached or the lock
+is acquired.
+
+The default value of this tunable is @samp{100}.
+@end deftp
+
 @node Hardware Capability Tunables
 @section Hardware Capability Tunables
 @cindex hardware capability tunables
@@ -295,23 +334,23 @@ The default value of this tunable is @samp{3}.
 @cindex non_temporal_threshold tunables
 @cindex tunables, non_temporal_threshold
 
-@deftp {Tunable namespace} glibc.tune
+@deftp {Tunable namespace} glibc.cpu
 Behavior of @theglibc{} can be tuned to assume specific hardware capabilities
-by setting the following tunables in the @code{tune} namespace:
+by setting the following tunables in the @code{cpu} namespace:
 @end deftp
 
-@deftp Tunable glibc.tune.hwcap_mask
+@deftp Tunable glibc.cpu.hwcap_mask
 This tunable supersedes the @env{LD_HWCAP_MASK} environment variable and is
 identical in features.
 
 The @code{AT_HWCAP} key in the Auxiliary Vector specifies instruction set
 extensions available in the processor at runtime for some architectures.  The
-@code{glibc.tune.hwcap_mask} tunable allows the user to mask out those
+@code{glibc.cpu.hwcap_mask} tunable allows the user to mask out those
 capabilities at runtime, thus disabling use of those extensions.
 @end deftp
 
-@deftp Tunable glibc.tune.hwcaps
-The @code{glibc.tune.hwcaps=-xxx,yyy,-zzz...} tunable allows the user to
+@deftp Tunable glibc.cpu.hwcaps
+The @code{glibc.cpu.hwcaps=-xxx,yyy,-zzz...} tunable allows the user to
 enable CPU/ARCH feature @code{yyy}, disable CPU/ARCH feature @code{xxx}
 and @code{zzz} where the feature name is case-sensitive and has to match
 the ones in @code{sysdeps/x86/cpu-features.h}.
@@ -319,8 +358,8 @@ the ones in @code{sysdeps/x86/cpu-features.h}.
 This tunable is specific to i386 and x86-64.
 @end deftp
 
-@deftp Tunable glibc.tune.cached_memopt
-The @code{glibc.tune.cached_memopt=[0|1]} tunable allows the user to
+@deftp Tunable glibc.cpu.cached_memopt
+The @code{glibc.cpu.cached_memopt=[0|1]} tunable allows the user to
 enable optimizations recommended for cacheable memory.  If set to
 @code{1}, @theglibc{} assumes that the process memory image consists
 of cacheable (non-device) memory only.  The default, @code{0},
@@ -329,30 +368,58 @@ indicates that the process may use device memory.
 This tunable is specific to powerpc, powerpc64 and powerpc64le.
 @end deftp
 
-@deftp Tunable glibc.tune.cpu
-The @code{glibc.tune.cpu=xxx} tunable allows the user to tell @theglibc{} to
+@deftp Tunable glibc.cpu.name
+The @code{glibc.cpu.name=xxx} tunable allows the user to tell @theglibc{} to
 assume that the CPU is @code{xxx} where xxx may have one of these values:
 @code{generic}, @code{falkor}, @code{thunderxt88}, @code{thunderx2t99},
-@code{thunderx2t99p1}.
+@code{thunderx2t99p1}, @code{ares}, @code{emag}, @code{kunpeng}.
 
 This tunable is specific to aarch64.
 @end deftp
 
-@deftp Tunable glibc.tune.x86_data_cache_size
-The @code{glibc.tune.x86_data_cache_size} tunable allows the user to set
+@deftp Tunable glibc.cpu.x86_data_cache_size
+The @code{glibc.cpu.x86_data_cache_size} tunable allows the user to set
 data cache size in bytes for use in memory and string routines.
 
 This tunable is specific to i386 and x86-64.
 @end deftp
 
-@deftp Tunable glibc.tune.x86_shared_cache_size
-The @code{glibc.tune.x86_shared_cache_size} tunable allows the user to
+@deftp Tunable glibc.cpu.x86_shared_cache_size
+The @code{glibc.cpu.x86_shared_cache_size} tunable allows the user to
 set shared cache size in bytes for use in memory and string routines.
 @end deftp
 
-@deftp Tunable glibc.tune.x86_non_temporal_threshold
-The @code{glibc.tune.x86_non_temporal_threshold} tunable allows the user
+@deftp Tunable glibc.cpu.x86_non_temporal_threshold
+The @code{glibc.cpu.x86_non_temporal_threshold} tunable allows the user
 to set threshold in bytes for non temporal store.
+
+This tunable is specific to i386 and x86-64.
+@end deftp
+
+@deftp Tunable glibc.cpu.x86_ibt
+The @code{glibc.cpu.x86_ibt} tunable allows the user to control how
+indirect branch tracking (IBT) should be enabled.  Accepted values are
+@code{on}, @code{off}, and @code{permissive}.  @code{on} always turns
+on IBT regardless of whether IBT is enabled in the executable and its
+dependent shared libraries.  @code{off} always turns off IBT regardless
+of whether IBT is enabled in the executable and its dependent shared
+libraries.  @code{permissive} is the same as the default which disables
+IBT on non-CET executables and shared libraries.
+
+This tunable is specific to i386 and x86-64.
+@end deftp
+
+@deftp Tunable glibc.cpu.x86_shstk
+The @code{glibc.cpu.x86_shstk} tunable allows the user to control how
+the shadow stack (SHSTK) should be enabled.  Accepted values are
+@code{on}, @code{off}, and @code{permissive}.  @code{on} always turns on
+SHSTK regardless of whether SHSTK is enabled in the executable and its
+dependent shared libraries.  @code{off} always turns off SHSTK regardless
+of whether SHSTK is enabled in the executable and its dependent shared
+libraries.  @code{permissive} changes how dlopen works on non-CET shared
+libraries.  By default, when SHSTK is enabled, dlopening a non-CET shared
+library returns an error.  With @code{permissive}, it turns off SHSTK
+instead.
 
 This tunable is specific to i386 and x86-64.
 @end deftp

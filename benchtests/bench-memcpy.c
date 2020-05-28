@@ -1,5 +1,5 @@
 /* Measure memcpy functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef MEMCPY_RESULT
 # define MEMCPY_RESULT(dst, len) dst
@@ -23,32 +23,16 @@
 # define TEST_NAME "memcpy"
 # include "bench-string.h"
 
-char *simple_memcpy (char *, const char *, size_t);
-char *builtin_memcpy (char *, const char *, size_t);
+void *generic_memcpy (void *, const void *, size_t);
 
-IMPL (simple_memcpy, 0)
-IMPL (builtin_memcpy, 0)
 IMPL (memcpy, 1)
+IMPL (generic_memcpy, 0)
 
-char *
-simple_memcpy (char *dst, const char *src, size_t n)
-{
-  char *ret = dst;
-  while (n--)
-    *dst++ = *src++;
-  return ret;
-}
-
-char *
-builtin_memcpy (char *dst, const char *src, size_t n)
-{
-  return __builtin_memcpy (dst, src, n);
-}
 #endif
 
 # include "json-lib.h"
 
-typedef char *(*proto_t) (char *, const char *, size_t);
+typedef void *(*proto_t) (void *, const void *, size_t);
 
 static void
 do_one_test (json_ctx_t *json_ctx, impl_t *impl, char *dst, const char *src,
@@ -170,3 +154,9 @@ test_main (void)
 }
 
 #include <support/test-driver.c>
+
+#define libc_hidden_builtin_def(X)
+#undef MEMCPY
+#define MEMCPY generic_memcpy
+#include <string/memcpy.c>
+#include <string/wordcopy.c>

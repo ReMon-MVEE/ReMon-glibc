@@ -1,5 +1,5 @@
 /* Cache handling for host lookup.
-   Copyright (C) 2004-2018 Free Software Foundation, Inc.
+   Copyright (C) 2004-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2004.
 
@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -27,13 +27,10 @@
 #include <sys/mman.h>
 #include <resolv/resolv-internal.h>
 #include <resolv/resolv_context.h>
-#include <resolv/res_use_inet6.h>
+#include <scratch_buffer.h>
 
 #include "dbg_log.h"
 #include "nscd.h"
-#ifdef HAVE_SENDFILE
-# include <kernel-features.h>
-#endif
 
 
 typedef enum nss_status (*nss_gethostbyname4_r)
@@ -95,26 +92,25 @@ addhstaiX (struct database_dyn *db, int fd, request_header *req,
   int herrno = 0;
 
   if (hosts_database == NULL)
-    no_more = __nss_database_lookup ("hosts", NULL,
-				     "dns [!UNAVAIL=return] files",
-				     &hosts_database);
+    no_more = __nss_database_lookup2 ("hosts", NULL,
+				      "dns [!UNAVAIL=return] files",
+				      &hosts_database);
   else
     no_more = 0;
   nip = hosts_database;
 
-  /* Initialize configurations.  If we are looking for both IPv4 and
-     IPv6 address we don't want the lookup functions to automatically
-     promote IPv4 addresses to IPv6 addresses.  Therefore, use the
-     _no_inet6 variant.  */
+  /* Initialize configurations.  */
   struct resolv_context *ctx = __resolv_context_get ();
-  bool enable_inet6 = __resolv_context_disable_inet6 (ctx);
   if (ctx == NULL)
     no_more = 1;
 
-  size_t tmpbuf6len = 1024;
-  char *tmpbuf6 = alloca (tmpbuf6len);
-  size_t tmpbuf4len = 0;
-  char *tmpbuf4 = NULL;
+  struct scratch_buffer tmpbuf6;
+  scratch_buffer_init (&tmpbuf6);
+  struct scratch_buffer tmpbuf4;
+  scratch_buffer_init (&tmpbuf4);
+  struct scratch_buffer canonbuf;
+  scratch_buffer_init (&canonbuf);
+
   int32_t ttl = INT32_MAX;
   ssize_t total = 0;
   char *key_copy = NULL;
@@ -127,6 +123,7 @@ addhstaiX (struct database_dyn *db, int fd, request_header *req,
       int status[2] = { NSS_STATUS_UNAVAIL, NSS_STATUS_UNAVAIL };
       int naddrs = 0;
       size_t addrslen = 0;
+
       char *canon = NULL;
       size_t canonlen;
 
@@ -141,12 +138,17 @@ addhstaiX (struct database_dyn *db, int fd, request_header *req,
 	      at = &atmem;
 	      rc6 = 0;
 	      herrno = 0;
-	      status[1] = DL_CALL_FCT (fct4, (key, &at, tmpbuf6, tmpbuf6len,
+	      status[1] = DL_CALL_FCT (fct4, (key, &at,
+					      tmpbuf6.data, tmpbuf6.length,
 					      &rc6, &herrno, &ttl));
 	      if (rc6 != ERANGE || (herrno != NETDB_INTERNAL
 				    && herrno != TRY_AGAIN))
 		break;
-	      tmpbuf6 = extend_alloca (tmpbuf6, tmpbuf6len, 2 * tmpbuf6len);
+	      if (!scratch_buffer_grow (&tmpbuf6))
+		{
+		  rc6 = ENOMEM;
+		  break;
+		}
 	    }
 
 	  if (rc6 != 0 && herrno == NETDB_INTERNAL)
@@ -224,41 +226,38 @@ addhstaiX (struct database_dyn *db, int fd, request_header *req,
 	  while (1)
 	    {
 	      rc6 = 0;
-	      status[0] = DL_CALL_FCT (fct, (key, AF_INET6, &th[0], tmpbuf6,
-					     tmpbuf6len, &rc6, &herrno, &ttl,
+	      status[0] = DL_CALL_FCT (fct, (key, AF_INET6, &th[0],
+					     tmpbuf6.data, tmpbuf6.length,
+					     &rc6, &herrno, &ttl,
 					     &canon));
 	      if (rc6 != ERANGE || herrno != NETDB_INTERNAL)
 		break;
-	      tmpbuf6 = extend_alloca (tmpbuf6, tmpbuf6len, 2 * tmpbuf6len);
+	      if (!scratch_buffer_grow (&tmpbuf6))
+		{
+		  rc6 = ENOMEM;
+		  break;
+		}
 	    }
 
 	  if (rc6 != 0 && herrno == NETDB_INTERNAL)
 	    goto out;
 
-	  /* If the IPv6 lookup has been successful do not use the
-	     buffer used in that lookup, use a new one.  */
-	  if (status[0] == NSS_STATUS_SUCCESS && rc6 == 0)
-	    {
-	      tmpbuf4len = 512;
-	      tmpbuf4 = alloca (tmpbuf4len);
-	    }
-	  else
-	    {
-	      tmpbuf4len = tmpbuf6len;
-	      tmpbuf4 = tmpbuf6;
-	    }
-
 	  /* Next collect IPv4 information.  */
 	  while (1)
 	    {
 	      rc4 = 0;
-	      status[1] = DL_CALL_FCT (fct, (key, AF_INET, &th[1], tmpbuf4,
-					     tmpbuf4len, &rc4, &herrno,
+	      status[1] = DL_CALL_FCT (fct, (key, AF_INET, &th[1],
+					     tmpbuf4.data, tmpbuf4.length,
+					     &rc4, &herrno,
 					     ttl == INT32_MAX ? &ttl : NULL,
 					     canon == NULL ? &canon : NULL));
 	      if (rc4 != ERANGE || herrno != NETDB_INTERNAL)
 		break;
-	      tmpbuf4 = extend_alloca (tmpbuf4, tmpbuf4len, 2 * tmpbuf4len);
+	      if (!scratch_buffer_grow (&tmpbuf4))
+		{
+		  rc4 = ENOMEM;
+		  break;
+		}
 	    }
 
 	  if (rc4 != 0 && herrno == NETDB_INTERNAL)
@@ -284,13 +283,11 @@ addhstaiX (struct database_dyn *db, int fd, request_header *req,
 	      cfct = __nss_lookup_function (nip, "getcanonname_r");
 	      if (cfct != NULL)
 		{
-		  const size_t max_fqdn_len = 256;
-		  char *buf = alloca (max_fqdn_len);
 		  char *s;
 		  int rc;
 
-		  if (DL_CALL_FCT (cfct, (key, buf, max_fqdn_len, &s,
-					  &rc, &herrno))
+		  if (DL_CALL_FCT (cfct, (key, canonbuf.data, canonbuf.length,
+					  &s, &rc, &herrno))
 		      == NSS_STATUS_SUCCESS)
 		    canon = s;
 		  else
@@ -319,18 +316,20 @@ addhstaiX (struct database_dyn *db, int fd, request_header *req,
 		      addrfamily = AF_INET6;
 		    }
 
-		  size_t tmpbuflen = 512;
-		  char *tmpbuf = alloca (tmpbuflen);
 		  int rc;
 		  while (1)
 		    {
 		      rc = __gethostbyaddr2_r (addr, addrlen, addrfamily,
-					       &hstent_mem, tmpbuf, tmpbuflen,
+					       &hstent_mem,
+					       canonbuf.data, canonbuf.length,
 					       &hstent, &herrno, NULL);
 		      if (rc != ERANGE || herrno != NETDB_INTERNAL)
 			break;
-		      tmpbuf = extend_alloca (tmpbuf, tmpbuflen,
-					      tmpbuflen * 2);
+		      if (!scratch_buffer_grow (&canonbuf))
+			{
+			  rc = ENOMEM;
+			  break;
+			}
 		    }
 
 		  if (rc == 0)
@@ -447,32 +446,7 @@ addhstaiX (struct database_dyn *db, int fd, request_header *req,
 	     would unnecessarily let the receiver wait.  */
 	  assert (fd != -1);
 
-#ifdef HAVE_SENDFILE
-	  if (__builtin_expect (db->mmap_used, 1) && !alloca_used)
-	    {
-	      assert (db->wr_fd != -1);
-	      assert ((char *) &dataset->resp > (char *) db->data);
-	      assert ((char *) dataset - (char *) db->head + total
-		      <= (sizeof (struct database_pers_head)
-			  + db->head->module * sizeof (ref_t)
-			  + db->head->data_size));
-# ifndef __ASSUME_SENDFILE
-	      ssize_t written;
-	      written =
-# endif
-		sendfileall (fd, db->wr_fd, (char *) &dataset->resp
-			     - (char *) db->head, dataset->head.recsize);
-# ifndef __ASSUME_SENDFILE
-	      if (written == -1 && errno == ENOSYS)
-		goto use_write;
-# endif
-	    }
-	  else
-# ifndef __ASSUME_SENDFILE
-	  use_write:
-# endif
-#endif
-	    writeall (fd, &dataset->resp, dataset->head.recsize);
+	  writeall (fd, &dataset->resp, dataset->head.recsize);
 	}
 
       goto out;
@@ -534,7 +508,6 @@ next_nip:
    }
 
  out:
-  __resolv_context_enable_inet6 (ctx, enable_inet6);
   __resolv_context_put (ctx);
 
   if (dataset != NULL && !alloca_used)
@@ -558,6 +531,10 @@ next_nip:
       if (dh != NULL)
 	dh->usable = false;
     }
+
+  scratch_buffer_free (&tmpbuf6);
+  scratch_buffer_free (&tmpbuf4);
+  scratch_buffer_free (&canonbuf);
 
   return timeout;
 }

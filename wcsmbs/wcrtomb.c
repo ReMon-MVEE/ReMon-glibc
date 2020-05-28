@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -113,8 +113,3 @@ __wcrtomb (char *s, wchar_t wc, mbstate_t *ps)
 }
 weak_alias (__wcrtomb, wcrtomb)
 libc_hidden_weak (wcrtomb)
-
-/* There should be no difference between the UTF-32 handling required
-   by c32rtomb and the wchar_t handling which has long since been
-   implemented in wcrtomb.  */
-weak_alias (__wcrtomb, c32rtomb)

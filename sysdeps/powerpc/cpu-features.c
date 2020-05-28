@@ -1,5 +1,5 @@
 /* Initialize cpu feature data.  PowerPC version.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdint.h>
 #include <cpu-features.h>
@@ -30,7 +30,7 @@ init_cpu_features (struct cpu_features *cpu_features)
      tunables is enable, since for this case user can explicit disable
      unaligned optimizations.  */
 #if HAVE_TUNABLES
-  int32_t cached_memfunc = TUNABLE_GET (glibc, tune, cached_memopt, int32_t,
+  int32_t cached_memfunc = TUNABLE_GET (glibc, cpu, cached_memopt, int32_t,
 					NULL);
   cpu_features->use_cached_memopt = (cached_memfunc > 0);
 #else

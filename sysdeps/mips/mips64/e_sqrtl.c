@@ -1,5 +1,5 @@
 /* long double square root in software floating-point emulation.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Richard Henderson (rth@cygnus.com) and
 		  Jakub Jelinek (jj@ultra.linux.cz).
@@ -16,11 +16,12 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdlib.h>
 #include <soft-fp.h>
 #include <quad.h>
+#include <libm-alias-finite.h>
 
 long double
 __ieee754_sqrtl (const long double a)
@@ -36,4 +37,4 @@ __ieee754_sqrtl (const long double a)
   FP_HANDLE_EXCEPTIONS;
   return c;
 }
-strong_alias (__ieee754_sqrtl, __sqrtl_finite)
+libm_alias_finite (__ieee754_sqrtl, __sqrtl)

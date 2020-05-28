@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
 
@@ -14,16 +14,20 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; see the file COPYING.LIB.  If
-   not, see <http://www.gnu.org/licenses/>.  */
+   not, see <https://www.gnu.org/licenses/>.  */
 
 #include <shlib-compat.h>
+#include <sysdep.h>
+#include "kernel-posix-timers.h"
 #include "compat-timer.h"
 
+int
+__timer_gettime_new (timer_t timerid, struct itimerspec *value)
+{
+  struct timer *kt = (struct timer *) timerid;
 
-#define timer_gettime_alias __timer_gettime_new
-#include <sysdeps/unix/sysv/linux/timer_gettime.c>
-
-#undef timer_gettime
+  return INLINE_SYSCALL_CALL (timer_gettime, kt->ktimerid, value);
+}
 versioned_symbol (librt, __timer_gettime_new, timer_gettime, GLIBC_2_3_3);
 
 

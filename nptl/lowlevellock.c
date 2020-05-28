@@ -1,5 +1,5 @@
 /* low level locking for pthread library.  Generic futex-using version.
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Paul Mackerras <paulus@au.ibm.com>, 2003.
 
@@ -15,22 +15,25 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#include <errno.h>
 #include <sysdep.h>
 #include <lowlevellock.h>
-#include <sys/time.h>
 #include <atomic.h>
+#include <stap-probe.h>
 
 void
 __lll_lock_wait_private (int *futex)
 {
-  if (atomic_load_relaxed(futex) == 2)
-    lll_futex_wait (futex, 2, LLL_PRIVATE); /* Wait if *futex == 2.  */
+  if (atomic_load_relaxed (futex) == 2)
+    goto futex;
 
-  while (atomic_exchange_acq (futex, 2) != 0)
-    lll_futex_wait (futex, 2, LLL_PRIVATE); /* Wait if *futex == 2.  */
+  while (atomic_exchange_acquire (futex, 2) != 0)
+    {
+    futex:
+      LIBC_PROBE (lll_lock_wait_private, 1, futex);
+      lll_futex_wait (futex, 2, LLL_PRIVATE); /* Wait if *futex == 2.  */
+    }
 }
 
 
@@ -39,10 +42,14 @@ __lll_lock_wait_private (int *futex)
 void
 __lll_lock_wait (int *futex, int private)
 {
-  if (atomic_load_relaxed(futex) == 2)
-    lll_futex_wait (futex, 2, private); /* Wait if *futex == 2.  */
+  if (atomic_load_relaxed (futex) == 2)
+    goto futex;
 
-  while (atomic_exchange_acq (futex, 2) != 0)
-    lll_futex_wait (futex, 2, private); /* Wait if *futex == 2.  */
+  while (atomic_exchange_acquire (futex, 2) != 0)
+    {
+    futex:
+      LIBC_PROBE (lll_lock_wait, 1, futex);
+      lll_futex_wait (futex, 2, private); /* Wait if *futex == 2.  */
+    }
 }
 #endif

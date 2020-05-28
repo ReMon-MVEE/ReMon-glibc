@@ -1,5 +1,5 @@
 /* Thread package specific definitions of stream lock type.  Generic version.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _STDIO_LOCK_H
 #define _STDIO_LOCK_H 1
@@ -54,15 +54,8 @@ __libc_lock_define_recursive (typedef, _IO_lock_t)
 	__attribute__((cleanup (_IO_acquire_lock_fct)))			      \
 	= (_fp);							      \
     _IO_flockfile (_IO_acquire_lock_file);
-#  define _IO_acquire_lock_clear_flags2(_fp) \
-  do {									      \
-    FILE *_IO_acquire_lock_file						      \
-	__attribute__((cleanup (_IO_acquire_lock_clear_flags2_fct)))	      \
-	= (_fp);							      \
-    _IO_flockfile (_IO_acquire_lock_file);
 # else
 #  define _IO_acquire_lock(_fp) _IO_acquire_lock_needs_exceptions_enabled
-#  define _IO_acquire_lock_clear_flags2(_fp) _IO_acquire_lock (_fp)
 # endif
 # define _IO_release_lock(_fp) ; } while (0)
 

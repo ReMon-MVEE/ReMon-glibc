@@ -1,6 +1,6 @@
 /* Common definition for tst-cancel4_* tests.
 
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <pthread.h>
 
@@ -68,10 +68,10 @@ static void
 set_socket_buffer (int s)
 {
   int val = 1;
-  socklen_t len = sizeof(val);
+  socklen_t len = sizeof (val);
 
   TEST_VERIFY_EXIT (setsockopt (s, SOL_SOCKET, SO_SNDBUF, &val,
-		    sizeof(val)) == 0);
+		    sizeof (val)) == 0);
   TEST_VERIFY_EXIT (getsockopt (s, SOL_SOCKET, SO_SNDBUF, &val, &len) == 0);
   TEST_VERIFY_EXIT (val < WRITE_BUFFER_SIZE);
 }

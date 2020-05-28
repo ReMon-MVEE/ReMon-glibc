@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <stdio.h>
@@ -59,7 +59,7 @@ do_test (void)
      the perhaps incompatible new shared libraries.  */
   unsetenv ("LD_LIBRARY_PATH");
 
-  output = popen ("/bin/cat >/tmp/tstpopen.tmp", "w");
+  output = popen ("/bin/cat >" OBJPFX "tstpopen.tmp", "w");
   if (output == NULL)
     {
       perror ("popen");
@@ -69,10 +69,10 @@ do_test (void)
   write_data (output);
   wstatus = pclose (output);
   printf ("writing pclose returned %d\n", wstatus);
-  input = popen ("/bin/cat /tmp/tstpopen.tmp", "r");
+  input = popen ("/bin/cat " OBJPFX "tstpopen.tmp", "r");
   if (input == NULL)
     {
-      perror ("/tmp/tstpopen.tmp");
+      perror (OBJPFX "tstpopen.tmp");
       puts ("Test FAILED!");
       exit (1);
     }
@@ -80,7 +80,7 @@ do_test (void)
   rstatus = pclose (input);
   printf ("reading pclose returned %d\n", rstatus);
 
-  remove ("/tmp/tstpopen.tmp");
+  remove (OBJPFX "tstpopen.tmp");
 
   errno = 0;
   output = popen ("/bin/cat", "m");

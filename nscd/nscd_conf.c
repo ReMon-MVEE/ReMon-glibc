@@ -1,4 +1,4 @@
-/* Copyright (c) 1998-2018 Free Software Foundation, Inc.
+/* Copyright (c) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@suse.de>, 1998.
 
@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #include <ctype.h>
 #include <errno.h>
@@ -190,7 +190,10 @@ nscd_parse_file (const char *fname, struct database_dyn dbs[lastdb])
 	  if (!arg1)
 	    error (0, 0, _("Must specify user name for server-user option"));
 	  else
-	    server_user = xstrdup (arg1);
+	    {
+	      free ((char *) server_user);
+	      server_user = xstrdup (arg1);
+	    }
 	}
       else if (strcmp (entry, "stat-user") == 0)
 	{
@@ -198,6 +201,7 @@ nscd_parse_file (const char *fname, struct database_dyn dbs[lastdb])
 	    error (0, 0, _("Must specify user name for stat-user option"));
 	  else
 	    {
+	      free ((char *) stat_user);
 	      stat_user = xstrdup (arg1);
 
 	      struct passwd *pw = getpwnam (stat_user);

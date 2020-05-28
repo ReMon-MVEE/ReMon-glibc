@@ -1,4 +1,4 @@
-/* Copyright (C) 2012-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2012-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef BIAS
 # define BIAS	0x7fffffff
@@ -28,6 +28,9 @@
 	.type	func, @function
 func:
 	.cfi_startproc
+#if defined __CET__ && (__CET__ & 1) != 0
+	endbr64
+#endif
 	xorl	%edi, %edi
 	jmp	exit@PLT
 	.cfi_endproc
@@ -37,6 +40,9 @@ func:
 foo:
 	.cfi_startproc
 	.cfi_def_cfa_register 6
+#if defined __CET__ && (__CET__ & 1) != 0
+	endbr64
+#endif
 	movq	.Ljmp(%rip), %rax
 	subq	$BIAS, %rax
 	jmp	*%rax

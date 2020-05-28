@@ -1,5 +1,5 @@
 /* Support code for testing libm functions (compiled once per type).
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Part of testsuite for libm.
 
@@ -25,7 +25,7 @@
    different types and for variants such as testing inline functions.
 
    The tests of individual functions are in .inc files processed by
-   gen-libm-test.pl, with the resulting files included together with
+   gen-libm-test.py, with the resulting files included together with
    libm-test-driver.c.
 
    The per-type headers included both before libm-test-support.c and
@@ -982,8 +982,6 @@ enable_test (int exceptions)
   if (exceptions & XFAIL_TEST)
     return 0;
   if (flag_test_inline && (exceptions & NO_TEST_INLINE))
-    return 0;
-  if (flag_test_finite && (exceptions & NON_FINITE) != 0)
     return 0;
   if ((!SNAN_TESTS (FLOAT) || !snan_tests_arg)
       && (exceptions & TEST_SNAN) != 0)

@@ -1,5 +1,5 @@
 /* Measure strcasestr functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #define TEST_NAME "strcasestr"
@@ -24,35 +24,11 @@
 #define STRCASESTR simple_strcasestr
 #define NO_ALIAS
 #define __strncasecmp strncasecmp
+#define __strnlen strnlen
 #include "../string/strcasestr.c"
-
-
-static char *
-stupid_strcasestr (const char *s1, const char *s2)
-{
-  ssize_t s1len = strlen (s1);
-  ssize_t s2len = strlen (s2);
-
-  if (s2len > s1len)
-    return NULL;
-
-  for (ssize_t i = 0; i <= s1len - s2len; ++i)
-    {
-      size_t j;
-      for (j = 0; j < s2len; ++j)
-	if (tolower (s1[i + j]) != tolower (s2[j]))
-	  break;
-      if (j == s2len)
-	return (char *) s1 + i;
-    }
-
-  return NULL;
-}
-
 
 typedef char *(*proto_t) (const char *, const char *);
 
-IMPL (stupid_strcasestr, 0)
 IMPL (simple_strcasestr, 0)
 IMPL (strcasestr, 1)
 
@@ -60,7 +36,7 @@ IMPL (strcasestr, 1)
 static void
 do_one_test (impl_t *impl, const char *s1, const char *s2, char *exp_result)
 {
-  size_t i, iters = INNER_LOOP_ITERS;
+  size_t i, iters = INNER_LOOP_ITERS_SMALL;
   timing_t start, stop, cur;
 
   TIMING_NOW (start);

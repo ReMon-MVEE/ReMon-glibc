@@ -1,5 +1,5 @@
 /* Dynamic linker system dependencies for Linux.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Linux needs some special initialization, but otherwise uses
    the generic dynamic linker system interface code.  */
@@ -25,6 +25,7 @@
 #include <sys/param.h>
 #include <sys/utsname.h>
 #include <ldsodefs.h>
+#include <not-cancel.h>
 
 #ifdef SHARED
 # define DL_SYSDEP_INIT frob_brk ()
@@ -87,11 +88,11 @@ _dl_discover_osversion (void)
   if (__uname (&uts))
     {
       /* This was not successful.  Now try reading the /proc filesystem.  */
-      int fd = __open ("/proc/sys/kernel/osrelease", O_RDONLY);
+      int fd = __open64_nocancel ("/proc/sys/kernel/osrelease", O_RDONLY);
       if (fd < 0)
 	return -1;
-      ssize_t reslen = __read (fd, bufmem, sizeof (bufmem));
-      __close (fd);
+      ssize_t reslen = __read_nocancel (fd, bufmem, sizeof (bufmem));
+      __close_nocancel (fd);
       if (reslen <= 0)
 	/* This also didn't work.  We give up since we cannot
 	   make sure the library can actually work.  */

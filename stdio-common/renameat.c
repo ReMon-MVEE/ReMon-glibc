@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -22,7 +22,7 @@
 
 /* Rename the file OLD relative to OLDFD to NEW relative to NEWFD.  */
 int
-renameat (int oldfd, const char *old, int newfd, const char *new)
+__renameat (int oldfd, const char *old, int newfd, const char *new)
 {
   if ((oldfd < 0 && oldfd != AT_FDCWD) || (newfd < 0 && newfd != AT_FDCWD))
     {
@@ -40,5 +40,6 @@ renameat (int oldfd, const char *old, int newfd, const char *new)
   return -1;
 }
 
-
+libc_hidden_def (__renameat)
+weak_alias (__renameat, renameat)
 stub_warning (renameat)

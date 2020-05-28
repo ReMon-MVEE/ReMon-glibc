@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -89,8 +89,8 @@ const struct _IO_jump_t _IO_wstrn_jumps libio_vtable attribute_hidden =
 
 
 int
-_IO_vswprintf (wchar_t *string, size_t maxlen, const wchar_t *format,
-	       va_list args)
+__vswprintf_internal (wchar_t *string, size_t maxlen, const wchar_t *format,
+		      va_list args, unsigned int mode_flags)
 {
   _IO_wstrnfile sf;
   int ret;
@@ -108,7 +108,7 @@ _IO_vswprintf (wchar_t *string, size_t maxlen, const wchar_t *format,
   _IO_fwide (&sf.f._sbf._f, 1);
   string[0] = L'\0';
   _IO_wstr_init_static (&sf.f._sbf._f, string, maxlen - 1, string);
-  ret = _IO_vfwprintf ((FILE *) &sf.f._sbf, format, args);
+  ret = __vfwprintf_internal ((FILE *) &sf.f._sbf, format, args, mode_flags);
 
   if (sf.f._sbf._f._wide_data->_IO_buf_base == sf.overflow_buf)
     /* ISO C99 requires swprintf/vswprintf to return an error if the
@@ -120,5 +120,11 @@ _IO_vswprintf (wchar_t *string, size_t maxlen, const wchar_t *format,
 
   return ret;
 }
-weak_alias (_IO_vswprintf, __vswprintf)
-ldbl_weak_alias (_IO_vswprintf, vswprintf)
+
+int
+__vswprintf (wchar_t *string, size_t maxlen, const wchar_t *format,
+	     va_list args)
+{
+  return __vswprintf_internal (string, maxlen, format, args, 0);
+}
+ldbl_weak_alias (__vswprintf, vswprintf)

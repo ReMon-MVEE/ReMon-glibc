@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Richard Henderson <rth@redhat.com>, 2005.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdbool.h>
 #include <math.h>
@@ -42,20 +42,20 @@ __multc3 (long double a, long double b, long double c, long double d)
 	{
 	  /* z is infinite.  "Box" the infinity and change NaNs in
 	     the other factor to 0.  */
-	  a = __copysignl (isinf (a) ? 1 : 0, a);
-	  b = __copysignl (isinf (b) ? 1 : 0, b);
-	  if (isnan (c)) c = __copysignl (0, c);
-	  if (isnan (d)) d = __copysignl (0, d);
+	  a = copysignl (isinf (a) ? 1 : 0, a);
+	  b = copysignl (isinf (b) ? 1 : 0, b);
+	  if (isnan (c)) c = copysignl (0, c);
+	  if (isnan (d)) d = copysignl (0, d);
 	  recalc = 1;
 	}
      if (isinf (c) || isinf (d))
 	{
 	  /* w is infinite.  "Box" the infinity and change NaNs in
 	     the other factor to 0.  */
-	  c = __copysignl (isinf (c) ? 1 : 0, c);
-	  d = __copysignl (isinf (d) ? 1 : 0, d);
-	  if (isnan (a)) a = __copysignl (0, a);
-	  if (isnan (b)) b = __copysignl (0, b);
+	  c = copysignl (isinf (c) ? 1 : 0, c);
+	  d = copysignl (isinf (d) ? 1 : 0, d);
+	  if (isnan (a)) a = copysignl (0, a);
+	  if (isnan (b)) b = copysignl (0, b);
 	  recalc = 1;
 	}
      if (!recalc
@@ -63,10 +63,10 @@ __multc3 (long double a, long double b, long double c, long double d)
 	      || isinf (ad) || isinf (bc)))
 	{
 	  /* Recover infinities from overflow by changing NaNs to 0.  */
-	  if (isnan (a)) a = __copysignl (0, a);
-	  if (isnan (b)) b = __copysignl (0, b);
-	  if (isnan (c)) c = __copysignl (0, c);
-	  if (isnan (d)) d = __copysignl (0, d);
+	  if (isnan (a)) a = copysignl (0, a);
+	  if (isnan (b)) b = copysignl (0, b);
+	  if (isnan (c)) c = copysignl (0, c);
+	  if (isnan (d)) d = copysignl (0, d);
 	  recalc = 1;
 	}
       if (recalc)

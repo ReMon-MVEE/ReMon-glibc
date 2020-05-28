@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # Build many configurations of glibc.
-# Copyright (C) 2016-2018 Free Software Foundation, Inc.
+# Copyright (C) 2016-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 #
 # The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 """Build many configurations of glibc.
 
@@ -50,17 +50,6 @@ import time
 import urllib.request
 
 try:
-    os.cpu_count
-except:
-    import multiprocessing
-    os.cpu_count = lambda: multiprocessing.cpu_count()
-
-try:
-    re.fullmatch
-except:
-    re.fullmatch = lambda p,s,f=0: re.match(p+"\\Z",s,f)
-
-try:
     subprocess.run
 except:
     class _CompletedProcess:
@@ -91,13 +80,14 @@ class Context(object):
     """The global state associated with builds in a given directory."""
 
     def __init__(self, topdir, parallelism, keep, replace_sources, strip,
-                 action):
+                 full_gcc, action):
         """Initialize the context."""
         self.topdir = topdir
         self.parallelism = parallelism
         self.keep = keep
         self.replace_sources = replace_sources
         self.strip = strip
+        self.full_gcc = full_gcc
         self.srcdir = os.path.join(topdir, 'src')
         self.versions_json = os.path.join(self.srcdir, 'versions.json')
         self.build_state_json = os.path.join(topdir, 'build-state.json')
@@ -168,7 +158,9 @@ class Context(object):
         self.add_config(arch='alpha',
                         os_name='linux-gnu')
         self.add_config(arch='arm',
-                        os_name='linux-gnueabi')
+                        os_name='linux-gnueabi',
+                        extra_glibcs=[{'variant': 'v4t',
+                                       'ccopts': '-march=armv4t'}])
         self.add_config(arch='armeb',
                         os_name='linux-gnueabi')
         self.add_config(arch='armeb',
@@ -191,6 +183,13 @@ class Context(object):
                         variant='be8',
                         gcc_cfg=['--with-float=hard', '--with-arch=armv7-a',
                                  '--with-fpu=vfpv3'])
+        self.add_config(arch='csky',
+                        os_name='linux-gnuabiv2',
+                        variant='soft',
+                        gcc_cfg=['--disable-multilib'])
+        self.add_config(arch='csky',
+                        os_name='linux-gnuabiv2',
+                        gcc_cfg=['--with-float=hard', '--disable-multilib'])
         self.add_config(arch='hppa',
                         os_name='linux-gnu')
         self.add_config(arch='i686',
@@ -302,6 +301,17 @@ class Context(object):
                                  'ccopts': '-mabi=32'},
                                 {'variant': 'n64-nan2008-soft',
                                  'ccopts': '-mabi=64'}])
+        self.add_config(arch='mipsisa64r6el',
+                        os_name='linux-gnu',
+                        gcc_cfg=['--with-mips-plt', '--with-nan=2008',
+                                 '--with-arch-64=mips64r6',
+                                 '--with-arch-32=mips32r6',
+                                 '--with-float=hard'],
+                        glibcs=[{'variant': 'n32'},
+                                {'arch': 'mipsisa32r6el',
+                                 'ccopts': '-mabi=32'},
+                                {'variant': 'n64',
+                                 'ccopts': '-mabi=64'}])
         self.add_config(arch='nios2',
                         os_name='linux-gnu')
         self.add_config(arch='powerpc',
@@ -321,15 +331,6 @@ class Context(object):
         self.add_config(arch='powerpc64le',
                         os_name='linux-gnu',
                         gcc_cfg=['--disable-multilib', '--enable-secureplt'])
-        self.add_config(arch='powerpc',
-                        os_name='linux-gnuspe',
-                        gcc_cfg=['--disable-multilib', '--enable-secureplt',
-                                 '--enable-e500-double', '--enable-obsolete'])
-        self.add_config(arch='powerpc',
-                        os_name='linux-gnuspe',
-                        variant='e500v1',
-                        gcc_cfg=['--disable-multilib', '--enable-secureplt',
-                                 '--enable-obsolete'])
         self.add_config(arch='riscv64',
                         os_name='linux-gnu',
                         variant='rv64imac-lp64',
@@ -369,12 +370,15 @@ class Context(object):
                         os_name='linux-gnu',
                         glibcs=[{},
                                 {'arch': 'sparcv9',
-                                 'ccopts': '-m32 -mlong-double-128'}],
-                        extra_glibcs=[{'variant': 'disable-multi-arch',
+                                 'ccopts': '-m32 -mlong-double-128 -mcpu=v9'}],
+                        extra_glibcs=[{'variant': 'leon3',
+                                       'arch' : 'sparcv8',
+                                       'ccopts' : '-m32 -mlong-double-128 -mcpu=leon3'},
+                                      {'variant': 'disable-multi-arch',
                                        'cfg': ['--disable-multi-arch']},
                                       {'variant': 'disable-multi-arch',
                                        'arch': 'sparcv9',
-                                       'ccopts': '-m32 -mlong-double-128',
+                                       'ccopts': '-m32 -mlong-double-128 -mcpu=v9',
                                        'cfg': ['--disable-multi-arch']}])
         self.add_config(arch='x86_64',
                         os_name='linux-gnu',
@@ -384,6 +388,9 @@ class Context(object):
                                 {'arch': 'i686', 'ccopts': '-m32 -march=i686'}],
                         extra_glibcs=[{'variant': 'disable-multi-arch',
                                        'cfg': ['--disable-multi-arch']},
+                                      {'variant': 'enable-obsolete',
+                                       'cfg': ['--enable-obsolete-rpc',
+                                               '--enable-obsolete-nsl']},
                                       {'variant': 'static-pie',
                                        'cfg': ['--enable-static-pie']},
                                       {'variant': 'x32-static-pie',
@@ -397,6 +404,11 @@ class Context(object):
                                        'arch': 'i686',
                                        'ccopts': '-m32 -march=i686',
                                        'cfg': ['--disable-multi-arch']},
+                                      {'variant': 'enable-obsolete',
+                                       'arch': 'i686',
+                                       'ccopts': '-m32 -march=i686',
+                                       'cfg': ['--enable-obsolete-rpc',
+                                               '--enable-obsolete-nsl']},
                                       {'arch': 'i486',
                                        'ccopts': '-m32 -march=i486'},
                                       {'arch': 'i586',
@@ -486,7 +498,10 @@ class Context(object):
             old_components = ('gmp', 'mpfr', 'mpc', 'binutils', 'gcc', 'linux',
                               'mig', 'gnumach', 'hurd')
             old_versions = self.build_state['compilers']['build-versions']
-            self.build_glibcs(configs)
+            if action == 'update-syscalls':
+                self.update_syscalls(configs)
+            else:
+                self.build_glibcs(configs)
         self.write_files()
         self.do_build()
         if configs:
@@ -677,6 +692,15 @@ class Context(object):
         for c in configs:
             self.glibc_configs[c].build()
 
+    def update_syscalls(self, configs):
+        """Update the glibc syscall lists."""
+        if not configs:
+            self.remove_dirs(os.path.join(self.builddir, 'update-syscalls'))
+            self.remove_dirs(os.path.join(self.logsdir, 'update-syscalls'))
+            configs = sorted(self.glibc_configs.keys())
+        for c in configs:
+            self.glibc_configs[c].update_syscalls()
+
     def load_versions_json(self):
         """Load information about source directory versions."""
         if not os.access(self.versions_json, os.F_OK):
@@ -705,13 +729,13 @@ class Context(object):
 
     def checkout(self, versions):
         """Check out the desired component versions."""
-        default_versions = {'binutils': 'vcs-2.30',
-                            'gcc': 'vcs-8',
+        default_versions = {'binutils': 'vcs-2.33',
+                            'gcc': 'vcs-9',
                             'glibc': 'vcs-mainline',
                             'gmp': '6.1.2',
-                            'linux': '4.16',
+                            'linux': '5.4',
                             'mpc': '1.1.0',
-                            'mpfr': '4.0.1',
+                            'mpfr': '4.0.2',
                             'mig': 'vcs-mainline',
                             'gnumach': 'vcs-mainline',
                             'hurd': 'vcs-mainline'}
@@ -779,12 +803,10 @@ class Context(object):
             return self.git_checkout(component, git_url, git_branch, update)
         elif component == 'gcc':
             if version == 'mainline':
-                branch = 'trunk'
+                branch = 'master'
             else:
-                trans = str.maketrans({'.': '_'})
-                branch = 'branches/gcc-%s-branch' % version.translate(trans)
-            svn_url = 'svn://gcc.gnu.org/svn/gcc/%s' % branch
-            return self.gcc_checkout(svn_url, update)
+                branch = 'releases/gcc-%s' % version
+            return self.gcc_checkout(branch, update)
         elif component == 'glibc':
             git_url = 'git://sourceware.org/git/glibc.git'
             if version == 'mainline':
@@ -843,6 +865,15 @@ class Context(object):
         # Ensure that builds do not try to regenerate generated files
         # in the source tree.
         srcdir = self.component_srcdir('glibc')
+        # These files have Makefile dependencies to regenerate them in
+        # the source tree that may be active during a normal build.
+        # Some other files have such dependencies but do not need to
+        # be touched because nothing in a build depends on the files
+        # in question.
+        for f in ('sysdeps/gnu/errlist.c',
+                  'sysdeps/mach/hurd/bits/errno.h'):
+            to_touch = os.path.join(srcdir, f)
+            subprocess.run(['touch', '-c', to_touch], check=True)
         for dirpath, dirnames, filenames in os.walk(srcdir):
             for f in filenames:
                 if (f == 'configure' or
@@ -851,14 +882,23 @@ class Context(object):
                     to_touch = os.path.join(dirpath, f)
                     subprocess.run(['touch', to_touch], check=True)
 
-    def gcc_checkout(self, svn_url, update):
-        """Check out GCC from SVN.  Return the revision number."""
+    def gcc_checkout(self, branch, update):
+        """Check out GCC from git.  Return the commit identifier."""
+        if os.access(os.path.join(self.component_srcdir('gcc'), '.svn'),
+                     os.F_OK):
+            if not self.replace_sources:
+                print('error: GCC has moved from SVN to git, use '
+                      '--replace-sources to check out again')
+                exit(1)
+            shutil.rmtree(self.component_srcdir('gcc'))
+            update = False
         if not update:
-            subprocess.run(['svn', 'co', '-q', svn_url,
-                            self.component_srcdir('gcc')], check=True)
+            self.git_checkout('gcc', 'git://gcc.gnu.org/git/gcc.git',
+                              branch, update)
         subprocess.run(['contrib/gcc_update', '--silent'],
                        cwd=self.component_srcdir('gcc'), check=True)
-        r = subprocess.run(['svnversion', self.component_srcdir('gcc')],
+        r = subprocess.run(['git', 'rev-parse', 'HEAD'],
+                           cwd=self.component_srcdir('gcc'),
                            stdout=subprocess.PIPE,
                            check=True, universal_newlines=True).stdout
         return r.rstrip()
@@ -869,9 +909,9 @@ class Context(object):
         if update:
             return
         url_map = {'binutils': 'https://ftp.gnu.org/gnu/binutils/binutils-%(version)s.tar.bz2',
-                   'gcc': 'https://ftp.gnu.org/gnu/gcc/gcc-%(version)s/gcc-%(version)s.tar.bz2',
+                   'gcc': 'https://ftp.gnu.org/gnu/gcc/gcc-%(version)s/gcc-%(version)s.tar.gz',
                    'gmp': 'https://ftp.gnu.org/gnu/gmp/gmp-%(version)s.tar.xz',
-                   'linux': 'https://www.kernel.org/pub/linux/kernel/v4.x/linux-%(version)s.tar.xz',
+                   'linux': 'https://www.kernel.org/pub/linux/kernel/v%(major)s.x/linux-%(version)s.tar.xz',
                    'mpc': 'https://ftp.gnu.org/gnu/mpc/mpc-%(version)s.tar.gz',
                    'mpfr': 'https://ftp.gnu.org/gnu/mpfr/mpfr-%(version)s.tar.xz',
                    'mig': 'https://ftp.gnu.org/gnu/mig/mig-%(version)s.tar.bz2',
@@ -880,7 +920,8 @@ class Context(object):
         if component not in url_map:
             print('error: component %s coming from tarball' % component)
             exit(1)
-        url = url_map[component] % {'version': version}
+        version_major = version.split('.')[0]
+        url = url_map[component] % {'version': version, 'major': version_major}
         filename = os.path.join(self.srcdir, url.split('/')[-1])
         response = urllib.request.urlopen(url)
         data = response.read()
@@ -899,7 +940,7 @@ class Context(object):
                 self.build_state = json.load(f)
         else:
             self.build_state = {}
-        for k in ('host-libraries', 'compilers', 'glibcs'):
+        for k in ('host-libraries', 'compilers', 'glibcs', 'update-syscalls'):
             if k not in self.build_state:
                 self.build_state[k] = {}
             if 'build-time' not in self.build_state[k]:
@@ -1114,6 +1155,8 @@ class Context(object):
         """Run a copy of this script with given options."""
         cmd = [sys.executable, sys.argv[0], '--keep=none',
                '-j%d' % self.parallelism]
+        if self.full_gcc:
+            cmd.append('--full-gcc')
         cmd.extend(opts)
         cmd.extend([self.topdir, action])
         sys.stdout.flush()
@@ -1136,6 +1179,63 @@ class Context(object):
                 print('Script changed, bot re-execing.')
                 self.exec_self()
 
+class LinuxHeadersPolicyForBuild(object):
+    """Names and directories for installing Linux headers.  Build variant."""
+
+    def __init__(self, config):
+        self.arch = config.arch
+        self.srcdir = config.ctx.component_srcdir('linux')
+        self.builddir = config.component_builddir('linux')
+        self.headers_dir = os.path.join(config.sysroot, 'usr')
+
+class LinuxHeadersPolicyForUpdateSyscalls(object):
+    """Names and directories for Linux headers.  update-syscalls variant."""
+
+    def __init__(self, glibc, headers_dir):
+        self.arch = glibc.compiler.arch
+        self.srcdir = glibc.compiler.ctx.component_srcdir('linux')
+        self.builddir = glibc.ctx.component_builddir(
+            'update-syscalls', glibc.name, 'build-linux')
+        self.headers_dir = headers_dir
+
+def install_linux_headers(policy, cmdlist):
+    """Install Linux kernel headers."""
+    arch_map = {'aarch64': 'arm64',
+                'alpha': 'alpha',
+                'arm': 'arm',
+                'csky': 'csky',
+                'hppa': 'parisc',
+                'i486': 'x86',
+                'i586': 'x86',
+                'i686': 'x86',
+                'i786': 'x86',
+                'ia64': 'ia64',
+                'm68k': 'm68k',
+                'microblaze': 'microblaze',
+                'mips': 'mips',
+                'nios2': 'nios2',
+                'powerpc': 'powerpc',
+                's390': 's390',
+                'riscv32': 'riscv',
+                'riscv64': 'riscv',
+                'sh': 'sh',
+                'sparc': 'sparc',
+                'x86_64': 'x86'}
+    linux_arch = None
+    for k in arch_map:
+        if policy.arch.startswith(k):
+            linux_arch = arch_map[k]
+            break
+    assert linux_arch is not None
+    cmdlist.push_subdesc('linux')
+    cmdlist.create_use_dir(policy.builddir)
+    cmdlist.add_command('install-headers',
+                        ['make', '-C', policy.srcdir, 'O=%s' % policy.builddir,
+                         'ARCH=%s' % linux_arch,
+                         'INSTALL_HDR_PATH=%s' % policy.headers_dir,
+                         'headers_install'])
+    cmdlist.cleanup_dir()
+    cmdlist.pop_subdesc()
 
 class Config(object):
     """A configuration for building a compiler and associated libraries."""
@@ -1194,7 +1294,7 @@ class Config(object):
                                '--disable-readline',
                                '--disable-sim'])
         if self.os.startswith('linux'):
-            self.install_linux_headers(cmdlist)
+            install_linux_headers(LinuxHeadersPolicyForBuild(self), cmdlist)
         self.build_gcc(cmdlist, True)
         if self.os == 'gnu':
             self.install_gnumach_headers(cmdlist)
@@ -1203,7 +1303,7 @@ class Config(object):
         for g in self.compiler_glibcs:
             cmdlist.push_subdesc('glibc')
             cmdlist.push_subdesc(g.name)
-            g.build_glibc(cmdlist, True)
+            g.build_glibc(cmdlist, GlibcPolicyForCompiler(g))
             cmdlist.pop_subdesc()
             cmdlist.pop_subdesc()
         self.build_gcc(cmdlist, False)
@@ -1239,47 +1339,6 @@ class Config(object):
         # significantly beneficial, so it is simplest just to disable
         # parallel install for cross tools here.
         cmdlist.add_command('install', ['make', '-j1', 'install'])
-        cmdlist.cleanup_dir()
-        cmdlist.pop_subdesc()
-
-    def install_linux_headers(self, cmdlist):
-        """Install Linux kernel headers."""
-        arch_map = {'aarch64': 'arm64',
-                    'alpha': 'alpha',
-                    'arm': 'arm',
-                    'hppa': 'parisc',
-                    'i486': 'x86',
-                    'i586': 'x86',
-                    'i686': 'x86',
-                    'i786': 'x86',
-                    'ia64': 'ia64',
-                    'm68k': 'm68k',
-                    'microblaze': 'microblaze',
-                    'mips': 'mips',
-                    'nios2': 'nios2',
-                    'powerpc': 'powerpc',
-                    's390': 's390',
-                    'riscv32': 'riscv',
-                    'riscv64': 'riscv',
-                    'sh': 'sh',
-                    'sparc': 'sparc',
-                    'x86_64': 'x86'}
-        linux_arch = None
-        for k in arch_map:
-            if self.arch.startswith(k):
-                linux_arch = arch_map[k]
-                break
-        assert linux_arch is not None
-        srcdir = self.ctx.component_srcdir('linux')
-        builddir = self.component_builddir('linux')
-        headers_dir = os.path.join(self.sysroot, 'usr')
-        cmdlist.push_subdesc('linux')
-        cmdlist.create_use_dir(builddir)
-        cmdlist.add_command('install-headers',
-                            ['make', '-C', srcdir, 'O=%s' % builddir,
-                             'ARCH=%s' % linux_arch,
-                             'INSTALL_HDR_PATH=%s' % headers_dir,
-                             'headers_install'])
         cmdlist.cleanup_dir()
         cmdlist.pop_subdesc()
 
@@ -1320,15 +1379,13 @@ class Config(object):
 
     def build_gcc(self, cmdlist, bootstrap):
         """Build GCC."""
-        # libsanitizer commonly breaks because of glibc header
-        # changes, or on unusual targets.  libssp is of little
-        # relevance with glibc's own stack checking support.
-        # libcilkrts does not support GNU/Hurd (and has been removed
-        # in GCC 8, so --disable-libcilkrts can be removed once glibc
-        # no longer supports building with older GCC versions).
+        # libssp is of little relevance with glibc's own stack
+        # checking support.  libcilkrts does not support GNU/Hurd (and
+        # has been removed in GCC 8, so --disable-libcilkrts can be
+        # removed once glibc no longer supports building with older
+        # GCC versions).
         cfg_opts = list(self.gcc_cfg)
-        cfg_opts += ['--disable-libsanitizer', '--disable-libssp',
-                     '--disable-libcilkrts']
+        cfg_opts += ['--disable-libssp', '--disable-libcilkrts']
         host_libs = self.ctx.host_libraries_installdir
         cfg_opts += ['--with-gmp=%s' % host_libs,
                      '--with-mpfr=%s' % host_libs,
@@ -1351,16 +1408,114 @@ class Config(object):
                          '--disable-libitm',
                          '--disable-libmpx',
                          '--disable-libquadmath',
+                         '--disable-libsanitizer',
                          '--without-headers', '--with-newlib',
                          '--with-glibc-version=%s' % self.ctx.glibc_version
                          ]
             cfg_opts += self.first_gcc_cfg
         else:
             tool_build = 'gcc'
-            cfg_opts += ['--enable-languages=c,c++', '--enable-shared',
-                         '--enable-threads']
+            # libsanitizer commonly breaks because of glibc header
+            # changes, or on unusual targets.  C++ pre-compiled
+            # headers are not used during the glibc build and are
+            # expensive to create.
+            if not self.ctx.full_gcc:
+                cfg_opts += ['--disable-libsanitizer',
+                             '--disable-libstdcxx-pch']
+            langs = 'all' if self.ctx.full_gcc else 'c,c++'
+            cfg_opts += ['--enable-languages=%s' % langs,
+                         '--enable-shared', '--enable-threads']
         self.build_cross_tool(cmdlist, 'gcc', tool_build, cfg_opts)
 
+class GlibcPolicyDefault(object):
+    """Build policy for glibc: common defaults."""
+
+    def __init__(self, glibc):
+        self.srcdir = glibc.ctx.component_srcdir('glibc')
+        self.use_usr = glibc.os != 'gnu'
+        self.prefix = '/usr' if self.use_usr else ''
+        self.configure_args = [
+            '--prefix=%s' % self.prefix,
+            '--enable-profile',
+            '--build=%s' % glibc.ctx.build_triplet,
+            '--host=%s' % glibc.triplet,
+            'CC=%s' % glibc.tool_name('gcc'),
+            'CXX=%s' % glibc.tool_name('g++'),
+            'AR=%s' % glibc.tool_name('ar'),
+            'AS=%s' % glibc.tool_name('as'),
+            'LD=%s' % glibc.tool_name('ld'),
+            'NM=%s' % glibc.tool_name('nm'),
+            'OBJCOPY=%s' % glibc.tool_name('objcopy'),
+            'OBJDUMP=%s' % glibc.tool_name('objdump'),
+            'RANLIB=%s' % glibc.tool_name('ranlib'),
+            'READELF=%s' % glibc.tool_name('readelf'),
+            'STRIP=%s' % glibc.tool_name('strip'),
+        ]
+        if glibc.os == 'gnu':
+            self.configure_args.append('MIG=%s' % glibc.tool_name('mig'))
+        self.configure_args += glibc.cfg
+
+    def configure(self, cmdlist):
+        """Invoked to add the configure command to the command list."""
+        cmdlist.add_command('configure',
+                            [os.path.join(self.srcdir, 'configure'),
+                             *self.configure_args])
+
+    def extra_commands(self, cmdlist):
+        """Invoked to inject additional commands (make check) after build."""
+        pass
+
+class GlibcPolicyForCompiler(GlibcPolicyDefault):
+    """Build policy for glibc during the compilers stage."""
+
+    def __init__(self, glibc):
+        super().__init__(glibc)
+        self.builddir = glibc.ctx.component_builddir(
+            'compilers', glibc.compiler.name, 'glibc', glibc.name)
+        self.installdir = glibc.compiler.sysroot
+
+class GlibcPolicyForBuild(GlibcPolicyDefault):
+    """Build policy for glibc during the glibcs stage."""
+
+    def __init__(self, glibc):
+        super().__init__(glibc)
+        self.builddir = glibc.ctx.component_builddir(
+            'glibcs', glibc.name, 'glibc')
+        self.installdir = glibc.ctx.glibc_installdir(glibc.name)
+        if glibc.ctx.strip:
+            self.strip = glibc.tool_name('strip')
+        else:
+            self.strip = None
+        self.save_logs = glibc.ctx.save_logs
+
+    def extra_commands(self, cmdlist):
+        if self.strip:
+            # Avoid picking up libc.so and libpthread.so, which are
+            # linker scripts stored in /lib on Hurd.  libc and
+            # libpthread are still stripped via their libc-X.YY.so
+            # implementation files.
+            find_command = (('find %s/lib* -name "*.so"'
+                             + r' \! -name libc.so \! -name libpthread.so')
+                            % self.installdir)
+            cmdlist.add_command('strip', ['sh', '-c', ('%s $(%s)' %
+                                  (self.strip, find_command))])
+        cmdlist.add_command('check', ['make', 'check'])
+        cmdlist.add_command('save-logs', [self.save_logs], always_run=True)
+
+class GlibcPolicyForUpdateSyscalls(GlibcPolicyDefault):
+    """Build policy for glibc during update-syscalls."""
+
+    def __init__(self, glibc):
+        super().__init__(glibc)
+        self.builddir = glibc.ctx.component_builddir(
+            'update-syscalls', glibc.name, 'glibc')
+        self.linuxdir = glibc.ctx.component_builddir(
+            'update-syscalls', glibc.name, 'linux')
+        self.linux_policy = LinuxHeadersPolicyForUpdateSyscalls(
+            glibc, self.linuxdir)
+        self.configure_args.insert(
+            0, '--with-headers=%s' % os.path.join(self.linuxdir, 'include'))
+        # self.installdir not set because installation is not supported
 
 class Glibc(object):
     """A configuration for building glibc."""
@@ -1408,80 +1563,51 @@ class Glibc(object):
                             ['test', '-f',
                              os.path.join(self.compiler.installdir, 'ok')])
         cmdlist.use_path(self.compiler.bindir)
-        self.build_glibc(cmdlist, False)
+        self.build_glibc(cmdlist, GlibcPolicyForBuild(self))
         self.ctx.add_makefile_cmdlist('glibcs-%s' % self.name, cmdlist,
                                       logsdir)
 
-    def build_glibc(self, cmdlist, for_compiler):
+    def build_glibc(self, cmdlist, policy):
         """Generate commands to build this glibc, either as part of a compiler
         build or with the bootstrapped compiler (and in the latter case, run
         tests as well)."""
-        srcdir = self.ctx.component_srcdir('glibc')
-        if for_compiler:
-            builddir = self.ctx.component_builddir('compilers',
-                                                   self.compiler.name, 'glibc',
-                                                   self.name)
-            installdir = self.compiler.sysroot
-            srcdir_copy = self.ctx.component_builddir('compilers',
-                                                      self.compiler.name,
-                                                      'glibc-src',
-                                                      self.name)
-        else:
-            builddir = self.ctx.component_builddir('glibcs', self.name,
-                                                   'glibc')
-            installdir = self.ctx.glibc_installdir(self.name)
-            srcdir_copy = self.ctx.component_builddir('glibcs', self.name,
-                                                      'glibc-src')
-        cmdlist.create_use_dir(builddir)
-        # glibc builds write into the source directory, and even if
-        # not intentionally there is a risk of bugs that involve
-        # writing into the working directory.  To avoid possible
-        # concurrency issues, copy the source directory.
-        cmdlist.create_copy_dir(srcdir, srcdir_copy)
-        use_usr = self.os != 'gnu'
-        prefix = '/usr' if use_usr else ''
-        cfg_cmd = [os.path.join(srcdir_copy, 'configure'),
-                   '--prefix=%s' % prefix,
-                   '--enable-profile',
-                   '--build=%s' % self.ctx.build_triplet,
-                   '--host=%s' % self.triplet,
-                   'CC=%s' % self.tool_name('gcc'),
-                   'CXX=%s' % self.tool_name('g++'),
-                   'AR=%s' % self.tool_name('ar'),
-                   'AS=%s' % self.tool_name('as'),
-                   'LD=%s' % self.tool_name('ld'),
-                   'NM=%s' % self.tool_name('nm'),
-                   'OBJCOPY=%s' % self.tool_name('objcopy'),
-                   'OBJDUMP=%s' % self.tool_name('objdump'),
-                   'RANLIB=%s' % self.tool_name('ranlib'),
-                   'READELF=%s' % self.tool_name('readelf'),
-                   'STRIP=%s' % self.tool_name('strip')]
-        if self.os == 'gnu':
-            cfg_cmd += ['MIG=%s' % self.tool_name('mig')]
-        cfg_cmd += self.cfg
-        cmdlist.add_command('configure', cfg_cmd)
+        cmdlist.create_use_dir(policy.builddir)
+        policy.configure(cmdlist)
         cmdlist.add_command('build', ['make'])
         cmdlist.add_command('install', ['make', 'install',
-                                        'install_root=%s' % installdir])
+                                        'install_root=%s' % policy.installdir])
         # GCC uses paths such as lib/../lib64, so make sure lib
         # directories always exist.
         mkdir_cmd = ['mkdir', '-p',
-                     os.path.join(installdir, 'lib')]
-        if use_usr:
-            mkdir_cmd += [os.path.join(installdir, 'usr', 'lib')]
+                     os.path.join(policy.installdir, 'lib')]
+        if policy.use_usr:
+            mkdir_cmd += [os.path.join(policy.installdir, 'usr', 'lib')]
         cmdlist.add_command('mkdir-lib', mkdir_cmd)
-        if not for_compiler:
-            if self.ctx.strip:
-                cmdlist.add_command('strip',
-                                    ['sh', '-c',
-                                     ('%s $(find %s/lib* -name "*.so")' %
-                                      (self.tool_name('strip'), installdir))])
-            cmdlist.add_command('check', ['make', 'check'])
-            cmdlist.add_command('save-logs', [self.ctx.save_logs],
-                                always_run=True)
-        cmdlist.cleanup_dir('cleanup-src', srcdir_copy)
+        policy.extra_commands(cmdlist)
         cmdlist.cleanup_dir()
 
+    def update_syscalls(self):
+        if self.os == 'gnu':
+            # Hurd does not have system call tables that need updating.
+            return
+
+        policy = GlibcPolicyForUpdateSyscalls(self)
+        logsdir = os.path.join(self.ctx.logsdir, 'update-syscalls', self.name)
+        self.ctx.remove_recreate_dirs(policy.builddir, logsdir)
+        cmdlist = CommandList('update-syscalls-%s' % self.name, self.ctx.keep)
+        cmdlist.add_command('check-compilers',
+                            ['test', '-f',
+                             os.path.join(self.compiler.installdir, 'ok')])
+        cmdlist.use_path(self.compiler.bindir)
+
+        install_linux_headers(policy.linux_policy, cmdlist)
+
+        cmdlist.create_use_dir(policy.builddir)
+        policy.configure(cmdlist)
+        cmdlist.add_command('build', ['make', 'update-syscall-lists'])
+        cmdlist.cleanup_dir()
+        self.ctx.add_makefile_cmdlist('update-syscalls-%s' % self.name,
+                                      cmdlist, logsdir)
 
 class Command(object):
     """A command run in the build process."""
@@ -1564,14 +1690,6 @@ class CommandList(object):
         self.add_command_dir('mkdir', None, ['mkdir', '-p', dir])
         self.use_dir(dir)
 
-    def create_copy_dir(self, src, dest):
-        """Remove a directory and recreate it as a copy from the given
-        source."""
-        self.add_command_dir('copy-rm', None, ['rm', '-rf', dest])
-        parent = os.path.dirname(dest)
-        self.add_command_dir('copy-mkdir', None, ['mkdir', '-p', parent])
-        self.add_command_dir('copy', None, ['cp', '-a', src, dest])
-
     def add_command_dir(self, desc, dir, command, always_run=False):
         """Add a command to run in a given directory."""
         cmd = Command(self.desc_txt(desc), len(self.cmdlist), dir, self.path,
@@ -1650,12 +1768,15 @@ def get_parser():
                         'with the wrong version of a component')
     parser.add_argument('--strip', action='store_true',
                         help='Strip installed glibc libraries')
+    parser.add_argument('--full-gcc', action='store_true',
+                        help='Build GCC with all languages and libsanitizer')
     parser.add_argument('topdir',
                         help='Toplevel working directory')
     parser.add_argument('action',
                         help='What to do',
                         choices=('checkout', 'bot-cycle', 'bot',
-                                 'host-libraries', 'compilers', 'glibcs'))
+                                 'host-libraries', 'compilers', 'glibcs',
+                                 'update-syscalls'))
     parser.add_argument('configs',
                         help='Versions to check out or configurations to build',
                         nargs='*')
@@ -1668,7 +1789,7 @@ def main(argv):
     opts = parser.parse_args(argv)
     topdir = os.path.abspath(opts.topdir)
     ctx = Context(topdir, opts.parallelism, opts.keep, opts.replace_sources,
-                  opts.strip, opts.action)
+                  opts.strip, opts.full_gcc, opts.action)
     ctx.run_builds(opts.action, opts.configs)
 
 

@@ -14,6 +14,23 @@ mod-tlsopt-powerpc.so-no-z-defs = yes
 tests += tst-tlsopt-powerpc
 $(objpfx)tst-tlsopt-powerpc: $(objpfx)mod-tlsopt-powerpc.so
 
+tests-static += tst-cache-ppc-static
+tests-internal += tst-cache-ppc-static
+
+ifeq (yes,$(build-shared))
+modules-names += mod-cache-ppc
+tests += tst-cache-ppc tst-cache-ppc-static-dlopen
+tests-static += tst-cache-ppc-static-dlopen
+test-internal-extras += mod-cache-ppc
+
+mod-cache-ppc.so-no-z-defs = yes
+tst-cache-ppc-static-dlopen-ENV = LD_LIBRARY_PATH=$(objpfx):$(common-objpfx):$(common-objpfx)elf
+$(objpfx)tst-cache-ppc-static-dlopen: $(common-objpfx)dlfcn/libdl.a
+$(objpfx)tst-cache-ppc-static-dlopen.out: $(objpfx)mod-cache-ppc.so
+
+$(objpfx)tst-cache-ppc: $(objpfx)mod-cache-ppc.so
+endif
+
 ifneq (no,$(multi-arch))
 tests-static += tst-tlsifunc-static
 tests-internal += tst-tlsifunc-static
@@ -45,8 +62,15 @@ ifeq ($(subdir),misc)
 sysdep_headers += sys/platform/ppc.h
 tests += test-gettimebase
 tests += tst-set_ppr
+
+# This test is expected to run and exit with EXIT_UNSUPPORTED on
+# processors that do not implement the Power ISA 2.06 or greater.
+# But the test makes use of instructions from Power ISA 2.06 and 2.07.
+CFLAGS-tst-set_ppr.c += -Wa,-many
 endif
 
-ifneq (,$(filter %le,$(config-machine)))
-abilist-pattern = %-le.abilist
+ifeq ($(subdir),wcsmbs)
+CFLAGS-wcscpy.c += -DUNROLL_NTIMES=8
+CFLAGS-wcschr.c += -DUNROLL_NTIMES=8
+CFLAGS-wcsrchr.c += -DUNROLL_NTIMES=8
 endif

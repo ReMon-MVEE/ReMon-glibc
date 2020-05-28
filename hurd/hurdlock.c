@@ -1,5 +1,5 @@
 /* Hurd helpers for lowlevellocks.
-   Copyright (C) 1999-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "hurdlock.h"
 #include <hurd.h>
@@ -71,7 +71,7 @@ __lll_abstimed_lock (void *ptr,
     {
       if (atomic_exchange_acq ((int *)ptr, 2) == 0)
         return 0;
-      else if (tsp->tv_nsec < 0 || tsp->tv_nsec >= 1000000000)
+      else if (! valid_nanoseconds (tsp->tv_nsec))
         return EINVAL;
 
       int mlsec = compute_reltime (tsp, clk);

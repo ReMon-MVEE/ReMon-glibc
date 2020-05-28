@@ -1,5 +1,5 @@
 /* Provide access to the collection of available transformation modules.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <limits.h>
@@ -687,10 +687,6 @@ find_derivation (const char *toset, const char *toset_expand,
 }
 
 
-/* Control of initialization.  */
-__libc_once_define (static, once);
-
-
 static const char *
 do_lookup_alias (const char *name)
 {
@@ -709,7 +705,7 @@ __gconv_compare_alias (const char *name1, const char *name2)
   int result;
 
   /* Ensure that the configuration data is read.  */
-  __libc_once (once, __gconv_read_conf);
+  __gconv_load_conf ();
 
   if (__gconv_compare_alias_cache (name1, name2, &result) != 0)
     result = strcmp (do_lookup_alias (name1) ?: name1,
@@ -729,7 +725,7 @@ __gconv_find_transform (const char *toset, const char *fromset,
   int result;
 
   /* Ensure that the configuration data is read.  */
-  __libc_once (once, __gconv_read_conf);
+  __gconv_load_conf ();
 
   /* Acquire the lock.  */
   __libc_lock_lock (__gconv_lock);

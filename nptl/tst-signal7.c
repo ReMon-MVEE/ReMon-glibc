@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2005.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <pthreadP.h>
@@ -27,7 +27,6 @@ do_test (void)
 {
   int result = 0;
 
-#ifdef SIGCANCEL
   errno = 0;
   if (sigaction (SIGCANCEL, NULL, NULL) == 0)
     {
@@ -39,9 +38,7 @@ do_test (void)
       puts ("sigaction(SIGCANCEL) did not set errno to EINVAL");
       result = 1;
     }
-#endif
 
-#ifdef SIGSETXID
   errno = 0;
   if (sigaction (SIGSETXID, NULL, NULL) == 0)
     {
@@ -53,7 +50,6 @@ do_test (void)
       puts ("sigaction(SIGSETXID) did not set errno to EINVAL");
       result = 1;
     }
-#endif
 
   return result;
 }

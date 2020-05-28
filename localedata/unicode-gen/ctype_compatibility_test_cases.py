@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2014-2018 Free Software Foundation, Inc.
+# Copyright (C) 2014-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 #
 # The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 '''
 This file contains a list of test cases used by
@@ -220,7 +220,7 @@ TEST_CASES = [
     ],
     [[0x108D],
      [('combining', True), ('combining_level3', False),
-      ('alpha', False), ('lower', False), ('upper', False),
+      ('alpha', True), ('lower', False), ('upper', False),
       ('tolower', False), ('toupper', False), ('totitle', False)],
      '''“108D;MYANMAR SIGN SHAN COUNCIL EMPHATIC
      TONE;Mn;220;NSM;;;;;N;;;;;”.  Has apparently been added
@@ -231,7 +231,8 @@ TEST_CASES = [
      combining class value is 220 which is >= 200. According to
      gen-unicode-ctype.c, “combining_level3” needs a
      canonical combining class value < 200. According to
-     DerivedCoreProperties.txt it is not “Alphabetic”.'''
+     DerivedCoreProperties.txt it was not “Alphabetic”
+     until Unicode 11.0.0 but in 12.0.0 it became “Alphabetic”.'''
     ],
     [[0x06DE],
      [('combining', False), ('combining_level3', False),

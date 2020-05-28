@@ -1,5 +1,5 @@
 /* Formatting a monetary value according to the given locale.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <ctype.h>
 #include <errno.h>
@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../locale/localeinfo.h"
+#include <bits/floatn.h>
 
 
 #define out_char(Ch)							      \
@@ -76,8 +77,8 @@
    too.  Some of the information contradicts the information which can
    be specified in format string.  */
 ssize_t
-__vstrfmon_l (char *s, size_t maxsize, locale_t loc, const char *format,
-	      va_list ap)
+__vstrfmon_l_internal (char *s, size_t maxsize, locale_t loc,
+		       const char *format, va_list ap, unsigned int flags)
 {
   struct __locale_data *current = loc->__locales[LC_MONETARY];
   _IO_strfile f;
@@ -96,6 +97,9 @@ __vstrfmon_l (char *s, size_t maxsize, locale_t loc, const char *format,
       {
 	double dbl;
 	long double ldbl;
+#if __HAVE_DISTINCT_FLOAT128
+	_Float128 f128;
+#endif
       }
       fpnum;
       int int_format;
@@ -106,6 +110,7 @@ __vstrfmon_l (char *s, size_t maxsize, locale_t loc, const char *format,
       int group;
       char pad;
       int is_long_double;
+      int is_binary128;
       int p_sign_posn;
       int n_sign_posn;
       int sign_posn;
@@ -150,6 +155,7 @@ __vstrfmon_l (char *s, size_t maxsize, locale_t loc, const char *format,
       group = 1;			/* Print digits grouped.  */
       pad = ' ';			/* Fill character is <SP>.  */
       is_long_double = 0;		/* Double argument by default.  */
+      is_binary128 = 0;			/* Long double argument by default.  */
       p_sign_posn = -2;			/* This indicates whether the */
       n_sign_posn = -2;			/* '(' flag is given.  */
       width = -1;			/* No width specified so far.  */
@@ -268,8 +274,12 @@ __vstrfmon_l (char *s, size_t maxsize, locale_t loc, const char *format,
       if (*fmt == 'L')
 	{
 	  ++fmt;
-	  if (!__ldbl_is_dbl)
+	  if (__glibc_likely ((flags & STRFMON_LDBL_IS_DBL) == 0))
 	    is_long_double = 1;
+#if __HAVE_DISTINCT_FLOAT128
+	  if (__glibc_likely ((flags & STRFMON_LDBL_USES_FLOAT128) != 0))
+	    is_binary128 = is_long_double;
+#endif
 	}
 
       /* Handle format specifier.  */
@@ -324,10 +334,22 @@ __vstrfmon_l (char *s, size_t maxsize, locale_t loc, const char *format,
       /* Now it's time to get the value.  */
       if (is_long_double == 1)
 	{
-	  fpnum.ldbl = va_arg (ap, long double);
-	  is_negative = fpnum.ldbl < 0;
-	  if (is_negative)
-	    fpnum.ldbl = -fpnum.ldbl;
+#if __HAVE_DISTINCT_FLOAT128
+	  if (is_binary128 == 1)
+	    {
+	      fpnum.f128 = va_arg (ap, _Float128);
+	      is_negative = fpnum.f128 < 0;
+	      if (is_negative)
+	        fpnum.f128 = -fpnum.f128;
+	    }
+	  else
+#endif
+	  {
+	    fpnum.ldbl = va_arg (ap, long double);
+	    is_negative = fpnum.ldbl < 0;
+	    if (is_negative)
+	      fpnum.ldbl = -fpnum.ldbl;
+	  }
 	}
       else
 	{
@@ -386,17 +408,17 @@ __vstrfmon_l (char *s, size_t maxsize, locale_t loc, const char *format,
       /* Check for degenerate cases */
       if (sep_by_space == 2)
 	{
-	  if (sign_posn == 0 ||
-	      (sign_posn == 1 && !cs_precedes) ||
-	      (sign_posn == 2 && cs_precedes))
+	  if (sign_posn == 0
+	      || (sign_posn == 1 && !cs_precedes)
+	      || (sign_posn == 2 && cs_precedes))
 	    /* sign and symbol are not adjacent, so no separator */
 	    sep_by_space = 0;
 	}
       if (other_sep_by_space == 2)
 	{
-	  if (other_sign_posn == 0 ||
-	      (other_sign_posn == 1 && !other_cs_precedes) ||
-	      (other_sign_posn == 2 && other_cs_precedes))
+	  if (other_sign_posn == 0
+	      || (other_sign_posn == 1 && !other_cs_precedes)
+	      || (other_sign_posn == 2 && other_cs_precedes))
 	    /* sign and symbol are not adjacent, so no separator */
 	    other_sep_by_space = 0;
 	}
@@ -444,8 +466,8 @@ __vstrfmon_l (char *s, size_t maxsize, locale_t loc, const char *format,
 	    ++other_left_bytes;
 	  else if (other_sign_posn == 1)
 	    other_left_bytes += strlen (other_sign_string);
-	  else if (other_cs_precedes &&
-		   (other_sign_posn == 3 || other_sign_posn == 4))
+	  else if (other_cs_precedes
+		   && (other_sign_posn == 3 || other_sign_posn == 4))
 	    other_left_bytes += strlen (other_sign_string);
 
 	  /* Compare the number of bytes preceding the value for
@@ -517,6 +539,7 @@ __vstrfmon_l (char *s, size_t maxsize, locale_t loc, const char *format,
       info.width = left_prec + (right_prec ? (right_prec + 1) : 0);
       info.spec = 'f';
       info.is_long_double = is_long_double;
+      info.is_binary128 = is_binary128;
       info.group = group;
       info.pad = pad;
       info.extra = 1;		/* This means use values from LC_MONETARY.  */
@@ -608,7 +631,7 @@ ___strfmon_l (char *s, size_t maxsize, locale_t loc, const char *format, ...)
 
   va_start (ap, format);
 
-  ssize_t res = __vstrfmon_l (s, maxsize, loc, format, ap);
+  ssize_t res = __vstrfmon_l_internal (s, maxsize, loc, format, ap, 0);
 
   va_end (ap);
 

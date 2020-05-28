@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994-2018 Free Software Foundation, Inc.
+#   Copyright (C) 1994-2020 Free Software Foundation, Inc.
 #
 #   The GNU C Library is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU Lesser General Public
@@ -13,7 +13,7 @@
 
 #   You should have received a copy of the GNU Lesser General Public
 #   License along with the GNU C Library; if not, see
-#   <http://www.gnu.org/licenses/>.
+#   <https://www.gnu.org/licenses/>.
 
 subdir := htl
 
@@ -120,7 +120,6 @@ libpthread-routines := pt-attr pt-attr-destroy pt-attr-getdetachstate	    \
 	pt-sigstate-destroy						    \
 	pt-sigstate							    \
 									    \
-	pt-atfork							    \
 	old_pt-atfork							    \
 	pt-kill								    \
 	pt-getcpuclockid						    \
@@ -135,9 +134,8 @@ libpthread-routines := pt-attr pt-attr-destroy pt-attr-getdetachstate	    \
 	shm-directory							    \
 									    \
 	cthreads-compat							    \
+	herrno								    \
 	$(SYSDEPS)
-
-libpthread-static-only-routines = pt-atfork
 
 headers :=				\
               pthread.h				\
@@ -166,8 +164,9 @@ headers :=				\
 
 distribute :=
 
-routines := forward libc_pthread_init alloca_cutoff
+routines := forward libc_pthread_init alloca_cutoff pt-atfork
 shared-only-routines = forward
+static-only-routines = pt-atfork
 
 extra-libs := libpthread
 extra-libs-others := $(extra-libs)
@@ -204,34 +203,8 @@ extra-B-pthread.so = -B$(common-objpfx)htl/
 include ../Rules
 
 ifeq (yes,$(build-shared))
-# What we install as libpthread.so for programs to link against is in fact a
-# link script.  It contains references for the various libraries we need.
-# The libpthread.so object is not complete since some functions are only
-# defined in libpthread_nonshared.a.
-# We need to use absolute paths since otherwise local copies (if they exist)
-# of the files are taken by the linker.
-install: $(inst_libdir)/libpthread.so
-
-$(inst_libdir)/libpthread.so: $(common-objpfx)format.lds \
-			      $(objpfx)libpthread.so$(libpthread.so-version) \
-			      $(inst_libdir)/$(patsubst %,$(libtype.oS),\
-							$(libprefix)pthread) \
-			      $(+force)
-	(echo '/* GNU ld script';\
-	 echo '   Use the shared library, but some functions are only in';\
-	 echo '   the static library, so try that secondarily.  */';\
-	 cat $<; \
-	 echo 'GROUP ( $(slibdir)/libpthread.so$(libpthread.so-version)' \
-	      '$(libdir)/$(patsubst %,$(libtype.oS),$(libprefix)pthread)'\
-	      ')' \
-	) > $@.new
-	mv -f $@.new $@
-
 $(addprefix $(objpfx), \
   $(filter-out $(tests-static) $(xtests-static) $(tests-reverse) \
     $(tests-nolibpthread), \
-    $(tests) $(xtests) $(test-srcs))): $(objpfx)libpthread.so \
-				       $(objpfx)libpthread_nonshared.a
+    $(tests) $(xtests) $(test-srcs))): $(objpfx)libpthread.so
 endif
-
-generated += libpthread_nonshared.a

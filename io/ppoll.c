@@ -1,4 +1,4 @@
-/* Copyright (C) 2006-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2006-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2006.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <limits.h>
@@ -22,6 +22,7 @@
 #include <stddef.h>	/* For NULL.  */
 #include <sys/poll.h>
 #include <sysdep-cancel.h>
+#include <time.h>
 
 
 int
@@ -33,8 +34,7 @@ ppoll (struct pollfd *fds, nfds_t nfds, const struct timespec *timeout,
   /* poll uses a simple millisecond value.  Convert it.  */
   if (timeout != NULL)
     {
-      if (timeout->tv_sec < 0
-	  || timeout->tv_nsec < 0 || timeout->tv_nsec >= 1000000000)
+      if (timeout->tv_sec < 0 || ! valid_nanoseconds (timeout->tv_nsec))
 	{
 	  __set_errno (EINVAL);
 	  return -1;
@@ -70,7 +70,5 @@ ppoll (struct pollfd *fds, nfds_t nfds, const struct timespec *timeout,
 }
 
 #ifndef ppoll
-/* __poll handles cancellation.  */
-LIBC_CANCEL_HANDLED ();
 libc_hidden_def (ppoll);
 #endif

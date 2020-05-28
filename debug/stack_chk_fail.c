@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,20 +13,15 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
-
-extern char **__libc_argv attribute_hidden;
 
 void
 __attribute__ ((noreturn))
 __stack_chk_fail (void)
 {
-  __fortify_fail_abort (false, "stack smashing detected");
+  __fortify_fail ("stack smashing detected");
 }
 
 strong_alias (__stack_chk_fail, __stack_chk_fail_local)

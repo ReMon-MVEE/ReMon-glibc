@@ -1,12 +1,13 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl Note we do not use AC_PREREQ here!  See aclocal.m4 for what we use instead.
-AC_INIT([GNU C Library], [(see version.h)], [https://sourceware.org/bugzilla/], [glibc])
+AC_INIT([GNU C Library], [(see version.h)], [https://sourceware.org/bugzilla/],
+  [glibc], [https://www.gnu.org/software/glibc/])
 AC_CONFIG_SRCDIR([include/features.h])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR([scripts])
 
 ACX_PKGVERSION([GNU libc])
-ACX_BUGURL([http://www.gnu.org/software/libc/bugs.html])
+ACX_BUGURL([https://www.gnu.org/software/libc/bugs.html])
 AC_DEFINE_UNQUOTED([PKGVERSION], ["$PKGVERSION"],
 		   [Package description])
 AC_DEFINE_UNQUOTED([REPORT_BUGS_TO], ["$REPORT_BUGS_TO"],
@@ -153,6 +154,14 @@ AC_ARG_WITH([default-link],
 			   [do not use explicit linker scripts]),
 	    [use_default_link=$withval],
 	    [use_default_link=default])
+
+dnl Additional build flags injection.
+AC_ARG_WITH([nonshared-cflags],
+	    AC_HELP_STRING([--with-nonshared-cflags=CFLAGS],
+			   [build nonshared libraries with additional CFLAGS]),
+	    [extra_nonshared_cflags=$withval],
+	    [extra_nonshared_cflags=])
+AC_SUBST(extra_nonshared_cflags)
 
 AC_ARG_ENABLE([sanity-checks],
 	      AC_HELP_STRING([--disable-sanity-checks],
@@ -302,11 +311,22 @@ AC_ARG_ENABLE([experimental-malloc],
 	      [experimental_malloc=yes])
 AC_SUBST(experimental_malloc)
 
+AC_ARG_ENABLE([crypt],
+              AC_HELP_STRING([--disable-crypt],
+                             [do not build nor install the passphrase hashing library, libcrypt]),
+              [build_crypt=$enableval],
+              [build_crypt=yes])
+AC_SUBST(build_crypt)
+
 AC_ARG_ENABLE([nss-crypt],
 	      AC_HELP_STRING([--enable-nss-crypt],
 			     [enable libcrypt to use nss]),
 	      [nss_crypt=$enableval],
 	      [nss_crypt=no])
+if test x$build_libcrypt = xno && test x$nss_crypt = xyes; then
+  AC_MSG_WARN([--enable-nss-crypt has no effect when libcrypt is disabled])
+  nss_crypt=no
+fi
 if test x$nss_crypt = xyes; then
   nss_includes=-I$(nss-config --includedir 2>/dev/null)
   if test $? -ne 0; then
@@ -452,6 +472,19 @@ AC_ARG_ENABLE([mathvec],
 	      [Enable building and installing mathvec @<:@default depends on architecture@:>@])],
 	      [build_mathvec=$enableval],
 	      [build_mathvec=notset])
+
+AC_TRY_COMPILE([], [
+#ifndef __CET__
+# error no CET compiler support
+#endif],
+	       [libc_cv_compiler_default_cet=yes],
+	       [libc_cv_compiler_default_cet=no])
+
+AC_ARG_ENABLE([cet],
+	      AC_HELP_STRING([--enable-cet],
+			     [enable Intel Control-flow Enforcement Technology (CET), x86 only]),
+	      [enable_cet=$enableval],
+	      [enable_cet=$libc_cv_compiler_default_cet])
 
 # We keep the original values in `$config_*' and never modify them, so we
 # can write them unchanged into config.make.  Everything else uses
@@ -616,7 +649,7 @@ if ${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS \
 	    -o conftest conftest.S 1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD; then
   # Do a link to see if the backend supports IFUNC relocs.
   $READELF -r conftest 1>&AS_MESSAGE_LOG_FD
-  LC_ALL=C $READELF -r conftest | grep 'no relocations' >/dev/null || {
+  LC_ALL=C $READELF -Wr conftest | grep -q 'IRELATIVE\|R_SPARC_JMP_IREL' && {
     libc_cv_ld_gnu_indirect_function=yes
   }
 fi
@@ -645,6 +678,41 @@ if ${CC-cc} -c conftest.c -o conftest.o 1>&AS_MESSAGE_LOG_FD \
   fi
 fi
 rm -f conftest*])
+
+# Check if linker supports textrel relocation with ifunc (used on elf/tests).
+# Note that it relies on libc_cv_ld_gnu_indirect_function test above.
+AC_CACHE_CHECK([whether the linker supports textrels along with ifunc],
+               libc_cv_textrel_ifunc, [dnl
+cat > conftest.S <<EOF
+.type foo,%gnu_indirect_function
+foo:
+.globl _start
+_start:
+.globl __start
+__start:
+.data
+#ifdef _LP64
+.quad foo
+#else
+.long foo
+#endif
+.text
+.globl address
+address:
+#ifdef _LP64
+.quad address
+#else
+.long address
+#endif
+EOF
+libc_cv_textrel_ifunc=no
+if test $libc_cv_ld_gnu_indirect_function = yes; then
+   if AC_TRY_COMMAND(${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS -nostartfiles -nostdlib $no_ssp -pie -o conftest conftest.S); then
+     libc_cv_textrel_ifunc=yes
+   fi
+fi
+rm -f conftest*])
+AC_SUBST(libc_cv_textrel_ifunc)
 
 # Check if gcc warns about alias for function with incompatible types.
 AC_CACHE_CHECK([if compiler warns about alias for function with incompatible types],
@@ -934,7 +1002,7 @@ fi
 AC_CHECK_TOOL_PREFIX
 AC_CHECK_PROG_VER(MAKE, gnumake gmake make, --version,
   [GNU Make[^0-9]*\([0-9][0-9.]*\)],
-  [3.79* | 3.[89]* | [4-9].* | [1-9][0-9]*], critic_missing="$critic_missing make")
+  [[4-9].* | [1-9][0-9]*], critic_missing="$critic_missing make")
 
 AC_CHECK_PROG_VER(MSGFMT, gnumsgfmt gmsgfmt msgfmt, --version,
   [GNU gettext.* \([0-9]*\.[0-9.]*\)],
@@ -957,7 +1025,7 @@ AC_CHECK_PROG_VER(BISON, bison, --version,
 
 AC_CACHE_CHECK([if $CC is sufficient to build libc], libc_cv_compiler_ok, [
 AC_TRY_COMPILE([], [
-#if !defined __GNUC__ || __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 9)
+#if !defined __GNUC__ || __GNUC__ < 6 || (__GNUC__ == 6 && __GNUC_MINOR__ < 2)
 #error insufficient compiler
 #endif],
 	       [libc_cv_compiler_ok=yes],
@@ -990,18 +1058,12 @@ else
 fi
 
 # Check for python3 if available, or else python.
-AC_CHECK_PROGS(PYTHON_PROG, python3 python,no)
-case "x$PYTHON_PROG" in
-xno|x|x:) PYTHON_PROG=no ;;
-*) ;;
-esac
-
-if test "x$PYTHON_PROG" = xno; then
-  aux_missing="$aux_missing python"
-else
-  PYTHON="$PYTHON_PROG -B"
-  AC_SUBST(PYTHON)
-fi
+AC_CHECK_PROG_VER(PYTHON_PROG, python3 python, --version,
+  [Python \([0-9][0-9.]*\)],
+  [3.[4-9]*|3.[1-9][0-9]*|[4-9].*|[1-9][0-9]*],
+  critic_missing="$critic_missing python")
+PYTHON="$PYTHON_PROG -B"
+AC_SUBST(PYTHON)
 
 test -n "$critic_missing" && AC_MSG_ERROR([
 *** These critical programs are missing or too old:$critic_missing
@@ -1750,6 +1812,7 @@ AC_SUBST(libc_cv_gcc_unwind_find_fde)
 if test x"$libc_cv_ld_gnu_indirect_function" = xyes; then
   AC_DEFINE(HAVE_IFUNC)
 fi
+LIBC_CONFIG_VAR([have-ifunc], [$libc_cv_ld_gnu_indirect_function])
 
 if test x"$libc_cv_gcc_indirect_function" = xyes; then
   AC_DEFINE(HAVE_GCC_IFUNC)

@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,16 +13,31 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <time.h>
 
 /* Return a string as returned by asctime which
    is the representation of *T in that form.  */
 char *
-ctime (const time_t *t)
+__ctime64 (const __time64_t *t)
 {
   /* The C Standard says ctime (t) is equivalent to asctime (localtime (t)).
      In particular, ctime and asctime must yield the same pointer.  */
-  return asctime (localtime (t));
+  return asctime (__localtime64 (t));
 }
+
+/* Provide a 32-bit variant if needed.  */
+
+#if __TIMESIZE != 64
+
+libc_hidden_def (__ctime64)
+
+char *
+ctime (const time_t *t)
+{
+  __time64_t t64 = *t;
+  return __ctime64 (&t64);
+}
+
+#endif

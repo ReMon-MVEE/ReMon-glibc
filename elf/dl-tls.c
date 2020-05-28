@@ -1,5 +1,5 @@
 /* Thread-local storage handling in the ELF dynamic linker.  Generic version.
-   Copyright (C) 2002-2018 Free Software Foundation, Inc.
+   Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -883,7 +883,7 @@ _dl_tls_get_addr_soft (struct link_map *l)
 
 
 void
-_dl_add_to_slotinfo (struct link_map *l)
+_dl_add_to_slotinfo (struct link_map *l, bool do_add)
 {
   /* Now that we know the object is loaded successfully add
      modules containing TLS data to the dtv info table.  We
@@ -939,6 +939,9 @@ cannot create TLS data structures"));
     }
 
   /* Add the information into the slotinfo data structure.  */
-  listp->slotinfo[idx].map = l;
-  listp->slotinfo[idx].gen = GL(dl_tls_generation) + 1;
+  if (do_add)
+    {
+      listp->slotinfo[idx].map = l;
+      listp->slotinfo[idx].gen = GL(dl_tls_generation) + 1;
+    }
 }

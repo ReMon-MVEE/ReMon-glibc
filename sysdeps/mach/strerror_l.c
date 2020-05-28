@@ -1,5 +1,5 @@
 /* strerror_l - Get errno description string in given locale.  Mach version.
-   Copyright (C) 2007-2018 Free Software Foundation, Inc.
+   Copyright (C) 2007-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <libintl.h>
 #include <locale.h>
@@ -24,6 +24,7 @@
 #include <mach/error.h>
 #include <errorlib.h>
 #include <sys/param.h>
+#include <libc-symbols.h>
 
 
 static __thread char *last_value;
@@ -86,16 +87,10 @@ strerror_l (int errnum, locale_t loc)
   return (char *) translate (es->subsystem[sub].codes[code], loc);
 }
 
-
-#ifdef _LIBC
-# ifdef _LIBC_REENTRANT
 /* This is called when a thread is exiting to free the last_value string.  */
-static void __attribute__ ((section ("__libc_thread_freeres_fn")))
-strerror_thread_freeres (void)
+void
+__strerror_thread_freeres (void)
 {
   free (last_value);
 }
-text_set_element (__libc_thread_subfreeres, strerror_thread_freeres);
-text_set_element (__libc_subfreeres, strerror_thread_freeres);
-# endif
-#endif
+text_set_element (__libc_subfreeres, __strerror_thread_freeres);

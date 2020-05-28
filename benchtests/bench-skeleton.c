@@ -1,5 +1,5 @@
 /* Skeleton for benchmark programs.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <string.h>
 #include <stdint.h>
@@ -29,9 +29,9 @@
 #include "bench-util.c"
 
 #define TIMESPEC_AFTER(a, b) \
-  (((a).tv_sec == (b).tv_sec) ?						      \
-     ((a).tv_nsec > (b).tv_nsec) :					      \
-	((a).tv_sec > (b).tv_sec))
+  (((a).tv_sec == (b).tv_sec)						      \
+   ? ((a).tv_nsec > (b).tv_nsec)					      \
+   : ((a).tv_sec > (b).tv_sec))
 int
 main (int argc, char **argv)
 {
@@ -48,14 +48,11 @@ main (int argc, char **argv)
 
   memset (&runtime, 0, sizeof (runtime));
 
-  unsigned long iters, res;
+  unsigned long iters = 1000;
 
 #ifdef BENCH_INIT
   BENCH_INIT ();
 #endif
-  TIMING_INIT (res);
-
-  iters = 1000 * res;
 
   json_init (&json_ctx, 2, stdout);
 
@@ -144,6 +141,8 @@ main (int argc, char **argv)
 
       if (is_bench)
 	{
+	  json_attr_double (&json_ctx, "duration", throughput + latency);
+	  json_attr_double (&json_ctx, "iterations", 2 * d_total_i);
 	  json_attr_double (&json_ctx, "reciprocal-throughput",
 			    throughput / d_total_i);
 	  json_attr_double (&json_ctx, "latency", latency / d_total_i);

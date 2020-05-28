@@ -1,5 +1,5 @@
 /* Extended-precision floating point argument reduction.
-   Copyright (C) 1999-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Based on quad-precision code by Jakub Jelinek <jj@ultra.linux.cz>
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <math.h>
 #include <math_private.h>
@@ -207,6 +207,18 @@ __ieee754_rem_pio2l (long double x, long double *y)
       /* x is infinite or NaN.  */
       y[0] = x - x;
       y[1] = y[0];
+      return 0;
+    }
+
+  if ((i0 & 0x80000000) == 0)
+    {
+      /* Pseudo-zero and unnormal representations are not valid
+	 representations of long double.  We need to avoid stack
+	 corruption in __kernel_rem_pio2, which expects input in a
+	 particular normal form, but those representations do not need
+	 to be consistently handled like any particular floating-point
+	 value.  */
+      y[1] = y[0] = __builtin_nanl ("");
       return 0;
     }
 

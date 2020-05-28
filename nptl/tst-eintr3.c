@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <pthread.h>
@@ -22,11 +22,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-static int do_test (void);
-
-#define TEST_FUNCTION do_test ()
-#include "../test-skeleton.c"
+#include <support/check.h>
+#include <support/xthread.h>
 
 #include "eintr.c"
 
@@ -35,9 +32,9 @@ static void *
 tf (void *arg)
 {
   pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
-  pthread_mutex_lock (&m);
+  xpthread_mutex_lock (&m);
   /* This call must not return.  */
-  pthread_mutex_lock (&m);
+  xpthread_mutex_lock (&m);
 
   puts ("tf: mutex_lock returned");
   exit (1);
@@ -51,15 +48,7 @@ do_test (void)
 
   setup_eintr (SIGUSR1, &self);
 
-  pthread_t th;
-  char buf[100];
-  int e = pthread_create (&th, NULL, tf, NULL);
-  if (e != 0)
-    {
-      printf ("main: pthread_create failed: %s\n",
-	      strerror_r (e, buf, sizeof (buf)));
-      exit (1);
-    }
+  pthread_t th = xpthread_create (NULL, tf, NULL);
 
   delayed_exit (1);
   /* This call must never return.  */
@@ -67,3 +56,5 @@ do_test (void)
   puts ("error: pthread_join returned");
   return 1;
 }
+
+#include <support/test-driver.c>

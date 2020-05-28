@@ -1,5 +1,5 @@
 /* futimesat -- Change access and modification times of file.  Linux version.
-   Copyright (C) 2005-2018 Free Software Foundation, Inc.
+   Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Chris Metcalf <cmetcalf@tilera.com>, 2011.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -37,8 +37,8 @@ futimesat (int fd, const char *file, const struct timeval tvp[2])
 
   if (tvp)
     {
-      if (tvp[0].tv_usec >= 1000000 || tvp[0].tv_usec < 0 ||
-          tvp[1].tv_usec >= 1000000 || tvp[1].tv_usec < 0)
+      if (tvp[0].tv_usec >= 1000000 || tvp[0].tv_usec < 0
+          || tvp[1].tv_usec >= 1000000 || tvp[1].tv_usec < 0)
         {
           __set_errno (EINVAL);
           return -1;

@@ -1,5 +1,5 @@
 /* Linux implementation for access function.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -29,4 +29,5 @@ __access (const char *file, int type)
   return INLINE_SYSCALL_CALL (faccessat, AT_FDCWD, file, type);
 #endif
 }
+libc_hidden_def (__access)
 weak_alias (__access, access)

@@ -1,4 +1,4 @@
-/* Copyright (C) 2015-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2015-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This tests that with a reader-preferring rwlock, all readers are woken if
    one reader "steals" lock ownership from a blocked writer.  */
@@ -178,6 +178,5 @@ do_test (void)
 }
 
 
-#define TIMEOUT 3
 #define TEST_FUNCTION do_test ()
 #include "../test-skeleton.c"

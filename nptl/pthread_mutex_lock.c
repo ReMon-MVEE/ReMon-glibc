@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -24,7 +24,7 @@
 #include <not-cancel.h>
 #include "pthreadP.h"
 #include <atomic.h>
-#include <lowlevellock.h>
+#include <futex-internal.h>
 #include <stap-probe.h>
 
 #ifndef lll_lock_elision
@@ -62,6 +62,8 @@ static int __pthread_mutex_lock_full (pthread_mutex_t *mutex)
 int
 __pthread_mutex_lock (pthread_mutex_t *mutex)
 {
+  /* See concurrency notes regarding mutex type which is loaded from __kind
+     in struct __pthread_mutex_s in sysdeps/nptl/bits/thread-shared-types.h.  */
   unsigned int type = PTHREAD_MUTEX_TYPE_ELISION (mutex);
 
   LIBC_PROBE (mutex_entry, 1, mutex);
@@ -124,7 +126,7 @@ __pthread_mutex_lock (pthread_mutex_t *mutex)
       if (LLL_MUTEX_TRYLOCK (mutex) != 0)
 	{
 	  int cnt = 0;
-	  int max_cnt = MIN (MAX_ADAPTIVE_COUNT,
+	  int max_cnt = MIN (max_adaptive_count (),
 			     mutex->__data.__spins * 2 + 10);
 	  do
 	    {
@@ -350,8 +352,14 @@ __pthread_mutex_lock_full (pthread_mutex_t *mutex)
     case PTHREAD_MUTEX_PI_ROBUST_NORMAL_NP:
     case PTHREAD_MUTEX_PI_ROBUST_ADAPTIVE_NP:
       {
-	int kind = mutex->__data.__kind & PTHREAD_MUTEX_KIND_MASK_NP;
-	int robust = mutex->__data.__kind & PTHREAD_MUTEX_ROBUST_NORMAL_NP;
+	int kind, robust;
+	{
+	  /* See concurrency notes regarding __kind in struct __pthread_mutex_s
+	     in sysdeps/nptl/bits/thread-shared-types.h.  */
+	  int mutex_kind = atomic_load_relaxed (&(mutex->__data.__kind));
+	  kind = mutex_kind & PTHREAD_MUTEX_KIND_MASK_NP;
+	  robust = mutex_kind & PTHREAD_MUTEX_ROBUST_NORMAL_NP;
+	}
 
 	if (robust)
 	  {
@@ -408,25 +416,21 @@ __pthread_mutex_lock_full (pthread_mutex_t *mutex)
 	    int private = (robust
 			   ? PTHREAD_ROBUST_MUTEX_PSHARED (mutex)
 			   : PTHREAD_MUTEX_PSHARED (mutex));
-	    INTERNAL_SYSCALL_DECL (__err);
-	    int e = INTERNAL_SYSCALL (futex, __err, 4, &mutex->__data.__lock,
-				      __lll_private_flag (FUTEX_LOCK_PI,
-							  private), 1, 0);
-
-	    if (INTERNAL_SYSCALL_ERROR_P (e, __err)
-		&& (INTERNAL_SYSCALL_ERRNO (e, __err) == ESRCH
-		    || INTERNAL_SYSCALL_ERRNO (e, __err) == EDEADLK))
+	    int e = futex_lock_pi ((unsigned int *) &mutex->__data.__lock,
+				   NULL, private);
+	    if (e == ESRCH || e == EDEADLK)
 	      {
-		assert (INTERNAL_SYSCALL_ERRNO (e, __err) != EDEADLK
+		assert (e != EDEADLK
 			|| (kind != PTHREAD_MUTEX_ERRORCHECK_NP
 			    && kind != PTHREAD_MUTEX_RECURSIVE_NP));
 		/* ESRCH can happen only for non-robust PI mutexes where
 		   the owner of the lock died.  */
-		assert (INTERNAL_SYSCALL_ERRNO (e, __err) != ESRCH || !robust);
+		assert (e != ESRCH || !robust);
 
 		/* Delay the thread indefinitely.  */
 		while (1)
-		  __pause_nocancel ();
+		  lll_timedwait (&(int){0}, 0, 0 /* ignored */, NULL,
+				 private);
 	      }
 
 	    oldval = atomic_load_relaxed(&mutex->__data.__lock);
@@ -470,11 +474,8 @@ __pthread_mutex_lock_full (pthread_mutex_t *mutex)
 	    /* This mutex is now not recoverable.  */
 	    mutex->__data.__count = 0;
 
-	    INTERNAL_SYSCALL_DECL (__err);
-	    INTERNAL_SYSCALL (futex, __err, 4, &mutex->__data.__lock,
-			      __lll_private_flag (FUTEX_UNLOCK_PI,
-						  PTHREAD_ROBUST_MUTEX_PSHARED (mutex)),
-			      0, 0);
+	    futex_unlock_pi ((unsigned int *) &mutex->__data.__lock,
+			     PTHREAD_ROBUST_MUTEX_PSHARED (mutex));
 
 	    /* To the kernel, this will be visible after the kernel has
 	       acquired the mutex in the syscall.  */
@@ -502,7 +503,10 @@ __pthread_mutex_lock_full (pthread_mutex_t *mutex)
     case PTHREAD_MUTEX_PP_NORMAL_NP:
     case PTHREAD_MUTEX_PP_ADAPTIVE_NP:
       {
-	int kind = mutex->__data.__kind & PTHREAD_MUTEX_KIND_MASK_NP;
+	/* See concurrency notes regarding __kind in struct __pthread_mutex_s
+	   in sysdeps/nptl/bits/thread-shared-types.h.  */
+	int kind = atomic_load_relaxed (&(mutex->__data.__kind))
+	  & PTHREAD_MUTEX_KIND_MASK_NP;
 
 	oldval = atomic_load_relaxed(&mutex->__data.__lock);
 
@@ -607,15 +611,18 @@ hidden_def (__pthread_mutex_lock)
 void
 __pthread_mutex_cond_lock_adjust (pthread_mutex_t *mutex)
 {
-  assert ((mutex->__data.__kind & PTHREAD_MUTEX_PRIO_INHERIT_NP) != 0);
-  assert ((mutex->__data.__kind & PTHREAD_MUTEX_ROBUST_NORMAL_NP) == 0);
-  assert ((mutex->__data.__kind & PTHREAD_MUTEX_PSHARED_BIT) == 0);
+  /* See concurrency notes regarding __kind in struct __pthread_mutex_s
+     in sysdeps/nptl/bits/thread-shared-types.h.  */
+  int mutex_kind = atomic_load_relaxed (&(mutex->__data.__kind));
+  assert ((mutex_kind & PTHREAD_MUTEX_PRIO_INHERIT_NP) != 0);
+  assert ((mutex_kind & PTHREAD_MUTEX_ROBUST_NORMAL_NP) == 0);
+  assert ((mutex_kind & PTHREAD_MUTEX_PSHARED_BIT) == 0);
 
   /* Record the ownership.  */
   pid_t id = THREAD_GETMEM (THREAD_SELF, tid);
   mutex->__data.__owner = id;
 
-  if (mutex->__data.__kind == PTHREAD_MUTEX_PI_RECURSIVE_NP)
+  if (mutex_kind == PTHREAD_MUTEX_PI_RECURSIVE_NP)
     ++mutex->__data.__count;
 }
 #endif

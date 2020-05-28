@@ -1,5 +1,5 @@
 /* Creation of DNS query packets.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /*
  * Copyright (c) 1985, 1993
@@ -82,6 +82,7 @@
  * SOFTWARE.
  */
 
+#include <stdint.h>
 #include <sys/types.h>
 #include <sys/param.h>
 #include <netinet/in.h>
@@ -92,12 +93,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <shlib-compat.h>
-
-#include <hp-timing.h>
-#include <stdint.h>
-#if HP_TIMING_AVAIL
-# define RANDOM_BITS(Var) { uint64_t v64; HP_TIMING_NOW (v64); Var = v64; }
-#endif
+#include <random-bits.h>
 
 int
 __res_context_mkquery (struct resolv_context *ctx, int op, const char *dname,
@@ -120,17 +116,10 @@ __res_context_mkquery (struct resolv_context *ctx, int op, const char *dname,
   /* We randomize the IDs every time.  The old code just incremented
      by one after the initial randomization which still predictable if
      the application does multiple requests.  */
-  int randombits;
-#ifdef RANDOM_BITS
-  RANDOM_BITS (randombits);
-#else
-  struct timeval tv;
-  __gettimeofday (&tv, NULL);
-  randombits = (tv.tv_sec << 8) ^ tv.tv_usec;
-#endif
-
-  hp->id = randombits;
+  hp->id = random_bits ();
   hp->opcode = op;
+  if (ctx->resp->options & RES_TRUSTAD)
+    hp->ad = 1;
   hp->rd = (ctx->resp->options & RES_RECURSE) != 0;
   hp->rcode = NOERROR;
   cp = buf + HFIXEDSZ;

@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2018 Free Software Foundation, Inc.
+# Copyright (C) 1991-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 #
 #	Specific makefile for stdio-common.
@@ -35,11 +35,13 @@ routines	:=							      \
 	perror psignal							      \
 	tmpfile tmpfile64 tmpnam tmpnam_r tempnam tempname		      \
 	getline getw putw						      \
-	remove rename renameat						      \
+	remove rename renameat renameat2				      \
 	flockfile ftrylockfile funlockfile				      \
 	isoc99_scanf isoc99_vscanf isoc99_fscanf isoc99_vfscanf isoc99_sscanf \
 	isoc99_vsscanf							      \
-	psiginfo gentempfd
+	psiginfo gentempfd						      \
+	vfscanf-internal vfwscanf-internal iovfscanf iovfwscanf		      \
+	vfprintf-internal vfwprintf-internal
 
 aux	:= errlist siglist printf-parsemb printf-parsewc fxprintf
 
@@ -61,14 +63,19 @@ tests := tstscanf test_rdwr test-popen tstgetln test-fseek \
 	 tst-printf-bz18872 tst-vfprintf-width-prec tst-fmemopen4 \
 	 tst-vfprintf-user-type \
 	 tst-vfprintf-mbs-prec \
+	 tst-scanf-round \
+	 tst-renameat2 tst-bz11319 tst-bz11319-fortify2 \
+	 scanf14a scanf16a \
 
-test-srcs = tst-unbputc tst-printf
+
+test-srcs = tst-unbputc tst-printf tst-printfsz-islongdouble
 
 ifeq ($(run-built-tests),yes)
 tests-special += $(objpfx)tst-unbputc.out $(objpfx)tst-printf.out \
 		 $(objpfx)tst-printf-bz18872-mem.out \
 		 $(objpfx)tst-setvbuf1-cmp.out \
-		 $(objpfx)tst-vfprintf-width-prec-mem.out
+		 $(objpfx)tst-vfprintf-width-prec-mem.out \
+		 $(objpfx)tst-printfsz-islongdouble.out
 generated += tst-printf-bz18872.c tst-printf-bz18872.mtrace \
 	     tst-printf-bz18872-mem.out \
 	     tst-vfprintf-width-prec.mtrace tst-vfprintf-width-prec-mem.out
@@ -100,6 +107,11 @@ $(objpfx)tst-unbputc.out: tst-unbputc.sh $(objpfx)tst-unbputc
 
 $(objpfx)tst-printf.out: tst-printf.sh $(objpfx)tst-printf
 	$(SHELL) $< $(common-objpfx) '$(test-program-prefix)' > $@; \
+	$(evaluate-test)
+
+$(objpfx)tst-printfsz-islongdouble.out: \
+  tst-printfsz-islongdouble.sh $(objpfx)tst-printfsz-islongdouble
+	$(SHELL) $^ '$(test-program-prefix)' $@; \
 	$(evaluate-test)
 
 # We generate this source because it requires a printf invocation with
@@ -136,16 +148,25 @@ CFLAGS-isoc99_scanf.c += -fexceptions
 CFLAGS-errlist.c += $(fno-unit-at-a-time)
 CFLAGS-siglist.c += $(fno-unit-at-a-time)
 
-# The following is a hack since we must compile scanf1{5,7}.c without any
-# GNU extension.  The latter are needed, though, when internal headers
-# are used.  So made sure we see the installed headers first.
-CFLAGS-scanf15.c += -I../libio -I../stdlib -I../wcsmbs -I../time -I../string \
-		   -I../wctype
-CFLAGS-scanf17.c += -I../libio -I../stdlib -I../wcsmbs -I../time -I../string \
-		   -I../wctype
+# scanf14a.c and scanf16a.c test a deprecated extension which is no
+# longer visible under most conformance levels; see the source files
+# for more detail.
+CFLAGS-scanf14a.c += -std=gnu89
+CFLAGS-scanf16a.c += -std=gnu89
+
+CFLAGS-bug3.c += -DOBJPFX=\"$(objpfx)\"
+CFLAGS-bug4.c += -DOBJPFX=\"$(objpfx)\"
+CFLAGS-bug5.c += -DOBJPFX=\"$(objpfx)\"
+CFLAGS-test-fseek.c += -DOBJPFX=\"$(objpfx)\"
+CFLAGS-test-popen.c += -DOBJPFX=\"$(objpfx)\"
+CFLAGS-test_rdwr.c += -DOBJPFX=\"$(objpfx)\"
 
 # tst-gets.c tests a deprecated function.
 CFLAGS-tst-gets.c += -Wno-deprecated-declarations
+
+# BZ #11319 was first fixed for regular vdprintf, then reopened because
+# the fortified version had the same bug.
+CFLAGS-tst-bz11319-fortify2.c += -D_FORTIFY_SOURCE=2
 
 CPPFLAGS += $(libio-mtsafe)
 
@@ -158,3 +179,4 @@ $(objpfx)tst-setvbuf1-cmp.out: tst-setvbuf1.expect $(objpfx)tst-setvbuf1.out
 	$(evaluate-test)
 
 $(objpfx)tst-printf-round: $(libm)
+$(objpfx)tst-scanf-round: $(libm)

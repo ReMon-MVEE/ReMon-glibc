@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <string.h>
@@ -44,15 +44,15 @@ __tcgetattr (int fd, struct termios *termios_p)
       termios_p->c_cflag = k_termios.c_cflag;
       termios_p->c_lflag = k_termios.c_lflag;
       termios_p->c_line = k_termios.c_line;
-#ifdef _HAVE_STRUCT_TERMIOS_C_ISPEED
-# ifdef _HAVE_C_ISPEED
+#if _HAVE_STRUCT_TERMIOS_C_ISPEED
+# if _HAVE_C_ISPEED
       termios_p->c_ispeed = k_termios.c_ispeed;
 # else
       termios_p->c_ispeed = k_termios.c_cflag & (CBAUD | CBAUDEX);
 # endif
 #endif
-#ifdef _HAVE_STRUCT_TERMIOS_C_OSPEED
-# ifdef _HAVE_C_OSPEED
+#if _HAVE_STRUCT_TERMIOS_C_OSPEED
+# if _HAVE_C_OSPEED
       termios_p->c_ospeed = k_termios.c_ospeed;
 # else
       termios_p->c_ospeed = k_termios.c_cflag & (CBAUD | CBAUDEX);

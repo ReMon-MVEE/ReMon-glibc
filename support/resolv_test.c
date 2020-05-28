@@ -1,5 +1,5 @@
 /* DNS test framework and libresolv redirection.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <support/resolv_test.h>
 
@@ -182,6 +182,8 @@ resolv_response_init (struct resolv_response_builder *b,
   if (flags.tc)
     b->buffer[2] |= 0x02;
   b->buffer[3] = 0x80 | flags.rcode; /* Always set RA.  */
+  if (flags.ad)
+    b->buffer[3] |= 0x20;
 
   /* Fill in the initial section count values.  */
   b->buffer[4] = flags.qdcount >> 8;

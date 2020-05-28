@@ -1,5 +1,5 @@
 /* Optional code to distinguish library flavours.  x86-64 version.
-   Copyright (C) 2015-2018 Free Software Foundation, Inc.
+   Copyright (C) 2015-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _DL_LIBRECON_H
 
@@ -31,7 +31,8 @@
    environment variable, LD_PREFER_MAP_32BIT_EXEC.  */
 #define EXTRA_LD_ENVVARS \
   case 21:								  \
-    if (memcmp (envline, "PREFER_MAP_32BIT_EXEC", 21) == 0)		  \
+    if (!__libc_enable_secure						  \
+	&& memcmp (envline, "PREFER_MAP_32BIT_EXEC", 21) == 0)		  \
       GLRO(dl_x86_cpu_features).feature[index_arch_Prefer_MAP_32BIT_EXEC] \
 	|= bit_arch_Prefer_MAP_32BIT_EXEC;				  \
     break;

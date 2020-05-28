@@ -1,5 +1,5 @@
 /* Conversion from and to IBM1364.
-   Copyright (C) 2005-2018 Free Software Foundation, Inc.
+   Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Masahide Washizawa <washi@jp.ibm.com>, 2005.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <dlfcn.h>
 #include <stdint.h>
@@ -150,6 +150,7 @@ enum
 #define MIN_NEEDED_INPUT  	MIN_NEEDED_FROM
 #define MAX_NEEDED_INPUT  	MAX_NEEDED_FROM
 #define MIN_NEEDED_OUTPUT 	MIN_NEEDED_TO
+#define MAX_NEEDED_OUTPUT 	MAX_NEEDED_TO
 #define LOOPFCT 		FROM_LOOP
 #define BODY \
   {									      \
@@ -296,6 +297,7 @@ enum
 
 /* Next, define the other direction.  */
 #define MIN_NEEDED_INPUT	MIN_NEEDED_TO
+#define MAX_NEEDED_INPUT  	MAX_NEEDED_TO
 #define MIN_NEEDED_OUTPUT	MIN_NEEDED_FROM
 #define MAX_NEEDED_OUTPUT	MAX_NEEDED_FROM
 #define LOOPFCT			TO_LOOP

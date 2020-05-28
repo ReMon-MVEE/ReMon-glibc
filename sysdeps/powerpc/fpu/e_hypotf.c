@@ -1,5 +1,5 @@
 /* Pythagorean addition using floats
-   Copyright (C) 2011-2018 Free Software Foundation, Inc.
+   Copyright (C) 2011-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Adhemerval Zanella <azanella@br.ibm.com>, 2011
 
@@ -15,11 +15,12 @@
 
    You should have received a copy of the GNU Library General Public
    License along with the GNU C Library; see the file COPYING.LIB.  If
-   not, see <http://www.gnu.org/licenses/>.  */
+   not, see <https://www.gnu.org/licenses/>.  */
 
 #include <math.h>
 #include <math_private.h>
 #include <stdint.h>
+#include <libm-alias-finite.h>
 
 /* __ieee754_hypotf(x,y)
 
@@ -73,4 +74,6 @@ __ieee754_hypotf (float x, float y)
 
   return sqrt ((double) x * x + (double) y * y);
 }
-strong_alias (__ieee754_hypotf, __hypotf_finite)
+#ifndef __ieee754_hypotf
+libm_alias_finite (__ieee754_hypotf, __hypotf)
+#endif

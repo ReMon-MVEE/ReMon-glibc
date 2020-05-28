@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
 
@@ -14,152 +14,71 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
+#include <support/check.h>
+#include <support/test-driver.h>
+#include <support/timespec.h>
+#include <support/xthread.h>
+#include <support/xtime.h>
 
+/* A bogus clock value that tells run_test to use pthread_cond_timedwait
+   rather than pthread_condclockwait.  */
+#define CLOCK_USE_ATTR_CLOCK (-1)
 
 #if defined _POSIX_CLOCK_SELECTION && _POSIX_CLOCK_SELECTION >= 0
 static int
-run_test (clockid_t cl)
+run_test (clockid_t attr_clock, clockid_t wait_clock)
 {
   pthread_condattr_t condattr;
   pthread_cond_t cond;
   pthread_mutexattr_t mutattr;
   pthread_mutex_t mut;
 
-  printf ("clock = %d\n", (int) cl);
+  verbose_printf ("attr_clock = %d\n", (int) attr_clock);
 
-  if (pthread_condattr_init (&condattr) != 0)
-    {
-      puts ("condattr_init failed");
-      return 1;
-    }
+  TEST_COMPARE (pthread_condattr_init (&condattr), 0);
+  TEST_COMPARE (pthread_condattr_setclock (&condattr, attr_clock), 0);
 
-  if (pthread_condattr_setclock (&condattr, cl) != 0)
-    {
-      puts ("condattr_setclock failed");
-      return 1;
-    }
+  clockid_t attr_clock_read;
+  TEST_COMPARE (pthread_condattr_getclock (&condattr, &attr_clock_read), 0);
+  TEST_COMPARE (attr_clock, attr_clock_read);
 
-  clockid_t cl2;
-  if (pthread_condattr_getclock (&condattr, &cl2) != 0)
-    {
-      puts ("condattr_getclock failed");
-      return 1;
-    }
-  if (cl != cl2)
-    {
-      printf ("condattr_getclock returned wrong value: %d, expected %d\n",
-	      (int) cl2, (int) cl);
-      return 1;
-    }
+  TEST_COMPARE (pthread_cond_init (&cond, &condattr), 0);
+  TEST_COMPARE (pthread_condattr_destroy (&condattr), 0);
 
-  if (pthread_cond_init (&cond, &condattr) != 0)
-    {
-      puts ("cond_init failed");
-      return 1;
-    }
+  xpthread_mutexattr_init (&mutattr);
+  xpthread_mutexattr_settype (&mutattr, PTHREAD_MUTEX_ERRORCHECK);
+  xpthread_mutex_init (&mut, &mutattr);
+  xpthread_mutexattr_destroy (&mutattr);
 
-  if (pthread_condattr_destroy (&condattr) != 0)
-    {
-      puts ("condattr_destroy failed");
-      return 1;
-    }
+  xpthread_mutex_lock (&mut);
+  TEST_COMPARE (pthread_mutex_lock (&mut), EDEADLK);
 
-  if (pthread_mutexattr_init (&mutattr) != 0)
-    {
-      puts ("mutexattr_init failed");
-      return 1;
-    }
-
-  if (pthread_mutexattr_settype (&mutattr, PTHREAD_MUTEX_ERRORCHECK) != 0)
-    {
-      puts ("mutexattr_settype failed");
-      return 1;
-    }
-
-  if (pthread_mutex_init (&mut, &mutattr) != 0)
-    {
-      puts ("mutex_init failed");
-      return 1;
-    }
-
-  if (pthread_mutexattr_destroy (&mutattr) != 0)
-    {
-      puts ("mutexattr_destroy failed");
-      return 1;
-    }
-
-  if (pthread_mutex_lock (&mut) != 0)
-    {
-      puts ("mutex_lock failed");
-      return 1;
-    }
-
-  if (pthread_mutex_lock (&mut) != EDEADLK)
-    {
-      puts ("2nd mutex_lock did not return EDEADLK");
-      return 1;
-    }
-
-  struct timespec ts;
-  if (clock_gettime (cl, &ts) != 0)
-    {
-      puts ("clock_gettime failed");
-      return 1;
-    }
+  struct timespec ts_timeout;
+  xclock_gettime (wait_clock == CLOCK_USE_ATTR_CLOCK ? attr_clock : wait_clock,
+                  &ts_timeout);
 
   /* Wait one second.  */
-  ++ts.tv_sec;
+  ++ts_timeout.tv_sec;
 
-  int e = pthread_cond_timedwait (&cond, &mut, &ts);
-  if (e == 0)
-    {
-      puts ("cond_timedwait succeeded");
-      return 1;
-    }
-  else if (e != ETIMEDOUT)
-    {
-      puts ("cond_timedwait did not return ETIMEDOUT");
-      return 1;
-    }
+  if (wait_clock == CLOCK_USE_ATTR_CLOCK) {
+    TEST_COMPARE (pthread_cond_timedwait (&cond, &mut, &ts_timeout), ETIMEDOUT);
+    TEST_TIMESPEC_BEFORE_NOW (ts_timeout, attr_clock);
+  } else {
+    TEST_COMPARE (pthread_cond_clockwait (&cond, &mut, wait_clock, &ts_timeout),
+                  ETIMEDOUT);
+    TEST_TIMESPEC_BEFORE_NOW (ts_timeout, wait_clock);
+  }
 
-  struct timespec ts2;
-  if (clock_gettime (cl, &ts2) != 0)
-    {
-      puts ("second clock_gettime failed");
-      return 1;
-    }
-
-  if (ts2.tv_sec < ts.tv_sec
-      || (ts2.tv_sec == ts.tv_sec && ts2.tv_nsec < ts.tv_nsec))
-    {
-      puts ("timeout too short");
-      return 1;
-    }
-
-  if (pthread_mutex_unlock (&mut) != 0)
-    {
-      puts ("mutex_unlock failed");
-      return 1;
-    }
-
-  if (pthread_mutex_destroy (&mut) != 0)
-    {
-      puts ("mutex_destroy failed");
-      return 1;
-    }
-
-  if (pthread_cond_destroy (&cond) != 0)
-    {
-      puts ("cond_destroy failed");
-      return 1;
-    }
+  xpthread_mutex_unlock (&mut);
+  xpthread_mutex_destroy (&mut);
+  TEST_COMPARE (pthread_cond_destroy (&cond), 0);
 
   return 0;
 }
@@ -171,12 +90,11 @@ do_test (void)
 {
 #if !defined _POSIX_CLOCK_SELECTION || _POSIX_CLOCK_SELECTION == -1
 
-  puts ("_POSIX_CLOCK_SELECTION not supported, test skipped");
-  return 0;
+  FAIL_UNSUPPORTED ("_POSIX_CLOCK_SELECTION not supported, test skipped");
 
 #else
 
-  int res = run_test (CLOCK_REALTIME);
+  run_test (CLOCK_REALTIME, CLOCK_USE_ATTR_CLOCK);
 
 # if defined _POSIX_MONOTONIC_CLOCK && _POSIX_MONOTONIC_CLOCK >= 0
 #  if _POSIX_MONOTONIC_CLOCK == 0
@@ -184,21 +102,21 @@ do_test (void)
   if (e < 0)
     puts ("CLOCK_MONOTONIC not supported");
   else if (e == 0)
-    {
-      puts ("sysconf (_SC_MONOTONIC_CLOCK) must not return 0");
-      res = 1;
-    }
+      FAIL_RET ("sysconf (_SC_MONOTONIC_CLOCK) must not return 0");
   else
+    {
 #  endif
-    res |= run_test (CLOCK_MONOTONIC);
+      run_test (CLOCK_MONOTONIC, CLOCK_USE_ATTR_CLOCK);
+      run_test (CLOCK_REALTIME, CLOCK_MONOTONIC);
+      run_test (CLOCK_MONOTONIC, CLOCK_MONOTONIC);
+      run_test (CLOCK_MONOTONIC, CLOCK_REALTIME);
+    }
 # else
   puts ("_POSIX_MONOTONIC_CLOCK not defined");
 # endif
 
-  return res;
+  return 0;
 #endif
 }
 
-#define TIMEOUT 3
-#define TEST_FUNCTION do_test ()
-#include "../test-skeleton.c"
+#include <support/test-driver.c>

@@ -1,5 +1,5 @@
 /* Resolver state initialization and resolv.conf parsing.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /*
  * Copyright (c) 1985, 1989, 1993
@@ -399,8 +399,16 @@ res_vinit_1 (FILE *fp, struct resolv_conf_parser *parser)
               cp = parser->buffer + sizeof ("nameserver") - 1;
               while (*cp == ' ' || *cp == '\t')
                 cp++;
+
+              /* Ignore trailing contents on the name server line.  */
+              {
+                char *el;
+                if ((el = strpbrk (cp, " \t\n")) != NULL)
+                  *el = '\0';
+              }
+
               struct sockaddr *sa;
-              if ((*cp != '\0') && (*cp != '\n') && __inet_aton (cp, &a))
+              if ((*cp != '\0') && (*cp != '\n') && __inet_aton_exact (cp, &a))
                 {
                   sa = allocate_address_v4 (a, NAMESERVER_PORT);
                   if (sa == NULL)
@@ -410,9 +418,6 @@ res_vinit_1 (FILE *fp, struct resolv_conf_parser *parser)
                 {
                   struct in6_addr a6;
                   char *el;
-
-                  if ((el = strpbrk (cp, " \t\n")) != NULL)
-                    *el = '\0';
                   if ((el = strchr (cp, SCOPE_DELIMITER)) != NULL)
                     *el = '\0';
                   if ((*cp != '\0') && (__inet_pton (AF_INET6, cp, &a6) > 0))
@@ -472,7 +477,7 @@ res_vinit_1 (FILE *fp, struct resolv_conf_parser *parser)
                   char separator = *cp;
                   *cp = 0;
                   struct resolv_sortlist_entry e;
-                  if (__inet_aton (net, &a))
+                  if (__inet_aton_exact (net, &a))
                     {
                       e.addr = a;
                       if (is_sort_mask (separator))
@@ -484,7 +489,7 @@ res_vinit_1 (FILE *fp, struct resolv_conf_parser *parser)
                             cp++;
                           separator = *cp;
                           *cp = 0;
-                          if (__inet_aton (net, &a))
+                          if (__inet_aton_exact (net, &a))
                             e.mask = a.s_addr;
                           else
                             e.mask = net_mask (e.addr);
@@ -667,7 +672,6 @@ res_setoptions (struct resolv_conf_parser *parser, const char *options)
             unsigned long int flag;
           } options[] = {
 #define STRnLEN(str) str, sizeof (str) - 1
-            { STRnLEN ("inet6"), 0, DEPRECATED_RES_USE_INET6 },
             { STRnLEN ("rotate"), 0, RES_ROTATE },
             { STRnLEN ("edns0"), 0, RES_USE_EDNS0 },
             { STRnLEN ("single-request-reopen"), 0, RES_SNGLKUPREOP },
@@ -675,7 +679,8 @@ res_setoptions (struct resolv_conf_parser *parser, const char *options)
             { STRnLEN ("no_tld_query"), 0, RES_NOTLDQUERY },
             { STRnLEN ("no-tld-query"), 0, RES_NOTLDQUERY },
             { STRnLEN ("no-reload"), 0, RES_NORELOAD },
-            { STRnLEN ("use-vc"), 0, RES_USEVC }
+            { STRnLEN ("use-vc"), 0, RES_USEVC },
+            { STRnLEN ("trust-ad"), 0, RES_TRUSTAD },
           };
 #define noptions (sizeof (options) / sizeof (options[0]))
           for (int i = 0; i < noptions; ++i)

@@ -1,5 +1,5 @@
 /* Support for chains recording users of a resource; `struct hurd_userlink'.
-   Copyright (C) 1994-2018 Free Software Foundation, Inc.
+   Copyright (C) 1994-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef	_HURD_USERLINK_H
 
@@ -142,6 +142,30 @@ _hurd_userlink_unlink (struct hurd_userlink *link)
 # endif
 #endif
 
+/* Relocate LINK to NEW_LINK.
+   To be used when e.g. reallocating a link array.  */
+
+extern void _hurd_userlink_move (struct hurd_userlink *new_link,
+                                struct hurd_userlink *link);
+
+#if defined __USE_EXTERN_INLINES && defined _LIBC
+# if IS_IN (libc)
+_HURD_USERLINK_H_EXTERN_INLINE void
+_hurd_userlink_move (struct hurd_userlink *new_link,
+                     struct hurd_userlink *link)
+{
+  *new_link = *link;
+
+  if (new_link->resource.next != NULL)
+    new_link->resource.next->resource.prevp = &new_link->resource.next;
+  *new_link->resource.prevp = new_link;
+
+  if (new_link->thread.next != NULL)
+    new_link->thread.next->thread.prevp = &new_link->thread.next;
+  *new_link->thread.prevp = new_link;
+}
+# endif
+#endif
 
 /* Clear all users from *CHAINP.  Call this when the resource *CHAINP
    protects is changing.  If the return value is nonzero, no users are on

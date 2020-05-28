@@ -1,5 +1,5 @@
 /* Install given floating-point control modes.  PowerPC version.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,15 +14,10 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <fenv_libc.h>
 #include <fpu_control.h>
-
-#define _FPU_MASK_ALL (_FPU_MASK_ZM | _FPU_MASK_OM | _FPU_MASK_UM	\
-		       | _FPU_MASK_XM | _FPU_MASK_IM)
-
-#define FPU_STATUS 0xbffff700ULL
 
 int
 fesetmode (const femode_t *modep)
@@ -32,18 +27,15 @@ fesetmode (const femode_t *modep)
   /* Logic regarding enabled exceptions as in fesetenv.  */
 
   new.fenv = *modep;
-  old.fenv = fegetenv_register ();
-  new.l = (new.l & ~FPU_STATUS) | (old.l & FPU_STATUS);
+  old.fenv = fegetenv_control ();
+  new.l = (new.l & ~FPSCR_STATUS_MASK) | (old.l & FPSCR_STATUS_MASK);
 
   if (old.l == new.l)
     return 0;
 
-  if ((old.l & _FPU_MASK_ALL) == 0 && (new.l & _FPU_MASK_ALL) != 0)
-    (void) __fe_nomask_env_priv ();
+  __TEST_AND_EXIT_NON_STOP (old.l, new.l);
+  __TEST_AND_ENTER_NON_STOP (old.l, new.l);
 
-  if ((old.l & _FPU_MASK_ALL) != 0 && (new.l & _FPU_MASK_ALL) == 0)
-    (void) __fe_mask_env ();
-
-  fesetenv_register (new.fenv);
+  fesetenv_control (new.fenv);
   return 0;
 }

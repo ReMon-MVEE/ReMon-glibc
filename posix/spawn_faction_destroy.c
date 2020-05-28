@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <spawn.h>
 #include <stdlib.h>
@@ -22,7 +22,7 @@
 
 /* Deallocate the file actions.  */
 int
-posix_spawn_file_actions_destroy (posix_spawn_file_actions_t *file_actions)
+__posix_spawn_file_actions_destroy (posix_spawn_file_actions_t *file_actions)
 {
   /* Free the paths in the open actions.  */
   for (int i = 0; i < file_actions->__used; ++i)
@@ -33,8 +33,12 @@ posix_spawn_file_actions_destroy (posix_spawn_file_actions_t *file_actions)
 	case spawn_do_open:
 	  free (sa->action.open_action.path);
 	  break;
+	case spawn_do_chdir:
+	  free (sa->action.chdir_action.path);
+	  break;
 	case spawn_do_close:
 	case spawn_do_dup2:
+	case spawn_do_fchdir:
 	  /* No cleanup required.  */
 	  break;
 	}
@@ -44,3 +48,5 @@ posix_spawn_file_actions_destroy (posix_spawn_file_actions_t *file_actions)
   free (file_actions->__actions);
   return 0;
 }
+weak_alias (__posix_spawn_file_actions_destroy,
+	    posix_spawn_file_actions_destroy)

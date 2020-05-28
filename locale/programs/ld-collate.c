@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gnu.org>, 1995.
 
@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -2401,8 +2401,8 @@ collate_output (struct localedef_t *locale, const struct charmap_t *charmap,
 
       runp = runp->next;
     }
-  /* Add 40% and find the next prime number.  */
-  elem_size = next_prime (elem_size * 1.4);
+  /* Add 50% and find the next prime number.  */
+  elem_size = next_prime (elem_size + (elem_size >> 1));
 
   /* Allocate the table.  Each entry consists of two words: the hash
      value and an index in a secondary table which provides the index

@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* NOTE: this tests functionality beyond POSIX.  POSIX does not allow
    exit to be called more than once.  */
@@ -166,6 +166,10 @@ tf_write  (void *arg)
   char buf[WRITE_BUFFER_SIZE];
   memset (buf, '\0', sizeof (buf));
   s = write (fd, buf, sizeof (buf));
+  /* The write can return a value higher than 0 (meaning partial write)
+     due to the SIGCANCEL, but the thread may still be pending
+     cancellation.  */
+  pthread_testcancel ();
 
   pthread_cleanup_pop (0);
 
@@ -743,6 +747,10 @@ tf_send (void *arg)
   char mem[WRITE_BUFFER_SIZE];
 
   send (tempfd2, mem, arg == NULL ? sizeof (mem) : 1, 0);
+  /* The send can return a value higher than 0 (meaning partial send)
+     due to the SIGCANCEL, but the thread may still be pending
+     cancellation.  */
+  pthread_testcancel ();
 
   pthread_cleanup_pop (0);
 

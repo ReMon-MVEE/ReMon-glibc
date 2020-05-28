@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>
    and Paul Janzen <pcj@primenet.com>, 1996.
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <libc-lock.h>
 #include <errno.h>
@@ -32,7 +32,6 @@ __libc_lock_define (extern, __libc_utmp_lock attribute_hidden)
 int
 __getutid_r (const struct utmp *id, struct utmp *buffer, struct utmp **result)
 {
-#if (_HAVE_UT_ID - 0) && (_HAVE_UT_TYPE - 0)
   int retval;
 
   /* Test whether ID has any of the legal types.  */
@@ -49,15 +48,11 @@ __getutid_r (const struct utmp *id, struct utmp *buffer, struct utmp **result)
 
   __libc_lock_lock (__libc_utmp_lock);
 
-  retval = (*__libc_utmp_jump_table->getutid_r) (id, buffer, result);
+  retval = __libc_getutid_r (id, buffer, result);
 
   __libc_lock_unlock (__libc_utmp_lock);
 
   return retval;
-#else	/* !_HAVE_UT_ID && !_HAVE_UT_TYPE */
-  __set_errno (ENOSYS);
-  return -1;
-#endif
 }
 libc_hidden_def (__getutid_r)
 weak_alias (__getutid_r, getutid_r)

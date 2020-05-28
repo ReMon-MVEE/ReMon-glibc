@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (C) 2017-2018 Free Software Foundation, Inc.
+# Copyright (C) 2017-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 #
 # The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 """Compare results of string functions
 
 Given a string benchmark result file, print a table with comparisons with a
@@ -29,6 +29,7 @@ import os
 import json
 import pylab
 import argparse
+import traceback
 
 try:
     import jsonschema as validator
@@ -38,13 +39,16 @@ except ImportError:
 
 
 def parse_file(filename, schema_filename):
-    with open(schema_filename, 'r') as schemafile:
-        schema = json.load(schemafile)
-        with open(filename, 'r') as benchfile:
-            bench = json.load(benchfile)
-            validator.validate(bench, schema)
-            return bench
-
+    try:
+        with open(schema_filename, 'r') as schemafile:
+            schema = json.load(schemafile)
+            with open(filename, 'r') as benchfile:
+                bench = json.load(benchfile)
+                validator.validate(bench, schema)
+        return bench
+    except:
+        print(traceback.format_exc(limit=1))
+        sys.exit(os.EX_NOINPUT)
 
 def draw_graph(f, v, ifuncs, results):
     """Plot graphs for functions
@@ -79,39 +83,76 @@ def draw_graph(f, v, ifuncs, results):
     pylab.savefig('%s-%s.png' % (f, v), bbox_inches='tight')
 
 
-def process_results(results, attrs, base_func, graph):
+def process_results(results, attrs, funcs, base_func, graph, no_diff, no_header):
     """ Process results and print them
 
     Args:
         results: JSON dictionary of results
         attrs: Attributes that form the test criteria
+        funcs: Functions that are selected
     """
 
     for f in results['functions'].keys():
-        print('Function: %s' % f)
+
         v = results['functions'][f]['bench-variant']
-        print('Variant: %s' % v)
 
+        selected = {}
+        index = 0
         base_index = 0
-        if base_func:
-            base_index = results['functions'][f]['ifuncs'].index(base_func)
+        if funcs:
+            ifuncs = []
+            first_func = True
+            for i in results['functions'][f]['ifuncs']:
+                if i in funcs:
+                    if first_func:
+                        base_index = index
+                        first_func = False
+                    selected[index] = 1
+                    ifuncs.append(i)
+                else:
+                    selected[index] = 0
+                index += 1
+        else:
+            ifuncs = results['functions'][f]['ifuncs']
+            for i in ifuncs:
+                selected[index] = 1
+                index += 1
 
-        print("%36s%s" % (' ', '\t'.join(results['functions'][f]['ifuncs'])))
-        print("=" * 120)
+        if base_func:
+            try:
+                base_index = results['functions'][f]['ifuncs'].index(base_func)
+            except ValueError:
+                sys.stderr.write('Invalid -b "%s" parameter. Options: %s.\n' %
+                                 (base_func, ', '.join(results['functions'][f]['ifuncs'])))
+                sys.exit(os.EX_DATAERR)
+
+        if not no_header:
+            print('Function: %s' % f)
+            print('Variant: %s' % v)
+            print("%36s%s" % (' ', '\t'.join(ifuncs)))
+            print("=" * 120)
+
         graph_res = {}
         for res in results['functions'][f]['results']:
-            attr_list = ['%s=%s' % (a, res[a]) for a in attrs]
+            try:
+                attr_list = ['%s=%s' % (a, res[a]) for a in attrs]
+            except KeyError as ke:
+                sys.stderr.write('Invalid -a %s parameter. Options: %s.\n'
+                                 % (ke, ', '.join([a for a in res.keys() if a != 'timings'])))
+                sys.exit(os.EX_DATAERR)
             i = 0
             key = ', '.join(attr_list)
             sys.stdout.write('%36s: ' % key)
             graph_res[key] = res['timings']
             for t in res['timings']:
-                sys.stdout.write ('%12.2f' % t)
-                if i != base_index:
-                    base = res['timings'][base_index]
-                    diff = (base - t) * 100 / base
-                    sys.stdout.write (' (%6.2f%%)' % diff)
-                sys.stdout.write('\t')
+                if selected[i]:
+                    sys.stdout.write ('%12.2f' % t)
+                    if not no_diff:
+                        if i != base_index:
+                            base = res['timings'][base_index]
+                            diff = (base - t) * 100 / base
+                            sys.stdout.write (' (%6.2f%%)' % diff)
+                    sys.stdout.write('\t')
                 i = i + 1
             print('')
 
@@ -130,9 +171,17 @@ def main(args):
     schema_filename = args.schema
     base_func = args.base
     attrs = args.attributes.split(',')
+    if args.functions:
+        funcs = args.functions.split(',')
+        if base_func and not base_func in funcs:
+            print('Baseline function (%s) not found.' % base_func)
+            sys.exit(os.EX_DATAERR)
+    else:
+        funcs = None
 
     results = parse_file(args.input, args.schema)
-    process_results(results, attrs, base_func, args.graph)
+    process_results(results, attrs, funcs, base_func, args.graph, args.no_diff, args.no_header)
+    return os.EX_OK
 
 
 if __name__ == '__main__':
@@ -148,10 +197,16 @@ if __name__ == '__main__':
                         help='Schema file to validate the result file.')
 
     # Optional arguments.
+    parser.add_argument('-f', '--functions',
+                        help='Comma separated list of functions.')
     parser.add_argument('-b', '--base',
                         help='IFUNC variant to set as baseline.')
     parser.add_argument('-g', '--graph', action='store_true',
                         help='Generate a graph from results.')
+    parser.add_argument('--no-diff', action='store_true',
+                        help='Do not print the difference from baseline.')
+    parser.add_argument('--no-header', action='store_true',
+                        help='Do not print the header.')
 
     args = parser.parse_args()
-    main(args)
+    sys.exit(main(args))

@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #if !_LIBC
 # include <config.h>
@@ -50,7 +50,7 @@
 #include <string.h>
 
 #include <fcntl.h>
-#include <sys/time.h>
+#include <time.h>
 #include <stdint.h>
 #include <unistd.h>
 
@@ -63,7 +63,6 @@
 # define struct_stat64 struct stat
 # define __gen_tempname gen_tempname
 # define __getpid getpid
-# define __gettimeofday gettimeofday
 # define __mkdir mkdir
 # define __open open
 # define __lxstat64(version, file, buf) lstat (file, buf)
@@ -71,22 +70,15 @@
 #endif
 
 #ifdef _LIBC
-# include <hp-timing.h>
-# if HP_TIMING_AVAIL
-#  define RANDOM_BITS(Var) \
-  if (__glibc_unlikely (value == UINT64_C (0)))				      \
-    {									      \
-      /* If this is the first time this function is used initialize	      \
-	 the variable we accumulate the value in to some somewhat	      \
-	 random value.  If we'd not do this programs at startup time	      \
-	 might have a reduced set of possible names, at least on slow	      \
-	 machines.  */							      \
-      struct timeval tv;						      \
-      __gettimeofday (&tv, NULL);					      \
-      value = ((uint64_t) tv.tv_usec << 16) ^ tv.tv_sec;		      \
-    }									      \
-  HP_TIMING_NOW (Var)
-# endif
+# include <random-bits.h>
+# define RANDOM_BITS(Var) ((Var) = random_bits ())
+# else
+# define RANDOM_BITS(Var) \
+    {                                                                         \
+      struct timespec ts;                                                     \
+      clock_gettime (CLOCK_REALTIME, &ts);                                    \
+      (Var) = ((uint64_t) tv.tv_nsec << 16) ^ tv.tv_sec;                      \
+    }
 #endif
 
 /* Use the widest available unsigned type if uint64_t is not
@@ -193,8 +185,6 @@ __gen_tempname (char *tmpl, int suffixlen, int flags, int kind)
 {
   int len;
   char *XXXXXX;
-  static uint64_t value;
-  uint64_t random_time_bits;
   unsigned int count;
   int fd = -1;
   int save_errno = errno;
@@ -226,21 +216,13 @@ __gen_tempname (char *tmpl, int suffixlen, int flags, int kind)
   /* This is where the Xs start.  */
   XXXXXX = &tmpl[len - 6 - suffixlen];
 
-  /* Get some more or less random data.  */
-#ifdef RANDOM_BITS
-  RANDOM_BITS (random_time_bits);
-#else
-  {
-    struct timeval tv;
-    __gettimeofday (&tv, NULL);
-    random_time_bits = ((uint64_t) tv.tv_usec << 16) ^ tv.tv_sec;
-  }
-#endif
-  value += random_time_bits ^ __getpid ();
-
-  for (count = 0; count < attempts; value += 7777, ++count)
+  uint64_t pid = (uint64_t) __getpid () << 32;
+  for (count = 0; count < attempts; ++count)
     {
-      uint64_t v = value;
+      uint64_t v;
+      /* Get some more or less random data.  */
+      RANDOM_BITS (v);
+      v ^= pid;
 
       /* Fill in the random bits.  */
       XXXXXX[0] = letters[v % 62];

@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2018 Free Software Foundation, Inc.
+# Copyright (C) 1991-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 subdir := hurd
 
@@ -33,8 +33,9 @@ user-interfaces		:= $(addprefix hurd/,\
 				       process process_request \
 				       msg msg_reply msg_request \
 				       exec exec_startup crash interrupt \
-				       fs fsys io term tioctl socket ifsock \
-				       login password pfinet \
+				       fs fsys io io_reply io_request \
+				       term tioctl socket ifsock \
+				       login password pfinet pci \
 				       )
 server-interfaces	:= hurd/msg faultexc
 

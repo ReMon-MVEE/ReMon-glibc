@@ -1,5 +1,5 @@
 /* Operating system support for run-time dynamic linker.  Generic Unix version.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* We conditionalize the whole of this file rather than simply eliding it
    from the static build, because other sysdeps/ versions of this file
@@ -45,6 +45,7 @@
 #include <tls.h>
 
 #include <dl-tunables.h>
+#include <dl-auxv.h>
 
 extern char **_environ attribute_hidden;
 extern char _end[] attribute_hidden;
@@ -180,9 +181,7 @@ _dl_sysdep_start (void **start_argptr,
       case AT_RANDOM:
 	_dl_random = (void *) av->a_un.a_val;
 	break;
-#ifdef DL_PLATFORM_AUXV
       DL_PLATFORM_AUXV
-#endif
       }
 
 #ifndef HAVE_AUX_SECURE
@@ -277,38 +276,46 @@ _dl_show_auxv (void)
     {
       static const struct
       {
-	const char label[17];
+	const char label[22];
 	enum { unknown = 0, dec, hex, str, ignore } form : 8;
       } auxvars[] =
 	{
-	  [AT_EXECFD - 2] =		{ "EXECFD:       ", dec },
-	  [AT_EXECFN - 2] =		{ "EXECFN:       ", str },
-	  [AT_PHDR - 2] =		{ "PHDR:         0x", hex },
-	  [AT_PHENT - 2] =		{ "PHENT:        ", dec },
-	  [AT_PHNUM - 2] =		{ "PHNUM:        ", dec },
-	  [AT_PAGESZ - 2] =		{ "PAGESZ:       ", dec },
-	  [AT_BASE - 2] =		{ "BASE:         0x", hex },
-	  [AT_FLAGS - 2] =		{ "FLAGS:        0x", hex },
-	  [AT_ENTRY - 2] =		{ "ENTRY:        0x", hex },
-	  [AT_NOTELF - 2] =		{ "NOTELF:       ", hex },
-	  [AT_UID - 2] =		{ "UID:          ", dec },
-	  [AT_EUID - 2] =		{ "EUID:         ", dec },
-	  [AT_GID - 2] =		{ "GID:          ", dec },
-	  [AT_EGID - 2] =		{ "EGID:         ", dec },
-	  [AT_PLATFORM - 2] =		{ "PLATFORM:     ", str },
-	  [AT_HWCAP - 2] =		{ "HWCAP:        ", hex },
-	  [AT_CLKTCK - 2] =		{ "CLKTCK:       ", dec },
-	  [AT_FPUCW - 2] =		{ "FPUCW:        ", hex },
-	  [AT_DCACHEBSIZE - 2] =	{ "DCACHEBSIZE:  0x", hex },
-	  [AT_ICACHEBSIZE - 2] =	{ "ICACHEBSIZE:  0x", hex },
-	  [AT_UCACHEBSIZE - 2] =	{ "UCACHEBSIZE:  0x", hex },
+	  [AT_EXECFD - 2] =		{ "EXECFD:            ", dec },
+	  [AT_EXECFN - 2] =		{ "EXECFN:            ", str },
+	  [AT_PHDR - 2] =		{ "PHDR:              0x", hex },
+	  [AT_PHENT - 2] =		{ "PHENT:             ", dec },
+	  [AT_PHNUM - 2] =		{ "PHNUM:             ", dec },
+	  [AT_PAGESZ - 2] =		{ "PAGESZ:            ", dec },
+	  [AT_BASE - 2] =		{ "BASE:              0x", hex },
+	  [AT_FLAGS - 2] =		{ "FLAGS:             0x", hex },
+	  [AT_ENTRY - 2] =		{ "ENTRY:             0x", hex },
+	  [AT_NOTELF - 2] =		{ "NOTELF:            ", hex },
+	  [AT_UID - 2] =		{ "UID:               ", dec },
+	  [AT_EUID - 2] =		{ "EUID:              ", dec },
+	  [AT_GID - 2] =		{ "GID:               ", dec },
+	  [AT_EGID - 2] =		{ "EGID:              ", dec },
+	  [AT_PLATFORM - 2] =		{ "PLATFORM:          ", str },
+	  [AT_HWCAP - 2] =		{ "HWCAP:             ", hex },
+	  [AT_CLKTCK - 2] =		{ "CLKTCK:            ", dec },
+	  [AT_FPUCW - 2] =		{ "FPUCW:             ", hex },
+	  [AT_DCACHEBSIZE - 2] =	{ "DCACHEBSIZE:       0x", hex },
+	  [AT_ICACHEBSIZE - 2] =	{ "ICACHEBSIZE:       0x", hex },
+	  [AT_UCACHEBSIZE - 2] =	{ "UCACHEBSIZE:       0x", hex },
 	  [AT_IGNOREPPC - 2] =		{ "IGNOREPPC", ignore },
-	  [AT_SECURE - 2] =		{ "SECURE:       ", dec },
-	  [AT_BASE_PLATFORM - 2] =	{ "BASE_PLATFORM:", str },
-	  [AT_SYSINFO - 2] =		{ "SYSINFO:      0x", hex },
-	  [AT_SYSINFO_EHDR - 2] =	{ "SYSINFO_EHDR: 0x", hex },
-	  [AT_RANDOM - 2] =		{ "RANDOM:       0x", hex },
-	  [AT_HWCAP2 - 2] =		{ "HWCAP2:       0x", hex },
+	  [AT_SECURE - 2] =		{ "SECURE:            ", dec },
+	  [AT_BASE_PLATFORM - 2] =	{ "BASE_PLATFORM:     ", str },
+	  [AT_SYSINFO - 2] =		{ "SYSINFO:           0x", hex },
+	  [AT_SYSINFO_EHDR - 2] =	{ "SYSINFO_EHDR:      0x", hex },
+	  [AT_RANDOM - 2] =		{ "RANDOM:            0x", hex },
+	  [AT_HWCAP2 - 2] =		{ "HWCAP2:            0x", hex },
+	  [AT_L1I_CACHESIZE - 2] =	{ "L1I_CACHESIZE:     ", dec },
+	  [AT_L1I_CACHEGEOMETRY - 2] =	{ "L1I_CACHEGEOMETRY: 0x", hex },
+	  [AT_L1D_CACHESIZE - 2] =	{ "L1D_CACHESIZE:     ", dec },
+	  [AT_L1D_CACHEGEOMETRY - 2] =	{ "L1D_CACHEGEOMETRY: 0x", hex },
+	  [AT_L2_CACHESIZE - 2] =	{ "L2_CACHESIZE:      ", dec },
+	  [AT_L2_CACHEGEOMETRY - 2] =	{ "L2_CACHEGEOMETRY:  0x", hex },
+	  [AT_L3_CACHESIZE - 2] =	{ "L3_CACHESIZE:      ", dec },
+	  [AT_L3_CACHEGEOMETRY - 2] =	{ "L3_CACHEGEOMETRY:  0x", hex },
 	};
       unsigned int idx = (unsigned int) (av->a_type - 2);
 
@@ -320,12 +327,9 @@ _dl_show_auxv (void)
       assert (AT_NULL == 0);
       assert (AT_IGNORE == 1);
 
-      if (av->a_type == AT_HWCAP || av->a_type == AT_HWCAP2)
-	{
-	  /* These are handled in a special way per platform.  */
-	  if (_dl_procinfo (av->a_type, av->a_un.a_val) == 0)
-	    continue;
-	}
+      /* Some entries are handled in a special way per platform.  */
+      if (_dl_procinfo (av->a_type, av->a_un.a_val) == 0)
+	continue;
 
       if (idx < sizeof (auxvars) / sizeof (auxvars[0])
 	  && auxvars[idx].form != unknown)

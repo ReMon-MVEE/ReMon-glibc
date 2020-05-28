@@ -1,4 +1,4 @@
-/* Copyright (C) 2006-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2006-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* We define a special synchronization primitive for AIO.  POSIX
    conditional variables would be ideal but the pthread_cond_*wait
@@ -42,24 +42,21 @@
       {									      \
 	pthread_mutex_unlock (&__gai_requests_mutex);			      \
 									      \
-	int oldtype;							      \
-	if (cancel)							      \
-	  oldtype = LIBC_CANCEL_ASYNC ();				      \
-									      \
 	int status;							      \
 	do								      \
 	  {								      \
-	    status = futex_reltimed_wait ((unsigned int *) futexaddr, oldval, \
-					  timeout, FUTEX_PRIVATE);	      \
+	    if (cancel)							      \
+	      status = futex_reltimed_wait_cancelable (			      \
+		(unsigned int *) futexaddr, oldval, timeout, FUTEX_PRIVATE);  \
+	    else							      \
+	      status = futex_reltimed_wait ((unsigned int *) futexaddr,	      \
+		oldval, timeout, FUTEX_PRIVATE);	      		      \
 	    if (status != EAGAIN)					      \
 	      break;							      \
 									      \
 	    oldval = *futexaddr;					      \
 	  }								      \
 	while (oldval != 0);						      \
-									      \
-	if (cancel)							      \
-	  LIBC_CANCEL_RESET (oldtype);					      \
 									      \
 	if (status == EINTR)						      \
 	  result = EINTR;						      \

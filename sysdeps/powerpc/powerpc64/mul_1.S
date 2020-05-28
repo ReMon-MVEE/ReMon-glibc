@@ -1,6 +1,6 @@
 /* PowerPC64 __mpn_mul_1 -- Multiply a limb vector with a limb and store
    the result in a second limb vector.
-   Copyright (C) 1999-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
@@ -24,9 +24,14 @@
 #define N   r5
 #define VL  r6
 
+#define R26SAVE  (-48)
+#define R27SAVE  (-40)
+
 ENTRY_TOCLESS (__mpn_mul_1, 5)
-	std	r27, -40(r1)
-	std	r26, -48(r1)
+	std	r27, R27SAVE(r1)
+	std	r26, R26SAVE(r1)
+	cfi_offset(r27, R27SAVE)
+	cfi_offset(r26, R26SAVE)
 	li	r12, 0
 	ld	r26, 0(UP)
 
@@ -129,7 +134,7 @@ L(end):	mulld	r0, r26, VL
 	std	r0, 0(RP)
 	std	r7, 8(RP)
 L(ret):	addze	RP, r8
-	ld	r27, -40(r1)
-	ld	r26, -48(r1)
+	ld	r27, R27SAVE(r1)
+	ld	r26, R26SAVE(r1)
 	blr
 END(__mpn_mul_1)

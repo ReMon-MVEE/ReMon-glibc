@@ -1,6 +1,6 @@
 /* PowerPC64 __mpn_addmul_1 -- Multiply a limb vector with a limb and add
    the result to a second limb vector.
-   Copyright (C) 1999-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
@@ -34,16 +34,27 @@
 #define N   r5
 #define VL  r6
 
+#define R27SAVE  (-40)
+#define R28SAVE  (-32)
+#define R29SAVE  (-24)
+#define R30SAVE  (-16)
+#define R31SAVE  (-8)
+
 ENTRY_TOCLESS (FUNC, 5)
-	std	r31, -8(r1)
+	std	r31, R31SAVE(r1)
 	rldicl.	r0, N, 0, 62
-	std	r30, -16(r1)
+	std	r30, R30SAVE(r1)
 	cmpdi	VL, r0, 2
-	std	r29, -24(r1)
+	std	r29, R29SAVE(r1)
 	addi	N, N, 3
-	std	r28, -32(r1)
+	std	r28, R28SAVE(r1)
 	srdi	N, N, 2
-	std	r27, -40(r1)
+	std	r27, R27SAVE(r1)
+	cfi_offset(r31, R31SAVE)
+	cfi_offset(r30, R30SAVE)
+	cfi_offset(r29, R29SAVE)
+	cfi_offset(r28, R28SAVE)
+	cfi_offset(r27, R27SAVE)
 	mtctr	N
 	beq	cr0, L(b00)
 	blt	cr6, L(b01)
@@ -199,10 +210,10 @@ L(end):	mulld	r0, r9, VL
 	addic	r11, r11, 1
 #endif
 	addze	RP, r8
-	ld	r31, -8(r1)
-	ld	r30, -16(r1)
-	ld	r29, -24(r1)
-	ld	r28, -32(r1)
-	ld	r27, -40(r1)
+	ld	r31, R31SAVE(r1)
+	ld	r30, R30SAVE(r1)
+	ld	r29, R29SAVE(r1)
+	ld	r28, R28SAVE(r1)
+	ld	r27, R27SAVE(r1)
 	blr
 END(FUNC)

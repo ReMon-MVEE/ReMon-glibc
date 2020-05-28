@@ -1,5 +1,5 @@
 /* sendfile -- copy data directly from one file descriptor to another
-   Copyright (C) 2002-2018 Free Software Foundation, Inc.
+   Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sys/sendfile.h>
 #include <hurd.h>
@@ -24,7 +24,7 @@
 /* Send COUNT bytes from file associated with IN_FD starting at OFFSET to
    descriptor OUT_FD.  */
 ssize_t
-sendfile64 (int out_fd, int in_fd, off64_t *offset, size_t count)
+__sendfile64 (int out_fd, int in_fd, off64_t *offset, size_t count)
 {
   /* We just do a vanilla io_read followed by a vanilla io_write here.
      In theory the IN_FD filesystem can return us out-of-line data that
@@ -57,3 +57,4 @@ sendfile64 (int out_fd, int in_fd, off64_t *offset, size_t count)
     }
   return __hurd_fail (err);
 }
+strong_alias (__sendfile64, sendfile64)

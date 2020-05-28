@@ -1,5 +1,5 @@
 /* sem_wait -- wait on a semaphore.  Generic futex-using version.
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Paul Mackerras <paulus@au.ibm.com>, 2003.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <lowlevellock.h>	/* lll_futex* used by the old code.  */
 #include "sem_waitcommon.c"
@@ -39,7 +39,8 @@ __new_sem_wait (sem_t *sem)
   if (__new_sem_wait_fast ((struct new_sem *) sem, 0) == 0)
     return 0;
   else
-    return __new_sem_wait_slow((struct new_sem *) sem, NULL);
+    return __new_sem_wait_slow ((struct new_sem *) sem,
+				CLOCK_REALTIME, NULL);
 }
 versioned_symbol (libpthread, __new_sem_wait, sem_wait, GLIBC_2_1);
 
@@ -56,14 +57,8 @@ __old_sem_wait (sem_t *sem)
       if (atomic_decrement_if_positive (futex) > 0)
 	return 0;
 
-      /* Enable asynchronous cancellation.  Required by the standard.  */
-      int oldtype = __pthread_enable_asynccancel ();
-
       /* Always assume the semaphore is shared.  */
-      err = lll_futex_wait (futex, 0, LLL_SHARED);
-
-      /* Disable asynchronous cancellation.  */
-      __pthread_disable_asynccancel (oldtype);
+      err = lll_futex_wait_cancel (futex, 0, LLL_SHARED);
     }
   while (err == 0 || err == -EWOULDBLOCK);
 

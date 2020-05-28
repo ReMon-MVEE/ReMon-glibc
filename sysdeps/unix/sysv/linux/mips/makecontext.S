@@ -1,5 +1,5 @@
 /* Modify saved context.
-   Copyright (C) 2009-2018 Free Software Foundation, Inc.
+   Copyright (C) 2009-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Maciej W. Rozycki <macro@codesourcery.com>.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 #include <sys/asm.h>
@@ -92,11 +92,6 @@ NESTED (__makecontext, FRAMESZ, ra)
 	REG_S	a6, A6OFF(sp)
 	REG_S	a7, A7OFF(sp)
 #endif
-
-	/* Store a magic flag.  */
-	li	v1, 1
-	/* zero */
-	REG_S	v1, (MCONTEXT_GREGOFF + 0 * MCONTEXT_GREGSZ + MCONTEXT_GREGS)(a0)
 
 	/* Set up the stack.  */
 	PTR_L	t0, STACK_SP(a0)

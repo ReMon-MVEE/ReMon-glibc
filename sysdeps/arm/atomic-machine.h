@@ -1,5 +1,5 @@
 /* Atomic operations.  Pure ARM version.
-   Copyright (C) 2002-2018 Free Software Foundation, Inc.
+   Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdint.h>
 
@@ -238,9 +238,6 @@ enum mvee_atomics
 	ATOMIC_FETCH_AND,
 	ATOMIC_FETCH_OR,
 	ATOMIC_FETCH_XOR,
-    __THREAD_ATOMIC_CMPXCHG_VAL,
-    __THREAD_ATOMIC_AND,
-    __THREAD_ATOMIC_BIT_SET,
     ___UNKNOWN_LOCK_TYPE___,
     __MVEE_ATOMICS_MAX__
 };
@@ -334,16 +331,6 @@ enum mvee_atomics
 #define atomic_fetch_or_acquire(mem, operand) orig_atomic_fetch_or_acquire(mem, operand) 
 #define atomic_fetch_or_release(mem, operand) orig_atomic_fetch_or_release(mem, operand) 
 #define atomic_fetch_xor_release(mem, operand) orig_atomic_fetch_xor_release(mem, operand) 
-
-//
-// TLS atomics (tls.h)
-//
-// stijn: ARM doesn't have these
-/*
-#define THREAD_ATOMIC_CMPXCHG_VAL(descr, member, newval, oldval) orig_THREAD_ATOMIC_CMPXCHG_VAL(descr, member, newval, oldval)
-#define THREAD_ATOMIC_AND(descr, member, val) orig_THREAD_ATOMIC_AND(descr, member, val)
-#define THREAD_ATOMIC_BIT_SET(descr, member, bit) orig_THREAD_ATOMIC_BIT_SET(descr, member, bit)
-*/
 
 //
 // MVEE additions
@@ -924,37 +911,6 @@ enum mvee_atomics
 		MVEE_POSTOP();												\
 		____result;													\
 	})
-
-//
-// TLS atomics (tls.h)
-//
-// stijn: ARM doesn't have these
-/*
-#define THREAD_ATOMIC_CMPXCHG_VAL(descr, member, newval, oldval)		\
-	({																	\
-		__typeof(descr->member) ____result;								\
-		MVEE_PREOP(__THREAD_ATOMIC_CMPXCHG_VAL, &descr->member, 1);		\
-		____result = orig_THREAD_ATOMIC_CMPXCHG_VAL(descr, member, newval, oldval); \
-		MVEE_POSTOP();													\
-		____result;														\
-	})
-
-
-#define THREAD_ATOMIC_AND(descr, member, val)					\
-	(void)({													\
-			MVEE_PREOP(__THREAD_ATOMIC_AND, &descr->member, 1);	\
-			orig_THREAD_ATOMIC_AND(descr, member, val);			\
-			MVEE_POSTOP();										\
-		})
-
-
-#define THREAD_ATOMIC_BIT_SET(descr, member, bit)					\
-	(void)({														\
-			MVEE_PREOP(__THREAD_ATOMIC_BIT_SET, &descr->member, 1);	\
-			orig_THREAD_ATOMIC_BIT_SET(descr, member, bit);			\
-			MVEE_POSTOP();											\
-		})
-*/
 
 //
 // MVEE additions

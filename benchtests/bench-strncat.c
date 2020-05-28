@@ -1,5 +1,5 @@
 /* Measure strncat functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,61 +14,44 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #ifndef WIDE
 # define TEST_NAME "strncat"
 #else
 # define TEST_NAME "wcsncat"
+# define generic_strncat generic_wcsncat
 #endif /* WIDE */
 #include "bench-string.h"
 
+#define BIG_CHAR MAX_CHAR
+
 #ifndef WIDE
-# define STRNCAT strncat
-# define CHAR char
-# define SIMPLE_STRNCAT simple_strncat
-# define STUPID_STRNCAT stupid_strncat
-# define STRLEN strlen
-# define MEMCMP memcmp
-# define BIG_CHAR CHAR_MAX
 # define SMALL_CHAR 127
 #else
-# include <wchar.h>
-# define STRNCAT wcsncat
-# define CHAR wchar_t
-# define SIMPLE_STRNCAT simple_wcsncat
-# define STUPID_STRNCAT stupid_wcsncat
-# define STRLEN wcslen
-# define MEMCMP wmemcmp
-# define BIG_CHAR WCHAR_MAX
 # define SMALL_CHAR 1273
 #endif /* WIDE */
 
 typedef CHAR *(*proto_t) (CHAR *, const CHAR *, size_t);
-CHAR *STUPID_STRNCAT (CHAR *, const CHAR *, size_t);
-CHAR *SIMPLE_STRNCAT (CHAR *, const CHAR *, size_t);
-
-IMPL (STUPID_STRNCAT, 0)
-IMPL (STRNCAT, 2)
 
 CHAR *
-STUPID_STRNCAT (CHAR *dst, const CHAR *src, size_t n)
+generic_strncat (CHAR *dst, const CHAR *src, size_t n)
 {
-  CHAR *ret = dst;
-  while (*dst++ != '\0');
-  --dst;
-  while (n--)
-    if ((*dst++ = *src++) == '\0')
-      return ret;
-  *dst = '\0';
-  return ret;
+  CHAR *end = dst + STRLEN (dst);
+  n = STRNLEN (src, n);
+  end[n] = 0;
+  MEMCPY (end, src, n);
+  return dst;
 }
+
+IMPL (STRNCAT, 2)
+IMPL (generic_strncat, 0)
 
 static void
 do_one_test (impl_t *impl, CHAR *dst, const CHAR *src, size_t n)
 {
-  size_t k = STRLEN (dst), i, iters = INNER_LOOP_ITERS;
+  size_t k = STRLEN (dst), i, iters = INNER_LOOP_ITERS8;
   timing_t start, stop, cur;
 
   if (CALL (impl, dst, src, n) != dst)

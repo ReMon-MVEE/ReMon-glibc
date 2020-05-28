@@ -1,6 +1,6 @@
 /* Round to int long double floating-point values.
    IBM extended format long double version.
-   Copyright (C) 2006-2018 Free Software Foundation, Inc.
+   Copyright (C) 2006-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,13 +15,16 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
+#define NO_MATH_REDIRECT
 #include <math.h>
 #include <math_private.h>
 #include <math_ldbl_opt.h>
 #include <float.h>
 #include <ieee754.h>
+
+double floor (double) asm ("__floor");
 
 
 long double
@@ -36,7 +39,7 @@ __floorl (long double x)
 			&& __builtin_isless (__builtin_fabs (xh),
 					     __builtin_inf ()), 1))
     {
-      hi = __floor (xh);
+      hi = floor (xh);
       if (hi != xh)
 	{
 	  /* The high part is not an integer; the low part does not
@@ -47,7 +50,7 @@ __floorl (long double x)
       else
 	{
 	  /* The high part is a nonzero integer.  */
-	  lo = __floor (xl);
+	  lo = floor (xl);
 	  xh = hi;
 	  xl = lo;
 	  ldbl_canonicalize_int (&xh, &xl);

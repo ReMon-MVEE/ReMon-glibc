@@ -1,4 +1,4 @@
-# Copyright (C) 2015-2018 Free Software Foundation, Inc.
+# Copyright (C) 2015-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 # Makefile for generating and updating Unicode-extracted files.
 
@@ -35,7 +35,7 @@
 # files for making modifications.
 
 
-UNICODE_VERSION = 10.0.0
+UNICODE_VERSION = 12.1.0
 
 PYTHON3 = python3
 WGET = wget
@@ -92,7 +92,9 @@ tr_TR: gen_unicode_ctype.py
 
 UTF-8: UnicodeData.txt EastAsianWidth.txt
 UTF-8: utf8_gen.py
-	$(PYTHON3) utf8_gen.py UnicodeData.txt EastAsianWidth.txt PropList.txt
+	$(PYTHON3) utf8_gen.py -u UnicodeData.txt \
+	-e EastAsianWidth.txt -p PropList.txt \
+	--unicode_version $(UNICODE_VERSION)
 
 UTF-8-report: UTF-8 ../charmaps/UTF-8
 UTF-8-report: utf8_compatibility.py

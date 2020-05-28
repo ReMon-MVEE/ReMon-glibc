@@ -1,4 +1,5 @@
-/* Copyright (C) 2005-2018 Free Software Foundation, Inc.
+/* time -- Get number of seconds since Epoch.  Linux version.
+   Copyright (C) 2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,29 +14,38 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#include <stddef.h>
-#include <time.h>
+/* Optimize the function call by setting the PLT directly to vDSO symbol.  */
+#ifdef USE_IFUNC_TIME
+# include <time.h>
+# include <sysdep.h>
+# include <sysdep-vdso.h>
 
-#include <sysdep.h>
+#ifdef SHARED
+# include <dl-vdso.h>
+# include <libc-vdso.h>
 
-#ifdef __NR_time
+static time_t
+time_syscall (time_t *t)
+{
+  return INLINE_SYSCALL_CALL (time, t);
+}
 
+# undef INIT_ARCH
+# define INIT_ARCH() \
+  void *vdso_time = dl_vdso_vsym (HAVE_TIME_VSYSCALL);
+libc_ifunc (time,
+	    vdso_time ? VDSO_IFUNC_RET (vdso_time)
+		      : (void *) time_syscall);
+
+# else
 time_t
 time (time_t *t)
 {
-  INTERNAL_SYSCALL_DECL (err);
-  time_t res = INTERNAL_SYSCALL (time, err, 1, NULL);
-  /* There cannot be any error.  */
-  if (t != NULL)
-    *t = res;
-  return res;
+  return INLINE_VSYSCALL (time, 1, t);
 }
-libc_hidden_def (time)
-
-#else
-
-# include <sysdeps/posix/time.c>
-
+# endif /* !SHARED */
+#else /* USE_IFUNC_TIME  */
+# include <time/time.c>
 #endif

@@ -1,5 +1,5 @@
 /* _hurd_ctty_input -- Do an input RPC and generate SIGTTIN if necessary.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <hurd.h>
 #include <hurd/signal.h>
@@ -43,12 +43,15 @@ _hurd_ctty_input (io_t port, io_t ctty, error_t (*rpc) (io_t))
 	  else
 	    {
 	      struct hurd_sigstate *ss = _hurd_self_sigstate ();
-	      __spin_lock (&ss->lock);
-	      if (__sigismember (&ss->blocked, SIGTTIN) ||
-		  ss->actions[SIGTTIN].sa_handler == SIG_IGN)
+	      struct sigaction *actions;
+
+	      _hurd_sigstate_lock (ss);
+	      actions = _hurd_sigstate_actions (ss);
+	      if (__sigismember (&ss->blocked, SIGTTIN)
+		  || actions[SIGTTIN].sa_handler == SIG_IGN)
 		/* We are blocking or ignoring SIGTTIN.  Just fail.  */
 		err = EIO;
-	      __spin_unlock (&ss->lock);
+	      _hurd_sigstate_unlock (ss);
 
 	      if (err == EBACKGROUND)
 		{
@@ -65,10 +68,11 @@ _hurd_ctty_input (io_t port, io_t ctty, error_t (*rpc) (io_t))
 		     SIGTTIN or resumed after being stopped.  Now this is
 		     still a "system call", so check to see if we should
 		  restart it.  */
-		  __spin_lock (&ss->lock);
-		  if (!(ss->actions[SIGTTIN].sa_flags & SA_RESTART))
+		  _hurd_sigstate_lock (ss);
+		  actions = _hurd_sigstate_actions (ss);
+		  if (!(actions[SIGTTIN].sa_flags & SA_RESTART))
 		    err = EINTR;
-		  __spin_unlock (&ss->lock);
+		  _hurd_sigstate_unlock (ss);
 		}
 	    }
 	}

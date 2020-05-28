@@ -1,5 +1,5 @@
 #! @BASH@
-# Copyright (C) 2011-2018 Free Software Foundation, Inc.
+# Copyright (C) 2011-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 # We should be able to find the translation right at the beginning.
 TEXTDOMAIN=libc
@@ -75,7 +75,7 @@ while test $# -gt 0; do
     printf $"Copyright (C) %s Free Software Foundation, Inc.
 This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-" "2018"
+" "2020"
     printf $"Written by %s.\n" "Ulrich Drepper"
     exit 0
     ;;

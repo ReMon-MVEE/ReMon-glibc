@@ -1,4 +1,4 @@
-/* Copyright (C) 2012-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2012-2020 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
@@ -22,6 +22,10 @@
  *
  * ARMv8-a, AArch64, unaligned accesses, min page size 4k.
  */
+
+#ifndef STRLEN
+# define STRLEN __strlen
+#endif
 
 /* To test the page crossing code path more thoroughly, compile with
    -DTEST_PAGE_CROSS - this will force all calls through the slower
@@ -54,7 +58,7 @@
 #define REP8_80 0x8080808080808080
 
 #ifdef TEST_PAGE_CROSS
-# define MIN_PAGE_SIZE 15
+# define MIN_PAGE_SIZE 16
 #else
 # define MIN_PAGE_SIZE 4096
 #endif
@@ -84,7 +88,7 @@
 	   whether the first fetch, which may be misaligned, crosses a page
 	   boundary.  */
 
-ENTRY_ALIGN (__strlen, 6)
+ENTRY_ALIGN (STRLEN, 6)
 	DELOUSE (0)
 	DELOUSE (1)
 	and	tmp1, srcin, MIN_PAGE_SIZE - 1
@@ -215,6 +219,6 @@ L(page_cross):
 	csel	data1, data1, tmp4, eq
 	csel	data2, data2, tmp2, eq
 	b	L(page_cross_entry)
-END (__strlen)
-weak_alias (__strlen, strlen)
+END (STRLEN)
+weak_alias (STRLEN, strlen)
 libc_hidden_builtin_def (strlen)

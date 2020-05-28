@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -24,22 +24,19 @@
    This exception applies to code released by its copyright holders
    in files containing the exception.  */
 
-#include "libioP.h"
+/* This file defines one of the deprecated scanf variants.  */
+#include <features.h>
+#undef __GLIBC_USE_DEPRECATED_SCANF
+#define __GLIBC_USE_DEPRECATED_SCANF 1
+
 #include "strfile.h"
 
 int
 _IO_vsscanf (const char *string, const char *format, va_list args)
 {
-  int ret;
   _IO_strfile sf;
-#ifdef _IO_MTSAFE_IO
-  sf._sbf._f._lock = NULL;
-#endif
-  _IO_no_init (&sf._sbf._f, _IO_USER_LOCK, -1, NULL, NULL);
-  _IO_JUMPS (&sf._sbf) = &_IO_str_jumps;
-  _IO_str_init_static_internal (&sf, (char*)string, 0, NULL);
-  ret = _IO_vfscanf (&sf._sbf._f, format, args, NULL);
-  return ret;
+  FILE *f = _IO_strfile_read (&sf, string);
+  return __vfscanf_internal (f, format, args, 0);
 }
 ldbl_weak_alias (_IO_vsscanf, __vsscanf)
 ldbl_weak_alias (_IO_vsscanf, vsscanf)

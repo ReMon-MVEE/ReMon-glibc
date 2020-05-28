@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <lowlevellock.h>
 
@@ -52,9 +52,11 @@ enum __run_fork_handler_type
    - atfork_run_child: run all the CHILD_HANDLER and unlocks the internal
 		       lock.
    - atfork_run_parent: run all the PARENT_HANDLER and unlocks the internal
-			lock.  */
-extern void __run_fork_handlers (enum __run_fork_handler_type who)
-  attribute_hidden;
+			lock.
+
+   Perform locking only if DO_LOCKING.  */
+extern void __run_fork_handlers (enum __run_fork_handler_type who,
+				 _Bool do_locking) attribute_hidden;
 
 /* C library side function to register new fork handlers.  */
 extern int __register_atfork (void (*__prepare) (void),

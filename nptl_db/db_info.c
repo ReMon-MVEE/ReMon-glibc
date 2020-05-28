@@ -1,7 +1,7 @@
 /* This file is included by pthread_create.c to define in libpthread
    all the magic symbols required by libthread_db.
 
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdint.h>
 #include "thread_dbP.h"
@@ -56,6 +56,9 @@ extern bool __nptl_initial_report_events;
   DB_DEFINE_DESC (name, \
 		  8 * sizeof (obj)[0], sizeof (obj) / sizeof (obj)[0], \
 		  offset);
+/* Flexible arrays do not have a length that can be determined.  */
+#define FLEXIBLE_ARRAY_DESC(name, offset, obj) \
+  DB_DEFINE_DESC (name, 8 * sizeof (obj)[0], 0, offset);
 
 #if TLS_TCB_AT_TP
 # define dtvp header.dtv
@@ -77,6 +80,9 @@ DESC (_thread_db_pthread_dtvp,
 #define DB_STRUCT_ARRAY_FIELD(type, field) \
   ARRAY_DESC (_thread_db_##type##_##field, \
 	      offsetof (type, field), ((type *) 0)->field)
+#define DB_STRUCT_FLEXIBLE_ARRAY(type, field) \
+  FLEXIBLE_ARRAY_DESC (_thread_db_##type##_##field, \
+		       offsetof (type, field), ((type *) 0)->field)
 #define DB_VARIABLE(name) DESC (_thread_db_##name, 0, name)
 #define DB_ARRAY_VARIABLE(name) ARRAY_DESC (_thread_db_##name, 0, name)
 #define DB_SYMBOL(name)	/* Nothing.  */

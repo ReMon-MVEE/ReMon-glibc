@@ -1,7 +1,7 @@
 /*
  * IBM Accurate Mathematical Library
  * written by International Business Machines Corp.
- * Copyright (C) 2001-2018 Free Software Foundation, Inc.
+ * Copyright (C) 2001-2020 Free Software Foundation, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -14,7 +14,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, see <http://www.gnu.org/licenses/>.
+ * along with this program; if not, see <https://www.gnu.org/licenses/>.
  */
 /************************************************************************/
 /*  MODULE_NAME: atnat.c                                                */
@@ -45,7 +45,7 @@
 #include <float.h>
 #include <libm-alias-double.h>
 #include <math.h>
-#include <math_private.h>
+#include <fenv_private.h>
 #include <math-underflow.h>
 #include <stap-probe.h>
 
@@ -56,7 +56,7 @@ static double atanMp (double, const int[]);
 static double
 __signArctan (double x, double y)
 {
-  return __copysign (y, x);
+  return copysign (y, x);
 }
 
 

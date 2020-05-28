@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1998.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -59,9 +59,10 @@ wait_on_socket (int sock, long int usectmo)
       /* Handle the case where the poll() call is interrupted by a
 	 signal.  We cannot just use TEMP_FAILURE_RETRY since it might
 	 lead to infinite loops.  */
-      struct timeval now;
-      (void) __gettimeofday (&now, NULL);
-      long int end = now.tv_sec * 1000 + usectmo + (now.tv_usec + 500) / 1000;
+      struct timespec now;
+      __clock_gettime (CLOCK_REALTIME, &now);
+      long int end = (now.tv_sec * 1000 + usectmo
+                      + (now.tv_nsec + 500000) / 1000000);
       long int timeout = usectmo;
       while (1)
 	{
@@ -70,8 +71,9 @@ wait_on_socket (int sock, long int usectmo)
 	    break;
 
 	  /* Recompute the timeout time.  */
-	  (void) __gettimeofday (&now, NULL);
-	  timeout = end - (now.tv_sec * 1000 + (now.tv_usec + 500) / 1000);
+          __clock_gettime (CLOCK_REALTIME, &now);
+	  timeout = end - ((now.tv_sec * 1000
+                            + (now.tv_nsec + 500000) / 1000000));
 	}
     }
 
@@ -191,9 +193,7 @@ open_socket (request_type type, const char *key, size_t keylen)
   memcpy (reqdata->key, key, keylen);
 
   bool first_try = true;
-  struct timeval tvend;
-  /* Fake initializing tvend.  */
-  asm ("" : "=m" (tvend));
+  struct timespec tvend = { 0, 0 };
   while (1)
     {
 #ifndef MSG_NOSIGNAL
@@ -212,18 +212,18 @@ open_socket (request_type type, const char *key, size_t keylen)
 
       /* The daemon is busy wait for it.  */
       int to;
-      struct timeval now;
-      (void) __gettimeofday (&now, NULL);
+      struct timespec now;
+      __clock_gettime (CLOCK_REALTIME, &now);
       if (first_try)
 	{
-	  tvend.tv_usec = now.tv_usec;
+	  tvend.tv_nsec = now.tv_nsec;
 	  tvend.tv_sec = now.tv_sec + 5;
 	  to = 5 * 1000;
 	  first_try = false;
 	}
       else
 	to = ((tvend.tv_sec - now.tv_sec) * 1000
-	      + (tvend.tv_usec - now.tv_usec) / 1000);
+	      + (tvend.tv_nsec - now.tv_nsec) / 1000000);
 
       struct pollfd fds[1];
       fds[0].fd = sock;
@@ -348,7 +348,7 @@ __nscd_get_mapping (request_type type, const char *key,
 	     thread got stuck.  */
 	  || __builtin_expect (! head->nscd_certainly_running
 			       && (head->timestamp + MAPPING_TIMEOUT
-				   < time (NULL)), 0))
+				   < time_now ()), 0))
 	{
 	out_unmap:
 	  __munmap (mapping, mapsize);
@@ -414,7 +414,7 @@ __nscd_get_map_ref (request_type type, const char *name,
       /* If not mapped or timestamp not updated, request new map.  */
       if (cur == NULL
 	  || (cur->head->nscd_certainly_running == 0
-	      && cur->head->timestamp + MAPPING_TIMEOUT < time (NULL))
+	      && cur->head->timestamp + MAPPING_TIMEOUT < time_now ())
 	  || cur->head->data_size > cur->datasize)
 	cur = __nscd_get_mapping (type, name,
 				  (struct mapped_database **) &mapptr->mapped);

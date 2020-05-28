@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <unistd.h>
@@ -32,6 +32,7 @@ __getcwd (char *buf, size_t size)
   __set_errno (ENOSYS);
   return NULL;
 }
+libc_hidden_def (__getcwd)
 weak_alias (__getcwd, getcwd)
 
 stub_warning (__getcwd)

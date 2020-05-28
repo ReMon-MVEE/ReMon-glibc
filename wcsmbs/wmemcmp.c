@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gnu.ai.mit.edu>, 1996.
 
@@ -14,16 +14,16 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <wchar.h>
 
-#ifndef WMEMCMP
-# define WMEMCMP wmemcmp
+#ifdef WMEMCMP
+# define __wmemcmp WMEMCMP
 #endif
 
 int
-WMEMCMP (const wchar_t *s1, const wchar_t *s2, size_t n)
+__wmemcmp (const wchar_t *s1, const wchar_t *s2, size_t n)
 {
   wchar_t c1;
   wchar_t c2;
@@ -81,3 +81,6 @@ WMEMCMP (const wchar_t *s1, const wchar_t *s2, size_t n)
 
   return 0;
 }
+#ifndef WMEMCMP
+weak_alias (__wmemcmp, wmemcmp)
+#endif

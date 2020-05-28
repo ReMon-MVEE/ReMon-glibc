@@ -270,9 +270,9 @@ idouble: 1
 ifloat: 2
 
 Function: Imaginary part of "ccos_towardzero":
-double: 2
+double: 3
 float: 3
-idouble: 2
+idouble: 3
 ifloat: 3
 
 Function: Real part of "ccosh":
@@ -288,15 +288,15 @@ idouble: 1
 ifloat: 1
 
 Function: Real part of "ccosh_towardzero":
-double: 1
-float: 3
-idouble: 1
-ifloat: 3
-
-Function: Imaginary part of "ccosh_towardzero":
 double: 2
 float: 3
 idouble: 2
+ifloat: 3
+
+Function: Imaginary part of "ccosh_towardzero":
+double: 3
+float: 3
+idouble: 3
 ifloat: 3
 
 Function: Real part of "cexp":
@@ -312,15 +312,15 @@ idouble: 1
 ifloat: 2
 
 Function: Real part of "cexp_towardzero":
-double: 1
+double: 2
 float: 2
-idouble: 1
+idouble: 2
 ifloat: 2
 
 Function: Imaginary part of "cexp_towardzero":
-double: 1
+double: 3
 float: 3
-idouble: 1
+idouble: 3
 ifloat: 3
 
 Function: Real part of "clog":
@@ -370,7 +370,9 @@ idouble: 1
 ifloat: 3
 
 Function: "cos":
+double: 1
 float: 1
+idouble: 1
 ifloat: 1
 
 Function: "cos_towardzero":
@@ -386,9 +388,9 @@ idouble: 1
 ifloat: 1
 
 Function: "cosh_towardzero":
-double: 1
+double: 2
 float: 1
-idouble: 1
+idouble: 2
 ifloat: 1
 
 Function: Real part of "cpow":
@@ -402,9 +404,9 @@ float: 2
 ifloat: 2
 
 Function: Real part of "cpow_towardzero":
-double: 4
+double: 5
 float: 8
-idouble: 4
+idouble: 5
 ifloat: 8
 
 Function: Imaginary part of "cpow_towardzero":
@@ -420,9 +422,9 @@ idouble: 1
 ifloat: 1
 
 Function: Real part of "csin_towardzero":
-double: 2
+double: 3
 float: 3
-idouble: 2
+idouble: 3
 ifloat: 3
 
 Function: Imaginary part of "csin_towardzero":
@@ -448,9 +450,9 @@ idouble: 2
 ifloat: 2
 
 Function: Imaginary part of "csinh_towardzero":
-double: 2
+double: 3
 float: 3
-idouble: 2
+idouble: 3
 ifloat: 3
 
 Function: Real part of "csqrt":
@@ -485,9 +487,9 @@ ifloat: 1
 
 Function: Imaginary part of "ctan":
 double: 2
-float: 1
+float: 2
 idouble: 2
-ifloat: 1
+ifloat: 2
 
 Function: Real part of "ctan_towardzero":
 double: 5
@@ -554,9 +556,9 @@ double: 2
 idouble: 2
 
 Function: "exp10_towardzero":
-double: 2
+double: 3
 float: 1
-idouble: 2
+idouble: 3
 ifloat: 1
 
 Function: "exp2":
@@ -696,7 +698,9 @@ double: 2
 idouble: 2
 
 Function: "pow":
+double: 1
 float: 1
+idouble: 1
 ifloat: 1
 
 Function: "pow_towardzero":
@@ -706,7 +710,9 @@ idouble: 1
 ifloat: 1
 
 Function: "sin":
+double: 1
 float: 1
+idouble: 1
 ifloat: 1
 
 Function: "sin_towardzero":
@@ -716,7 +722,9 @@ idouble: 1
 ifloat: 1
 
 Function: "sincos":
+double: 1
 float: 1
+idouble: 1
 ifloat: 1
 
 Function: "sincos_towardzero":
@@ -797,9 +805,9 @@ ifloat: 2
 
 Function: "yn":
 double: 3
-float: 2
+float: 3
 idouble: 3
-ifloat: 2
+ifloat: 3
 
 Function: "yn_towardzero":
 double: 3

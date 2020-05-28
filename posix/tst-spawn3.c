@@ -1,5 +1,5 @@
 /* Check posix_spawn add file actions.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdio.h>
 #include <spawn.h>
@@ -82,10 +82,10 @@ do_test (void)
   if (posix_spawn_file_actions_init (&a) != 0)
     FAIL_EXIT1 ("posix_spawn_file_actions_init");
 
-  /* Executes a /bin/sh echo $$ 2>&1 > /tmp/tst-spawn3.pid .  */
-  const char pidfile[] = "/tmp/tst-spawn3.pid";
-  if (posix_spawn_file_actions_addopen (&a, STDOUT_FILENO, pidfile, O_WRONLY |
-					O_CREAT | O_TRUNC, 0644) != 0)
+  /* Executes a /bin/sh echo $$ 2>&1 > ${objpfx}tst-spawn3.pid .  */
+  const char pidfile[] = OBJPFX "tst-spawn3.pid";
+  if (posix_spawn_file_actions_addopen (&a, STDOUT_FILENO, pidfile, O_WRONLY
+					| O_CREAT | O_TRUNC, 0644) != 0)
     FAIL_EXIT1 ("posix_spawn_file_actions_addopen");
 
   if (posix_spawn_file_actions_adddup2 (&a, STDOUT_FILENO, STDERR_FILENO) != 0)

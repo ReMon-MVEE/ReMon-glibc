@@ -1,5 +1,5 @@
 /* Main function for test programs.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This file should be included from test cases.  It will define a
    main function which provides the test wrapper.
@@ -138,6 +138,10 @@ main (int argc, char **argv)
 
 #ifdef TEST_NO_MALLOPT
   test_config.no_mallopt = 1;
+#endif
+
+#ifdef TEST_NO_SETVBUF
+  test_config.no_setvbuf = 1;
 #endif
 
 #ifdef TIMEOUT

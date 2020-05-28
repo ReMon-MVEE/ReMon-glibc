@@ -1,5 +1,5 @@
 /* Preemption of Hurd signals before POSIX.1 semantics take over.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef	_HURD_SIGPREEMPT_H
 
@@ -51,8 +51,8 @@ struct hurd_signal_preemptor
   };
 
 #define HURD_PREEMPT_SIGNAL_P(preemptor, signo, sigcode) \
-  (((preemptor)->signals & sigmask (signo)) && \
-   (sigcode) >= (preemptor)->first && (sigcode) <= (preemptor)->last)
+  (((preemptor)->signals & sigmask (signo)) \
+   && (sigcode) >= (preemptor)->first && (sigcode) <= (preemptor)->last)
 
 
 /* Signal preemptors applying to all threads; locked by _hurd_siglock.  */

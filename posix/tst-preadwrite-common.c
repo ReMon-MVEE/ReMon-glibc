@@ -1,5 +1,5 @@
 /* Common definitions for pread and pwrite.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <error.h>
@@ -26,9 +26,6 @@ static void do_prepare (void);
 #define PREPARE(argc, argv)	do_prepare ()
 static int do_test (void);
 #define TEST_FUNCTION		do_test ()
-
-/* We might need a bit longer timeout.  */
-#define TIMEOUT 20 /* sec */
 
 /* This defines the `main' function and some more.  */
 #include <test-skeleton.c>

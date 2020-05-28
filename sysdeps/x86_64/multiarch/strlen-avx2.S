@@ -1,5 +1,5 @@
 /* strlen/strnlen/wcslen/wcsnlen optimized with AVX2.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #if IS_IN (libc)
 
@@ -42,12 +42,15 @@
 ENTRY (STRLEN)
 # ifdef USE_AS_STRNLEN
 	/* Check for zero length.  */
-	testq	%rsi, %rsi
+	test	%RSI_LP, %RSI_LP
 	jz	L(zero)
 #  ifdef USE_AS_WCSLEN
-	shl	$2, %rsi
+	shl	$2, %RSI_LP
+#  elif defined __ILP32__
+	/* Clear the upper 32 bits.  */
+	movl	%esi, %esi
 #  endif
-	movq	%rsi, %r8
+	mov	%RSI_LP, %R8_LP
 # endif
 	movl	%edi, %ecx
 	movq	%rdi, %rdx

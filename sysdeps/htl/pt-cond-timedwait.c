@@ -1,5 +1,5 @@
 /* Wait on a condition.  Generic version.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,12 +14,13 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library;  if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <pthread.h>
 
 #include <pt-internal.h>
 #include <pthreadP.h>
+#include <time.h>
 
 extern int __pthread_cond_timedwait_internal (pthread_cond_t *cond,
 					      pthread_mutex_t *mutex,
@@ -74,7 +75,7 @@ __pthread_cond_timedwait_internal (pthread_cond_t *cond,
   int cancelled, oldtype, drain;
   clockid_t clock_id = __pthread_default_condattr.__clock;
 
-  if (abstime && (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000))
+  if (abstime && ! valid_nanoseconds (abstime->tv_nsec))
     return EINVAL;
 
   struct __pthread *self = _pthread_self ();

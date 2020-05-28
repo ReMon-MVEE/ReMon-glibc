@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -24,15 +24,13 @@
    This exception applies to code released by its copyright holders
    in files containing the exception.  */
 
-#include <malloc.h>
 #include <string.h>
-#include "libioP.h"
-#include "stdio.h"
-#include <stdio_ext.h>
-#include "strfile.h"
+#include <stdlib.h>
+#include <strfile.h>
 
 int
-_IO_vasprintf (char **result_ptr, const char *format, va_list args)
+__vasprintf_internal (char **result_ptr, const char *format, va_list args,
+		      unsigned int mode_flags)
 {
   /* Initial size of the buffer to be used.  Will be doubled each time an
      overflow occurs.  */
@@ -54,9 +52,9 @@ _IO_vasprintf (char **result_ptr, const char *format, va_list args)
   _IO_JUMPS (&sf._sbf) = &_IO_str_jumps;
   _IO_str_init_static_internal (&sf, string, init_string_size, string);
   sf._sbf._f._flags &= ~_IO_USER_BUF;
-  sf._s._allocate_buffer = (_IO_alloc_type) malloc;
-  sf._s._free_buffer = (_IO_free_type) free;
-  ret = _IO_vfprintf (&sf._sbf._f, format, args);
+  sf._s._allocate_buffer_unused = (_IO_alloc_type) malloc;
+  sf._s._free_buffer_unused = (_IO_free_type) free;
+  ret = __vfprintf_internal (&sf._sbf._f, format, args, mode_flags);
   if (ret < 0)
     {
       free (sf._sbf._f._IO_buf_base);
@@ -85,4 +83,10 @@ _IO_vasprintf (char **result_ptr, const char *format, va_list args)
   (*result_ptr)[needed - 1] = '\0';
   return ret;
 }
-ldbl_weak_alias (_IO_vasprintf, vasprintf)
+
+int
+__vasprintf (char **result_ptr, const char *format, va_list args)
+{
+  return __vasprintf_internal (result_ptr, format, args, 0);
+}
+ldbl_weak_alias (__vasprintf, vasprintf)

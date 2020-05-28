@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <sys/types.h>
@@ -40,8 +40,8 @@ _hurd_sig_post (pid_t pid, int sig, mach_port_t arg_refport)
       err = HURD_MSGPORT_RPC (__proc_getmsgport (proc, pid, &msgport),
 			      (refport = arg_refport, 0), 0,
 			      /* If no message port we cannot send signals.  */
-			      msgport == MACH_PORT_NULL ? EPERM :
-			      __msg_sig_post (msgport, sig, 0, refport));
+			      msgport == MACH_PORT_NULL ? EPERM
+			      : __msg_sig_post (msgport, sig, 0, refport));
       if (! err)
 	delivered = 1;
     }

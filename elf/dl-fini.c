@@ -1,5 +1,5 @@
 /* Call the termination functions of loaded shared objects.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <string.h>
@@ -152,9 +152,12 @@ _dl_fini (void)
 		      for (unsigned int cnt = 0; cnt < GLRO(dl_naudit); ++cnt)
 			{
 			  if (afct->objclose != NULL)
-			    /* Return value is ignored.  */
-			    (void) afct->objclose (&l->l_audit[cnt].cookie);
-
+			    {
+			      struct auditstate *state
+				= link_map_audit_state (l, cnt);
+			      /* Return value is ignored.  */
+			      (void) afct->objclose (&state->cookie);
+			    }
 			  afct = afct->next;
 			}
 		    }

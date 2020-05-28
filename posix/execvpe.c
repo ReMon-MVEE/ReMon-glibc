@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <unistd.h>
 #include <stdarg.h>
@@ -59,7 +59,7 @@ maybe_script_execute (const char *file, char *const argv[], char *const envp[])
   new_argv[0] = (char *) _PATH_BSHELL;
   new_argv[1] = (char *) file;
   if (argc > 1)
-    memcpy (new_argv + 2, argv + 1, argc * sizeof(char *));
+    memcpy (new_argv + 2, argv + 1, argc * sizeof (char *));
   else
     new_argv[2] = NULL;
 
@@ -67,11 +67,9 @@ maybe_script_execute (const char *file, char *const argv[], char *const envp[])
   __execve (new_argv[0], new_argv, envp);
 }
 
-
-/* Execute FILE, searching in the `PATH' environment variable if it contains
-   no slashes, with arguments ARGV and environment from ENVP.  */
-int
-__execvpe (const char *file, char *const argv[], char *const envp[])
+static int
+__execvpe_common (const char *file, char *const argv[], char *const envp[],
+	          bool exec_script)
 {
   /* We check the simple case first. */
   if (*file == '\0')
@@ -85,7 +83,7 @@ __execvpe (const char *file, char *const argv[], char *const envp[])
     {
       __execve (file, argv, envp);
 
-      if (errno == ENOEXEC)
+      if (errno == ENOEXEC && exec_script)
         maybe_script_execute (file, argv, envp);
 
       return -1;
@@ -137,7 +135,7 @@ __execvpe (const char *file, char *const argv[], char *const envp[])
 
       __execve (buffer, argv, envp);
 
-      if (errno == ENOEXEC)
+      if (errno == ENOEXEC && exec_script)
         /* This has O(P*C) behavior, where P is the length of the path and C
            is the argument count.  A better strategy would be allocate the
            substitute argv and reuse it each time through the loop (so it
@@ -184,4 +182,18 @@ __execvpe (const char *file, char *const argv[], char *const envp[])
   return -1;
 }
 
+/* Execute FILE, searching in the `PATH' environment variable if it contains
+   no slashes, with arguments ARGV and environment from ENVP.  */
+int
+__execvpe (const char *file, char *const argv[], char *const envp[])
+{
+  return __execvpe_common (file, argv, envp, true);
+}
 weak_alias (__execvpe, execvpe)
+
+/* Same as __EXECVPE, but does not try to execute NOEXEC files.  */
+int
+__execvpex (const char *file, char *const argv[], char *const envp[])
+{
+  return __execvpe_common (file, argv, envp, false);
+}

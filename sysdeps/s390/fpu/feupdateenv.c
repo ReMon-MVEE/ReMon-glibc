@@ -1,5 +1,5 @@
 /* Install given floating-point environment and raise exceptions.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Denis Joseph Barrow (djbarrow@de.ibm.com).
 
@@ -15,24 +15,16 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 
-#include <fenv_libc.h>
-#include <fpu_control.h>
+#include <fenv_private.h>
 
 int
 __feupdateenv (const fenv_t *envp)
 {
-  fexcept_t temp;
-
-  _FPU_GETCW (temp);
-  temp = (temp & FPC_FLAGS_MASK) >> FPC_FLAGS_SHIFT;
-
-  /* Raise the exceptions since the last call to feholdenv  */
-  /* re install saved environment.  */
-  __fesetenv (envp);
-  __feraiseexcept ((int) temp);
+  fenv_t env = libc_handle_user_fenv_s390 (envp);
+  libc_feupdateenv_s390 (&env);
 
   /* Success.  */
   return 0;

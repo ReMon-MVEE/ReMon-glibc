@@ -1,5 +1,5 @@
 /* Common definition for pthread_{timed,try}join{_np}.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,11 +14,12 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "pthreadP.h"
 #include <atomic.h>
 #include <stap-probe.h>
+#include <time.h>
 
 static void
 cleanup (void *arg)
@@ -30,8 +31,58 @@ cleanup (void *arg)
   atomic_compare_exchange_weak_acquire (&arg, &self, NULL);
 }
 
+/* The kernel notifies a process which uses CLONE_CHILD_CLEARTID via futex
+   wake-up when the clone terminates.  The memory location contains the
+   thread ID while the clone is running and is reset to zero by the kernel
+   afterwards.  The kernel up to version 3.16.3 does not use the private futex
+   operations for futex wake-up when the clone terminates.  */
+static int
+clockwait_tid (pid_t *tidp, clockid_t clockid, const struct timespec *abstime)
+{
+  pid_t tid;
+
+  if (! valid_nanoseconds (abstime->tv_nsec))
+    return EINVAL;
+
+  /* Repeat until thread terminated.  */
+  while ((tid = *tidp) != 0 || mvee_should_sync_tid())
+    {
+      struct timespec rt;
+
+      /* Get the current time. This can only fail if clockid is
+         invalid. */
+      if (__glibc_unlikely (__clock_gettime (clockid, &rt)))
+        return EINVAL;
+
+      /* Compute relative timeout.  */
+      rt.tv_sec = abstime->tv_sec - rt.tv_sec;
+      rt.tv_nsec = abstime->tv_nsec - rt.tv_nsec;
+      if (rt.tv_nsec < 0)
+        {
+          rt.tv_nsec += 1000000000;
+          --rt.tv_sec;
+        }
+
+      /* Already timed out?  */
+      if (rt.tv_sec < 0)
+        return ETIMEDOUT;
+
+      /* If *tidp == tid, wait until thread terminates or the wait times out.
+         The kernel up to version 3.16.3 does not use the private futex
+         operations for futex wake-up when the clone terminates.  */
+      if (lll_futex_mvee_timed_wait_cancel (tidp, tid, &rt, LLL_SHARED)
+	  == -ETIMEDOUT)
+        return ETIMEDOUT;
+      else if (*tidp == 0)
+        break;
+    }
+
+  return 0;
+}
+
 int
-__pthread_timedjoin_ex (pthread_t threadid, void **thread_return,
+__pthread_clockjoin_ex (pthread_t threadid, void **thread_return,
+			clockid_t clockid,
 			const struct timespec *abstime, bool block)
 {
   struct pthread *pd = (struct pthread *) threadid;
@@ -74,6 +125,10 @@ __pthread_timedjoin_ex (pthread_t threadid, void **thread_return,
     /* There is already somebody waiting for the thread.  */
     return EINVAL;
 
+  /* BLOCK waits either indefinitely or based on an absolute time.  POSIX also
+     states a cancellation point shall occur for pthread_join, and we use the
+     same rationale for posix_timedjoin_np.  Both clockwait_tid and the futex
+     call use the cancellable variant.  */
   if (block)
     {
       /* During the wait we change to asynchronous cancellation.  If we
@@ -81,18 +136,25 @@ __pthread_timedjoin_ex (pthread_t threadid, void **thread_return,
 	 un-wait-ed for again.  */
       pthread_cleanup_push (cleanup, &pd->joinid);
 
-      int oldtype = CANCEL_ASYNC ();
-
       if (abstime != NULL)
-	result = lll_timedwait_tid (pd->tid, abstime);
+	result = clockwait_tid (&pd->tid, clockid, abstime);
       else
-	lll_wait_tid (pd->tid);
-
-      CANCEL_RESET (oldtype);
+	{
+	  pid_t tid;
+	  /* We need acquire MO here so that we synchronize with the
+	     kernel's store to 0 when the clone terminates. (see above)  */
+	  while ((tid = atomic_load_acquire (&pd->tid)) != 0 || mvee_should_sync_tid())
+    {
+	    lll_futex_mvee_wait_cancel (&pd->tid, tid, LLL_SHARED);
+      if (pd->tid == 0)
+        break;
+    }
+	}
 
       pthread_cleanup_pop (0);
     }
 
+  void *pd_result = pd->result;
   if (__glibc_likely (result == 0))
     {
       /* We mark the thread as terminated and as joined.  */
@@ -100,7 +162,7 @@ __pthread_timedjoin_ex (pthread_t threadid, void **thread_return,
 
       /* Store the return value if the caller is interested.  */
       if (thread_return != NULL)
-	*thread_return = pd->result;
+	*thread_return = pd_result;
 
       /* Free the TCB.  */
       __free_tcb (pd);
@@ -108,8 +170,7 @@ __pthread_timedjoin_ex (pthread_t threadid, void **thread_return,
   else
     pd->joinid = NULL;
 
-  LIBC_PROBE (pthread_join_ret, 3, threadid, result, pd->result);
+  LIBC_PROBE (pthread_join_ret, 3, threadid, result, pd_result);
 
   return result;
 }
-hidden_def (__pthread_timedjoin_ex)

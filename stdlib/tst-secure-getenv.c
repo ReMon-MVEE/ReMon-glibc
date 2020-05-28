@@ -1,4 +1,4 @@
-/* Copyright (C) 2012-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2012-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Test that secure_getenv works by invoking the test as a SGID
    program with a group ID from the supplementary group list.  This
@@ -41,8 +41,14 @@ static char MAGIC_ARGUMENT[] = "run-actual-test";
 static gid_t
 choose_gid (void)
 {
-  const int count = 64;
-  gid_t groups[count];
+  int count = getgroups (0, NULL);
+  if (count < 0)
+    {
+      printf ("getgroups: %m\n");
+      exit (1);
+    }
+  gid_t *groups;
+  groups = xcalloc (count, sizeof (*groups));
   int ret = getgroups (count, groups);
   if (ret < 0)
     {
@@ -50,12 +56,17 @@ choose_gid (void)
       exit (1);
     }
   gid_t current = getgid ();
+  gid_t not_current = 0;
   for (int i = 0; i < ret; ++i)
     {
       if (groups[i] != current)
-	return groups[i];
+        {
+          not_current = groups[i];
+          break;
+        }
     }
-  return 0;
+  free (groups);
+  return not_current;
 }
 
 

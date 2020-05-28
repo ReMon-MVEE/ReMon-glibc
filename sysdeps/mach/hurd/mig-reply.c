@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <mach.h>
 #include <mach/mig_support.h>
@@ -27,9 +27,9 @@ mach_port_t __hurd_reply_port0;
 mach_port_t
 __mig_get_reply_port (void)
 {
-  if (__hurd_local_reply_port == MACH_PORT_NULL ||
-      (&__hurd_local_reply_port != &__hurd_reply_port0
-       && __hurd_local_reply_port == __hurd_reply_port0))
+  if (__hurd_local_reply_port == MACH_PORT_NULL
+      || (&__hurd_local_reply_port != &__hurd_reply_port0
+	  && __hurd_local_reply_port == __hurd_reply_port0))
     __hurd_local_reply_port = __mach_reply_port ();
 
   return __hurd_local_reply_port;

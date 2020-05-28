@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gnu.org>.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -24,10 +24,11 @@
 #include <libioP.h>
 
 static int
-locked_vfxprintf (FILE *fp, const char *fmt, va_list ap)
+locked_vfxprintf (FILE *fp, const char *fmt, va_list ap,
+		  unsigned int mode_flags)
 {
   if (_IO_fwide (fp, 0) <= 0)
-    return _IO_vfprintf (fp, fmt, ap);
+    return __vfprintf_internal (fp, fmt, ap, mode_flags);
 
   /* We must convert the narrow format string to a wide one.
      Each byte can produce at most one wide character.  */
@@ -53,7 +54,7 @@ locked_vfxprintf (FILE *fp, const char *fmt, va_list ap)
   res = __mbsrtowcs (wfmt, &fmt, len, &mbstate);
 
   if (res != -1)
-    res = _IO_vfwprintf (fp, wfmt, ap);
+    res = __vfwprintf_internal (fp, wfmt, ap, mode_flags);
 
   if (used_malloc)
     free (wfmt);
@@ -62,18 +63,23 @@ locked_vfxprintf (FILE *fp, const char *fmt, va_list ap)
 }
 
 int
-__fxprintf (FILE *fp, const char *fmt, ...)
+__vfxprintf (FILE *fp, const char *fmt, va_list ap,
+	     unsigned int mode_flags)
 {
   if (fp == NULL)
     fp = stderr;
+  _IO_flockfile (fp);
+  int res = locked_vfxprintf (fp, fmt, ap, mode_flags);
+  _IO_funlockfile (fp);
+  return res;
+}
 
+int
+__fxprintf (FILE *fp, const char *fmt, ...)
+{
   va_list ap;
   va_start (ap, fmt);
-  _IO_flockfile (fp);
-
-  int res = locked_vfxprintf (fp, fmt, ap);
-
-  _IO_funlockfile (fp);
+  int res = __vfxprintf (fp, fmt, ap, 0);
   va_end (ap);
   return res;
 }
@@ -90,7 +96,7 @@ __fxprintf_nocancel (FILE *fp, const char *fmt, ...)
   int save_flags2 = fp->_flags2;
   fp->_flags2 |= _IO_FLAGS2_NOTCANCEL;
 
-  int res = locked_vfxprintf (fp, fmt, ap);
+  int res = locked_vfxprintf (fp, fmt, ap, 0);
 
   fp->_flags2 = save_flags2;
   _IO_funlockfile (fp);

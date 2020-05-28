@@ -1,4 +1,4 @@
-/* Copyright (c) 1997-2018 Free Software Foundation, Inc.
+/* Copyright (c) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@suse.de>, 1997.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <string.h>
 #include <rpcsvc/nis.h>
@@ -51,8 +51,8 @@ internal_ismember (const_nis_name principal, const_nis_name group)
       return 0;
     }
 
-  if ((NIS_RES_NUMOBJ (res) != 1) ||
-      (__type_of (NIS_RES_OBJECT (res)) != NIS_GROUP_OBJ))
+  if ((NIS_RES_NUMOBJ (res) != 1)
+      || (__type_of (NIS_RES_OBJECT (res)) != NIS_GROUP_OBJ))
     {
       nis_freeresult (res);
       return 0;

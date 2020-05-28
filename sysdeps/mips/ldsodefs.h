@@ -1,5 +1,5 @@
 /* Run-time dynamic linker data structures for loaded ELF shared objects.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _MIPS_LDSODEFS_H
 #define _MIPS_LDSODEFS_H 1
@@ -25,6 +25,21 @@ struct La_mips_32_regs;
 struct La_mips_32_retval;
 struct La_mips_64_regs;
 struct La_mips_64_retval;
+
+#define ELF_MACHINE_GNU_HASH_ADDRIDX (DT_MIPS_XHASH - DT_LOPROC + DT_NUM)
+
+/* Calculate the index of a symbol in MIPS xhash.  */
+#define ELF_MACHINE_HASH_SYMIDX(map, hasharr) \
+  ((map)->l_mach.mips_xlat_zero[(hasharr) - (map)->l_gnu_chain_zero])
+
+/* Setup MIPS xhash.  */
+#define ELF_MACHINE_XHASH_SETUP(hash32, symbias, map)			    \
+  do									    \
+    {									    \
+      (hash32) += (map)->l_info[DT_MIPS (SYMTABNO)]->d_un.d_val - (symbias); \
+      (map)->l_mach.mips_xlat_zero = (hash32) - (symbias);		    \
+    }									    \
+  while (0)
 
 #define ARCH_PLTENTER_MEMBERS						    \
     Elf32_Addr (*mips_o32_gnu_pltenter) (Elf32_Sym *, unsigned int,	    \

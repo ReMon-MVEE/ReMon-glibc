@@ -1,5 +1,5 @@
 @node Internal Probes
-@c @node Internal Probes, Tunables, POSIX Threads, Top
+@c @node Internal Probes, Tunables, Threads, Top
 @c %MENU% Probes to monitor libc internal behavior
 @chapter Internal probes
 
@@ -241,6 +241,18 @@ This probe is triggered when the
 @code{glibc.malloc.tcache_unsorted_limit} tunable is set.  Argument
 @var{$arg1} is the requested value, and @var{$arg2} is the previous
 value of this tunable.
+@end deftp
+
+@deftp Probe memory_tcache_double_free (void *@var{$arg1}, int @var{$arg2})
+This probe is triggered when @code{free} determines that the memory
+being freed has probably already been freed, and resides in the
+per-thread cache.  Note that there is an extremely unlikely chance
+that this probe will trigger due to random payload data remaining in
+the allocated memory matching the key used to detect double frees.
+This probe actually indicates that an expensive linear search of the
+tcache, looking for a double free, has happened.  Argument @var{$arg1}
+is the memory location as passed to @code{free}, Argument @var{$arg2}
+is the tcache bin it resides in.
 @end deftp
 
 @node Mathematical Function Probes

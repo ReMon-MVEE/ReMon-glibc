@@ -1,5 +1,5 @@
 /* xstat64 using Linux stat64 system call.
-   Copyright (C) 1991-2018 Free Software Foundation, Inc.
+   Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <stddef.h>
@@ -24,8 +24,6 @@
 #include <sysdep.h>
 #include <sys/syscall.h>
 
-#include <kernel-features.h>
-
 /* Get information about the file NAME in BUF.  */
 
 int
@@ -33,10 +31,6 @@ ___xstat64 (int vers, const char *name, struct stat64 *buf)
 {
   int result;
   result = INLINE_SYSCALL (stat64, 2, name, buf);
-#if defined _HAVE_STAT64___ST_INO && !__ASSUME_ST_INO_64_BIT
-  if (__builtin_expect (!result, 1) && buf->__st_ino != (__ino_t) buf->st_ino)
-    buf->st_ino = buf->__st_ino;
-#endif
   return result;
 }
 

@@ -1,5 +1,5 @@
 /* Determine various system internal values, Linux version.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <alloca.h>
 #include <assert.h>
@@ -128,7 +128,7 @@ __get_nprocs (void)
   static int cached_result = -1;
   static time_t timestamp;
 
-  time_t now = time (NULL);
+  time_t now = time_now ();
   time_t prev = timestamp;
   atomic_read_barrier ();
   if (now == prev && cached_result > -1)

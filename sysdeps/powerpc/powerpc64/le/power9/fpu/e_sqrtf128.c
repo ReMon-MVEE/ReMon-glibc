@@ -1,6 +1,6 @@
 /* POWER9 sqrt for _Float128
    Return sqrt(a)
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -24,7 +24,9 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
+
+#include <libm-alias-finite.h>
 
 __float128
 __ieee754_sqrtf128 (__float128 a)
@@ -33,4 +35,4 @@ __ieee754_sqrtf128 (__float128 a)
   asm ("xssqrtqp %0,%1" : "=v" (z) : "v" (a));
   return z;
 }
-strong_alias (__ieee754_sqrtf128, __sqrtf128_finite)
+libm_alias_finite (__ieee754_sqrtf128, __sqrtf128)

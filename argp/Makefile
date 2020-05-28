@@ -1,4 +1,4 @@
-# Copyright (C) 1997-2018 Free Software Foundation, Inc.
+# Copyright (C) 1997-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 #
 #	Makefile for argp.
@@ -22,11 +22,12 @@ subdir	:= argp
 
 include ../Makeconfig
 
-headers		= argp.h
+headers		= argp.h bits/argp-ldbl.h
 routines	= $(addprefix argp-, ba fmtstream fs-xinl help parse pv \
 				     pvh xinl eexst)
 
-tests		= argp-test tst-argp1 bug-argp1 tst-argp2 bug-argp2
+tests		= argp-test tst-argp1 bug-argp1 tst-argp2 bug-argp2 \
+		  tst-ldbl-argp
 
 CFLAGS-argp-help.c += $(uses-callbacks) -fexceptions
 CFLAGS-argp-parse.c += $(uses-callbacks)

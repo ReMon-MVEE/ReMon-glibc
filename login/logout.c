@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -14,11 +14,12 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <string.h>
 #include <utmp.h>
+#include <time.h>
 #include <sys/time.h>
 
 int
@@ -36,9 +37,7 @@ logout (const char *line)
   setutent ();
 
   /* Fill in search information.  */
-#if _HAVE_UT_TYPE - 0
   tmp.ut_type = USER_PROCESS;
-#endif
   strncpy (tmp.ut_line, line, sizeof tmp.ut_line);
 
   /* Read the record.  */
@@ -46,20 +45,12 @@ logout (const char *line)
     {
       /* Clear information about who & from where.  */
       memset (ut->ut_name, '\0', sizeof ut->ut_name);
-#if _HAVE_UT_HOST - 0
       memset (ut->ut_host, '\0', sizeof ut->ut_host);
-#endif
-#if _HAVE_UT_TV - 0
-      struct timeval tv;
-      __gettimeofday (&tv, NULL);
-      ut->ut_tv.tv_sec = tv.tv_sec;
-      ut->ut_tv.tv_usec = tv.tv_usec;
-#else
-      ut->ut_time = time (NULL);
-#endif
-#if _HAVE_UT_TYPE - 0
+
+      struct timespec ts;
+      __clock_gettime (CLOCK_REALTIME, &ts);
+      TIMESPEC_TO_TIMEVAL (&ut->ut_tv, &ts);
       ut->ut_type = DEAD_PROCESS;
-#endif
 
       if (pututline (ut) != NULL)
 	result = 1;

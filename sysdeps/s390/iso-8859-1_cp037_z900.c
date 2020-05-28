@@ -1,7 +1,7 @@
 /* Conversion between ISO 8859-1 and IBM037.
 
    This module uses the translate instruction.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
 
    Author: Andreas Krebbel  <Andreas.Krebbel@de.ibm.com>
    Based on the work by Ulrich Drepper  <drepper@cygnus.com>, 1997.
@@ -21,7 +21,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <dlfcn.h>
 #include <stdint.h>
@@ -227,12 +227,19 @@ __attribute__ ((aligned (8))) =
     switch (length)							\
       {									\
       case 7: outptr[6] = TABLE[inptr[6]];				\
+	/* Fall through.  */						\
       case 6: outptr[5] = TABLE[inptr[5]];				\
+	/* Fall through.  */						\
       case 5: outptr[4] = TABLE[inptr[4]];				\
+	/* Fall through.  */						\
       case 4: outptr[3] = TABLE[inptr[3]];				\
+	/* Fall through.  */						\
       case 3: outptr[2] = TABLE[inptr[2]];				\
+	/* Fall through.  */						\
       case 2: outptr[1] = TABLE[inptr[1]];				\
+	/* Fall through.  */						\
       case 1: outptr[0] = TABLE[inptr[0]];				\
+	/* Fall through.  */						\
       case 0: break;							\
       }									\
     inptr += length;							\

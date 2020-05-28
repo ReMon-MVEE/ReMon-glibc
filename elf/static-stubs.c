@@ -1,6 +1,6 @@
 /* Stub implementations of functions to link into statically linked
    programs without needing libgcc_eh.
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Avoid backtrace (and so _Unwind_Backtrace) dependencies from
    sysdeps/unix/sysv/linux/libc_fatal.c.  */

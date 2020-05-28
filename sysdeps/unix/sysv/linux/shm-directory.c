@@ -1,5 +1,5 @@
 /* Determine directory for shm/sem files.  Linux version.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "shm-directory.h"
 
@@ -135,13 +135,13 @@ __shm_directory (size_t *len)
 }
 #if IS_IN (libpthread)
 hidden_def (__shm_directory)
-#endif
-
 
 /* Make sure the table is freed if we want to free everything before
    exiting.  */
-libc_freeres_fn (freeit)
+void
+__shm_directory_freeres (void)
 {
   if (mountpoint.dir != defaultdir)
     free (mountpoint.dir);
 }
+#endif

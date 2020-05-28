@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, August 1995.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sys/sem.h>
 #include <ipc_priv.h>
@@ -26,9 +26,5 @@
 int
 semop (int semid, struct sembuf *sops, size_t nsops)
 {
-#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
-  return INLINE_SYSCALL_CALL (semop, semid, sops, nsops);
-#else
-  return INLINE_SYSCALL_CALL (ipc, IPCOP_semop, semid, nsops, 0, sops);
-#endif
+  return __semtimedop (semid, sops, nsops, NULL);
 }

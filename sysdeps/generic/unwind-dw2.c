@@ -1,5 +1,5 @@
 /* DWARF2 exception handling and frame unwind runtime interface routines.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifdef _LIBC
 #include <stdlib.h>
@@ -710,7 +710,7 @@ execute_stack_op (const unsigned char *op_ptr, const unsigned char *op_end,
 	}
 
       /* Most things push a result value.  */
-      if ((size_t) stack_elt >= sizeof(stack)/sizeof(*stack))
+      if ((size_t) stack_elt >= sizeof (stack) / sizeof (*stack))
 	abort ();
       stack[stack_elt++] = result;
     no_push:;
@@ -843,7 +843,7 @@ execute_cfa_program (const unsigned char *insn_ptr,
 	    struct frame_state_reg_info *old_rs = fs->regs.prev;
 #ifdef _LIBC
 	    if (old_rs == NULL)
-	      __libc_fatal ("invalid DWARF unwind data");
+	      __libc_fatal ("Invalid DWARF unwind data.\n");
 	    else
 #endif
 	      {

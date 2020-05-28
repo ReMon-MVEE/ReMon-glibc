@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,10 +14,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "pthreadP.h"
 #include <string.h>
+#include <pthread-offsets.h>
 
 
 static const struct pthread_rwlockattr default_rwlockattr =
@@ -33,6 +34,13 @@ __pthread_rwlock_init (pthread_rwlock_t *rwlock,
 		       const pthread_rwlockattr_t *attr)
 {
   ASSERT_TYPE_SIZE (pthread_rwlock_t, __SIZEOF_PTHREAD_RWLOCK_T);
+
+  /* The __flags is the only field where its offset should be checked to
+     avoid ABI breakage with static initializers.  */
+  ASSERT_PTHREAD_INTERNAL_OFFSET (pthread_rwlock_t, __data.__flags,
+				  __PTHREAD_RWLOCK_FLAGS_OFFSET);
+  ASSERT_PTHREAD_INTERNAL_MEMBER_SIZE (pthread_rwlock_t, __data.__flags,
+				       int);
 
   const struct pthread_rwlockattr *iattr;
 

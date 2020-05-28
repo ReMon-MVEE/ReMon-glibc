@@ -1,5 +1,5 @@
 /* Return backtrace of current program state.
-   Copyright (C) 1998-2018 Free Software Foundation, Inc.
+   Copyright (C) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Library General Public
    License along with the GNU C Library; see the file COPYING.LIB.  If
-   not, see <http://www.gnu.org/licenses/>.  */
+   not, see <https://www.gnu.org/licenses/>.  */
 
 #include <stddef.h>
 #include <string.h>
@@ -54,14 +54,14 @@ struct signal_frame_64 {
   /* We don't care about the rest, since the IP value is at 'uc' field.  */
 };
 
-static inline int
+static inline bool
 is_sigtramp_address (void *nip)
 {
-#ifdef SHARED
-  if (nip == VDSO_SYMBOL (sigtramp_rt64))
-    return 1;
+#ifdef HAVE_SIGTRAMP_RT64
+  if (nip == GLRO (dl_vdso_sigtramp_rt64))
+    return true;
 #endif
-  return 0;
+  return false;
 }
 
 int
@@ -87,6 +87,8 @@ __backtrace (void **array, int size)
       if (is_sigtramp_address (current->return_address))
         {
 	  struct signal_frame_64 *sigframe = (struct signal_frame_64*) current;
+	  if (count + 1 == size)
+	    break;
           array[++count] = (void*) sigframe->uc.uc_mcontext.gp_regs[PT_NIP];
 	  current = (void*) sigframe->uc.uc_mcontext.gp_regs[PT_R1];
 	}

@@ -582,7 +582,7 @@ PACKAGE_TARNAME='glibc'
 PACKAGE_VERSION='(see version.h)'
 PACKAGE_STRING='GNU C Library (see version.h)'
 PACKAGE_BUGREPORT='https://sourceware.org/bugzilla/'
-PACKAGE_URL='http://www.gnu.org/software/glibc/'
+PACKAGE_URL='https://www.gnu.org/software/glibc/'
 
 ac_unique_file="include/features.h"
 enable_option_checking=no
@@ -664,6 +664,7 @@ INSTALL_PROGRAM
 sysnames
 submachine
 multi_arch
+libc_cv_textrel_ifunc
 no_stack_protector
 stack_protector
 libc_cv_ssp
@@ -676,6 +677,7 @@ build_obsolete_nsl
 link_obsolete_rpc
 libc_cv_static_nss_crypt
 libc_cv_nss_crypt
+build_crypt
 experimental_malloc
 enable_werror
 all_warnings
@@ -683,6 +685,7 @@ force_install
 bindnow
 hardcoded_path_in_tests
 enable_timezone_tools
+extra_nonshared_cflags
 use_default_link
 sysheaders
 ac_ct_CXX
@@ -761,6 +764,7 @@ with_binutils
 with_selinux
 with_headers
 with_default_link
+with_nonshared_cflags
 enable_sanity_checks
 enable_shared
 enable_profile
@@ -779,6 +783,7 @@ enable_all_warnings
 enable_werror
 enable_multi_arch
 enable_experimental_malloc
+enable_crypt
 enable_nss_crypt
 enable_obsolete_rpc
 enable_obsolete_nsl
@@ -788,6 +793,7 @@ enable_nscd
 enable_pt_chown
 enable_tunables
 enable_mathvec
+enable_cet
 with_cpu
 '
       ac_precious_vars='build_alias
@@ -1448,6 +1454,8 @@ Optional Features:
                           architectures
   --disable-experimental-malloc
                           disable experimental malloc features
+  --disable-crypt         do not build nor install the passphrase hashing
+                          library, libcrypt
   --enable-nss-crypt      enable libcrypt to use nss
   --enable-obsolete-rpc   build and install the obsolete RPC code for
                           link-time usage
@@ -1461,6 +1469,8 @@ Optional Features:
                           'no' and 'valstring'
   --enable-mathvec        Enable building and installing mathvec [default
                           depends on architecture]
+  --enable-cet            enable Intel Control-flow Enforcement Technology
+                          (CET), x86 only
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1475,6 +1485,8 @@ Optional Packages:
   --with-headers=PATH     location of system headers to use (for example
                           /usr/src/linux/include) [default=compiler default]
   --with-default-link     do not use explicit linker scripts
+  --with-nonshared-cflags=CFLAGS
+                          build nonshared libraries with additional CFLAGS
   --with-cpu=CPU          select code for CPU variant
 
 Some influential environment variables:
@@ -1493,7 +1505,7 @@ Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
 
 Report bugs to <https://sourceware.org/bugzilla/>.
-GNU C Library home page: <http://www.gnu.org/software/glibc/>.
+GNU C Library home page: <https://www.gnu.org/software/glibc/>.
 General help using GNU software: <http://www.gnu.org/gethelp/>.
 _ACEOF
 ac_status=$?
@@ -2153,7 +2165,7 @@ if test "${with_bugurl+set}" = set; then :
 	   ;;
      esac
 else
-  BUGURL="http://www.gnu.org/software/libc/bugs.html"
+  BUGURL="https://www.gnu.org/software/libc/bugs.html"
 
 fi
 
@@ -3332,6 +3344,16 @@ else
 fi
 
 
+
+# Check whether --with-nonshared-cflags was given.
+if test "${with_nonshared_cflags+set}" = set; then :
+  withval=$with_nonshared_cflags; extra_nonshared_cflags=$withval
+else
+  extra_nonshared_cflags=
+fi
+
+
+
 # Check whether --enable-sanity-checks was given.
 if test "${enable_sanity_checks+set}" = set; then :
   enableval=$enable_sanity_checks; enable_sanity=$enableval
@@ -3505,6 +3527,15 @@ fi
 
 
 
+# Check whether --enable-crypt was given.
+if test "${enable_crypt+set}" = set; then :
+  enableval=$enable_crypt; build_crypt=$enableval
+else
+  build_crypt=yes
+fi
+
+
+
 # Check whether --enable-nss-crypt was given.
 if test "${enable_nss_crypt+set}" = set; then :
   enableval=$enable_nss_crypt; nss_crypt=$enableval
@@ -3512,6 +3543,11 @@ else
   nss_crypt=no
 fi
 
+if test x$build_libcrypt = xno && test x$nss_crypt = xyes; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --enable-nss-crypt has no effect when libcrypt is disabled" >&5
+$as_echo "$as_me: WARNING: --enable-nss-crypt has no effect when libcrypt is disabled" >&2;}
+  nss_crypt=no
+fi
 if test x$nss_crypt = xyes; then
   nss_includes=-I$(nss-config --includedir 2>/dev/null)
   if test $? -ne 0; then
@@ -3738,6 +3774,35 @@ if test "${enable_mathvec+set}" = set; then :
   enableval=$enable_mathvec; build_mathvec=$enableval
 else
   build_mathvec=notset
+fi
+
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+#ifndef __CET__
+#error no CET compiler support
+#endif
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  libc_cv_compiler_default_cet=yes
+else
+  libc_cv_compiler_default_cet=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+# Check whether --enable-cet was given.
+if test "${enable_cet+set}" = set; then :
+  enableval=$enable_cet; enable_cet=$enableval
+else
+  enable_cet=$libc_cv_compiler_default_cet
 fi
 
 
@@ -3970,7 +4035,7 @@ if ${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS \
 	    -o conftest conftest.S 1>&5 2>&5; then
   # Do a link to see if the backend supports IFUNC relocs.
   $READELF -r conftest 1>&5
-  LC_ALL=C $READELF -r conftest | grep 'no relocations' >/dev/null || {
+  LC_ALL=C $READELF -Wr conftest | grep -q 'IRELATIVE\|R_SPARC_JMP_IREL' && {
     libc_cv_ld_gnu_indirect_function=yes
   }
 fi
@@ -4008,6 +4073,52 @@ rm -f conftest*
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $libc_cv_gcc_indirect_function" >&5
 $as_echo "$libc_cv_gcc_indirect_function" >&6; }
+
+# Check if linker supports textrel relocation with ifunc (used on elf/tests).
+# Note that it relies on libc_cv_ld_gnu_indirect_function test above.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the linker supports textrels along with ifunc" >&5
+$as_echo_n "checking whether the linker supports textrels along with ifunc... " >&6; }
+if ${libc_cv_textrel_ifunc+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat > conftest.S <<EOF
+.type foo,%gnu_indirect_function
+foo:
+.globl _start
+_start:
+.globl __start
+__start:
+.data
+#ifdef _LP64
+.quad foo
+#else
+.long foo
+#endif
+.text
+.globl address
+address:
+#ifdef _LP64
+.quad address
+#else
+.long address
+#endif
+EOF
+libc_cv_textrel_ifunc=no
+if test $libc_cv_ld_gnu_indirect_function = yes; then
+   if { ac_try='${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS -nostartfiles -nostdlib $no_ssp -pie -o conftest conftest.S'
+  { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; }; then
+     libc_cv_textrel_ifunc=yes
+   fi
+fi
+rm -f conftest*
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $libc_cv_textrel_ifunc" >&5
+$as_echo "$libc_cv_textrel_ifunc" >&6; }
+
 
 # Check if gcc warns about alias for function with incompatible types.
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if compiler warns about alias for function with incompatible types" >&5
@@ -4687,7 +4798,7 @@ $as_echo_n "checking version of $MAKE... " >&6; }
   ac_prog_version=`$MAKE --version 2>&1 | sed -n 's/^.*GNU Make[^0-9]*\([0-9][0-9.]*\).*$/\1/p'`
   case $ac_prog_version in
     '') ac_prog_version="v. ?.??, bad"; ac_verc_fail=yes;;
-    3.79* | 3.[89]* | [4-9].* | [1-9][0-9]*)
+    [4-9].* | [1-9][0-9]*)
        ac_prog_version="$ac_prog_version, ok"; ac_verc_fail=no;;
     *) ac_prog_version="$ac_prog_version, bad"; ac_verc_fail=yes;;
 
@@ -5029,7 +5140,7 @@ int
 main ()
 {
 
-#if !defined __GNUC__ || __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 9)
+#if !defined __GNUC__ || __GNUC__ < 6 || (__GNUC__ == 6 && __GNUC_MINOR__ < 2)
 #error insufficient compiler
 #endif
   ;
@@ -5254,19 +5365,30 @@ fi
 
   test -n "$PYTHON_PROG" && break
 done
-test -n "$PYTHON_PROG" || PYTHON_PROG="no"
 
-case "x$PYTHON_PROG" in
-xno|x|x:) PYTHON_PROG=no ;;
-*) ;;
-esac
-
-if test "x$PYTHON_PROG" = xno; then
-  aux_missing="$aux_missing python"
+if test -z "$PYTHON_PROG"; then
+  ac_verc_fail=yes
 else
-  PYTHON="$PYTHON_PROG -B"
+  # Found it, now check the version.
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking version of $PYTHON_PROG" >&5
+$as_echo_n "checking version of $PYTHON_PROG... " >&6; }
+  ac_prog_version=`$PYTHON_PROG --version 2>&1 | sed -n 's/^.*Python \([0-9][0-9.]*\).*$/\1/p'`
+  case $ac_prog_version in
+    '') ac_prog_version="v. ?.??, bad"; ac_verc_fail=yes;;
+    3.[4-9]*|3.[1-9][0-9]*|[4-9].*|[1-9][0-9]*)
+       ac_prog_version="$ac_prog_version, ok"; ac_verc_fail=no;;
+    *) ac_prog_version="$ac_prog_version, bad"; ac_verc_fail=yes;;
 
+  esac
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_prog_version" >&5
+$as_echo "$ac_prog_version" >&6; }
 fi
+if test $ac_verc_fail = yes; then
+  critic_missing="$critic_missing python"
+fi
+
+PYTHON="$PYTHON_PROG -B"
+
 
 test -n "$critic_missing" && as_fn_error $? "
 *** These critical programs are missing or too old:$critic_missing
@@ -6693,6 +6815,8 @@ if test x"$libc_cv_ld_gnu_indirect_function" = xyes; then
   $as_echo "#define HAVE_IFUNC 1" >>confdefs.h
 
 fi
+config_vars="$config_vars
+have-ifunc = $libc_cv_ld_gnu_indirect_function"
 
 if test x"$libc_cv_gcc_indirect_function" = xyes; then
   $as_echo "#define HAVE_GCC_IFUNC 1" >>confdefs.h
@@ -7370,7 +7494,7 @@ Configuration commands:
 $config_commands
 
 Report bugs to <https://sourceware.org/bugzilla/>.
-GNU C Library home page: <http://www.gnu.org/software/glibc/>.
+GNU C Library home page: <https://www.gnu.org/software/glibc/>.
 General help using GNU software: <http://www.gnu.org/gethelp/>."
 
 _ACEOF

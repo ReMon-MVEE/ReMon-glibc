@@ -1,4 +1,4 @@
-# Copyright (C) 1995-2018 Free Software Foundation, Inc.
+# Copyright (C) 1995-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 #
 #	Specific makefile for libio.
@@ -49,7 +49,7 @@ routines	:=							      \
 	__fbufsize __freading __fwriting __freadable __fwritable __flbf	      \
 	__fpurge __fpending __fsetlocking				      \
 									      \
-	libc_fatal fmemopen oldfmemopen vtables
+	libc_fatal fmemopen oldfmemopen vtables readline
 
 tests = tst_swprintf tst_wprintf tst_swscanf tst_wscanf tst_getwc tst_putwc   \
 	tst_wprintf2 tst-widetext test-fmemopen tst-ext tst-ext2 \
@@ -59,17 +59,24 @@ tests = tst_swprintf tst_wprintf tst_swscanf tst_wscanf tst_getwc tst_putwc   \
 	tst-mmap-eofsync tst-mmap-fflushsync bug-mmap-fflush \
 	tst-mmap2-eofsync tst-mmap-offend bug-fopena+ bug-wfflush \
 	bug-ungetc2 bug-ftell bug-ungetc3 bug-ungetc4 tst-fopenloc2 \
-	tst-memstream1 tst-memstream2 tst-memstream3 \
-	tst-wmemstream1 tst-wmemstream2 tst-wmemstream3 \
+	tst-memstream1 tst-memstream2 tst-memstream3 tst-memstream4 \
+	tst-wmemstream1 tst-wmemstream2 tst-wmemstream3 tst-wmemstream4 \
 	bug-memstream1 bug-wmemstream1 \
 	tst-setvbuf1 tst-popen1 tst-fgetwc bug-wsetpos tst-fseek \
 	tst-fwrite-error tst-ftell-partial-wide tst-ftell-active-handler \
-	tst-ftell-append tst-fputws tst-bz22415 tst-fgetc-after-eof
+	tst-ftell-append tst-fputws tst-bz22415 tst-fgetc-after-eof \
+	tst-sprintf-ub tst-sprintf-chk-ub tst-bz24051 tst-bz24153 \
+	tst-wfile-sync
+
+tests-internal = tst-vtables tst-vtables-interposed tst-readline
 
 ifeq (yes,$(build-shared))
 # Add test-fopenloc only if shared library is enabled since it depends on
 # shared localedata objects.
 tests += tst-fopenloc
+# Add tst-bz24228 only if shared library is enabled since it can never meet its
+# objective with static linking because the relevant code just is not there.
+tests += tst-bz24228
 endif
 test-srcs = test-freopen
 
@@ -150,11 +157,18 @@ CFLAGS-oldtmpfile.c += -fexceptions
 
 CFLAGS-tst_putwc.c += -DOBJPFX=\"$(objpfx)\"
 
+# These test cases intentionally use overlapping arguments
+CFLAGS-tst-sprintf-ub.c += -Wno-restrict
+CFLAGS-tst-sprintf-chk-ub.c += -Wno-restrict
+
+LDFLAGS-tst-bz24228 = -Wl,--version-script=tst-bz24228.map
+
 tst_wprintf2-ARGS = "Some Text"
 
 test-fmemopen-ENV = MALLOC_TRACE=$(objpfx)test-fmemopen.mtrace
 tst-fopenloc-ENV = MALLOC_TRACE=$(objpfx)tst-fopenloc.mtrace
 tst-bz22415-ENV = MALLOC_TRACE=$(objpfx)tst-bz22415.mtrace
+tst-bz24228-ENV = MALLOC_TRACE=$(objpfx)tst-bz24228.mtrace
 
 generated += test-fmemopen.mtrace test-fmemopen.check
 generated += tst-fopenloc.mtrace tst-fopenloc.check
@@ -163,6 +177,7 @@ generated += tst-bz22415.mtrace tst-bz22415.check
 aux	:= fileops genops stdfiles stdio strops
 
 ifeq ($(build-shared),yes)
+generated += tst-bz24228.mtrace tst-bz24228.check
 aux	+= oldfileops oldstdfiles
 endif
 
@@ -177,7 +192,8 @@ tests-special += $(objpfx)test-freopen.out $(objpfx)test-fmemopen-mem.out \
 ifeq (yes,$(build-shared))
 # Run tst-fopenloc-cmp.out and tst-openloc-mem.out only if shared
 # library is enabled since they depend on tst-fopenloc.out.
-tests-special += $(objpfx)tst-fopenloc-cmp.out $(objpfx)tst-fopenloc-mem.out
+tests-special += $(objpfx)tst-fopenloc-cmp.out $(objpfx)tst-fopenloc-mem.out \
+		 $(objpfx)tst-bz24228-mem.out
 endif
 endif
 
@@ -205,6 +221,7 @@ $(objpfx)tst-ungetwc1.out: $(gen-locales)
 $(objpfx)tst-ungetwc2.out: $(gen-locales)
 $(objpfx)tst-widetext.out: $(gen-locales)
 $(objpfx)tst_wprintf2.out: $(gen-locales)
+$(objpfx)tst-wfile-sync.out: $(gen-locales)
 endif
 
 $(objpfx)test-freopen.out: test-freopen.sh $(objpfx)test-freopen
@@ -227,4 +244,8 @@ $(objpfx)tst-fopenloc-mem.out: $(objpfx)tst-fopenloc.out
 
 $(objpfx)tst-bz22415-mem.out: $(objpfx)tst-bz22415.out
 	$(common-objpfx)malloc/mtrace $(objpfx)tst-bz22415.mtrace > $@; \
+	$(evaluate-test)
+
+$(objpfx)tst-bz24228-mem.out: $(objpfx)tst-bz24228.out
+	$(common-objpfx)malloc/mtrace $(objpfx)tst-bz24228.mtrace > $@; \
 	$(evaluate-test)

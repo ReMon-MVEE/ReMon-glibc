@@ -1,4 +1,4 @@
-# Copyright (C) 1992-2018 Free Software Foundation, Inc.
+# Copyright (C) 1992-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 # Makefile for the GNU C Library manual.
 
@@ -99,10 +99,11 @@ $(objpfx)dir-add.texi: xtract-typefun.awk $(texis-path)
 
 # The table with the math errors is generated.
 $(objpfx)libm-err.texi: $(objpfx)stamp-libm-err
-$(objpfx)stamp-libm-err: libm-err-tab.pl $(wildcard $(foreach dir,$(sysdirs),\
-						     $(dir)/libm-test-ulps))
+$(objpfx)stamp-libm-err: $(..)math/gen-libm-test.py \
+			 $(wildcard $(foreach dir,$(sysdirs),\
+						  $(dir)/libm-test-ulps))
 	pwd=`pwd`; \
-	$(PERL) $< $$pwd/.. > $(objpfx)libm-err-tmp
+	$(PYTHON) $< -s $$pwd/.. -m $(objpfx)libm-err-tmp
 	$(move-if-change) $(objpfx)libm-err-tmp $(objpfx)libm-err.texi
 	touch $@
 
@@ -169,7 +170,8 @@ include ../Rules
 
 .PHONY: install subdir_install install-data
 install-data subdir_install: install
-# Generated files requiring perl: libm-err.texi, summary.texi
+# Generated files requiring python: libm-err.texi
+# Generated files requiring perl: summary.texi
 ifneq ($(PERL),no)
 ifneq ($(strip $(MAKEINFO)),:)
 install: $(inst_infodir)/libc.info

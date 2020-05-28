@@ -1,5 +1,5 @@
 /* Function pow vectorized with AVX-512. KNL and SKX versions.
-   Copyright (C) 2014-2018 Free Software Foundation, Inc.
+   Copyright (C) 2014-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 #include "svml_d_pow_data.h"
@@ -392,7 +392,7 @@ WRAPPER_IMPL_AVX512_ff _ZGVdN4vv_pow
         shlq      $4, %r15
         vmovsd    1160(%rsp,%r15), %xmm0
         vmovsd    1224(%rsp,%r15), %xmm1
-        call      JUMPTARGET(__pow_finite)
+        call      JUMPTARGET(pow)
         vmovsd    %xmm0, 1288(%rsp,%r15)
         jmp       .LBL_1_8
 
@@ -401,7 +401,7 @@ WRAPPER_IMPL_AVX512_ff _ZGVdN4vv_pow
         shlq      $4, %r15
         vmovsd    1152(%rsp,%r15), %xmm0
         vmovsd    1216(%rsp,%r15), %xmm1
-        call      JUMPTARGET(__pow_finite)
+        call      JUMPTARGET(pow)
         vmovsd    %xmm0, 1280(%rsp,%r15)
         jmp       .LBL_1_7
 
@@ -720,7 +720,7 @@ WRAPPER_IMPL_AVX512_ff _ZGVdN4vv_pow
         vzeroupper
         vmovsd    1160(%rsp,%r15), %xmm0
 
-        call      JUMPTARGET(__pow_finite)
+        call      JUMPTARGET(pow)
 
         vmovsd    %xmm0, 1288(%rsp,%r15)
         jmp       .LBL_2_8
@@ -732,7 +732,7 @@ WRAPPER_IMPL_AVX512_ff _ZGVdN4vv_pow
         vzeroupper
         vmovsd    1152(%rsp,%r15), %xmm0
 
-        call      JUMPTARGET(__pow_finite)
+        call      JUMPTARGET(pow)
 
         vmovsd    %xmm0, 1280(%rsp,%r15)
         jmp       .LBL_2_7

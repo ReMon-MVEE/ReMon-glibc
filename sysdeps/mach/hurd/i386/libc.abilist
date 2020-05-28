@@ -543,6 +543,7 @@ GLIBC_2.2.6 __wctrans_l F
 GLIBC_2.2.6 __wctype_l F
 GLIBC_2.2.6 __woverflow F
 GLIBC_2.2.6 __write F
+GLIBC_2.2.6 __writev F
 GLIBC_2.2.6 __wuflow F
 GLIBC_2.2.6 __wunderflow F
 GLIBC_2.2.6 __xmknod F
@@ -553,7 +554,7 @@ GLIBC_2.2.6 __xstat64 F
 GLIBC_2.2.6 _authenticate F
 GLIBC_2.2.6 _dl_mcount_wrapper F
 GLIBC_2.2.6 _dl_mcount_wrapper_check F
-GLIBC_2.2.6 _end GLIBC_2.2.6 g ? D .bss 00000000
+GLIBC_2.2.6 _end D 0x0
 GLIBC_2.2.6 _environ D 0x4
 GLIBC_2.2.6 _exit F
 GLIBC_2.2.6 _flushlbf F
@@ -710,6 +711,11 @@ GLIBC_2.2.6 clntudp_bufcreate F
 GLIBC_2.2.6 clntudp_create F
 GLIBC_2.2.6 clntunix_create F
 GLIBC_2.2.6 clock F
+GLIBC_2.2.6 clock_getcpuclockid F
+GLIBC_2.2.6 clock_getres F
+GLIBC_2.2.6 clock_gettime F
+GLIBC_2.2.6 clock_nanosleep F
+GLIBC_2.2.6 clock_settime F
 GLIBC_2.2.6 close F
 GLIBC_2.2.6 closedir F
 GLIBC_2.2.6 closelog F
@@ -1227,6 +1233,7 @@ GLIBC_2.2.6 mach_port_deallocate F
 GLIBC_2.2.6 mach_port_insert_right F
 GLIBC_2.2.6 mach_reply_port F
 GLIBC_2.2.6 mach_setup_thread F
+GLIBC_2.2.6 mach_setup_tls F
 GLIBC_2.2.6 mach_task_self F
 GLIBC_2.2.6 mach_thread_self F
 GLIBC_2.2.6 madvise F
@@ -2033,6 +2040,12 @@ GLIBC_2.27 wcstof64 F
 GLIBC_2.27 wcstof64_l F
 GLIBC_2.27 wcstof64x F
 GLIBC_2.27 wcstof64x_l F
+GLIBC_2.28 fcntl64 F
+GLIBC_2.28 renameat2 F
+GLIBC_2.28 statx F
+GLIBC_2.29 _hurd_port_move F
+GLIBC_2.29 posix_spawn_file_actions_addchdir_np F
+GLIBC_2.29 posix_spawn_file_actions_addfchdir_np F
 GLIBC_2.3 __ctype_b_loc F
 GLIBC_2.3 __ctype_tolower_loc F
 GLIBC_2.3 __ctype_toupper_loc F
@@ -2167,6 +2180,7 @@ GLIBC_2.3.4 setipv4sourcefilter F
 GLIBC_2.3.4 setsourcefilter F
 GLIBC_2.3.4 xdr_quad_t F
 GLIBC_2.3.4 xdr_u_quad_t F
+GLIBC_2.30 twalk_r F
 GLIBC_2.4 __confstr_chk F
 GLIBC_2.4 __fgets_chk F
 GLIBC_2.4 __fgets_unlocked_chk F

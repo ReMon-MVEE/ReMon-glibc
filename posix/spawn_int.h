@@ -1,5 +1,5 @@
 /* Internal definitions for posix_spawn functionality.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _SPAWN_INT_H
 #define _SPAWN_INT_H
@@ -29,7 +29,9 @@ struct __spawn_action
   {
     spawn_do_close,
     spawn_do_dup2,
-    spawn_do_open
+    spawn_do_open,
+    spawn_do_chdir,
+    spawn_do_fchdir,
   } tag;
 
   union
@@ -50,6 +52,14 @@ struct __spawn_action
       int oflag;
       mode_t mode;
     } open_action;
+    struct
+    {
+      char *path;
+    } chdir_action;
+    struct
+    {
+      int fd;
+    } fchdir_action;
   } action;
 };
 

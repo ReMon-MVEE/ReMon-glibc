@@ -1,5 +1,5 @@
-/* Reading Passwords
-   Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Reading passphrases manually.
+   Copyright (C) 1991-2020 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -12,7 +12,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, if not, see <http://www.gnu.org/licenses/>.
+   along with this program; if not, see <https://www.gnu.org/licenses/>.
 */
 
 #include <termios.h>
@@ -32,7 +32,7 @@ my_getpass (char **lineptr, size_t *n, FILE *stream)
   if (tcsetattr (fileno (stream), TCSAFLUSH, &new) != 0)
     return -1;
 
-  /* Read the password.  */
+  /* Read the passphrase  */
   nread = getline (lineptr, n, stream);
 
   /* Restore terminal.  */

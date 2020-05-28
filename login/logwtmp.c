@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <string.h>
 #include <sys/time.h>
@@ -30,26 +30,15 @@ logwtmp (const char *line, const char *name, const char *host)
 
   /* Set information in new entry.  */
   memset (&ut, 0, sizeof (ut));
-#if _HAVE_UT_PID - 0
   ut.ut_pid = getpid ();
-#endif
-#if _HAVE_UT_TYPE - 0
   ut.ut_type = name[0] ? USER_PROCESS : DEAD_PROCESS;
-#endif
   strncpy (ut.ut_line, line, sizeof ut.ut_line);
   strncpy (ut.ut_name, name, sizeof ut.ut_name);
-#if _HAVE_UT_HOST - 0
   strncpy (ut.ut_host, host, sizeof ut.ut_host);
-#endif
 
-#if _HAVE_UT_TV - 0
-  struct timeval tv;
-  __gettimeofday (&tv, NULL);
-  ut.ut_tv.tv_sec = tv.tv_sec;
-  ut.ut_tv.tv_usec = tv.tv_usec;
-#else
-  ut.ut_time = time (NULL);
-#endif
+  struct timespec ts;
+  __clock_gettime (CLOCK_REALTIME, &ts);
+  TIMESPEC_TO_TIMEVAL (&ut.ut_tv, &ts);
 
   updwtmp (_PATH_WTMP, &ut);
 }

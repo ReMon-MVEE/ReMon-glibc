@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,10 +13,10 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdeps/generic/sysdep.h>
-
+#include <single-thread.h>
 #include <sys/syscall.h>
 #define	HAVE_SYSCALLS
 
@@ -97,6 +97,22 @@
       {									     \
 	int sc_cancel_oldtype = LIBC_CANCEL_ASYNC ();			     \
 	sc_ret = INLINE_SYSCALL_CALL (__VA_ARGS__);			     \
+        LIBC_CANCEL_RESET (sc_cancel_oldtype);				     \
+      }									     \
+    sc_ret;								     \
+  })
+
+/* Issue a syscall defined by syscall number plus any other argument
+   required.  Any error will be returned unmodified (including errno).  */
+#define INTERNAL_SYSCALL_CANCEL(...) \
+  ({									     \
+    long int sc_ret;							     \
+    if (SINGLE_THREAD_P) 						     \
+      sc_ret = INTERNAL_SYSCALL_CALL (__VA_ARGS__); 			     \
+    else								     \
+      {									     \
+	int sc_cancel_oldtype = LIBC_CANCEL_ASYNC ();			     \
+	sc_ret = INTERNAL_SYSCALL_CALL (__VA_ARGS__);			     \
         LIBC_CANCEL_RESET (sc_cancel_oldtype);				     \
       }									     \
     sc_ret;								     \

@@ -6,7 +6,7 @@
 typedef int TItype __attribute__ ((mode (TI)));
 typedef unsigned int UTItype __attribute__ ((mode (TI)));
 
-#define TI_BITS (__CHAR_BIT__ * (int)sizeof(TItype))
+#define TI_BITS (__CHAR_BIT__ * (int) sizeof (TItype))
 
 /* The type of the result of a floating point comparison.  This must
    match `__libgcc_cmp_return__' in GCC for the target.  */
@@ -88,13 +88,3 @@ void __sfp_handle_exceptions (int);
   } while (0)
 
 #define FP_ROUNDMODE		(_fcw & FP_RND_MASK)
-
-#define	__LITTLE_ENDIAN	1234
-#define	__BIG_ENDIAN	4321
-
-#define __BYTE_ORDER __LITTLE_ENDIAN
-
-/* Define ALIASNAME as a strong alias for NAME.  */
-#define strong_alias(name, aliasname) _strong_alias(name, aliasname)
-#define _strong_alias(name, aliasname) \
-  extern __typeof (name) aliasname __attribute__ ((alias (#name)));

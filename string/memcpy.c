@@ -1,6 +1,6 @@
 /* Copy memory to memory until the specified number of bytes
    has been copied.  Overlap is NOT handled correctly.
-   Copyright (C) 1991-2018 Free Software Foundation, Inc.
+   Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Torbjorn Granlund (tege@sics.se).
 
@@ -16,15 +16,17 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <string.h>
 #include <memcopy.h>
 
-#undef memcpy
+#ifndef MEMCPY
+# define MEMCPY memcpy
+#endif
 
 void *
-memcpy (void *dstpp, const void *srcpp, size_t len)
+MEMCPY (void *dstpp, const void *srcpp, size_t len)
 {
   unsigned long int dstp = (long int) dstpp;
   unsigned long int srcp = (long int) srcpp;
@@ -57,4 +59,4 @@ memcpy (void *dstpp, const void *srcpp, size_t len)
 
   return dstpp;
 }
-libc_hidden_builtin_def (memcpy)
+libc_hidden_builtin_def (MEMCPY)

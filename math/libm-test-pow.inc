@@ -1,5 +1,5 @@
 /* Test pow.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "libm-test-driver.c"
 
@@ -248,8 +248,13 @@ static const struct test_ff_f_data pow_test_data[] =
 
     TEST_ff_f (pow, 0, plus_infty, 0, ERRNO_UNCHANGED),
     TEST_ff_f (pow, minus_zero, plus_infty, 0, ERRNO_UNCHANGED),
-    TEST_ff_f (pow, 0, minus_infty, plus_infty, DIVIDE_BY_ZERO_EXCEPTION_OK|ERRNO_UNCHANGED),
-    TEST_ff_f (pow, minus_zero, minus_infty, plus_infty, DIVIDE_BY_ZERO_EXCEPTION_OK|ERRNO_UNCHANGED),
+    /* C99 erroneously specified a divide-by-zero exception here,
+       which is not permitted in C2x (C11 specified it as optional).
+       See <http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1515.pdf>
+       and
+       <http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2271.pdf>.  */
+    TEST_ff_f (pow, 0, minus_infty, plus_infty, ERRNO_UNCHANGED),
+    TEST_ff_f (pow, minus_zero, minus_infty, plus_infty, ERRNO_UNCHANGED),
 
     /* pow (x, +inf) == +inf for |x| > 1.  */
     TEST_ff_f (pow, 1.5, plus_infty, plus_infty, ERRNO_UNCHANGED|NO_TEST_INLINE),

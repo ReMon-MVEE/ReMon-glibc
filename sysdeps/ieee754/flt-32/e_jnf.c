@@ -18,7 +18,9 @@
 #include <math.h>
 #include <math-narrow-eval.h>
 #include <math_private.h>
+#include <fenv_private.h>
 #include <math-underflow.h>
+#include <libm-alias-finite.h>
 
 static const float
 two   =  2.0000000000e+00, /* 0x40000000 */
@@ -173,14 +175,14 @@ __ieee754_jnf(int n, float x)
     }
     if (ret == 0)
       {
-	ret = math_narrow_eval (__copysignf (FLT_MIN, ret) * FLT_MIN);
+	ret = math_narrow_eval (copysignf (FLT_MIN, ret) * FLT_MIN);
 	__set_errno (ERANGE);
       }
     else
 	math_check_force_underflow (ret);
     return ret;
 }
-strong_alias (__ieee754_jnf, __jnf_finite)
+libm_alias_finite (__ieee754_jnf, __jnf)
 
 float
 __ieee754_ynf(int n, float x)
@@ -229,7 +231,7 @@ __ieee754_ynf(int n, float x)
     }
  out:
     if (isinf (ret))
-	ret = __copysignf (FLT_MAX, ret) * FLT_MAX;
+	ret = copysignf (FLT_MAX, ret) * FLT_MAX;
     return ret;
 }
-strong_alias (__ieee754_ynf, __ynf_finite)
+libm_alias_finite (__ieee754_ynf, __ynf)

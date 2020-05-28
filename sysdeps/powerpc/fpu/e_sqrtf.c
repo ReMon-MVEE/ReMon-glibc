@@ -1,5 +1,5 @@
 /* Single-precision floating point square root.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,15 +14,17 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <math.h>
 #include <math_private.h>
+#include <fenv.h>
 #include <fenv_libc.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <sysdep.h>
 #include <ldsodefs.h>
+#include <libm-alias-finite.h>
 
 #ifndef _ARCH_PPCSQ
 static const float almost_half = 0.50000006;	/* 0.5 + 2^-24 */
@@ -137,7 +139,7 @@ __slow_ieee754_sqrtf (float x)
 float
 __ieee754_sqrtf (float x)
 {
-  double z;
+  float z;
 
 #ifdef _ARCH_PPCSQ
   asm ("fsqrts	%0,%1\n" :"=f" (z):"f" (x));
@@ -147,4 +149,4 @@ __ieee754_sqrtf (float x)
 
   return z;
 }
-strong_alias (__ieee754_sqrtf, __sqrtf_finite)
+libm_alias_finite (__ieee754_sqrtf, __sqrtf)

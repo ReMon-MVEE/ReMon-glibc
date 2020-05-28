@@ -46,7 +46,7 @@ extern char **__libc_argv attribute_hidden;
 
    The use of RTLD_NOW also impacts gconv module loading, backtracing
    (where the unwinder form libgcc_s.so is used), and IDNA functions
-   (which load libidn), all of which load their respective DSOs on
+   (which load libidn2), all of which load their respective DSOs on
    demand, and so should not impact program startup.  That is to say
    that the DSOs are loaded as part of an API call and therefore we
    will be calling that family of API functions shortly so RTLD_NOW or
@@ -117,7 +117,7 @@ struct dlfcn_hook
   int (*dladdr) (const void *address, Dl_info *info);
   int (*dladdr1) (const void *address, Dl_info *info,
 		  void **extra_info, int flags);
-  int (*dlinfo) (void *handle, int request, void *arg, void *dl_caller);
+  int (*dlinfo) (void *handle, int request, void *arg);
   void *(*dlmopen) (Lmid_t nsid, const char *file, int mode, void *dl_caller);
   void *pad[4];
 };
@@ -143,8 +143,7 @@ extern int __dladdr (const void *address, Dl_info *info)
 extern int __dladdr1 (const void *address, Dl_info *info,
 		      void **extra_info, int flags)
      attribute_hidden;
-extern int __dlinfo (void *handle, int request, void *arg DL_CALLER_DECL)
-     attribute_hidden;
+extern int __dlinfo (void *handle, int request, void *arg) attribute_hidden;
 
 #ifndef SHARED
 struct link_map;
@@ -155,6 +154,8 @@ extern void __libc_register_dl_open_hook (struct link_map *map)
 extern void __libc_register_dlfcn_hook (struct link_map *map)
      attribute_hidden;
 #endif
-#endif
 
+extern void __dlerror_main_freeres (void) attribute_hidden;
+
+#endif
 #endif

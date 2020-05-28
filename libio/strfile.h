@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -24,7 +24,9 @@
    This exception applies to code released by its copyright holders
    in files containing the exception.  */
 
-#include <stdio.h>
+#ifndef STRFILE_H_
+#define STRFILE_H_
+
 #include "libioP.h"
 
 typedef void *(*_IO_alloc_type) (size_t);
@@ -32,8 +34,11 @@ typedef void (*_IO_free_type) (void*);
 
 struct _IO_str_fields
 {
-  _IO_alloc_type _allocate_buffer;
-  _IO_free_type _free_buffer;
+  /* These members are preserved for ABI compatibility.  The glibc
+     implementation always calls malloc/free for user buffers if
+     _IO_USER_BUF or _IO_FLAGS2_USER_WBUF are not set.  */
+  _IO_alloc_type _allocate_buffer_unused;
+  _IO_free_type _free_buffer_unused;
 };
 
 /* This is needed for the Irix6 N32 ABI, which has a 64 bit off_t type,
@@ -52,10 +57,6 @@ typedef struct _IO_strfile_
   struct _IO_streambuf _sbf;
   struct _IO_str_fields _s;
 } _IO_strfile;
-
-/* dynamic: set when the array object is allocated (or reallocated)  as
-   necessary to hold a character sequence that can change in length. */
-#define _IO_STR_DYNAMIC(FP) ((FP)->_s._allocate_buffer != (_IO_alloc_type)0)
 
 /* frozen: set when the program has requested that the array object not
    be altered, reallocated, or freed. */
@@ -81,3 +82,32 @@ typedef struct
 } _IO_wstrnfile;
 
 extern const struct _IO_jump_t _IO_wstrn_jumps attribute_hidden;
+
+/* Initialize an _IO_strfile SF to read from narrow string STRING, and
+   return the corresponding FILE object.  It is not necessary to fclose
+   the FILE when it is no longer needed.  */
+static inline FILE *
+_IO_strfile_read (_IO_strfile *sf, const char *string)
+{
+  sf->_sbf._f._lock = NULL;
+  _IO_no_init (&sf->_sbf._f, _IO_USER_LOCK, -1, NULL, NULL);
+  _IO_JUMPS (&sf->_sbf) = &_IO_str_jumps;
+  _IO_str_init_static_internal (sf, (char*)string, 0, NULL);
+  return &sf->_sbf._f;
+}
+
+/* Initialize an _IO_strfile SF and _IO_wide_data WD to read from wide
+   string STRING, and return the corresponding FILE object.  It is not
+   necessary to fclose the FILE when it is no longer needed.  */
+static inline FILE *
+_IO_strfile_readw (_IO_strfile *sf, struct _IO_wide_data *wd,
+		   const wchar_t *string)
+{
+  sf->_sbf._f._lock = NULL;
+  _IO_no_init (&sf->_sbf._f, _IO_USER_LOCK, 0, wd, &_IO_wstr_jumps);
+  _IO_fwide (&sf->_sbf._f, 1);
+  _IO_wstr_init_static (&sf->_sbf._f, (wchar_t *)string, 0, NULL);
+  return &sf->_sbf._f;
+}
+
+#endif /* strfile.h.  */

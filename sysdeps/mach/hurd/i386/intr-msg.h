@@ -1,5 +1,5 @@
 /* Machine-dependent details of interruptible RPC messaging.  i386 version.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,27 +14,36 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 
 /* Note that we must mark OPTION and TIMEOUT as outputs of this operation,
    to indicate that the signal thread might mutate them as part
    of sending us to a signal handler.  */
-#define INTR_MSG_TRAP(msg, option, send_size, rcv_size, rcv_name, timeout, notify) \
+
+/* After _hurd_intr_rpc_msg_about_to we need to make a last check of cancel, in
+   case we got interrupted right before _hurd_intr_rpc_msg_about_to.  */
+#define INTR_MSG_TRAP(msg, option, send_size, rcv_size, rcv_name, timeout, notify, cancel_p, intr_port_p) \
 ({									      \
   error_t err;								      \
-  asm (".globl _hurd_intr_rpc_msg_do_trap\n" 				      \
-       ".globl _hurd_intr_rpc_msg_in_trap\n"				      \
+  asm (".globl _hurd_intr_rpc_msg_about_to\n"				      \
        ".globl _hurd_intr_rpc_msg_cx_sp\n"				      \
+       ".globl _hurd_intr_rpc_msg_do_trap\n" 				      \
+       ".globl _hurd_intr_rpc_msg_in_trap\n"				      \
        ".globl _hurd_intr_rpc_msg_sp_restored\n"			      \
-       "				movl %%esp, %%ecx\n"		      \
-       "				leal %3, %%esp\n"		      \
+       "_hurd_intr_rpc_msg_about_to:	cmpl $0, %5\n"			      \
+       "				jz _hurd_intr_rpc_msg_do\n"	      \
+       "				movl $0, %3\n"			      \
+       "				movl %6, %%eax\n"		      \
+       "				jmp _hurd_intr_rpc_msg_sp_restored\n" \
+       "_hurd_intr_rpc_msg_do:		movl %%esp, %%ecx\n"		      \
+       "				leal %4, %%esp\n"		      \
        "_hurd_intr_rpc_msg_cx_sp:	movl $-25, %%eax\n"		      \
        "_hurd_intr_rpc_msg_do_trap:	lcall $7, $0 # status in %0\n"	      \
        "_hurd_intr_rpc_msg_in_trap:	movl %%ecx, %%esp\n"		      \
        "_hurd_intr_rpc_msg_sp_restored:"				      \
-       : "=a" (err), "+m" (option), "+m" (timeout)			      \
-       : "m" ((&msg)[-1])						      \
+       : "=a" (err), "+m" (option), "+m" (timeout), "=m" (*intr_port_p)	      \
+       : "m" ((&msg)[-1]), "m" (*cancel_p), "i" (EINTR)			      \
        : "ecx");							      \
   err;									      \
 })

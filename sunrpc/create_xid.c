@@ -1,4 +1,4 @@
-/* Copyright (c) 1998-2018 Free Software Foundation, Inc.
+/* Copyright (c) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@vt.uni-paderborn.de>, 1998.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -39,10 +39,10 @@ _create_xid (void)
   pid_t pid = getpid ();
   if (is_initialized != pid)
     {
-      struct timeval now;
+      struct timespec now;
 
-      __gettimeofday (&now, (struct timezone *) 0);
-      __srand48_r (now.tv_sec ^ now.tv_usec ^ pid,
+      __clock_gettime (CLOCK_REALTIME, &now);
+      __srand48_r (now.tv_sec ^ now.tv_nsec ^ pid,
 		   &__rpc_lrand48_data);
       is_initialized = pid;
     }

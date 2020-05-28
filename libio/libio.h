@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Per Bothner <bothner@cygnus.com>.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -48,14 +48,10 @@
 #include <bits/types/wint_t.h>
 #include <gconv.h>
 
-typedef union
+typedef struct
 {
-  struct __gconv_info __cd;
-  struct
-  {
-    struct __gconv_info __cd;
-    struct __gconv_step_data __data;
-  } __combined;
+  struct __gconv_step *step;
+  struct __gconv_step_data step_data;
 } _IO_iconv_t;
 
 #include <shlib-compat.h>
@@ -90,9 +86,7 @@ typedef union
 /* Bits for the _flags2 field.  */
 #define _IO_FLAGS2_MMAP 1
 #define _IO_FLAGS2_NOTCANCEL 2
-#define _IO_FLAGS2_FORTIFY 4
 #define _IO_FLAGS2_USER_WBUF 8
-#define _IO_FLAGS2_SCANF_STD 16
 #define _IO_FLAGS2_NOCLOSE 32
 #define _IO_FLAGS2_CLOEXEC 64
 #define _IO_FLAGS2_NEED_LOCK 128
@@ -118,40 +112,8 @@ struct _IO_marker {
   int _pos;
 };
 
-/* This is the structure from the libstdc++ codecvt class.  */
-enum __codecvt_result
-{
-  __codecvt_ok,
-  __codecvt_partial,
-  __codecvt_error,
-  __codecvt_noconv
-};
-
-/* The order of the elements in the following struct must match the order
-   of the virtual functions in the libstdc++ codecvt class.  */
 struct _IO_codecvt
 {
-  void (*__codecvt_destr) (struct _IO_codecvt *);
-  enum __codecvt_result (*__codecvt_do_out) (struct _IO_codecvt *,
-					     __mbstate_t *,
-					     const wchar_t *,
-					     const wchar_t *,
-					     const wchar_t **, char *,
-					     char *, char **);
-  enum __codecvt_result (*__codecvt_do_unshift) (struct _IO_codecvt *,
-						 __mbstate_t *, char *,
-						 char *, char **);
-  enum __codecvt_result (*__codecvt_do_in) (struct _IO_codecvt *,
-					    __mbstate_t *,
-					    const char *, const char *,
-					    const char **, wchar_t *,
-					    wchar_t *, wchar_t **);
-  int (*__codecvt_do_encoding) (struct _IO_codecvt *);
-  int (*__codecvt_do_always_noconv) (struct _IO_codecvt *);
-  int (*__codecvt_do_length) (struct _IO_codecvt *, __mbstate_t *,
-			      const char *, const char *, size_t);
-  int (*__codecvt_do_max_length) (struct _IO_codecvt *);
-
   _IO_iconv_t __cd_in;
   _IO_iconv_t __cd_out;
 };
@@ -187,9 +149,6 @@ struct _IO_FILE_plus;
 extern struct _IO_FILE_plus _IO_2_1_stdin_;
 extern struct _IO_FILE_plus _IO_2_1_stdout_;
 extern struct _IO_FILE_plus _IO_2_1_stderr_;
-extern FILE *_IO_stdin attribute_hidden;
-extern FILE *_IO_stdout attribute_hidden;
-extern FILE *_IO_stderr attribute_hidden;
 
 struct _IO_cookie_file;
 
@@ -242,7 +201,7 @@ extern int _IO_ftrylockfile (FILE *) __THROW;
 
 #define _IO_peekc(_fp) _IO_peekc_unlocked (_fp)
 #define _IO_flockfile(_fp) /**/
-#define _IO_funlockfile(_fp) /**/
+#define _IO_funlockfile(_fp) ((void) 0)
 #define _IO_ftrylockfile(_fp) /**/
 #ifndef _IO_cleanup_region_start
 #define _IO_cleanup_region_start(_fct, _fp) /**/
@@ -256,8 +215,6 @@ extern int _IO_ftrylockfile (FILE *) __THROW;
 
 extern int _IO_vfscanf (FILE * __restrict, const char * __restrict,
 			__gnuc_va_list, int *__restrict);
-extern int _IO_vfprintf (FILE *__restrict, const char *__restrict,
-			 __gnuc_va_list);
 extern __ssize_t _IO_padn (FILE *, int, __ssize_t);
 extern size_t _IO_sgetn (FILE *, void *, size_t);
 
@@ -299,14 +256,11 @@ weak_extern (_IO_stdin_used);
 
 extern int _IO_vfwscanf (FILE * __restrict, const wchar_t * __restrict,
 			 __gnuc_va_list, int *__restrict);
-extern int _IO_vfwprintf (FILE *__restrict, const wchar_t *__restrict,
-			  __gnuc_va_list);
 extern __ssize_t _IO_wpadn (FILE *, wint_t, __ssize_t);
 extern void _IO_free_wbackup_area (FILE *) __THROW;
 
 #ifdef __LDBL_COMPAT
 __LDBL_REDIR_DECL (_IO_vfscanf)
-__LDBL_REDIR_DECL (_IO_vfprintf)
 #endif
 
 libc_hidden_proto (__overflow)
@@ -320,8 +274,6 @@ libc_hidden_proto (_IO_free_wbackup_area)
 libc_hidden_proto (_IO_padn)
 libc_hidden_proto (_IO_putc)
 libc_hidden_proto (_IO_sgetn)
-libc_hidden_proto (_IO_vfprintf)
-libc_hidden_proto (_IO_vfscanf)
 
 #ifdef _IO_MTSAFE_IO
 # undef _IO_peekc

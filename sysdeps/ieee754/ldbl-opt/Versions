@@ -78,6 +78,12 @@ libc {
     __nldbl___dprintf_chk; __nldbl___vdprintf_chk;
     __nldbl___obstack_printf_chk; __nldbl___obstack_vprintf_chk;
   }
+  GLIBC_2.30 {
+    __nldbl_argp_error; __nldbl_argp_failure;
+    __nldbl_warn; __nldbl_vwarn; __nldbl_warnx; __nldbl_vwarnx;
+    __nldbl_err; __nldbl_verr; __nldbl_errx; __nldbl_verrx;
+    __nldbl_error; __nldbl_error_at_line;
+  }
 }
 libm {
   NLDBL_VERSION {
@@ -101,6 +107,6 @@ libm {
     # Functions taking long double = double argument and rounding
     # result to double (same as f32x*f64 functions, but those names
     # are not reserved in TS 18661-1).
-    __nldbl_daddl; __nldbl_dsubl;
+    __nldbl_daddl; __nldbl_ddivl; __nldbl_dmull; __nldbl_dsubl;
   }
 }

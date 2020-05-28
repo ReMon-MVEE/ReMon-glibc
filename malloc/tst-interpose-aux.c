@@ -1,5 +1,5 @@
 /* Minimal malloc implementation for interposition tests.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; see the file COPYING.LIB.  If
-   not, see <http://www.gnu.org/licenses/>.  */
+   not, see <https://www.gnu.org/licenses/>.  */
 
 #include "tst-interpose-aux.h"
 
@@ -28,6 +28,7 @@
 #include <sys/mman.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#include <time.h>
 
 #if INTERPOSE_THREADS
 #include <pthread.h>
@@ -96,6 +97,7 @@ struct __attribute__ ((aligned (__alignof__ (max_align_t)))) allocation_header
 {
   size_t allocation_index;
   size_t allocation_size;
+  struct timespec ts;
 };
 
 /* Array of known allocations, to track invalid frees.  */
@@ -166,6 +168,9 @@ malloc_internal (size_t size)
       .allocation_index = index,
       .allocation_size = allocation_size
     };
+  /* BZ#24967: Check if calling a symbol which may use the vDSO does not fail.
+     The CLOCK_REALTIME should be supported on all systems.  */
+  clock_gettime (CLOCK_REALTIME, &allocations[index]->ts);
   return allocations[index] + 1;
 }
 

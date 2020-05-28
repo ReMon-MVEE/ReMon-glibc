@@ -1,5 +1,5 @@
 /* Return backtrace of current program state.
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>, 2003.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <libc-lock.h>
 #include <dlfcn.h>
@@ -23,6 +23,7 @@
 #include <gnu/lib-names.h>
 #include <stdlib.h>
 #include <unwind.h>
+#include <unwind-arch.h>
 
 struct trace_arg
 {
@@ -78,6 +79,10 @@ backtrace_helper (struct _Unwind_Context *ctx, void *a)
   if (arg->cnt != -1)
     {
       arg->array[arg->cnt] = (void *) unwind_getip (ctx);
+      if (arg->cnt > 0)
+	arg->array[arg->cnt]
+	  = unwind_arch_adjustment (arg->array[arg->cnt - 1],
+				    arg->array[arg->cnt]);
 
       /* Check whether we make any progress.  */
       _Unwind_Word cfa = unwind_getcfa (ctx);

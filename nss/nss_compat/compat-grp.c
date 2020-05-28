@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@suse.de>, 1996.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <ctype.h>
 #include <errno.h>
@@ -78,7 +78,7 @@ static bool in_blacklist (const char *, int, ent_t *);
 static void
 init_nss_interface (void)
 {
-  if (__nss_database_lookup ("group_compat", NULL, "nis", &ni) >= 0)
+  if (__nss_database_lookup2 ("group_compat", NULL, "nis", &ni) >= 0)
     {
       nss_setgrent = __nss_lookup_function (ni, "setgrent");
       nss_getgrnam_r = __nss_lookup_function (ni, "getgrnam_r");
@@ -142,7 +142,7 @@ _nss_compat_setgrent (int stayopen)
 }
 
 
-static enum nss_status
+static enum nss_status __attribute_warn_unused_result__
 internal_endgrent (ent_t *ent)
 {
   if (ent->stream != NULL)
@@ -161,6 +161,15 @@ internal_endgrent (ent_t *ent)
     ent->blacklist.current = 0;
 
   return NSS_STATUS_SUCCESS;
+}
+
+/* Like internal_endgrent, but preserve errno in all cases.  */
+static void
+internal_endgrent_noerror (ent_t *ent)
+{
+  int saved_errno = errno;
+  enum nss_status unused __attribute__ ((unused)) = internal_endgrent (ent);
+  __set_errno (saved_errno);
 }
 
 enum nss_status
@@ -196,8 +205,8 @@ getgrent_next_nss (struct group *result, ent_t *ent, char *buffer,
     {
       enum nss_status status;
 
-      if ((status = nss_getgrent_r (result, buffer, buflen, errnop)) !=
-	  NSS_STATUS_SUCCESS)
+      if ((status = nss_getgrent_r (result, buffer, buflen, errnop))
+	  != NSS_STATUS_SUCCESS)
 	return status;
     }
   while (in_blacklist (result->gr_name, strlen (result->gr_name), ent));
@@ -266,11 +275,11 @@ getgrent_next_file (struct group *result, ent_t *ent,
 	  while (isspace (*p))
 	    ++p;
 	}
-      while (*p == '\0' || *p == '#' ||	/* Ignore empty and comment lines. */
+      while (*p == '\0' || *p == '#' /* Ignore empty and comment lines. */
 	     /* Parse the line.  If it is invalid, loop to
 	        get the next line of the file to parse.  */
-	     !(parse_res = _nss_files_parse_grent (p, result, data, buflen,
-						   errnop)));
+	     || !(parse_res = _nss_files_parse_grent (p, result, data, buflen,
+						      errnop)));
 
       if (__glibc_unlikely (parse_res == -1))
 	/* The parser ran out of space.  */
@@ -399,11 +408,11 @@ internal_getgrnam_r (const char *name, struct group *result, ent_t *ent,
 	  while (isspace (*p))
 	    ++p;
 	}
-      while (*p == '\0' || *p == '#' ||	/* Ignore empty and comment lines. */
+      while (*p == '\0' || *p == '#' /* Ignore empty and comment lines. */
 	     /* Parse the line.  If it is invalid, loop to
 	        get the next line of the file to parse.  */
-	     !(parse_res = _nss_files_parse_grent (p, result, data, buflen,
-						   errnop)));
+	     || !(parse_res = _nss_files_parse_grent (p, result, data, buflen,
+						      errnop)));
 
       if (__glibc_unlikely (parse_res == -1))
 	/* The parser ran out of space.  */
@@ -483,7 +492,7 @@ _nss_compat_getgrnam_r (const char *name, struct group *grp,
   if (result == NSS_STATUS_SUCCESS)
     result = internal_getgrnam_r (name, grp, &ent, buffer, buflen, errnop);
 
-  internal_endgrent (&ent);
+  internal_endgrent_noerror (&ent);
 
   return result;
 }
@@ -530,11 +539,11 @@ internal_getgrgid_r (gid_t gid, struct group *result, ent_t *ent,
 	  while (isspace (*p))
 	    ++p;
 	}
-      while (*p == '\0' || *p == '#' ||	/* Ignore empty and comment lines. */
+      while (*p == '\0' || *p == '#' /* Ignore empty and comment lines. */
 	     /* Parse the line.  If it is invalid, loop to
 	        get the next line of the file to parse.  */
-	     !(parse_res = _nss_files_parse_grent (p, result, data, buflen,
-						   errnop)));
+	     || !(parse_res = _nss_files_parse_grent (p, result, data, buflen,
+						      errnop)));
 
       if (__glibc_unlikely (parse_res == -1))
 	/* The parser ran out of space.  */
@@ -612,7 +621,7 @@ _nss_compat_getgrgid_r (gid_t gid, struct group *grp,
   if (result == NSS_STATUS_SUCCESS)
     result = internal_getgrgid_r (gid, grp, &ent, buffer, buflen, errnop);
 
-  internal_endgrent (&ent);
+  internal_endgrent_noerror (&ent);
 
   return result;
 }

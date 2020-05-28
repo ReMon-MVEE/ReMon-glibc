@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with this library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This file was copied from sysdeps/ieee754/ldbl-128/e_j0l.c.  */
 
@@ -21,8 +21,10 @@
 #include <errno.h>
 #include <math.h>
 #include <math_private.h>
+#include <fenv_private.h>
 #include <math-underflow.h>
 #include <float.h>
+#include <libm-alias-finite.h>
 
 /* 1 / sqrt(pi) */
 static const long double ONEOSQPI = 5.6418958354775628694807945156077258584405E-1L;
@@ -732,7 +734,7 @@ __ieee754_j1l (long double x)
     z = -z;
   return z;
 }
-strong_alias (__ieee754_j1l, __j1l_finite)
+libm_alias_finite (__ieee754_j1l, __j1l)
 
 
 /* Y1(x) = 2/pi * (log(x) * J1(x) - 1/x) + x R(x^2)
@@ -882,4 +884,4 @@ __ieee754_y1l (long double x)
   z = ONEOSQPI * (p * ss + q * cc) / sqrtl (xx);
   return z;
 }
-strong_alias (__ieee754_y1l, __y1l_finite)
+libm_alias_finite (__ieee754_y1l, __y1l)

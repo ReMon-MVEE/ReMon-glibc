@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -24,25 +24,20 @@
    This exception applies to code released by its copyright holders
    in files containing the exception.  */
 
-#include "libioP.h"
-#include "strfile.h"
+/* This file defines one of the deprecated scanf variants.  */
+#include <features.h>
+#undef __GLIBC_USE_DEPRECATED_SCANF
+#define __GLIBC_USE_DEPRECATED_SCANF 1
+
 #include <wchar.h>
+#include "strfile.h"
 
 int
 __vswscanf (const wchar_t *string, const wchar_t *format, va_list args)
 {
-  int ret;
   _IO_strfile sf;
   struct _IO_wide_data wd;
-#ifdef _IO_MTSAFE_IO
-  sf._sbf._f._lock = NULL;
-#endif
-  _IO_no_init (&sf._sbf._f, _IO_USER_LOCK, 0, &wd, &_IO_wstr_jumps);
-  _IO_fwide (&sf._sbf._f, 1);
-  _IO_wstr_init_static (&sf._sbf._f, (wchar_t *)string, 0, NULL);
-  ret = _IO_vfwscanf ((FILE *) &sf._sbf, format, args, NULL);
-  return ret;
+  FILE *f = _IO_strfile_readw (&sf, &wd, string);
+  return __vfwscanf_internal (f, format, args, 0);
 }
-libc_hidden_def (__vswscanf)
-ldbl_hidden_def (__vswscanf, vswscanf)
 ldbl_weak_alias (__vswscanf, vswscanf)

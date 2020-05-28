@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2020 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef dl_machine_h
 #define dl_machine_h
@@ -26,6 +26,9 @@
 #include <dl-tlsdesc.h>
 #include <dl-irel.h>
 #include <cpu-features.c>
+
+/* Translate a processor specific dynamic tag to the index in l_info array.  */
+#define DT_AARCH64(x) (DT_AARCH64_##x - DT_LOPROC + DT_NUM)
 
 /* Return nonzero iff ELF header is compatible with the running host.  */
 static inline int __attribute__ ((unused))
@@ -355,7 +358,8 @@ elf_machine_rela (struct link_map *map, const ElfW(Rela) *reloc,
 
 	case AARCH64_R(IRELATIVE):
 	  value = map->l_addr + reloc->r_addend;
-	  value = elf_ifunc_invoke (value);
+	  if (__glibc_likely (!skip_ifunc))
+	    value = elf_ifunc_invoke (value);
 	  *reloc_addr = value;
 	  break;
 
@@ -388,10 +392,37 @@ elf_machine_lazy_rel (struct link_map *map,
   /* Check for unexpected PLT reloc type.  */
   if (__builtin_expect (r_type == AARCH64_R(JUMP_SLOT), 1))
     {
-      if (__builtin_expect (map->l_mach.plt, 0) == 0)
-	*reloc_addr += l_addr;
-      else
-	*reloc_addr = map->l_mach.plt;
+      if (map->l_mach.plt == 0)
+	{
+	  /* Prelinking.  */
+	  *reloc_addr += l_addr;
+	  return;
+	}
+
+      if (__glibc_unlikely (map->l_info[DT_AARCH64 (VARIANT_PCS)] != NULL))
+	{
+	  /* Check the symbol table for variant PCS symbols.  */
+	  const Elf_Symndx symndx = ELFW (R_SYM) (reloc->r_info);
+	  const ElfW (Sym) *symtab =
+	    (const void *)D_PTR (map, l_info[DT_SYMTAB]);
+	  const ElfW (Sym) *sym = &symtab[symndx];
+	  if (__glibc_unlikely (sym->st_other & STO_AARCH64_VARIANT_PCS))
+	    {
+	      /* Avoid lazy resolution of variant PCS symbols.  */
+	      const struct r_found_version *version = NULL;
+	      if (map->l_info[VERSYMIDX (DT_VERSYM)] != NULL)
+		{
+		  const ElfW (Half) *vernum =
+		    (const void *)D_PTR (map, l_info[VERSYMIDX (DT_VERSYM)]);
+		  version = &map->l_versions[vernum[symndx] & 0x7fff];
+		}
+	      elf_machine_rela (map, reloc, sym, version, reloc_addr,
+				skip_ifunc);
+	      return;
+	    }
+	}
+
+      *reloc_addr = map->l_mach.plt;
     }
   else if (__builtin_expect (r_type == AARCH64_R(TLSDESC), 1))
     {

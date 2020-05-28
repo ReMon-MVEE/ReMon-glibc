@@ -1,5 +1,5 @@
 /* Tests for interactions between C++ and assert.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,8 +14,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
+/* Undefine NDEBUG to ensure the build system e.g. CFLAGS/CXXFLAGS
+   does not disable the asserts we want to test.  */
+#undef NDEBUG
 #include <assert.h>
 
 /* The C++ standard requires that if the assert argument is a constant

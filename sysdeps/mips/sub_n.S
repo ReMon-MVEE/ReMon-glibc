@@ -1,7 +1,7 @@
 /* MIPS2 __mpn_sub_n -- Subtract two limb vectors of the same length > 0 and
 store difference in a third limb vector.
 
-Copyright (C) 1995-2018 Free Software Foundation, Inc.
+Copyright (C) 1995-2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -17,7 +17,7 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library.  If not, see
-<http://www.gnu.org/licenses/>.  */
+<https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 

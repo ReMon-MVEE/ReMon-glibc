@@ -1,5 +1,5 @@
 /* Access functions for CNS 11643 handling.
-   Copyright (C) 1998-2018 Free Software Foundation, Inc.
+   Copyright (C) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1998.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdint.h>
 
@@ -220,7 +220,8 @@ ucs4_to_cns11643 (uint32_t wch, unsigned char *s, size_t avail)
       cp = __cns11643l1_from_ucs4_tab12[ch - 0x4e00];
       if (cp[0] != '\0')
 	break;
-      /* FALLTHROUGH.  Let's try the other planes.  */
+      /* Let's try the other planes.  */
+      /* Fall through.  */
     case 0x3400 ... 0x4dff:
     case 0x9f9d ... 0x9fa5:
       /* Let's try the other planes.  */

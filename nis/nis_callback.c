@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@suse.de>, 1997.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <stdio.h>
@@ -130,8 +130,8 @@ cb_prog_1 (struct svc_req *rqstp, SVCXPRT *transp)
 	for (i = 0; i < argument.cbproc_receive_1_arg.entries.entries_len; ++i)
 	  {
 #define cbproc_entry(a) argument.cbproc_receive_1_arg.entries.entries_val[a]
-	    char name[strlen (cbproc_entry(i)->zo_name) +
-		      strlen (cbproc_entry(i)->zo_domain) + 3];
+	    char name[strlen (cbproc_entry(i)->zo_name)
+		      + strlen (cbproc_entry(i)->zo_domain) + 3];
 	    char *cp;
 
 	    cp = stpcpy (name, cbproc_entry(i)->zo_name);

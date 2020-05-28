@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <dlfcn.h>
 #include <pthreadP.h>
@@ -55,34 +55,6 @@ name decl								      \
 #define FORWARD(name, decl, params, defretval) \
   FORWARD2 (name, int, decl, params, return defretval)
 
-
-FORWARD (pthread_attr_destroy, (pthread_attr_t *attr), (attr), 0)
-
-#if SHLIB_COMPAT(libc, GLIBC_2_0, GLIBC_2_1)
-FORWARD (__pthread_attr_init_2_0, (pthread_attr_t *attr), (attr), 0)
-compat_symbol (libc, __pthread_attr_init_2_0, pthread_attr_init, GLIBC_2_0);
-#endif
-
-FORWARD (__pthread_attr_init_2_1, (pthread_attr_t *attr), (attr), 0)
-versioned_symbol (libc, __pthread_attr_init_2_1, pthread_attr_init, GLIBC_2_1);
-
-FORWARD (pthread_attr_getdetachstate,
-	 (const pthread_attr_t *attr, int *detachstate), (attr, detachstate),
-	 0)
-FORWARD (pthread_attr_setdetachstate, (pthread_attr_t *attr, int detachstate),
-	 (attr, detachstate), 0)
-
-FORWARD (pthread_attr_getinheritsched,
-	 (const pthread_attr_t *attr, int *inherit), (attr, inherit), 0)
-FORWARD (pthread_attr_setinheritsched, (pthread_attr_t *attr, int inherit),
-	 (attr, inherit), 0)
-
-FORWARD (pthread_attr_getschedparam,
-	 (const pthread_attr_t *attr, struct sched_param *param),
-	 (attr, param), 0)
-FORWARD (pthread_attr_setschedparam,
-	 (pthread_attr_t *attr, const struct sched_param *param),
-	 (attr, param), 0)
 
 FORWARD (pthread_attr_getschedpolicy,
 	 (const pthread_attr_t *attr, int *policy), (attr, policy), 0)
@@ -164,10 +136,6 @@ FORWARD (__pthread_cond_timedwait,
 	  const struct timespec *abstime), (cond, mutex, abstime), 0)
 versioned_symbol (libc, __pthread_cond_timedwait, pthread_cond_timedwait,
 		  GLIBC_2_3_2);
-
-
-FORWARD (pthread_equal, (pthread_t thread1, pthread_t thread2),
-	 (thread1, thread2), 1)
 
 
 FORWARD_NORETURN (__pthread_exit, void, (void *retval), (retval),

@@ -1,5 +1,5 @@
 /* Disable floating-point exceptions.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Geoffrey Keating <geoffk@geoffk.org>, 2000.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <fenv_libc.h>
 
@@ -26,32 +26,24 @@ fedisableexcept (int excepts)
   int result, new;
 
   /* Get current exception mask to return.  */
-  fe.fenv = curr.fenv = fegetenv_register ();
+  fe.fenv = curr.fenv = fegetenv_control ();
   result = fenv_reg_to_exceptions (fe.l);
 
   if ((excepts & FE_ALL_INVALID) == FE_ALL_INVALID)
     excepts = (excepts | FE_INVALID) & ~ FE_ALL_INVALID;
 
+  new = fenv_exceptions_to_reg (excepts);
+
+  if (fenv_reg_to_exceptions (new) != excepts)
+    return -1;
+
   /* Sets the new exception mask.  */
-  if (excepts & FE_INEXACT)
-    fe.l &= ~(1 << (31 - FPSCR_XE));
-  if (excepts & FE_DIVBYZERO)
-    fe.l &= ~(1 << (31 - FPSCR_ZE));
-  if (excepts & FE_UNDERFLOW)
-    fe.l &= ~(1 << (31 - FPSCR_UE));
-  if (excepts & FE_OVERFLOW)
-    fe.l &= ~(1 << (31 - FPSCR_OE));
-  if (excepts & FE_INVALID)
-    fe.l &= ~(1 << (31 - FPSCR_VE));
+  fe.l &= ~new;
 
   if (fe.l != curr.l)
-    fesetenv_register (fe.fenv);
+    fesetenv_control (fe.fenv);
 
-  new = __fegetexcept ();
-  if (new == 0 && result != 0)
-    (void)__fe_mask_env ();
+  __TEST_AND_ENTER_NON_STOP (-1ULL, fe.l);
 
-  if ((new & excepts) != 0)
-    result = -1;
   return result;
 }

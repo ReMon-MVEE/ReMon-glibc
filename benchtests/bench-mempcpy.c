@@ -1,5 +1,5 @@
 /* Measure mempcpy functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,24 +14,20 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define MEMCPY_RESULT(dst, len) (dst) + (len)
 #define TEST_MAIN
 #define TEST_NAME "mempcpy"
 #include "bench-string.h"
 
-char *simple_mempcpy (char *, const char *, size_t);
-
-IMPL (simple_mempcpy, 0)
-IMPL (mempcpy, 1)
-
 char *
-simple_mempcpy (char *dst, const char *src, size_t n)
+generic_mempcpy (char *dst, const char *src, size_t n)
 {
-  while (n--)
-    *dst++ = *src++;
-  return dst;
+  return memcpy (dst, src, n) + n;
 }
+
+IMPL (mempcpy, 1)
+IMPL (generic_mempcpy, 0)
 
 #include "bench-memcpy.c"

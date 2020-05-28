@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Per Bothner <bothner@cygnus.com>.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -331,26 +331,19 @@ _IO_new_file_fopen (FILE *fp, const char *filename, const char *mode,
 
 	  cc = fp->_codecvt = &fp->_wide_data->_codecvt;
 
-	  /* The functions are always the same.  */
-	  *cc = __libio_codecvt;
+	  cc->__cd_in.step = fcts.towc;
 
-	  cc->__cd_in.__cd.__nsteps = fcts.towc_nsteps;
-	  cc->__cd_in.__cd.__steps = fcts.towc;
+	  cc->__cd_in.step_data.__invocation_counter = 0;
+	  cc->__cd_in.step_data.__internal_use = 1;
+	  cc->__cd_in.step_data.__flags = __GCONV_IS_LAST;
+	  cc->__cd_in.step_data.__statep = &result->_wide_data->_IO_state;
 
-	  cc->__cd_in.__cd.__data[0].__invocation_counter = 0;
-	  cc->__cd_in.__cd.__data[0].__internal_use = 1;
-	  cc->__cd_in.__cd.__data[0].__flags = __GCONV_IS_LAST;
-	  cc->__cd_in.__cd.__data[0].__statep = &result->_wide_data->_IO_state;
+	  cc->__cd_out.step = fcts.tomb;
 
-	  cc->__cd_out.__cd.__nsteps = fcts.tomb_nsteps;
-	  cc->__cd_out.__cd.__steps = fcts.tomb;
-
-	  cc->__cd_out.__cd.__data[0].__invocation_counter = 0;
-	  cc->__cd_out.__cd.__data[0].__internal_use = 1;
-	  cc->__cd_out.__cd.__data[0].__flags
-	    = __GCONV_IS_LAST | __GCONV_TRANSLIT;
-	  cc->__cd_out.__cd.__data[0].__statep =
-	    &result->_wide_data->_IO_state;
+	  cc->__cd_out.step_data.__invocation_counter = 0;
+	  cc->__cd_out.step_data.__internal_use = 1;
+	  cc->__cd_out.step_data.__flags = __GCONV_IS_LAST | __GCONV_TRANSLIT;
+	  cc->__cd_out.step_data.__statep = &result->_wide_data->_IO_state;
 
 	  /* From now on use the wide character callback functions.  */
 	  _IO_JUMPS_FILE_plus (fp) = fp->_wide_data->_wide_vtable;
@@ -501,13 +494,13 @@ _IO_new_file_underflow (FILE *fp)
 	 traditional Unix systems did this for stdout.  stderr better
 	 not be line buffered.  So we do just that here
 	 explicitly.  --drepper */
-      _IO_acquire_lock (_IO_stdout);
+      _IO_acquire_lock (stdout);
 
-      if ((_IO_stdout->_flags & (_IO_LINKED | _IO_NO_WRITES | _IO_LINE_BUF))
+      if ((stdout->_flags & (_IO_LINKED | _IO_NO_WRITES | _IO_LINE_BUF))
 	  == (_IO_LINKED | _IO_LINE_BUF))
-	_IO_OVERFLOW (_IO_stdout, EOF);
+	_IO_OVERFLOW (stdout, EOF);
 
-      _IO_release_lock (_IO_stdout);
+      _IO_release_lock (stdout);
     }
 
   _IO_switch_to_get_mode (fp);

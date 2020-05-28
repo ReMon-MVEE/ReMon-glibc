@@ -1,5 +1,5 @@
 /* Single-precision e^x function.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifdef __expf
 # undef libm_hidden_proto
@@ -24,7 +24,7 @@
 #include <math.h>
 #include <math-narrow-eval.h>
 #include <stdint.h>
-#include <shlib-compat.h>
+#include <libm-alias-finite.h>
 #include <libm-alias-float.h>
 #include "math_config.h"
 
@@ -85,10 +85,7 @@ __expf (float x)
 #if TOINT_INTRINSICS
   kd = roundtoint (z);
   ki = converttoint (z);
-#elif TOINT_RINT
-  kd = rint (z);
-  ki = (long) kd;
-#elif TOINT_SHIFT
+#else
 # define SHIFT __exp2f_data.shift
   kd = math_narrow_eval ((double) (z + SHIFT)); /* Needs to be double.  */
   ki = asuint64 (kd);
@@ -111,7 +108,7 @@ __expf (float x)
 #ifndef __expf
 hidden_def (__expf)
 strong_alias (__expf, __ieee754_expf)
-strong_alias (__expf, __expf_finite)
+libm_alias_finite (__ieee754_expf, __expf)
 versioned_symbol (libm, __expf, expf, GLIBC_2_27);
 libm_alias_float_other (__exp, exp)
 #endif

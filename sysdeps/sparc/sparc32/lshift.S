@@ -1,6 +1,6 @@
 ! Sparc __mpn_lshift --
 !
-! Copyright (C) 1995-2018 Free Software Foundation, Inc.
+! Copyright (C) 1995-2020 Free Software Foundation, Inc.
 !
 ! This file is part of the GNU MP Library.
 !
@@ -16,7 +16,7 @@
 !
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with the GNU MP Library; see the file COPYING.LIB.  If not,
-! see <http://www.gnu.org/licenses/>.
+! see <https://www.gnu.org/licenses/>.
 
 
 ! INPUT PARAMETERS

@@ -1,5 +1,5 @@
 /* Special use of signals internally.  Linux version.
-   Copyright (C) 2014-2018 Free Software Foundation, Inc.
+   Copyright (C) 2014-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef __INTERNAL_SIGNALS_H
 # define __INTERNAL_SIGNALS_H
@@ -22,6 +22,7 @@
 #include <signal.h>
 #include <sigsetops.h>
 #include <stdbool.h>
+#include <limits.h>
 #include <sysdep.h>
 
 /* The signal used for asynchronous cancelation.  */
@@ -53,36 +54,37 @@ __clear_internal_signals (sigset_t *set)
   __sigdelset (set, SIGSETXID);
 }
 
-#define SIGALL_SET \
-  ((__sigset_t) { .__val = {[0 ...  _SIGSET_NWORDS-1 ] =  -1 } })
+static const sigset_t sigall_set = {
+   .__val = {[0 ...  _SIGSET_NWORDS-1 ] =  -1 }
+};
 
 /* Block all signals, including internal glibc ones.  */
-static inline int
+static inline void
 __libc_signal_block_all (sigset_t *set)
 {
   INTERNAL_SYSCALL_DECL (err);
-  return INTERNAL_SYSCALL (rt_sigprocmask, err, 4, SIG_BLOCK, &SIGALL_SET,
-			   set, _NSIG / 8);
+  INTERNAL_SYSCALL_CALL (rt_sigprocmask, err, SIG_BLOCK, &sigall_set, set,
+			 _NSIG / 8);
 }
 
 /* Block all application signals (excluding internal glibc ones).  */
-static inline int
+static inline void
 __libc_signal_block_app (sigset_t *set)
 {
-  sigset_t allset = SIGALL_SET;
+  sigset_t allset = sigall_set;
   __clear_internal_signals (&allset);
   INTERNAL_SYSCALL_DECL (err);
-  return INTERNAL_SYSCALL (rt_sigprocmask, err, 4, SIG_BLOCK, &allset, set,
-			   _NSIG / 8);
+  INTERNAL_SYSCALL_CALL (rt_sigprocmask, err, SIG_BLOCK, &allset, set,
+			 _NSIG / 8);
 }
 
 /* Restore current process signal mask.  */
-static inline int
+static inline void
 __libc_signal_restore_set (const sigset_t *set)
 {
   INTERNAL_SYSCALL_DECL (err);
-  return INTERNAL_SYSCALL (rt_sigprocmask, err, 4, SIG_SETMASK, set, NULL,
-			   _NSIG / 8);
+  INTERNAL_SYSCALL_CALL (rt_sigprocmask, err, SIG_SETMASK, set, NULL,
+			 _NSIG / 8);
 }
 
 /* Used to communicate with signal handler.  */

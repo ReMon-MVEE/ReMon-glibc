@@ -1,5 +1,5 @@
 /* Return in BUF representation of time T in form of asctime
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -15,15 +15,30 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <time.h>
 
 /* Return a string as returned by asctime which is the representation
    of *T in that form.  Reentrant version.  */
 char *
-ctime_r (const time_t *t, char *buf)
+__ctime64_r (const __time64_t *t, char *buf)
 {
   struct tm tm;
-  return __asctime_r (__localtime_r (t, &tm), buf);
+  return __asctime_r (__localtime64_r (t, &tm), buf);
 }
+
+/* Provide a 32-bit variant if needed.  */
+
+#if __TIMESIZE != 64
+
+libc_hidden_def (__ctime64_r)
+
+char *
+ctime_r (const time_t *t, char *buf)
+{
+  __time64_t t64 = *t;
+  return __ctime64_r (&t64, buf);
+}
+
+#endif

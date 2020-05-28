@@ -1,5 +1,5 @@
 /* memcmp with SSE4.2, wmemcmp with SSE4.2
-   Copyright (C) 2010-2018 Free Software Foundation, Inc.
+   Copyright (C) 2010-2020 Free Software Foundation, Inc.
    Contributed by Intel Corporation.
    This file is part of the GNU C Library.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #if IS_IN (libc)
 
@@ -59,7 +59,7 @@
 	absolute	address.  */	\
 	addl	(%ebx,INDEX,SCALE), %ebx;	\
 /* We loaded the jump table and adjusted EDX/ESI. Go.  */	\
-	jmp	*%ebx
+	_CET_NOTRACK jmp *%ebx
 # else
 #  define JMPTBL(I, B)	I
 
@@ -67,7 +67,7 @@
 	jump	table with relative offsets.  INDEX is a register contains the
 	index	into the jump table.   SCALE is the scale of INDEX. */
 #  define BRANCH_TO_JMPTBL_ENTRY(TABLE, INDEX, SCALE)	\
-	jmp	*TABLE(,INDEX,SCALE)
+	_CET_NOTRACK jmp *TABLE(,INDEX,SCALE)
 # endif
 
 

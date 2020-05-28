@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# Copyright (C) 1997-2018 Free Software Foundation, Inc.
+# Copyright (C) 1997-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 # Contributed by Andreas Jaeger <aj@arthur.rhein-neckar.de>, 1997.
 
@@ -15,7 +15,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 
 $PACKAGE = "libc";
@@ -59,7 +59,7 @@ arglist: while (@ARGV) {
       $ARGV[0] eq "--vers" || $ARGV[0] eq "--versi" ||
       $ARGV[0] eq "--versio" || $ARGV[0] eq "--version") {
     print "test-installation (GNU $PACKAGE)\n";
-    print "Copyright (C) 2018 Free Software Foundation, Inc.\n";
+    print "Copyright (C) 2020 Free Software Foundation, Inc.\n";
     print "This is free software; see the source for copying conditions.  There is NO\n";
     print "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n";
     print "Written by Andreas Jaeger <aj\@arthur.rhein-neckar.de>\n";
@@ -79,10 +79,12 @@ arglist: while (@ARGV) {
 
 # We expect none or one argument.
 if ($#ARGV == -1) {
+    $dir = ".";
     $soversions="soversions.mk";
     $config="config.make";
 } elsif ($#ARGV == 0) {
     if (-d $ARGV[0]) {
+      $dir = $ARGV[0];
       $soversions = "$ARGV[0]/soversions.mk";
       $config = "$ARGV[0]/config.make";
     } else {
@@ -141,8 +143,8 @@ close SOVERSIONS;
 # Create test program and link it against all
 # shared libraries
 
-open PRG, ">/tmp/test-prg$$.c"
-  or die ("Couldn't write test file /tmp/test-prg$$.c");
+open PRG, ">$dir/test-prg$$.c"
+  or die ("Couldn't write test file $dir/test-prg$$.c");
 
 print PRG '
 #include <stdio.h>
@@ -154,7 +156,7 @@ int main(void) {
 ';
 close PRG;
 
-open GCC, "$CC /tmp/test-prg$$.c $link_libs -o /tmp/test-prg$$ 2>&1 |"
+open GCC, "$CC $dir/test-prg$$.c $link_libs -o $dir/test-prg$$ 2>&1 |"
   or die ("Couldn't execute $CC!");
 
 while (<GCC>) {
@@ -172,7 +174,7 @@ if ($?) {
 $ok = 1;
 %found = ();
 
-open LDD, "ldd /tmp/test-prg$$ |"
+open LDD, "ldd $dir/test-prg$$ |"
   or die ("Couldn't execute ldd");
 while (<LDD>) {
   if (/^\s*lib/) {
@@ -212,8 +214,8 @@ foreach (keys %versions) {
 &installation_problem unless $ok;
 
 # Finally execute the test program
-system ("/tmp/test-prg$$") == 0
+system ("$dir/test-prg$$") == 0
   or die ("Execution of test program failed");
 
 # Clean up after ourselves
-unlink ("/tmp/test-prg$$", "/tmp/test-prg$$.c");
+unlink ("$dir/test-prg$$", "$dir/test-prg$$.c");

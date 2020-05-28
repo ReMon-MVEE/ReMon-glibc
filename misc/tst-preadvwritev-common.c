@@ -1,5 +1,5 @@
 /* Common definitions for preadv and pwritev.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,9 +14,10 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <array_length.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <errno.h>
@@ -26,10 +27,12 @@
 
 #include <support/check.h>
 #include <support/temp_file.h>
+#include <support/support.h>
 #include <support/xunistd.h>
 
 static char *temp_filename;
 static int temp_fd;
+static bool temp_fd_supports_holes;
 
 static int do_test (void);
 
@@ -39,6 +42,7 @@ do_prepare (int argc, char **argv)
   temp_fd = create_temp_file ("tst-preadvwritev.", &temp_filename);
   if (temp_fd == -1)
     FAIL_EXIT1 ("cannot create temporary file");
+  temp_fd_supports_holes = support_descriptor_supports_holes (temp_fd);
 }
 #define PREPARE do_prepare
 

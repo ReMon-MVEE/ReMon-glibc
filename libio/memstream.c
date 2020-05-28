@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "libioP.h"
 #include "strfile.h"
@@ -90,8 +90,8 @@ __open_memstream (char **bufloc, size_t *sizeloc)
   _IO_JUMPS_FILE_plus (&new_f->fp._sf._sbf) = &_IO_mem_jumps;
   _IO_str_init_static_internal (&new_f->fp._sf, buf, BUFSIZ, buf);
   new_f->fp._sf._sbf._f._flags &= ~_IO_USER_BUF;
-  new_f->fp._sf._s._allocate_buffer = (_IO_alloc_type) malloc;
-  new_f->fp._sf._s._free_buffer = (_IO_free_type) free;
+  new_f->fp._sf._s._allocate_buffer_unused = (_IO_alloc_type) malloc;
+  new_f->fp._sf._s._free_buffer_unused = (_IO_free_type) free;
 
   new_f->fp.bufloc = bufloc;
   new_f->fp.sizeloc = sizeloc;

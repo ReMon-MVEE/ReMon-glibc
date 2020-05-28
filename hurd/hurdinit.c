@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sys/stat.h>
 #include <stdlib.h>
@@ -100,10 +100,12 @@ _hurd_init (int flags, char **argv,
 		   portarraysize * sizeof (mach_port_t));
 
   if (flags & EXEC_SECURE)
-    /* XXX if secure exec, elide environment variables
-       which the library uses and could be security holes.
-       CORESERVER, COREFILE
-       */ ;
+    {
+      /* XXX if secure exec, elide environment variables
+	 which the library uses and could be security holes.
+	 CORESERVER, COREFILE
+      */
+    }
 
   /* Call other things which want to do some initialization.  These are not
      on the __libc_subinit hook because things there like to be able to
@@ -198,10 +200,10 @@ _hurd_setproc (process_t procserver)
 
   /* Tell the proc server where our args and environment are.  */
   if (err = __proc_set_arg_locations (procserver,
-				      _hide_arguments ? 0 :
-				      (vm_address_t) __libc_argv,
-				      _hide_environment ? 0 :
-				      (vm_address_t) __environ))
+				      _hide_arguments ? 0
+				      : (vm_address_t) __libc_argv,
+				      _hide_environment ? 0
+				      : (vm_address_t) __environ))
     return err;
 
   /* Those calls worked, so the port looks good.  */

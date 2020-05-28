@@ -1,5 +1,5 @@
 /* Run-time dynamic linker data structures for loaded ELF shared objects.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef	_LDSODEFS_H
 #define	_LDSODEFS_H	1
@@ -46,6 +46,23 @@ __BEGIN_DECLS
 			 + DT_EXTRANUM + DT_VALTAGIDX (tag))
 #define ADDRIDX(tag)	(DT_NUM + DT_THISPROCNUM + DT_VERSIONTAGNUM \
 			 + DT_EXTRANUM + DT_VALNUM + DT_ADDRTAGIDX (tag))
+
+/* Type of GNU hash which the machine uses.  */
+#ifndef ELF_MACHINE_GNU_HASH_ADDRIDX
+# define ELF_MACHINE_GNU_HASH_ADDRIDX ADDRIDX (DT_GNU_HASH)
+#endif
+
+/* Calculate the index of a symbol in GNU hash.  */
+#ifndef ELF_MACHINE_HASH_SYMIDX
+# define ELF_MACHINE_HASH_SYMIDX(map, hasharr) \
+  ((hasharr) - (map)->l_gnu_chain_zero)
+#endif
+
+/* Setup MIPS xhash.  Defined only for MIPS.  */
+#ifndef ELF_MACHINE_XHASH_SETUP
+# define ELF_MACHINE_XHASH_SETUP(hash32, symbias, map) \
+  ((void) (hash32), (void) (symbias), (void) (map))
+#endif
 
 /* We use this macro to refer to ELF types independent of the native wordsize.
    `ElfW(TYPE)' is used in place of `Elf32_TYPE' or `Elf64_TYPE'.  */
@@ -311,7 +328,14 @@ struct rtld_global
     /* This is zero at program start to signal that the global scope map is
        allocated by rtld.  Later it keeps the size of the map.  It might be
        reset if in _dl_close if the last global object is removed.  */
-    size_t _ns_global_scope_alloc;
+    unsigned int _ns_global_scope_alloc;
+
+    /* During dlopen, this is the number of objects that still need to
+       be added to the global scope map.  It has to be taken into
+       account when resizing the map, for future map additions after
+       recursive dlopen calls from ELF constructors.  */
+    unsigned int _ns_global_scope_pending_adds;
+
     /* Search table for unique objects.  */
     struct unique_sym_table
     {
@@ -352,11 +376,6 @@ struct rtld_global
   /* The object to be initialized first.  */
   EXTERN struct link_map *_dl_initfirst;
 
-#if HP_SMALL_TIMING_AVAIL
-  /* Start time on CPU clock.  */
-  EXTERN hp_timing_t _dl_cpuclock_offset;
-#endif
-
   /* Map of shared object to be profiled.  */
   EXTERN struct link_map *_dl_profile_map;
 
@@ -367,11 +386,12 @@ struct rtld_global
   /* List of search directories.  */
   EXTERN struct r_search_path_elem *_dl_all_dirs;
 
-  /* Structure describing the dynamic linker itself.  We need to
-     reserve memory for the data the audit libraries need.  */
+  /* Structure describing the dynamic linker itself.  */
   EXTERN struct link_map _dl_rtld_map;
 #ifdef SHARED
-  struct auditstate audit_data[DL_NNS];
+  /* Used to store the audit information for the link map of the
+     dynamic loader.  */
+  struct auditstate _dl_rtld_auditstate[DL_NNS];
 #endif
 
 #if defined SHARED && defined _LIBC_REENTRANT \
@@ -408,7 +428,7 @@ struct rtld_global
     {
       size_t gen;
       struct link_map *map;
-    } slotinfo[0];
+    } slotinfo[];
   } *_dl_tls_dtv_slotinfo_list;
   /* Number of modules in the static TLS block.  */
   EXTERN size_t _dl_tls_static_nelem;
@@ -588,6 +608,12 @@ struct rtld_global_ro
   /* At startup time we set up the normal DSO data structure for it,
      and this points to it.  */
   EXTERN struct link_map *_dl_sysinfo_map;
+
+# define PROCINFO_DECL
+# ifndef PROCINFO_CLASS
+#  define PROCINFO_CLASS EXTERN
+# endif
+# include <dl-vdso-setup.c>
 #endif
 
   /* Mask for more hardware capabilities that are available on some
@@ -688,10 +714,6 @@ rtld_hidden_proto (_dl_starting_up)
 
 /* Random data provided by the kernel.  */
 extern void *_dl_random attribute_hidden attribute_relro;
-
-/* OS-dependent function to open the zero-fill device.  */
-extern int _dl_sysdep_open_zero_fill (void); /* dl-sysdep.c */
-
 
 /* Write message on the debug file descriptor.  The parameters are
    interpreted as for a `printf' call.  All the lines start with a
@@ -852,7 +874,9 @@ libc_hidden_proto (_dl_catch_error)
 
 /* Call OPERATE (ARGS).  If no error occurs, set *EXCEPTION to zero.
    Otherwise, store a copy of the raised exception in *EXCEPTION,
-   which has to be freed by _dl_exception_free.  */
+   which has to be freed by _dl_exception_free.  As a special case, if
+   EXCEPTION is null, call OPERATE (ARGS) with exception handling
+   disabled (so that exceptions are fatal).  */
 int _dl_catch_exception (struct dl_exception *exception,
 			 void (*operate) (void *), void *args);
 libc_hidden_proto (_dl_catch_exception)
@@ -906,6 +930,9 @@ enum
     DL_LOOKUP_RETURN_NEWEST = 2,
     /* Set if dl_lookup* called with GSCOPE lock held.  */
     DL_LOOKUP_GSCOPE_LOCK = 4,
+    /* Set if dl_lookup is called for non-lazy relocation processing
+       from _dl_relocate_object in elf/dl-reloc.c.  */
+    DL_LOOKUP_FOR_RELOCATE = 8,
   };
 
 /* Lookup versioned symbol.  */
@@ -1123,8 +1150,15 @@ extern void *_dl_open (const char *name, int mode, const void *caller,
    old scope, OLD can't be freed until no thread is using it.  */
 extern int _dl_scope_free (void *) attribute_hidden;
 
-/* Add module to slot information data.  */
-extern void _dl_add_to_slotinfo (struct link_map  *l) attribute_hidden;
+
+/* Add module to slot information data.  If DO_ADD is false, only the
+   required memory is allocated.  Must be called with GL
+   (dl_load_lock) acquired.  If the function has already been called
+   for the link map L with !do_add, then this function will not raise
+   an exception, otherwise it is possible that it encounters a memory
+   allocation failure.  */
+extern void _dl_add_to_slotinfo (struct link_map *l, bool do_add)
+  attribute_hidden;
 
 /* Update slot information data for at least the generation of the
    module with the given index.  */
@@ -1166,7 +1200,21 @@ rtld_active (void)
      initialized and active ld.so copy.  */
   return GLRO(dl_init_all_dirs) != NULL;
 }
-#endif
+
+static inline struct auditstate *
+link_map_audit_state (struct link_map *l, size_t index)
+{
+  if (l == &GL (dl_rtld_map))
+    /* The auditstate array is stored separately.  */
+    return &GL (dl_rtld_auditstate) [index];
+  else
+    {
+      /* The auditstate array follows the link map in memory.  */
+      struct auditstate *base = (struct auditstate *) (l + 1);
+      return &base[index];
+    }
+}
+#endif /* SHARED */
 
 __END_DECLS
 

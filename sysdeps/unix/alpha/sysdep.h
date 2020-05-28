@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Brendan Kehoe (brendan@zen.org).
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdeps/unix/sysdep.h>
 #include <dl-sysdep.h>         /* Defines RTLD_PRIVATE_ERRNO.  */
@@ -200,7 +200,7 @@ __LABEL(name)						\
    no matter what the "real" sign of the 32-bit type.  We want to
    preserve that when filling in values for the kernel.  */
 #define syscall_promote(arg) \
-  (sizeof(arg) == 4 ? (long)(int)(long)(arg) : (long)(arg))
+  (sizeof (arg) == 4 ? (long)(int)(long)(arg) : (long)(arg))
 
 /* Make sure and "use" the variable that we're not returning,
    in order to suppress unused variable warnings.  */

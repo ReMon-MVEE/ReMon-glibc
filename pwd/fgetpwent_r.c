@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <ctype.h>
 #include <errno.h>
@@ -97,10 +97,10 @@ __fgetpwent_r (FILE *stream, struct passwd *resbuf, char *buffer,
       /* Skip leading blanks.  */
       while (isspace (*p))
 	++p;
-    } while (*p == '\0' || *p == '#' ||	/* Ignore empty and comment lines.  */
+    } while (*p == '\0' || *p == '#' /* Ignore empty and comment lines.  */
 	     /* Parse the line.  If it is invalid, loop to
 		get the next line of the file to parse.  */
-	     ! parse_line (p, resbuf, (void *) buffer, buflen, &errno));
+	     || ! parse_line (p, resbuf, (void *) buffer, buflen, &errno));
 
   funlockfile (stream);
 

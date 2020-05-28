@@ -1,5 +1,5 @@
 /* Support for reading /etc/ld.so.cache files written by Linux ldconfig.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <unistd.h>
@@ -204,7 +204,10 @@ _dl_load_cache_lookup (const char *name)
 	 - only the new format
 	 The following checks if the cache contains any of these formats.  */
       if (file != MAP_FAILED && cachesize > sizeof *cache
-	  && memcmp (file, CACHEMAGIC, sizeof CACHEMAGIC - 1) == 0)
+	  && memcmp (file, CACHEMAGIC, sizeof CACHEMAGIC - 1) == 0
+	  /* Check for corruption, avoiding overflow.  */
+	  && ((cachesize - sizeof *cache) / sizeof (struct file_entry)
+	      >= ((struct cache_file *) file)->nlibs))
 	{
 	  size_t offset;
 	  /* Looks ok.  */

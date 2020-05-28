@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <pthread.h>
@@ -26,11 +26,20 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <support/check.h>
+#include <support/timespec.h>
+#include <support/xunistd.h>
 
 
-static int
-do_test (void)
+/* A bogus clock value that tells run_test to use pthread_mutex_timedlock
+   rather than pthread_mutex_clocklock.  */
+#define CLOCK_USE_TIMEDLOCK (-1)
+
+static void
+do_test_clock (clockid_t clockid)
 {
+  const clockid_t clockid_for_get =
+    (clockid == CLOCK_USE_TIMEDLOCK) ? CLOCK_REALTIME : clockid;
   size_t ps = sysconf (_SC_PAGESIZE);
   char tmpfname[] = "/tmp/tst-mutex9.XXXXXX";
   char data[ps];
@@ -42,10 +51,7 @@ do_test (void)
 
   fd = mkstemp (tmpfname);
   if (fd == -1)
-    {
-      printf ("cannot open temporary file: %m\n");
-      return 1;
-    }
+      FAIL_EXIT1 ("cannot open temporary file: %m\n");
 
   /* Make sure it is always removed.  */
   unlink (tmpfname);
@@ -54,46 +60,21 @@ do_test (void)
   memset (data, '\0', ps);
 
   /* Write the data to the file.  */
-  if (write (fd, data, ps) != (ssize_t) ps)
-    {
-      puts ("short write");
-      return 1;
-    }
+  xwrite (fd, data, ps);
 
-  mem = mmap (NULL, ps, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-  if (mem == MAP_FAILED)
-    {
-      printf ("mmap failed: %m\n");
-      return 1;
-    }
+  mem = xmmap (NULL, ps, PROT_READ | PROT_WRITE, MAP_SHARED, fd);
 
   m = (pthread_mutex_t *) (((uintptr_t) mem + __alignof (pthread_mutex_t))
 			   & ~(__alignof (pthread_mutex_t) - 1));
 
-  if (pthread_mutexattr_init (&a) != 0)
-    {
-      puts ("mutexattr_init failed");
-      return 1;
-    }
+  TEST_COMPARE (pthread_mutexattr_init (&a), 0);
 
-  if (pthread_mutexattr_setpshared (&a, PTHREAD_PROCESS_SHARED) != 0)
-    {
-      puts ("mutexattr_setpshared failed");
-      return 1;
-    }
+  TEST_COMPARE (pthread_mutexattr_setpshared (&a, PTHREAD_PROCESS_SHARED), 0);
 
-  if (pthread_mutexattr_settype (&a, PTHREAD_MUTEX_RECURSIVE) != 0)
-    {
-      puts ("mutexattr_settype failed");
-      return 1;
-    }
+  TEST_COMPARE (pthread_mutexattr_settype (&a, PTHREAD_MUTEX_RECURSIVE), 0);
 
 #ifdef ENABLE_PI
-  if (pthread_mutexattr_setprotocol (&a, PTHREAD_PRIO_INHERIT) != 0)
-    {
-      puts ("pthread_mutexattr_setprotocol failed");
-      return 1;
-    }
+  TEST_COMPARE (pthread_mutexattr_setprotocol (&a, PTHREAD_PRIO_INHERIT), 0);
 #endif
 
   int e;
@@ -101,70 +82,32 @@ do_test (void)
     {
 #ifdef ENABLE_PI
       if (e == ENOTSUP)
-	{
-	  puts ("PI mutexes unsupported");
-	  return 0;
-	}
+        FAIL_UNSUPPORTED ("PI mutexes unsupported");
 #endif
-      puts ("mutex_init failed");
-      return 1;
+      FAIL_EXIT1 ("mutex_init failed");
     }
 
-  if (pthread_mutex_lock (m) != 0)
-    {
-      puts ("mutex_lock failed");
-      return 1;
-    }
+  TEST_COMPARE (pthread_mutex_lock (m), 0);
 
-  if (pthread_mutexattr_destroy (&a) != 0)
-    {
-      puts ("mutexattr_destroy failed");
-      return 1;
-    }
+  TEST_COMPARE (pthread_mutexattr_destroy (&a), 0);
 
   puts ("going to fork now");
-  pid = fork ();
-  if (pid == -1)
-    {
-      puts ("fork failed");
-      return 1;
-    }
-  else if (pid == 0)
+  pid = xfork ();
+  if (pid == 0)
     {
       if (pthread_mutex_trylock (m) == 0)
-	{
-	  puts ("child: mutex_trylock succeeded");
-	  exit (1);
-	}
+        FAIL_EXIT1 ("child: mutex_trylock succeeded");
 
       if (pthread_mutex_unlock (m) == 0)
-	{
-	  puts ("child: mutex_unlock succeeded");
-	  exit (1);
-	}
+        FAIL_EXIT1 ("child: mutex_unlock succeeded");
 
-      struct timeval tv;
-      gettimeofday (&tv, NULL);
-      struct timespec ts;
-      TIMEVAL_TO_TIMESPEC (&tv, &ts);
-      ts.tv_nsec += 500000000;
-      if (ts.tv_nsec >= 1000000000)
-	{
-	  ++ts.tv_sec;
-	  ts.tv_nsec -= 1000000000;
-	}
+      const struct timespec ts = timespec_add (xclock_now (clockid_for_get),
+                                               make_timespec (0, 500000000));
 
-      e = pthread_mutex_timedlock (m, &ts);
-      if (e == 0)
-	{
-	  puts ("child: mutex_timedlock succeeded");
-	  exit (1);
-	}
-      if (e != ETIMEDOUT)
-	{
-	  puts ("child: mutex_timedlock didn't time out");
-	  exit (1);
-	}
+      if (clockid == CLOCK_USE_TIMEDLOCK)
+        TEST_COMPARE (pthread_mutex_timedlock (m, &ts), ETIMEDOUT);
+      else
+        TEST_COMPARE (pthread_mutex_clocklock (m, clockid, &ts), ETIMEDOUT);
 
       alarm (1);
 
@@ -179,24 +122,19 @@ do_test (void)
 
   int status;
   if (TEMP_FAILURE_RETRY (waitpid (pid, &status, 0)) != pid)
-    {
-      puts ("waitpid failed");
-      return 1;
-    }
+    FAIL_EXIT1 ("waitpid failed");
   if (! WIFSIGNALED (status))
-    {
-      puts ("child not killed by signal");
-      return 1;
-    }
-  if (WTERMSIG (status) != SIGALRM)
-    {
-      puts ("child not killed by SIGALRM");
-      return 1;
-    }
+    FAIL_EXIT1 ("child not killed by signal");
+  TEST_COMPARE (WTERMSIG (status), SIGALRM);
+}
 
+static int
+do_test (void)
+{
+  do_test_clock (CLOCK_USE_TIMEDLOCK);
+  do_test_clock (CLOCK_REALTIME);
+  do_test_clock (CLOCK_MONOTONIC);
   return 0;
 }
 
-#define TIMEOUT 3
-#define TEST_FUNCTION do_test ()
-#include "../test-skeleton.c"
+#include <support/test-driver.c>

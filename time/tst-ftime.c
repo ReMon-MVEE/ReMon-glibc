@@ -1,5 +1,5 @@
 /* Verify that ftime is sane.
-   Copyright (C) 2014-2018 Free Software Foundation, Inc.
+   Copyright (C) 2014-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,10 +14,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sys/timeb.h>
 #include <stdio.h>
+#include <libc-diag.h>
 
 static int
 do_test (void)
@@ -29,11 +30,17 @@ do_test (void)
     {
       prev = curr;
 
+      /* ftime was deprecated on 2.31.  */
+      DIAG_PUSH_NEEDS_COMMENT;
+      DIAG_IGNORE_NEEDS_COMMENT (4.9, "-Wdeprecated-declarations");
+
       if (ftime (&curr))
         {
           printf ("ftime returned an error\n");
           return 1;
         }
+
+      DIAG_POP_NEEDS_COMMENT;
 
       if (curr.time < prev.time)
         {
@@ -54,6 +61,5 @@ do_test (void)
   return 0;
 }
 
-#define TIMEOUT 3
 #define TEST_FUNCTION do_test ()
 #include "../test-skeleton.c"

@@ -1,5 +1,5 @@
 /* Test and measure strstr functions.
-   Copyright (C) 2010-2018 Free Software Foundation, Inc.
+   Copyright (C) 2010-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Ulrich Drepper <drepper@redhat.com>, 2010.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #define TEST_NAME "strstr"
@@ -24,6 +24,7 @@
 
 #define STRSTR simple_strstr
 #define libc_hidden_builtin_def(arg) /* nothing */
+#define __strnlen strnlen
 #include "strstr.c"
 
 
@@ -65,7 +66,8 @@ check_result (impl_t *impl, const char *s1, const char *s2,
   if (result != exp_result)
     {
       error (0, 0, "Wrong result in function %s %s %s", impl->name,
-	     result, exp_result);
+	     (result == NULL) ? "(null)" : result,
+	     (exp_result == NULL) ? "(null)" : exp_result);
       ret = 1;
       return -1;
     }
@@ -137,17 +139,72 @@ check1 (void)
 static void
 check2 (void)
 {
-  const char s1[] = ", enable_static, \0, enable_shared, ";
+  const char s1_stack[] = ", enable_static, \0, enable_shared, ";
+  const size_t s1_byte_count = 18;
+  const char *s2_stack = &(s1_stack[s1_byte_count]);
+  const size_t s2_byte_count = 18;
   char *exp_result;
-  char *s2 = (void *) buf1 + page_size - 18;
+  const size_t page_size_real = getpagesize ();
 
-  strcpy (s2, s1);
-  exp_result = stupid_strstr (s1, s1 + 18);
+  /* Haystack at end of page.  The following page is protected.  */
+  char *s1_page_end = (void *) buf1 + page_size - s1_byte_count;
+  strcpy (s1_page_end, s1_stack);
+
+  /* Haystack which crosses a page boundary.
+     Note: page_size is at least 2 * getpagesize.  See test_init.  */
+  char *s1_page_cross = (void *) buf1 + page_size_real - 8;
+  strcpy (s1_page_cross, s1_stack);
+
+  /* Needle at end of page.  The following page is protected.  */
+  char *s2_page_end = (void *) buf2 + page_size - s2_byte_count;
+  strcpy (s2_page_end, s2_stack);
+
+  /* Needle which crosses a page boundary.
+     Note: page_size is at least 2 * getpagesize.  See test_init.  */
+  char *s2_page_cross = (void *) buf2 + page_size_real - 8;
+  strcpy (s2_page_cross, s2_stack);
+
+  exp_result = stupid_strstr (s1_stack, s2_stack);
   FOR_EACH_IMPL (impl, 0)
     {
-      check_result (impl, s1, s1 + 18, exp_result);
-      check_result (impl, s2, s1 + 18, exp_result);
+      check_result (impl, s1_stack, s2_stack, exp_result);
+      check_result (impl, s1_stack, s2_page_end, exp_result);
+      check_result (impl, s1_stack, s2_page_cross, exp_result);
+
+      check_result (impl, s1_page_end, s2_stack, exp_result);
+      check_result (impl, s1_page_end, s2_page_end, exp_result);
+      check_result (impl, s1_page_end, s2_page_cross, exp_result);
+
+      check_result (impl, s1_page_cross, s2_stack, exp_result);
+      check_result (impl, s1_page_cross, s2_page_end, exp_result);
+      check_result (impl, s1_page_cross, s2_page_cross, exp_result);
     }
+}
+
+#define N 1024
+
+static void
+pr23637 (void)
+{
+  char *h = (char*) buf1;
+  char *n = (char*) buf2;
+
+  for (int i = 0; i < N; i++)
+    {
+      n[i] = 'x';
+      h[i] = ' ';
+      h[i + N] = 'x';
+    }
+
+  n[N] = '\0';
+  h[N * 2] = '\0';
+
+  /* Ensure we don't match at the first 'x'.  */
+  h[0] = 'x';
+
+  char *exp_result = stupid_strstr (h, n);
+  FOR_EACH_IMPL (impl, 0)
+    check_result (impl, h, n, exp_result);
 }
 
 static int
@@ -157,6 +214,7 @@ test_main (void)
 
   check1 ();
   check2 ();
+  pr23637 ();
 
   printf ("%23s", "");
   FOR_EACH_IMPL (impl, 0)
@@ -201,6 +259,9 @@ test_main (void)
 	do_test (15, 9, hlen, klen, 1);
 	do_test (15, 15, hlen, klen, 0);
 	do_test (15, 15, hlen, klen, 1);
+
+	do_test (15, 15, hlen + klen * 4, klen * 4, 0);
+	do_test (15, 15, hlen + klen * 4, klen * 4, 1);
       }
 
   do_test (0, 0, page_size - 1, 16, 0);

@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <ctype.h>
 #include <errno.h>
@@ -32,6 +32,7 @@
 #include <exit-thread.h>
 #include <default-sched.h>
 #include <futex-internal.h>
+#include <tls-setup.h>
 #include "libioP.h"
 
 #include <shlib-compat.h>
@@ -378,13 +379,6 @@ START_THREAD_DEFN
 {
   struct pthread *pd = START_THREAD_SELF;
 
-#if HP_TIMING_AVAIL
-  /* Remember the time when the thread was started.  */
-  hp_timing_t now;
-  HP_TIMING_NOW (now);
-  THREAD_SETMEM (pd, cpuclock_offset, now);
-#endif
-
   /* Initialize resolver state pointer.  */
   __resp = &pd->res;
 
@@ -408,7 +402,6 @@ START_THREAD_DEFN
     }
 #endif
 
-#ifdef SIGCANCEL
   /* If the parent was running cancellation handlers while creating
      the thread the new thread inherited the signal mask.  Reset the
      cancellation signal mask.  */
@@ -421,7 +414,6 @@ START_THREAD_DEFN
       (void) INTERNAL_SYSCALL (rt_sigprocmask, err, 4, SIG_UNBLOCK, &mask,
 			       NULL, _NSIG / 8);
     }
-#endif
 
   /* This is where the try/finally block should be created.  For
      compilers without that support we do use setjmp.  */
@@ -471,7 +463,19 @@ START_THREAD_DEFN
       LIBC_PROBE (pthread_start, 3, (pthread_t) pd, pd->start_routine, pd->arg);
 
       /* Run the code the user provided.  */
-      THREAD_SETMEM (pd, result, pd->start_routine (pd->arg));
+      void *ret;
+      if (pd->c11)
+	{
+	  /* The function pointer of the c11 thread start is cast to an incorrect
+	     type on __pthread_create_2_1 call, however it is casted back to correct
+	     one so the call behavior is well-defined (it is assumed that pointers
+	     to void are able to represent all values of int.  */
+	  int (*start)(void*) = (int (*) (void*)) pd->start_routine;
+	  ret = (void*) (uintptr_t) start (pd->arg);
+	}
+      else
+	ret = pd->start_routine (pd->arg);
+      THREAD_SETMEM (pd, result, ret);
     }
 
   /* Call destructors for the thread_local TLS variables.  */
@@ -624,7 +628,8 @@ __pthread_create_2_1 (pthread_t *newthread, const pthread_attr_t *attr,
   const struct pthread_attr *iattr = (struct pthread_attr *) attr;
   struct pthread_attr default_attr;
   bool free_cpuset = false;
-  if (iattr == NULL)
+  bool c11 = (attr == ATTR_C11_THREAD);
+  if (iattr == NULL || c11)
     {
       lll_lock (__default_pthread_attr_lock, LLL_PRIVATE);
       default_attr = __default_pthread_attr;
@@ -682,6 +687,7 @@ __pthread_create_2_1 (pthread_t *newthread, const pthread_attr_t *attr,
      get the information from its thread descriptor.  */
   pd->start_routine = start_routine;
   pd->arg = arg;
+  pd->c11 = c11;
 
   /* Copy the thread attribute flags.  */
   struct pthread *self = THREAD_SELF;
@@ -711,6 +717,9 @@ __pthread_create_2_1 (pthread_t *newthread, const pthread_attr_t *attr,
 #ifdef THREAD_COPY_POINTER_GUARD
   THREAD_COPY_POINTER_GUARD (pd);
 #endif
+
+  /* Setup tcbhead.  */
+  tls_setup_tcbhead (pd);
 
   /* Verify the sysinfo bits were copied in allocate_stack if needed.  */
 #ifdef NEED_DL_SYSINFO

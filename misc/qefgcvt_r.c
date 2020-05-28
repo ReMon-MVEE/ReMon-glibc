@@ -1,6 +1,6 @@
 /* Compatibility functions for floating point formatting, reentrant,
    long double versions.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,43 +15,23 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#include <float.h>
+#define ECVT_R qecvt_r
+#define FCVT_R qfcvt_r
+#define __ECVT_R __qecvt_r
+#define __FCVT_R __qfcvt_r
+#include <efgcvt-ldbl-macros.h>
+#include <efgcvt_r-template.c>
 
-#define FLOAT_TYPE long double
-#define FUNC_PREFIX q
-#define FLOAT_FMT_FLAG "L"
-#define FLOAT_NAME_EXT l
-#define FLOAT_MIN_10_EXP LDBL_MIN_10_EXP
-#if LDBL_MANT_DIG == 64
-# define NDIGIT_MAX 21
-#elif LDBL_MANT_DIG == 53
-# define NDIGIT_MAX 17
-#elif LDBL_MANT_DIG == 113
-# define NDIGIT_MAX 36
-#elif LDBL_MANT_DIG == 106
-# define NDIGIT_MAX 34
-#elif LDBL_MANT_DIG == 56
-# define NDIGIT_MAX 18
+#if LONG_DOUBLE_COMPAT (libc, GLIBC_2_0)
+# define cvt_symbol(local, symbol) \
+  libc_hidden_def (local) \
+  versioned_symbol (libc, local, symbol, GLIBC_2_4)
 #else
-/* See IEEE 854 5.6, table 2 for this formula.  Unfortunately we need a
-   compile time constant here, so we cannot use it.  */
-# error "NDIGIT_MAX must be precomputed"
-# define NDIGIT_MAX (lrint (ceil (M_LN2 / M_LN10 * LDBL_MANT_DIG + 1.0)))
+# define cvt_symbol(local, symbol) \
+  libc_hidden_def (local) \
+  weak_alias (local, symbol)
 #endif
-#if LDBL_MIN_10_EXP == -37
-# define FLOAT_MIN_10_NORM	1.0e-37L
-#elif LDBL_MIN_10_EXP == -291
-# define FLOAT_MIN_10_NORM	1.0e-291L
-#elif LDBL_MIN_10_EXP == -307
-# define FLOAT_MIN_10_NORM	1.0e-307L
-#elif LDBL_MIN_10_EXP == -4931
-# define FLOAT_MIN_10_NORM	1.0e-4931L
-#else
-/* libc can't depend on libm.  */
-# error "FLOAT_MIN_10_NORM must be precomputed"
-# define FLOAT_MIN_10_NORM	exp10l (LDBL_MIN_10_EXP)
-#endif
-
-#include "efgcvt_r.c"
+cvt_symbol (__qfcvt_r, qfcvt_r);
+cvt_symbol (__qecvt_r, qecvt_r);

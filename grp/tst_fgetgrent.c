@@ -1,4 +1,4 @@
-/* Copyright (C) 1999-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Andreas Jaeger <aj@arthur.rhein-neckar.de>, 1999.
 
@@ -14,13 +14,14 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <grp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 static int errors;
 
@@ -99,7 +100,14 @@ test_fgetgrent (const char *filename)
 int
 main (int argc, char *argv[])
 {
-  char *file = tmpnam (NULL);
+  char file[] = "/tmp/tst_fgetgrent.XXXXXX";
+  int fd = mkstemp (file);
+  if (fd == -1)
+    {
+      printf ("mkstemp failed: %m\n");
+      return 1;
+    }
+  close (fd);
   int i = 0;
 
   if (argc > 1)

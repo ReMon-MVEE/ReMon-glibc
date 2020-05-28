@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,24 +13,33 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#include <libioP.h>
 #include <stdarg.h>
-#include <stdio.h>
+#include <libio/libioP.h>
+
 
 /* Write formatted output into S, according to the format string FORMAT.  */
-/* VARARGS4 */
 int
-___sprintf_chk (char *s, int flags, size_t slen, const char *format, ...)
+___sprintf_chk (char *s, int flag, size_t slen, const char *format, ...)
 {
-  va_list arg;
-  int done;
+  /* For flag > 0 (i.e. __USE_FORTIFY_LEVEL > 1) request that %n
+     can only come from read-only format strings.  */
+  unsigned int mode = (flag > 0) ? PRINTF_FORTIFY : 0;
+  va_list ap;
+  int ret;
 
-  va_start (arg, format);
-  done = __vsprintf_chk (s, flags, slen, format, arg);
-  va_end (arg);
+  /* Regardless of the value of flag, let __vsprintf_internal know that
+     this is a call from *printf_chk.  */
+  mode |= PRINTF_CHK;
 
-  return done;
+  if (slen == 0)
+    __chk_fail ();
+
+  va_start (ap, format);
+  ret = __vsprintf_internal (s, slen, format, ap, mode);
+  va_end (ap);
+
+  return ret;
 }
 ldbl_strong_alias (___sprintf_chk, __sprintf_chk)

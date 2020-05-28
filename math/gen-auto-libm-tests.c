@@ -1,5 +1,5 @@
 /* Generate expected output for libm tests with MPFR and MPC.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Compile this program as:
 
@@ -561,6 +561,7 @@ static test_function test_functions[] =
     FUNC_mpc_c_c ("csqrt", mpc_sqrt, false),
     FUNC_mpc_c_c ("ctan", mpc_tan, false),
     FUNC_mpc_c_c ("ctanh", mpc_tanh, false),
+    FUNC_mpfr_ff_f ("div", mpfr_div, true),
     FUNC_mpfr_f_f ("erf", mpfr_erf, false),
     FUNC_mpfr_f_f ("erfc", mpfr_erfc, false),
     FUNC_mpfr_f_f ("exp", mpfr_exp, false),
@@ -579,6 +580,7 @@ static test_function test_functions[] =
     FUNC_mpfr_f_f ("log10", mpfr_log10, false),
     FUNC_mpfr_f_f ("log1p", mpfr_log1p, false),
     FUNC_mpfr_f_f ("log2", mpfr_log2, false),
+    FUNC_mpfr_ff_f ("mul", mpfr_mul, true),
     FUNC_mpfr_ff_f ("pow", mpfr_pow, false),
     FUNC_mpfr_f_f ("sin", mpfr_sin, false),
     FUNC ("sincos", ARGS1 (type_fp), RET2 (type_fp, type_fp), false, false,
@@ -1296,7 +1298,7 @@ handle_input_flag (char *arg, input_flag *flag,
   char c = *ep;
   *ep = 0;
   bool found = false;
-  for (input_flag_type i = flag_first_flag; i <= num_input_flag_types; i++)
+  for (input_flag_type i = flag_first_flag; i < num_input_flag_types; i++)
     {
       if (strcmp (arg, input_flags[i]) == 0)
 	{

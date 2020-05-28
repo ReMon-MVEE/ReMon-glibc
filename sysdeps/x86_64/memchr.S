@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2020 Free Software Foundation, Inc.
    Contributed by Intel Corporation.
    This file is part of the GNU C Library.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
@@ -34,12 +34,16 @@ ENTRY(MEMCHR)
 	mov	%edi, %ecx
 
 #ifdef USE_AS_WMEMCHR
-	test	%rdx, %rdx
+	test	%RDX_LP, %RDX_LP
 	jz	L(return_null)
-	shl	$2, %rdx
+	shl	$2, %RDX_LP
 #else
+# ifdef __ILP32__
+	/* Clear the upper 32 bits.  */
+	movl	%edx, %edx
+# endif
 	punpcklbw %xmm1, %xmm1
-	test	%rdx, %rdx
+	test	%RDX_LP, %RDX_LP
 	jz	L(return_null)
 	punpcklbw %xmm1, %xmm1
 #endif

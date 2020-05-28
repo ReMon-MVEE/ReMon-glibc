@@ -1,5 +1,5 @@
 /* Print output of stream to given obstack.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 
 #include <stdlib.h>
@@ -117,7 +117,8 @@ const struct _IO_jump_t _IO_obstack_jumps libio_vtable attribute_hidden =
 
 
 int
-_IO_obstack_vprintf (struct obstack *obstack, const char *format, va_list args)
+__obstack_vprintf_internal (struct obstack *obstack, const char *format,
+			    va_list args, unsigned int mode_flags)
 {
   struct obstack_FILE
     {
@@ -164,7 +165,8 @@ _IO_obstack_vprintf (struct obstack *obstack, const char *format, va_list args)
 
   new_f.ofile.obstack = obstack;
 
-  result = _IO_vfprintf (&new_f.ofile.file.file, format, args);
+  result = __vfprintf_internal (&new_f.ofile.file.file, format, args,
+				mode_flags);
 
   /* Shrink the buffer to the space we really currently need.  */
   obstack_blank_fast (obstack, (new_f.ofile.file.file._IO_write_ptr
@@ -172,17 +174,22 @@ _IO_obstack_vprintf (struct obstack *obstack, const char *format, va_list args)
 
   return result;
 }
-ldbl_weak_alias (_IO_obstack_vprintf, obstack_vprintf)
-
 
 int
-_IO_obstack_printf (struct obstack *obstack, const char *format, ...)
+__obstack_vprintf (struct obstack *obstack, const char *format, va_list ap)
+{
+  return __obstack_vprintf_internal (obstack, format, ap, 0);
+}
+ldbl_weak_alias (__obstack_vprintf, obstack_vprintf)
+
+int
+__obstack_printf (struct obstack *obstack, const char *format, ...)
 {
   int result;
   va_list ap;
   va_start (ap, format);
-  result = _IO_obstack_vprintf (obstack, format, ap);
+  result = __obstack_vprintf_internal (obstack, format, ap, 0);
   va_end (ap);
   return result;
 }
-ldbl_weak_alias (_IO_obstack_printf, obstack_printf)
+ldbl_weak_alias (__obstack_printf, obstack_printf)

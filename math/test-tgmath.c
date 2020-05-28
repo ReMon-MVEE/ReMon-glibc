@@ -1,5 +1,5 @@
 /* Test compilation of tgmath macros.
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+   Copyright (C) 2001-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com> and
    Ulrich Drepper <drepper@redhat.com>, 2001.
@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef HAVE_MAIN
 #undef __NO_MATH_INLINES
@@ -52,7 +52,7 @@ volatile int count_cdouble;
 volatile int count_cfloat;
 volatile int count_cldouble;
 
-#define NCALLS     134
+#define NCALLS     132
 #define NCALLS_INT 4
 #define NCCALLS    47
 
@@ -295,8 +295,6 @@ F(compile_test) (void)
   b = fmaxmag (fmaxmag (a, x), fmaxmag (c, b));
   a = fminmag (fminmag (x, a), fminmag (c, b));
   b = fma (sin (a), sin (x), sin (c));
-  a = totalorder (x, b);
-  b = totalordermag (x, a);
 
 #ifdef TEST_INT
   a = atan2 (i, b);
@@ -400,8 +398,6 @@ F(compile_test) (void)
       a = fmaxmag (y, y);
       a = fminmag (y, y);
       a = fma (y, y, y);
-      a = totalorder (y, y);
-      a = totalordermag (y, y);
 
 #ifdef TEST_INT
       a = atan2 (i, y);
@@ -957,22 +953,6 @@ TYPE
   ++count;
   P ();
   return x + y + z;
-}
-
-int
-(F(totalorder)) (TYPE x, TYPE y)
-{
-  ++count;
-  P ();
-  return x + y;
-}
-
-int
-(F(totalordermag)) (TYPE x, TYPE y)
-{
-  ++count;
-  P ();
-  return x + y;
 }
 
 complex TYPE

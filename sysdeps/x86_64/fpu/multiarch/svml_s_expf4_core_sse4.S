@@ -1,5 +1,5 @@
 /* Function expf vectorized with SSE4.
-   Copyright (C) 2014-2018 Free Software Foundation, Inc.
+   Copyright (C) 2014-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 #include "svml_s_expf_data.h"
@@ -195,7 +195,7 @@ ENTRY (_ZGVbN4v_expf_sse4)
         movzbl    %r12b, %r15d
         movss     196(%rsp,%r15,8), %xmm0
 
-        call      JUMPTARGET(__expf_finite)
+        call      JUMPTARGET(expf)
 
         movss     %xmm0, 260(%rsp,%r15,8)
         jmp       .LBL_1_8
@@ -204,7 +204,7 @@ ENTRY (_ZGVbN4v_expf_sse4)
         movzbl    %r12b, %r15d
         movss     192(%rsp,%r15,8), %xmm0
 
-        call      JUMPTARGET(__expf_finite)
+        call      JUMPTARGET(expf)
 
         movss     %xmm0, 256(%rsp,%r15,8)
         jmp       .LBL_1_7

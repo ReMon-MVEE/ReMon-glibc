@@ -1,5 +1,5 @@
 /* fmemopen tests for BZ#1930 and BZ#20005.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <stdio.h>
@@ -40,14 +40,14 @@ do_test (void)
   size_t r = fwrite (test, sizeof (char), sizeof (test), stream);
   if (r != sizeof (test))
     {
-      printf ("error: fwrite returned %zu, expected %zu\n", r, sizeof(test));
+      printf ("error: fwrite returned %zu, expected %zu\n", r, sizeof (test));
       return 1;
     }
 
   r = ftell (stream);
   if (r != sizeof (test))
     {
-      printf ("error: ftell return %zu, expected %zu\n", r, sizeof(test));
+      printf ("error: ftell return %zu, expected %zu\n", r, sizeof (test));
       return 1;
     }
 
@@ -60,7 +60,7 @@ do_test (void)
   r = ftell (stream);
   if (r != sizeof (test))
     {
-      printf ("error: ftell return %zu, expected %zu\n", r, sizeof(test));
+      printf ("error: ftell return %zu, expected %zu\n", r, sizeof (test));
       return 1;
     }
 

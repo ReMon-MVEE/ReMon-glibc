@@ -1,5 +1,5 @@
 /* Interfaces for the test driver.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef SUPPORT_TEST_DRIVER_H
 #define SUPPORT_TEST_DRIVER_H
@@ -35,6 +35,7 @@ struct test_config
   int expected_status;   /* Expected exit status.  */
   int expected_signal;   /* If non-zero, expect termination by signal.  */
   char no_mallopt;       /* Boolean flag to disable mallopt.  */
+  char no_setvbuf;       /* Boolean flag to disable setvbuf.  */
   const char *optstring; /* Short command line options.  */
 };
 
@@ -67,6 +68,14 @@ extern const char *test_dir;
    invocation.  This variable can be used to control the verbosity of
    tests.  */
 extern unsigned int test_verbose;
+
+/* Output that is only emitted if at least one --verbose argument was
+   specified. */
+#define verbose_printf(...)                      \
+  do {                                           \
+    if (test_verbose > 0)                        \
+      printf (__VA_ARGS__);                      \
+  } while (0);
 
 int support_test_main (int argc, char **argv, const struct test_config *);
 

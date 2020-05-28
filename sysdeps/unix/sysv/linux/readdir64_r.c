@@ -1,5 +1,5 @@
 /* Read a directory in reentrant mode.  Linux LFS version.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* When _DIRENT_MATCHES_DIRENT64 is defined we can alias 'readdir64' to
    'readdir'.  However the function signatures are not equal due

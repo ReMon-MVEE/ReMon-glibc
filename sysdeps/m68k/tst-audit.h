@@ -1,5 +1,5 @@
 /* Definitions for testing PLT entry/exit auditing.  m68k version.
-   Copyright (C) 2006-2018 Free Software Foundation, Inc.
+   Copyright (C) 2006-2020 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define pltenter la_m68k_gnu_pltenter
 #define pltexit la_m68k_gnu_pltexit

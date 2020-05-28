@@ -1,5 +1,5 @@
 /* Optimized strncmp implementation for PowerPC64/POWER8.
-   Copyright (C) 2015-2018 Free Software Foundation, Inc.
+   Copyright (C) 2015-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
@@ -31,7 +31,7 @@
    64K as default, the page cross handling assumes minimum page size of
    4k.  */
 
-	.machine  power7
+	.machine  power8
 ENTRY_TOCLESS (STRNCMP, 4)
 	/* Check if size is 0.  */
 	mr.	r10,r5

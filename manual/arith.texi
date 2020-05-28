@@ -875,20 +875,20 @@ complete response as @dfn{signalling} a domain error, overflow, or
 underflow.
 
 When a math function suffers a domain error, it raises the invalid
-exception and returns NaN.  It also sets @var{errno} to @code{EDOM};
+exception and returns NaN.  It also sets @code{errno} to @code{EDOM};
 this is for compatibility with old systems that do not support @w{IEEE
 754} exception handling.  Likewise, when overflow occurs, math
 functions raise the overflow exception and, in the default rounding
 mode, return @math{@infinity{}} or @math{-@infinity{}} as appropriate
 (in other rounding modes, the largest finite value of the appropriate
 sign is returned when appropriate for that rounding mode).  They also
-set @var{errno} to @code{ERANGE} if returning @math{@infinity{}} or
-@math{-@infinity{}}; @var{errno} may or may not be set to
+set @code{errno} to @code{ERANGE} if returning @math{@infinity{}} or
+@math{-@infinity{}}; @code{errno} may or may not be set to
 @code{ERANGE} when a finite value is returned on overflow.  When
 underflow occurs, the underflow exception is raised, and zero
 (appropriately signed) or a subnormal value, as appropriate for the
 mathematical result of the function and the rounding mode, is
-returned.  @var{errno} may be set to @code{ERANGE}, but this is not
+returned.  @code{errno} may be set to @code{ERANGE}, but this is not
 guaranteed; it is intended that @theglibc{} should set it when the
 underflow is to an appropriately signed zero, but not necessarily for
 other underflows.
@@ -2020,21 +2020,23 @@ exception and sets @code{errno} to @code{EDOM} if either argument is a
 NaN.
 @end deftypefn
 
-@deftypefun int totalorder (double @var{x}, double @var{y})
-@deftypefunx int totalorderf (float @var{x}, float @var{y})
-@deftypefunx int totalorderl (long double @var{x}, long double @var{y})
-@deftypefunx int totalorderfN (_Float@var{N} @var{x}, _Float@var{N} @var{y})
-@deftypefunx int totalorderfNx (_Float@var{N}x @var{x}, _Float@var{N}x @var{y})
+@deftypefun int totalorder (const double *@var{x}, const double *@var{y})
+@deftypefunx int totalorderf (const float *@var{x}, const float *@var{y})
+@deftypefunx int totalorderl (const long double *@var{x}, const long double *@var{y})
+@deftypefunx int totalorderfN (const _Float@var{N} *@var{x}, const _Float@var{N} *@var{y})
+@deftypefunx int totalorderfNx (const _Float@var{N}x *@var{x}, const _Float@var{N}x *@var{y})
 @standards{TS 18661-1:2014, math.h}
 @standardsx{totalorderfN, TS 18661-3:2015, math.h}
 @standardsx{totalorderfNx, TS 18661-3:2015, math.h}
 @safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
 These functions determine whether the total order relationship,
-defined in IEEE 754-2008, is true for @var{x} and @var{y}, returning
+defined in IEEE 754-2008, is true for @code{*@var{x}} and
+@code{*@var{y}}, returning
 nonzero if it is true and zero if it is false.  No exceptions are
 raised even for signaling NaNs.  The relationship is true if they are
 the same floating-point value (including sign for zero and NaNs, and
-payload for NaNs), or if @var{x} comes before @var{y} in the following
+payload for NaNs), or if @code{*@var{x}} comes before @code{*@var{y}}
+in the following
 order: negative quiet NaNs, in order of decreasing payload; negative
 signaling NaNs, in order of decreasing payload; negative infinity;
 finite numbers, in ascending order, with negative zero before positive
@@ -2043,18 +2045,18 @@ increasing payload; positive quiet NaNs, in order of increasing
 payload.
 @end deftypefun
 
-@deftypefun int totalordermag (double @var{x}, double @var{y})
-@deftypefunx int totalordermagf (float @var{x}, float @var{y})
-@deftypefunx int totalordermagl (long double @var{x}, long double @var{y})
-@deftypefunx int totalordermagfN (_Float@var{N} @var{x}, _Float@var{N} @var{y})
-@deftypefunx int totalordermagfNx (_Float@var{N}x @var{x}, _Float@var{N}x @var{y})
+@deftypefun int totalordermag (const double *@var{x}, const double *@var{y})
+@deftypefunx int totalordermagf (const float *@var{x}, const float *@var{y})
+@deftypefunx int totalordermagl (const long double *@var{x}, const long double *@var{y})
+@deftypefunx int totalordermagfN (const _Float@var{N} *@var{x}, const _Float@var{N} *@var{y})
+@deftypefunx int totalordermagfNx (const _Float@var{N}x *@var{x}, const _Float@var{N}x *@var{y})
 @standards{TS 18661-1:2014, math.h}
 @standardsx{totalordermagfN, TS 18661-3:2015, math.h}
 @standardsx{totalordermagfNx, TS 18661-3:2015, math.h}
 @safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
 These functions determine whether the total order relationship,
-defined in IEEE 754-2008, is true for the absolute values of @var{x}
-and @var{y}, returning nonzero if it is true and zero if it is false.
+defined in IEEE 754-2008, is true for the absolute values of @code{*@var{x}}
+and @code{*@var{y}}, returning nonzero if it is true and zero if it is false.
 No exceptions are raised even for signaling NaNs.
 @end deftypefun
 
@@ -2225,6 +2227,44 @@ arguments.
 @safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
 These functions, from TS 18661-1:2014 and TS 18661-3:2015, return
 @math{@var{x} - @var{y}}, rounded once to the return type of the
+function without any intermediate rounding to the type of the
+arguments.
+@end deftypefun
+
+@deftypefun float fmul (double @var{x}, double @var{y})
+@deftypefunx float fmull (long double @var{x}, long double @var{y})
+@deftypefunx double dmull (long double @var{x}, long double @var{y})
+@deftypefunx _FloatM fMmulfN (_Float@var{N} @var{x}, _Float@var{N} @var{y})
+@deftypefunx _FloatM fMmulfNx (_Float@var{N}x @var{x}, _Float@var{N}x @var{y})
+@deftypefunx _FloatMx fMxmulfN (_Float@var{N} @var{x}, _Float@var{N} @var{y})
+@deftypefunx _FloatMx fMxmulfNx (_Float@var{N}x @var{x}, _Float@var{N}x @var{y})
+@standards{TS 18661-1:2014, math.h}
+@standardsx{fMmulfN, TS 18661-3:2015, math.h}
+@standardsx{fMmulfNx, TS 18661-3:2015, math.h}
+@standardsx{fMxmulfN, TS 18661-3:2015, math.h}
+@standardsx{fMxmulfNx, TS 18661-3:2015, math.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+These functions, from TS 18661-1:2014 and TS 18661-3:2015, return
+@math{@var{x} * @var{y}}, rounded once to the return type of the
+function without any intermediate rounding to the type of the
+arguments.
+@end deftypefun
+
+@deftypefun float fdiv (double @var{x}, double @var{y})
+@deftypefunx float fdivl (long double @var{x}, long double @var{y})
+@deftypefunx double ddivl (long double @var{x}, long double @var{y})
+@deftypefunx _FloatM fMdivfN (_Float@var{N} @var{x}, _Float@var{N} @var{y})
+@deftypefunx _FloatM fMdivfNx (_Float@var{N}x @var{x}, _Float@var{N}x @var{y})
+@deftypefunx _FloatMx fMxdivfN (_Float@var{N} @var{x}, _Float@var{N} @var{y})
+@deftypefunx _FloatMx fMxdivfNx (_Float@var{N}x @var{x}, _Float@var{N}x @var{y})
+@standards{TS 18661-1:2014, math.h}
+@standardsx{fMdivfN, TS 18661-3:2015, math.h}
+@standardsx{fMdivfNx, TS 18661-3:2015, math.h}
+@standardsx{fMxdivfN, TS 18661-3:2015, math.h}
+@standardsx{fMxdivfNx, TS 18661-3:2015, math.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+These functions, from TS 18661-1:2014 and TS 18661-3:2015, return
+@math{@var{x} / @var{y}}, rounded once to the return type of the
 function without any intermediate rounding to the type of the
 arguments.
 @end deftypefun
@@ -2507,7 +2547,7 @@ You should not check for errors by examining the return value of
 @code{0l}, @code{LONG_MAX}, or @code{LONG_MIN}.  Instead, check whether
 @var{tailptr} points to what you expect after the number
 (e.g. @code{'\0'} if the string should end after the number).  You also
-need to clear @var{errno} before the call and check it afterward, in
+need to clear @code{errno} before the call and check it afterward, in
 case there was overflow.
 
 There is an example at the end of this section.
@@ -2536,7 +2576,7 @@ for example that @code{strtoul} on @code{"-1"} returns @code{ULONG_MAX}
 and an input more negative than @code{LONG_MIN} returns
 (@code{ULONG_MAX} + 1) / 2.
 
-@code{strtoul} sets @var{errno} to @code{EINVAL} if @var{base} is out of
+@code{strtoul} sets @code{errno} to @code{EINVAL} if @var{base} is out of
 range, or @code{ERANGE} on overflow.
 @end deftypefun
 
@@ -2765,7 +2805,7 @@ as well.
 @c mpn_lshift_1 -> mpn_lshift ok
 @c STRTOF_INTERNAL
 @c   MPN_VAR ok
-@c   SET_MANTISSA ok
+@c   SET_NAN_PAYLOAD ok
 @c   STRNCASECMP ok, wide and narrow
 @c   round_and_return ok
 @c   mpn_mul ok
@@ -2854,7 +2894,7 @@ representation of NaN (there can be several).
 
 Since zero is a valid result as well as the value returned on error, you
 should check for errors in the same way as for @code{strtol}, by
-examining @var{errno} and @var{tailptr}.
+examining @code{errno} and @var{tailptr}.
 @end deftypefun
 
 @deftypefun float strtof (const char *@var{string}, char **@var{tailptr})
@@ -3040,7 +3080,7 @@ to @code{fcvt}.
 @c gcvt calls sprintf, that ultimately calls vfprintf, which malloc()s
 @c args_value if it's too large, but gcvt never exercises this path.
 @code{gcvt} is functionally equivalent to @samp{sprintf(buf, "%*g",
-ndigit, value}.  It is provided only for compatibility's sake.  It
+ndigit, value)}.  It is provided only for compatibility's sake.  It
 returns @var{buf}.
 
 If @var{ndigit} decimal digits would exceed the precision of a

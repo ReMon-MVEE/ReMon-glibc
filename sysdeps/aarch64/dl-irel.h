@@ -1,6 +1,6 @@
 /* Machine-dependent ELF indirect relocation inline functions.
    AArch64 version.
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _DL_IREL_H
 #define _DL_IREL_H
@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <ldsodefs.h>
 #include <sysdep.h>
+#include <sys/ifunc.h>
 
 #define ELF_MACHINE_IRELA	1
 
@@ -31,7 +32,13 @@ static inline ElfW(Addr)
 __attribute ((always_inline))
 elf_ifunc_invoke (ElfW(Addr) addr)
 {
-  return ((ElfW(Addr) (*) (uint64_t)) (addr)) (GLRO(dl_hwcap));
+  __ifunc_arg_t arg;
+
+  arg._size = sizeof (arg);
+  arg._hwcap = GLRO(dl_hwcap);
+  arg._hwcap2 = GLRO(dl_hwcap2);
+  return ((ElfW(Addr) (*) (uint64_t, const __ifunc_arg_t *)) (addr))
+	 (GLRO(dl_hwcap) | _IFUNC_ARG_HWCAP, &arg);
 }
 
 static inline void
@@ -47,7 +54,7 @@ elf_irela (const ElfW(Rela) *reloc)
       *reloc_addr = value;
     }
   else
-    __libc_fatal ("unexpected reloc type in static binary");
+    __libc_fatal ("Unexpected reloc type in static binary.\n");
 }
 
 #endif

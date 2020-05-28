@@ -1,6 +1,6 @@
 /* Definitions for testing PLT entry/exit auditing.  PowerPC32 version.
 
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define pltenter la_ppc32_gnu_pltenter
 #define pltexit la_ppc32_gnu_pltexit

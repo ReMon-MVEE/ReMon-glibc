@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gnu.org>, 1996.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -122,8 +122,3 @@ __mbrtowc (wchar_t *pwc, const char *s, size_t n, mbstate_t *ps)
 libc_hidden_def (__mbrtowc)
 weak_alias (__mbrtowc, mbrtowc)
 libc_hidden_weak (mbrtowc)
-
-/* There should be no difference between the UTF-32 handling required
-   by mbrtoc32 and the wchar_t handling which has long since been
-   implemented in mbrtowc.  */
-weak_alias (__mbrtowc, mbrtoc32)

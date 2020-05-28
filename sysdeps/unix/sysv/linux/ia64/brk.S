@@ -1,7 +1,7 @@
 /* brk system call for Linux/ia64
-   Copyright (C) 1999-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Written by Stephane Eranian <eranian@hpl.hp.com> and
+   Written by Stéphane Eranian <eranian@hpl.hp.com> and
 	      Jes Sorensen, <Jes.Sorensen@cern.ch>, April 1999.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,11 +16,10 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
-#include <asm/unistd.h>
 #include <asm/errno.h>
 
 	.global __curbrk

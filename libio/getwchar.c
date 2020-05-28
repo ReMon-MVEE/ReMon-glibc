@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -33,8 +33,8 @@ wint_t
 getwchar (void)
 {
   wint_t result;
-  _IO_acquire_lock (_IO_stdin);
-  result = _IO_getwc_unlocked (_IO_stdin);
-  _IO_release_lock (_IO_stdin);
+  _IO_acquire_lock (stdin);
+  result = _IO_getwc_unlocked (stdin);
+  _IO_release_lock (stdin);
   return result;
 }

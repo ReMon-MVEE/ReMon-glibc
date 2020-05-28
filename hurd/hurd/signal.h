@@ -1,5 +1,5 @@
 /* Implementing POSIX.1 signals under the Hurd.
-   Copyright (C) 1993-2018 Free Software Foundation, Inc.
+   Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef	_HURD_SIGNAL_H
 
@@ -73,7 +73,13 @@ struct hurd_sigstate
 
     sigset_t blocked;		/* What signals are blocked.  */
     sigset_t pending;		/* Pending signals, possibly blocked.  */
+
+    /* Signal handlers.  ACTIONS[0] is used to mark the threads with POSIX
+       semantics: if sa_handler is SIG_IGN instead of SIG_DFL, this thread
+       will receive global signals and use the process-wide action vector
+       instead of this one.  */
     struct sigaction actions[_NSIG];
+
     stack_t sigaltstack;
 
     /* Chain of thread-local signal preemptors; see <hurd/sigpreempt.h>.
@@ -129,6 +135,26 @@ extern struct hurd_sigstate *_hurd_self_sigstate (void)
 	by different threads.  */
      __attribute__ ((__const__));
 
+/* Process-wide signal state.  */
+
+extern struct hurd_sigstate *_hurd_global_sigstate;
+
+/* Mark the given thread as a process-wide signal receiver.  */
+
+extern void _hurd_sigstate_set_global_rcv (struct hurd_sigstate *ss);
+
+/* A thread can either use its own action vector and pending signal set
+   or use the global ones, depending on wether it has been marked as a
+   global receiver. The accessors below take that into account.  */
+
+extern void _hurd_sigstate_lock (struct hurd_sigstate *ss);
+extern struct sigaction *_hurd_sigstate_actions (struct hurd_sigstate *ss);
+extern sigset_t _hurd_sigstate_pending (const struct hurd_sigstate *ss);
+extern void _hurd_sigstate_unlock (struct hurd_sigstate *ss);
+
+/* Used by libpthread to remove stale sigstate structures.  */
+extern void _hurd_sigstate_delete (thread_t thread);
+
 #ifndef _HURD_SIGNAL_H_EXTERN_INLINE
 #define _HURD_SIGNAL_H_EXTERN_INLINE __extern_inline
 #endif
@@ -154,12 +180,6 @@ extern thread_t _hurd_msgport_thread;
 
 extern mach_port_t _hurd_msgport;
 
-
-/* Thread to receive process-global signals.  */
-
-extern thread_t _hurd_sigthread;
-
-
 /* Resource limit on core file size.  Enforced by hurdsig.c.  */
 extern int _hurd_core_limit;
 
@@ -168,7 +188,12 @@ extern int _hurd_core_limit;
    A critical section is a section of code which cannot safely be interrupted
    to run a signal handler; for example, code that holds any lock cannot be
    interrupted lest the signal handler try to take the same lock and
-   deadlock result.  */
+   deadlock result.
+
+   As a consequence, a critical section will see its RPCs return EINTR, even if
+   SA_RESTART is set!  In that case, the critical section should be left, so
+   that the handler can run, and the whole critical section be tried again, to
+   avoid unexpectingly exposing EINTR to the application.  */
 
 extern void *_hurd_critical_section_lock (void);
 
@@ -222,10 +247,10 @@ _hurd_critical_section_unlock (void *our_lock)
       /* It was us who acquired the critical section lock.  Unlock it.  */
       struct hurd_sigstate *ss = (struct hurd_sigstate *) our_lock;
       sigset_t pending;
-      __spin_lock (&ss->lock);
+      _hurd_sigstate_lock (ss);
       __spin_unlock (&ss->critical_section_lock);
-      pending = ss->pending & ~ss->blocked;
-      __spin_unlock (&ss->lock);
+      pending = _hurd_sigstate_pending(ss) & ~ss->blocked;
+      _hurd_sigstate_unlock (ss);
       if (! __sigisemptyset (&pending))
 	/* There are unblocked signals pending, which weren't
 	   delivered because we were in the critical section.
@@ -379,8 +404,8 @@ extern mach_msg_timeout_t _hurd_interrupted_rpc_timeout;
 	__mach_port_deallocate (__mach_task_self (), msgport);		      \
 	if ((dealloc_refport) && refport != MACH_PORT_NULL)		      \
 	  __mach_port_deallocate (__mach_task_self (), refport);    	      \
-      } while (__err == MACH_SEND_INVALID_DEST ||			      \
-	       __err == MIG_SERVER_DIED);				      \
+      } while (__err == MACH_SEND_INVALID_DEST				      \
+	       || __err == MIG_SERVER_DIED);				      \
     __err;								      \
 })
 

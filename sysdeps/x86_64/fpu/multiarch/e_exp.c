@@ -1,5 +1,5 @@
 /* Multiple versions of IEEE 754 exp.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,10 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
+
+#include <math.h>
+#include <libm-alias-finite.h>
 
 extern double __redirect_ieee754_exp (double);
 
@@ -23,7 +26,7 @@ extern double __redirect_ieee754_exp (double);
 
 libc_ifunc_redirected (__redirect_ieee754_exp, __ieee754_exp,
 		       IFUNC_SELECTOR ());
-strong_alias (__ieee754_exp, __exp_finite)
+libm_alias_finite (__ieee754_exp, __exp)
 
-#define __ieee754_exp __ieee754_exp_sse2
+#define __exp __ieee754_exp_sse2
 #include <sysdeps/ieee754/dbl-64/e_exp.c>

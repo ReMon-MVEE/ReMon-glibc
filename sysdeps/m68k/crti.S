@@ -1,5 +1,5 @@
 /* Special .init and .fini section support for m68k.
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -31,7 +31,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* crti.S puts a function prologue at the beginning of the .init and
    .fini sections and defines global symbols for those addresses, so
@@ -58,6 +58,7 @@
 	.section .init,"ax",@progbits
 	.align	2
 	.globl	_init
+	.hidden	_init
 	.type	_init, @function
 _init:
 	link.w %fp, #0
@@ -75,6 +76,7 @@ _init:
 	.section .fini,"ax",@progbits
 	.align	2
 	.globl	_fini
+	.hidden	_fini
 	.type	_fini, @function
 _fini:
 	link.w %fp, #0

@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <hurd.h>
 
@@ -41,8 +41,8 @@ __getdport (int fd)
       return MACH_PORT_NULL;
     }
 
-  if (fd < 0 || (unsigned int) fd > _hurd_init_dtablesize ||
-      _hurd_init_dtable[fd] == MACH_PORT_NULL)
+  if (fd < 0 || (unsigned int) fd > _hurd_init_dtablesize
+      || _hurd_init_dtable[fd] == MACH_PORT_NULL)
     {
       errno = EBADF;
       return MACH_PORT_NULL;

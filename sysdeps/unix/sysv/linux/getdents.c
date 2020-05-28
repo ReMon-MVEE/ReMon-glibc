@@ -1,5 +1,5 @@
 /* Get directory entries.  Linux non-LFS version.
-   Copyright (C) 1993-2018 Free Software Foundation, Inc.
+   Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <dirent.h>
 
@@ -31,8 +31,10 @@
 /* Pack the dirent64 struct down into 32-bit offset/inode fields, and
    ensure that no overflow occurs.  */
 ssize_t
-__getdents (int fd, char *buf, size_t nbytes)
+__getdents (int fd, void *buf0, size_t nbytes)
 {
+  char *buf = buf0;
+
   union
   {
     /* For !_DIRENT_MATCHES_DIRENT64 kernel 'linux_dirent64' has the same

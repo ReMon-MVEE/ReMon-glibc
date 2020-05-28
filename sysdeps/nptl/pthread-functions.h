@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2003.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _PTHREAD_FUNCTIONS_H
 #define _PTHREAD_FUNCTIONS_H	1
@@ -30,17 +30,6 @@ struct xid_command;
    the thread functions.  */
 struct pthread_functions
 {
-  int (*ptr_pthread_attr_destroy) (pthread_attr_t *);
-  int (*ptr___pthread_attr_init_2_0) (pthread_attr_t *);
-  int (*ptr___pthread_attr_init_2_1) (pthread_attr_t *);
-  int (*ptr_pthread_attr_getdetachstate) (const pthread_attr_t *, int *);
-  int (*ptr_pthread_attr_setdetachstate) (pthread_attr_t *, int);
-  int (*ptr_pthread_attr_getinheritsched) (const pthread_attr_t *, int *);
-  int (*ptr_pthread_attr_setinheritsched) (pthread_attr_t *, int);
-  int (*ptr_pthread_attr_getschedparam) (const pthread_attr_t *,
-					 struct sched_param *);
-  int (*ptr_pthread_attr_setschedparam) (pthread_attr_t *,
-					 const struct sched_param *);
   int (*ptr_pthread_attr_getschedpolicy) (const pthread_attr_t *, int *);
   int (*ptr_pthread_attr_setschedpolicy) (pthread_attr_t *, int);
   int (*ptr_pthread_attr_getscope) (const pthread_attr_t *, int *);
@@ -64,7 +53,6 @@ struct pthread_functions
   int (*ptr___pthread_cond_timedwait_2_0) (pthread_cond_2_0_t *,
 					   pthread_mutex_t *,
 					   const struct timespec *);
-  int (*ptr_pthread_equal) (pthread_t, pthread_t);
   void (*ptr___pthread_exit) (void *) __attribute__ ((__noreturn__));
   int (*ptr_pthread_getschedparam) (pthread_t, int *, struct sched_param *);
   int (*ptr_pthread_setschedparam) (pthread_t, int,
@@ -94,7 +82,6 @@ struct pthread_functions
        __attribute ((noreturn)) __cleanup_fct_attribute;
   void (*ptr__nptl_deallocate_tsd) (void);
   int (*ptr__nptl_setxid) (struct xid_command *);
-  void (*ptr_freeres) (void);
   void (*ptr_set_robust) (struct pthread *);
 };
 

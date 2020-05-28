@@ -1,5 +1,5 @@
 /* Pseudo implementation of waitid.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Zack Weinberg <zack@rabi.phys.columbia.edu>, 1997.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -151,16 +151,8 @@ OUR_WAITID (idtype_t idtype, id_t id, siginfo_t *infop, int options)
 int
 __waitid (idtype_t idtype, id_t id, siginfo_t *infop, int options)
 {
-  if (SINGLE_THREAD_P)
-    return do_waitid (idtype, id, infop, options);
-
-  int oldtype = LIBC_CANCEL_ASYNC ();
-
-  int result = do_waitid (idtype, id, infop, options);
-
-  LIBC_CANCEL_RESET (oldtype);
-
-  return result;
+  /* __waitpid should be a cancellation point.  */
+  return do_waitid (idtype, id, infop, options);
 }
 weak_alias (__waitid, waitid)
 strong_alias (__waitid, __libc_waitid)

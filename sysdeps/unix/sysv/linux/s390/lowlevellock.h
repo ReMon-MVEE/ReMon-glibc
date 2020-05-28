@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Martin Schwidefsky <schwidefsky@de.ibm.com>, 2003.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _S390_LOWLEVELLOCK_H
 #define _S390_LOWLEVELLOCK_H	1
@@ -22,12 +22,13 @@
 #include <sysdeps/nptl/lowlevellock.h>
 
 /* Transactional lock elision definitions.  */
-extern int __lll_timedlock_elision
-  (int *futex, short *adapt_count, const struct timespec *timeout, int private)
+extern int __lll_clocklock_elision
+  (int *futex, short *adapt_count,
+   clockid_t clockid, const struct timespec *timeout, int private)
   attribute_hidden;
 
-#  define lll_timedlock_elision(futex, adapt_count, timeout, private)	\
-  __lll_timedlock_elision(&(futex), &(adapt_count), timeout, private)
+#  define lll_clocklock_elision(futex, adapt_count, clockid, timeout, private) \
+  __lll_clocklock_elision (&(futex), &(adapt_count), clockid, timeout, private)
 
 extern int __lll_lock_elision (int *futex, short *adapt_count, int private)
   attribute_hidden;

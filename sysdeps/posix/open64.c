@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <fcntl.h>
 #include <stdarg.h>
@@ -34,16 +34,8 @@ __libc_open64 (const char *file, int oflag, ...)
       va_end (arg);
     }
 
-  if (SINGLE_THREAD_P)
-    return __libc_open (file, oflag | O_LARGEFILE, mode);
-
-  int oldtype = LIBC_CANCEL_ASYNC ();
-
-  int result = __libc_open (file, oflag | O_LARGEFILE, mode);
-
-  LIBC_CANCEL_RESET (oldtype);
-
-  return result;
+  /* __libc_open should be a cancellation point.  */
+  return __libc_open (file, oflag | O_LARGEFILE, mode);
 }
 weak_alias (__libc_open64, __open64)
 libc_hidden_weak (__open64)

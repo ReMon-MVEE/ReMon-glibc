@@ -1,4 +1,4 @@
-# Copyright (C) 1993-2018 Free Software Foundation, Inc.
+# Copyright (C) 1993-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 ifdef in-Makerules
 
@@ -91,10 +91,11 @@ $(common-objpfx)errnos.d: $(mach-errnos-deps)
 $(hurd)/bits/errno.h: $(common-objpfx)stamp-errnos ;
 $(common-objpfx)stamp-errnos: $(hurd)/errnos.awk $(errno.texinfo) \
 			      $(mach-errnos-deps) $(common-objpfx)errnos.d
-	$(AWK) -f $^ > $(hurd)/bits/errno.h-tmp
+	mkdir -p $(hurd-objpfx)bits
+	$(AWK) -f $^ > $(hurd-objpfx)bits/errno.h-tmp
 # Make it unwritable so noone will edit it by mistake.
-	-chmod a-w $(hurd)/bits/errno.h-tmp
-	$(move-if-change) $(hurd)/bits/errno.h-tmp $(hurd)/bits/errno.h
+	-chmod a-w $(hurd-objpfx)bits/errno.h-tmp
+	$(move-if-change) $(hurd-objpfx)bits/errno.h-tmp $(hurd)/bits/errno.h
 	touch $@
 
 common-generated += errnos.d stamp-errnos
@@ -194,6 +195,10 @@ ifeq (hurd, $(subdir))
 sysdep_routines += cthreads
 endif
 
+ifeq (io, $(subdir))
+sysdep_routines += f_setlk close_nocancel_nostatus
+endif
+
 ifeq ($(subdir),sunrpc)
 sysdep_headers += nfs/nfs.h
 endif
@@ -205,5 +210,7 @@ endif
 ifeq ($(subdir),nis)
 CFLAGS-ypclnt.c += -DUSE_BINDINGDIR=1
 endif
+
+LDLIBS-pthread.so += $(objdir)/hurd/libhurduser.so
 
 endif	# in-Makerules

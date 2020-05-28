@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Andreas Jaeger <aj@suse.de>, 1998.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /*
   Testing of some network related lookup functions.
@@ -192,7 +192,7 @@ test_hosts (void)
     }
 
   ip.s_addr = htonl (INADDR_LOOPBACK);
-  hptr1 = gethostbyaddr ((char *) &ip, sizeof(ip), AF_INET);
+  hptr1 = gethostbyaddr ((char *) &ip, sizeof (ip), AF_INET);
   if (hptr1 != NULL)
     {
       printf ("official name of 127.0.0.1: %s\n", hptr1->h_name);

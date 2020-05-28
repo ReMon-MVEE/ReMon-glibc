@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <time.h>
 
@@ -22,16 +22,10 @@
 int
 timespec_get (struct timespec *ts, int base)
 {
-  switch (base)
+  if (base == TIME_UTC)
     {
-    case TIME_UTC:
-      /* Not supported.  */
-      return 0;
-
-    default:
-      return 0;
+      __clock_gettime (CLOCK_REALTIME, ts);
+      return base;
     }
-
-  return base;
+  return 0;
 }
-stub_warning (timespec_get)

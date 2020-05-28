@@ -1,5 +1,5 @@
 /* pause -- suspend the process until a signal arrives.  POSIX.1 version.
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <signal.h>
 #include <unistd.h>
@@ -38,5 +38,3 @@ __libc_pause (void)
   return __sigsuspend (&set);
 }
 weak_alias (__libc_pause, pause)
-
-LIBC_CANCEL_HANDLED ();		/* sigsuspend handles our cancellation.  */

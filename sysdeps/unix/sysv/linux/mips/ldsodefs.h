@@ -1,5 +1,5 @@
 /* Run-time dynamic linker data structures for loaded ELF shared objects. MIPS.
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+   Copyright (C) 2001-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef	_LDSODEFS_H
 
@@ -34,7 +34,7 @@ extern void _dl_static_init (struct link_map *map);
 #undef VALID_ELF_ABIVERSION
 #define VALID_ELF_ABIVERSION(osabi,ver)			\
   (ver == 0						\
-   || (osabi == ELFOSABI_SYSV && ver < 4)		\
+   || (osabi == ELFOSABI_SYSV && ver < 6)		\
    || (osabi == ELFOSABI_GNU && ver < LIBC_ABI_MAX))
 
 #endif /* ldsodefs.h */

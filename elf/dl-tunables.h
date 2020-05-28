@@ -1,7 +1,7 @@
 /* The tunable framework.  See the README to know how to use the tunable in
    a glibc module.
 
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _TUNABLES_H_
 #define _TUNABLES_H_
@@ -113,8 +113,7 @@ rtld_hidden_proto (__tunable_get_val)
 # define TUNABLES_FRONTEND_yes TUNABLES_FRONTEND_valstring
 
 /* Compare two name strings, bounded by the name hardcoded in glibc.  */
-static inline bool
-__always_inline
+static __always_inline bool
 tunable_is_name (const char *orig, const char *envname)
 {
   for (;*orig != '\0' && *envname != '\0'; envname++, orig++)

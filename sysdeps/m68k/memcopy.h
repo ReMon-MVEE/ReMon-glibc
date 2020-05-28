@@ -1,5 +1,5 @@
 /* memcopy.h -- definitions for memory copy functions.  Motorola 68020 version.
-   Copyright (C) 1991-2018 Free Software Foundation, Inc.
+   Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Torbjorn Granlund (tege@sics.se).
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdeps/generic/memcopy.h>
 
@@ -39,20 +39,28 @@
 	do								      \
 	  {								      \
 	    ((op_t *) dst_bp)[0] = ((op_t *) src_bp)[0];		      \
+	    /* Fall through.  */					      \
 	  case 7:							      \
 	    ((op_t *) dst_bp)[1] = ((op_t *) src_bp)[1];		      \
+	    /* Fall through.  */					      \
 	  case 6:							      \
 	    ((op_t *) dst_bp)[2] = ((op_t *) src_bp)[2];		      \
+	    /* Fall through.  */					      \
 	  case 5:							      \
 	    ((op_t *) dst_bp)[3] = ((op_t *) src_bp)[3];		      \
+	    /* Fall through.  */					      \
 	  case 4:							      \
 	    ((op_t *) dst_bp)[4] = ((op_t *) src_bp)[4];		      \
+	    /* Fall through.  */					      \
 	  case 3:							      \
 	    ((op_t *) dst_bp)[5] = ((op_t *) src_bp)[5];		      \
+	    /* Fall through.  */					      \
 	  case 2:							      \
 	    ((op_t *) dst_bp)[6] = ((op_t *) src_bp)[6];		      \
+	    /* Fall through.  */					      \
 	  case 1:							      \
 	    ((op_t *) dst_bp)[7] = ((op_t *) src_bp)[7];		      \
+	    /* Fall through.  */					      \
 	  case 0:							      \
 	    src_bp += 32;						      \
 	    dst_bp += 32;						      \
@@ -73,20 +81,28 @@
 	do								      \
 	  {								      \
 	    *--__dst_ep = *--__src_ep;					      \
+	    /* Fall through.  */					      \
 	  case 7:							      \
 	    *--__dst_ep = *--__src_ep;					      \
+	    /* Fall through.  */					      \
 	  case 6:							      \
 	    *--__dst_ep = *--__src_ep;					      \
+	    /* Fall through.  */					      \
 	  case 5:							      \
 	    *--__dst_ep = *--__src_ep;					      \
+	    /* Fall through.  */					      \
 	  case 4:							      \
 	    *--__dst_ep = *--__src_ep;					      \
+	    /* Fall through.  */					      \
 	  case 3:							      \
 	    *--__dst_ep = *--__src_ep;					      \
+	    /* Fall through.  */					      \
 	  case 2:							      \
 	    *--__dst_ep = *--__src_ep;					      \
+	    /* Fall through.  */					      \
 	  case 1:							      \
 	    *--__dst_ep = *--__src_ep;					      \
+	    /* Fall through.  */					      \
 	  case 0:							      \
 	    __nblocks--;						      \
 	  }								      \

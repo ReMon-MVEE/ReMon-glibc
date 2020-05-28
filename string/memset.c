@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,16 +13,18 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <string.h>
 #include <memcopy.h>
 
-#undef memset
+#ifndef MEMSET
+# define MEMSET memset
+#endif
 
 void *
 inhibit_loop_to_libcall
-memset (void *dstpp, int c, size_t len)
+MEMSET (void *dstpp, int c, size_t len)
 {
   long int dstp = (long int) dstpp;
 
@@ -85,4 +87,4 @@ memset (void *dstpp, int c, size_t len)
 
   return dstpp;
 }
-libc_hidden_builtin_def (memset)
+libc_hidden_builtin_def (MEMSET)

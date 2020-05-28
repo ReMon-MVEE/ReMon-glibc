@@ -1,4 +1,4 @@
-# Copyright (C) 1996-2018 Free Software Foundation, Inc.
+# Copyright (C) 1996-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 #
 #	Makefile for name service switch.
@@ -55,15 +55,23 @@ tests-internal		= tst-field
 tests			= test-netdb test-digits-dots tst-nss-getpwent bug17079 \
 			  tst-nss-test1 \
 			  tst-nss-test2 \
-			  tst-nss-test3 \
 			  tst-nss-test4 \
 			  tst-nss-test5
 xtests			= bug-erange
+
+tests-container = \
+			  tst-nss-test3 \
+			  tst-nss-files-hosts-long \
+			  tst-nss-db-endpwent \
+			  tst-nss-db-endgrent
 
 # Tests which need libdl
 ifeq (yes,$(build-shared))
 tests += tst-nss-files-hosts-erange
 tests += tst-nss-files-hosts-multi
+tests += tst-nss-files-hosts-getent
+tests += tst-nss-files-alias-leak
+tests += tst-nss-files-alias-truncated
 endif
 
 # If we have a thread library then we can test cancellation against
@@ -159,7 +167,7 @@ ifdef libnss_test2.so-version
 $(objpfx)/libnss_test2.so$(libnss_test2.so-version): $(objpfx)/libnss_test2.so
 	$(make-link)
 endif
-$(patsubst %,$(objpfx)%.out,$(tests)) : \
+$(patsubst %,$(objpfx)%.out,$(tests) $(tests-container)) : \
 	$(objpfx)/libnss_test1.so$(libnss_test1.so-version) \
 	$(objpfx)/libnss_test2.so$(libnss_test2.so-version)
 
@@ -169,3 +177,8 @@ endif
 
 $(objpfx)tst-nss-files-hosts-erange: $(libdl)
 $(objpfx)tst-nss-files-hosts-multi: $(libdl)
+$(objpfx)tst-nss-files-hosts-getent: $(libdl)
+$(objpfx)tst-nss-files-alias-leak: $(libdl)
+$(objpfx)tst-nss-files-alias-leak.out: $(objpfx)/libnss_files.so
+$(objpfx)tst-nss-files-alias-truncated: $(libdl)
+$(objpfx)tst-nss-files-alias-truncated.out: $(objpfx)/libnss_files.so

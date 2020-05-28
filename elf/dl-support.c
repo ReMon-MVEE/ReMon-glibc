@@ -1,5 +1,5 @@
 /* Support for dynamic linking code in static libc.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This file defines some things that for the dynamic linker are defined in
    rtld.c and dl-sysdep.c in ways appropriate to bootstrap dynamic linking.  */
@@ -34,6 +34,9 @@
 #include <unsecvars.h>
 #include <hp-timing.h>
 #include <stackinfo.h>
+#include <dl-vdso.h>
+#include <dl-vdso-setup.h>
+#include <dl-auxv.h>
 
 extern char *__progname;
 char **_dl_argv = &__progname;	/* This is checked for some error messages.  */
@@ -129,11 +132,6 @@ void *_dl_random;
 #include <dl-procruntime.c>
 #include <dl-procinfo.c>
 
-/* Initial value of the CPU clock.  */
-#ifndef HP_TIMING_NONAVAIL
-hp_timing_t _dl_cpuclock_offset;
-#endif
-
 void (*_dl_init_static_tls) (struct link_map *) = &_dl_nothread_init_static_tls;
 
 size_t _dl_pagesize = EXEC_PAGESIZE;
@@ -206,6 +204,8 @@ struct link_map *_dl_sysinfo_map;
 # include "get-dynamic-info.h"
 #endif
 #include "setup-vdso.h"
+/* Define the vDSO function pointers.  */
+#include <dl-vdso-setup.c>
 
 /* During the program run we must not modify the global data of
    loaded shared object simultanously in two threads.  Therefore we
@@ -294,9 +294,7 @@ _dl_aux_init (ElfW(auxv_t) *av)
       case AT_RANDOM:
 	_dl_random = (void *) av->a_un.a_val;
 	break;
-# ifdef DL_PLATFORM_AUXV
       DL_PLATFORM_AUXV
-# endif
       }
   if (seen == 0xf)
     {
@@ -314,14 +312,14 @@ _dl_non_dynamic_init (void)
   _dl_main_map.l_phdr = GL(dl_phdr);
   _dl_main_map.l_phnum = GL(dl_phnum);
 
-  if (HP_SMALL_TIMING_AVAIL)
-    HP_TIMING_NOW (_dl_cpuclock_offset);
-
   _dl_verbose = *(getenv ("LD_WARN") ?: "") == '\0' ? 0 : 1;
 
   /* Set up the data structures for the system-supplied DSO early,
      so they can influence _dl_init_paths.  */
   setup_vdso (NULL, NULL);
+
+  /* With vDSO setup we can initialize the function pointers.  */
+  setup_vdso_pointers ();
 
   /* Initialize the data structures for the search paths for shared
      objects.  */
@@ -375,14 +373,24 @@ _dl_non_dynamic_init (void)
   if (_dl_platform != NULL)
     _dl_platformlen = strlen (_dl_platform);
 
-  /* Scan for a program header telling us the stack is nonexecutable.  */
   if (_dl_phdr != NULL)
-    for (uint_fast16_t i = 0; i < _dl_phnum; ++i)
-      if (_dl_phdr[i].p_type == PT_GNU_STACK)
+    for (const ElfW(Phdr) *ph = _dl_phdr; ph < &_dl_phdr[_dl_phnum]; ++ph)
+      switch (ph->p_type)
 	{
-	  _dl_stack_flags = _dl_phdr[i].p_flags;
+	/* Check if the stack is nonexecutable.  */
+	case PT_GNU_STACK:
+	  _dl_stack_flags = ph->p_flags;
+	  break;
+
+	case PT_GNU_RELRO:
+	  _dl_main_map.l_relro_addr = ph->p_vaddr;
+	  _dl_main_map.l_relro_size = ph->p_memsz;
 	  break;
 	}
+
+  /* Setup relro on the binary itself.  */
+  if (_dl_main_map.l_relro_size != 0)
+    _dl_protect_relro (&_dl_main_map);
 }
 
 #ifdef DL_SYSINFO_IMPLEMENTATION

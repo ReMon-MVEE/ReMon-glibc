@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,13 +13,14 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Alan Modra <amodra@bigpond.net.au> rewrote the INLINE_SYSCALL macro */
 
 #ifndef _LINUX_POWERPC_SYSDEP_H
 #define _LINUX_POWERPC_SYSDEP_H 1
 
+#include <sysdeps/unix/sysv/linux/powerpc/sysdep.h>
 #include <sysdeps/unix/sysv/linux/sysdep.h>
 #include <sysdeps/unix/powerpc/sysdep.h>
 #include <tls.h>
@@ -43,27 +44,6 @@
 # define ASM_SIZE_DIRECTIVE(name) .size name,.-name
 
 #endif /* __ASSEMBLER__ */
-
-/* This version is for internal uses when there is no desire
-   to set errno */
-#define INTERNAL_VSYSCALL_NO_SYSCALL_FALLBACK(name, err, type, nr, args...)   \
-  ({									      \
-    type sc_ret = ENOSYS;						      \
-									      \
-    __typeof (__vdso_##name) vdsop = __vdso_##name;			      \
-    PTR_DEMANGLE (vdsop);						      \
-    if (vdsop != NULL)							      \
-      sc_ret =								      \
-        INTERNAL_VSYSCALL_CALL_TYPE (vdsop, err, type, nr, ##args);	      \
-    else								      \
-      err = 1 << 28;							      \
-    sc_ret;								      \
-  })
-
-/* List of system calls which are supported as vsyscalls.  */
-#define HAVE_CLOCK_GETRES_VSYSCALL	1
-#define HAVE_CLOCK_GETTIME_VSYSCALL	1
-#define HAVE_GETCPU_VSYSCALL		1
 
 /* Define a macro which expands inline into the wrapper code for a system
    call. This use is for internal calls that do not need to handle errors
@@ -98,10 +78,9 @@
 #define INTERNAL_VSYSCALL_CALL(funcptr, err, nr, args...)		\
   INTERNAL_VSYSCALL_CALL_TYPE(funcptr, err, long int, nr, args)
 
-#undef INLINE_SYSCALL
-
 /* This version is for kernels that implement system calls that
    behave like function calls as far as register saving.  */
+#undef INLINE_SYSCALL
 #define INLINE_SYSCALL(name, nr, args...)				\
   ({									\
     INTERNAL_SYSCALL_DECL (sc_err);					\
@@ -131,7 +110,6 @@
     register long int r7  __asm__ ("r7");				\
     register long int r8  __asm__ ("r8");				\
     LOADARGS_##nr (name, ##args);					\
-    ABORT_TRANSACTION;							\
     __asm__ __volatile__						\
       ("sc\n\t"								\
        "mfcr  %0\n\t"							\
@@ -161,47 +139,47 @@
 #define LOADARGS_0(name, dummy) \
 	r0 = name
 #define LOADARGS_1(name, __arg1) \
-	long int arg1 = (long int) (__arg1); \
+	long int _arg1 = (long int) (__arg1); \
 	LOADARGS_0(name, 0); \
 	extern void __illegally_sized_syscall_arg1 (void); \
 	if (__builtin_classify_type (__arg1) != 5 && sizeof (__arg1) > 8) \
 	  __illegally_sized_syscall_arg1 (); \
-	r3 = arg1
+	r3 = _arg1
 #define LOADARGS_2(name, __arg1, __arg2) \
-	long int arg2 = (long int) (__arg2); \
+	long int _arg2 = (long int) (__arg2); \
 	LOADARGS_1(name, __arg1); \
 	extern void __illegally_sized_syscall_arg2 (void); \
 	if (__builtin_classify_type (__arg2) != 5 && sizeof (__arg2) > 8) \
 	  __illegally_sized_syscall_arg2 (); \
-	r4 = arg2
+	r4 = _arg2
 #define LOADARGS_3(name, __arg1, __arg2, __arg3) \
-	long int arg3 = (long int) (__arg3); \
+	long int _arg3 = (long int) (__arg3); \
 	LOADARGS_2(name, __arg1, __arg2); \
 	extern void __illegally_sized_syscall_arg3 (void); \
 	if (__builtin_classify_type (__arg3) != 5 && sizeof (__arg3) > 8) \
 	  __illegally_sized_syscall_arg3 (); \
-	r5 = arg3
+	r5 = _arg3
 #define LOADARGS_4(name, __arg1, __arg2, __arg3, __arg4) \
-	long int arg4 = (long int) (__arg4); \
+	long int _arg4 = (long int) (__arg4); \
 	LOADARGS_3(name, __arg1, __arg2, __arg3); \
 	extern void __illegally_sized_syscall_arg4 (void); \
 	if (__builtin_classify_type (__arg4) != 5 && sizeof (__arg4) > 8) \
 	  __illegally_sized_syscall_arg4 (); \
-	r6 = arg4
+	r6 = _arg4
 #define LOADARGS_5(name, __arg1, __arg2, __arg3, __arg4, __arg5) \
-	long int arg5 = (long int) (__arg5); \
+	long int _arg5 = (long int) (__arg5); \
 	LOADARGS_4(name, __arg1, __arg2, __arg3, __arg4); \
 	extern void __illegally_sized_syscall_arg5 (void); \
 	if (__builtin_classify_type (__arg5) != 5 && sizeof (__arg5) > 8) \
 	  __illegally_sized_syscall_arg5 (); \
-	r7 = arg5
+	r7 = _arg5
 #define LOADARGS_6(name, __arg1, __arg2, __arg3, __arg4, __arg5, __arg6) \
-	long int arg6 = (long int) (__arg6); \
+	long int _arg6 = (long int) (__arg6); \
 	LOADARGS_5(name, __arg1, __arg2, __arg3, __arg4, __arg5); \
 	extern void __illegally_sized_syscall_arg6 (void); \
 	if (__builtin_classify_type (__arg6) != 5 && sizeof (__arg6) > 8) \
 	  __illegally_sized_syscall_arg6 (); \
-	r8 = arg6
+	r8 = _arg6
 
 #define ASM_INPUT_0 "0" (r0)
 #define ASM_INPUT_1 ASM_INPUT_0, "1" (r3)
@@ -235,5 +213,14 @@
 #  define PTR_DEMANGLE(var)	PTR_MANGLE (var)
 # endif
 #endif
+
+/* In the PowerPC64 ABI, the unadorned F_GETLK* opcodes should be used
+   even by largefile64 code.  */
+#define FCNTL_ADJUST_CMD(__cmd)				\
+  ({ int cmd_ = (__cmd);				\
+     if (cmd_ >= F_GETLK64 && cmd_ <= F_SETLKW64)	\
+       cmd_ -= F_GETLK64 - F_GETLK;			\
+     cmd_; })
+
 
 #endif /* linux/powerpc/powerpc64/sysdep.h */

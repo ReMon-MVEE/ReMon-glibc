@@ -1,5 +1,5 @@
 /* Internal definitions and declarations for UTMP functions.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>
    and Paul Janzen <pcj@primenet.com>, 1996.
@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _UTMP_PRIVATE_H
 #define _UTMP_PRIVATE_H	1
@@ -24,24 +24,17 @@
 #include <utmp.h>
 #include <libc-lock.h>
 
-/* The structure describing the functions in a backend.  */
-struct utfuncs
-{
-  int (*setutent) (void);
-  int (*getutent_r) (struct utmp *, struct utmp **);
-  int (*getutid_r) (const struct utmp *, struct utmp *, struct utmp **);
-  int (*getutline_r) (const struct utmp *, struct utmp *, struct utmp **);
-  struct utmp *(*pututline) (const struct utmp *);
-  void (*endutent) (void);
-  int (*updwtmp) (const char *, const struct utmp *);
-};
-
-/* The tables from the services.  */
-extern const struct utfuncs __libc_utmp_file_functions attribute_hidden;
-extern const struct utfuncs __libc_utmp_unknown_functions attribute_hidden;
-
-/* Currently selected backend.  */
-extern const struct utfuncs *__libc_utmp_jump_table attribute_hidden;
+/* These functions check for initialization, but not perform any
+   locking.  */
+int __libc_setutent (void) attribute_hidden;
+int __libc_getutent_r (struct utmp *, struct utmp **) attribute_hidden;
+int __libc_getutid_r (const struct utmp *, struct utmp *, struct utmp **)
+  attribute_hidden;
+int __libc_getutline_r (const struct utmp *, struct utmp *, struct utmp **)
+  attribute_hidden;
+struct utmp *__libc_pututline (const struct utmp *) attribute_hidden;
+void __libc_endutent (void) attribute_hidden;
+int __libc_updwtmp (const char *, const struct utmp *) attribute_hidden;
 
 /* Current file name.  */
 extern const char *__libc_utmp_file_name attribute_hidden;

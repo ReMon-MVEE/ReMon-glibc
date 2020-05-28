@@ -1,4 +1,4 @@
-/* Copyright (C) 2004-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2004-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "div_libc.h"
 
@@ -56,10 +56,10 @@ __divqu:
 	   that's done, we have at least 22 cycles until its results are
 	   ready -- all the time in the world to figure out how we're
 	   going to use the results.  */
-	stt	$f0, 0(sp)
-	excb
 	beq	Y, DIVBYZERO
 
+	stt	$f0, 0(sp)
+	excb
 	stt	$f1, 8(sp)
 	stt	$f3, 48(sp)
 	cfi_rel_offset ($f0, 0)
@@ -70,6 +70,7 @@ __divqu:
 	_ITOFT2	X, $f0, 16, Y, $f1, 24
 	cvtqt	$f0, $f0
 	cvtqt	$f1, $f1
+
 	blt	X, $x_is_neg
 	divt/c	$f0, $f1, $f0
 
@@ -90,12 +91,12 @@ __divqu:
 
 	ldt	$f0, 0(sp)
 	ldt	$f3, 48(sp)
+	lda	sp, FRAME(sp)
 	cfi_remember_state
 	cfi_restore ($f0)
 	cfi_restore ($f1)
 	cfi_restore ($f3)
 	cfi_def_cfa_offset (0)
-	lda	sp, FRAME(sp)
 	ret	$31, (RA), 1
 
 	.align	4

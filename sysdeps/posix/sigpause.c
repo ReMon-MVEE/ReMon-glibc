@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define sigpause __rename_sigpause
 #include <errno.h>
@@ -70,6 +70,3 @@ __xpg_sigpause (int sig)
   return __sigpause (sig, 1);
 }
 strong_alias (__xpg_sigpause, __libc___xpg_sigpause)
-
-/* __sigsuspend handles cancellation.  */
-LIBC_CANCEL_HANDLED ();

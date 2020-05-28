@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@gnu.ai.mit.edu>, August 1995.
 
@@ -14,20 +14,25 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sys/msg.h>
 #include <ipc_priv.h>
 #include <sysdep.h>
 #include <shlib-compat.h>
 #include <errno.h>
+#include <linux/posix_types.h>  /* For __kernel_mode_t.  */
 
 #ifndef DEFAULT_VERSION
-# define DEFAULT_VERSION GLIBC_2_2
+# ifndef __ASSUME_SYSVIPC_BROKEN_MODE_T
+#  define DEFAULT_VERSION GLIBC_2_2
+# else
+#  define DEFAULT_VERSION GLIBC_2_31
+# endif
 #endif
 
-int
-__new_msgctl (int msqid, int cmd, struct msqid_ds *buf)
+static int
+msgctl_syscall (int msqid, int cmd, struct msqid_ds *buf)
 {
 #ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
   return INLINE_SYSCALL_CALL (msgctl, msqid, cmd | __IPC_64, buf);
@@ -36,8 +41,59 @@ __new_msgctl (int msqid, int cmd, struct msqid_ds *buf)
 			      buf);
 #endif
 }
+
+int
+__new_msgctl (int msqid, int cmd, struct msqid_ds *buf)
+{
+  /* POSIX states ipc_perm mode should have type of mode_t.  */
+  _Static_assert (sizeof ((struct msqid_ds){0}.msg_perm.mode)
+		  == sizeof (mode_t),
+		  "sizeof (msqid_ds.msg_perm.mode) != sizeof (mode_t)");
+
+#ifdef __ASSUME_SYSVIPC_BROKEN_MODE_T
+  struct msqid_ds tmpds;
+  if (cmd == IPC_SET)
+    {
+      tmpds = *buf;
+      tmpds.msg_perm.mode *= 0x10000U;
+      buf = &tmpds;
+    }
+#endif
+
+  int ret = msgctl_syscall (msqid, cmd, buf);
+
+  if (ret >= 0)
+    {
+      switch (cmd)
+	{
+	case IPC_STAT:
+	case MSG_STAT:
+	case MSG_STAT_ANY:
+#ifdef __ASSUME_SYSVIPC_BROKEN_MODE_T
+	  buf->msg_perm.mode >>= 16;
+#else
+	  /* Old Linux kernel versions might not clear the mode padding.  */
+	  if (sizeof ((struct msqid_ds){0}.msg_perm.mode)
+	      != sizeof (__kernel_mode_t))
+	    buf->msg_perm.mode &= 0xFFFF;
+#endif
+	}
+    }
+
+  return ret;
+}
 versioned_symbol (libc, __new_msgctl, msgctl, DEFAULT_VERSION);
 
+#if defined __ASSUME_SYSVIPC_BROKEN_MODE_T \
+    && SHLIB_COMPAT (libc, GLIBC_2_2, GLIBC_2_31)
+int
+attribute_compat_text_section
+__msgctl_mode16 (int msqid, int cmd, struct msqid_ds *buf)
+{
+  return msgctl_syscall (msqid, cmd, buf);
+}
+compat_symbol (libc, __msgctl_mode16, msgctl, GLIBC_2_2);
+#endif
 
 #if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_2)
 struct __old_msqid_ds
@@ -61,8 +117,12 @@ int
 attribute_compat_text_section
 __old_msgctl (int msqid, int cmd, struct __old_msqid_ds *buf)
 {
-#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
-  return INLINE_SYSCALL_CALL (msgctl, msqid, cmd | __IPC_64, buf);
+#if defined __ASSUME_DIRECT_SYSVIPC_SYSCALLS \
+    && !defined __ASSUME_SYSVIPC_DEFAULT_IPC_64
+  /* For architecture that have wire-up msgctl but also have __IPC_64 to a
+     value different than default (0x0) it means the compat symbol used the
+     __NR_ipc syscall.  */
+  return INLINE_SYSCALL_CALL (msgctl, msqid, cmd, buf);
 #else
   return INLINE_SYSCALL_CALL (ipc, IPCOP_msgctl, msqid, cmd, 0, buf);
 #endif

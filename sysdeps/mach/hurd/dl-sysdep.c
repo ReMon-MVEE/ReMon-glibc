@@ -1,5 +1,5 @@
 /* Operating system support for run-time dynamic linker.  Hurd version.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* In the static library, this is all handled by dl-support.c
    or by the vanilla definitions in the rest of the C library.  */
@@ -61,10 +61,6 @@ int __libc_multiple_libcs = 0;	/* Defining this here avoids the inclusion
 /* This variable contains the lowest stack address ever used.  */
 void *__libc_stack_end = NULL;
 rtld_hidden_data_def(__libc_stack_end)
-
-#if HP_TIMING_AVAIL
-hp_timing_t _dl_cpuclock_offset;
-#endif
 
 /* TODO: Initialize.  */
 void *_dl_random attribute_relro = NULL;
@@ -132,8 +128,8 @@ _dl_sysdep_start (void **start_argptr,
 
       __tunables_init (_environ);
 
-      if (_dl_hurd_data->flags & EXEC_STACK_ARGS &&
-	  _dl_hurd_data->user_entry == 0)
+      if (_dl_hurd_data->flags & EXEC_STACK_ARGS
+	  && _dl_hurd_data->user_entry == 0)
 	_dl_hurd_data->user_entry = (vm_address_t) ENTRY_POINT;
 
 unfmh();			/* XXX */
@@ -246,10 +242,6 @@ unfmh();			/* XXX */
   /* Initialize frequently used global variable.  */
   GLRO(dl_pagesize) = __getpagesize ();
 
-#if HP_TIMING_AVAIL
-  HP_TIMING_NOW (_dl_cpuclock_offset);
-#endif
-
 fmh();				/* XXX */
 
   /* See hurd/hurdstartup.c; this deals with getting information
@@ -272,16 +264,21 @@ _dl_sysdep_start_cleanup (void)
   __mach_port_deallocate (__mach_task_self (), __mach_task_self_);
 }
 
-/* Minimal open/close/mmap implementation sufficient for initial loading of
+/* Minimal open/close/mmap/etc. implementation sufficient for initial loading of
    shared libraries.  These are weak definitions so that when the
    dynamic linker re-relocates itself to be user-visible (for -ldl),
-   it will get the user's definition (i.e. usually libc's).  */
+   it will get the user's definition (i.e. usually libc's).
+
+   They also need to be set in the libc and ld section of
+   sysdeps/mach/hurd/Versions, to be overridable, and in libc.abilist and
+   ld.abilist to be checked. */
 
 /* This macro checks that the function does not get renamed to be hidden: we do
    need these to be overridable by libc's.  */
 #define check_no_hidden(name)				\
-  static __typeof (name) __check_##name##_no_hidden	\
-       __attribute__ ((alias (#name)));
+  __typeof (name) __check_##name##_no_hidden		\
+       __attribute__ ((alias (#name)))			\
+       __attribute_copy__ (name);
 
 /* Open FILE_NAME and return a Hurd I/O for it in *PORT, or return an
    error.  If STAT is non-zero, stat the file into that stat buffer.  */
@@ -315,8 +312,8 @@ open_file (const char *file_name, int flags,
 
   assert (!(flags & ~(O_READ | O_CLOEXEC)));
 
-  startdir = _dl_hurd_data->portarray[file_name[0] == '/' ?
-				      INIT_PORT_CRDIR : INIT_PORT_CWDIR];
+  startdir = _dl_hurd_data->portarray[file_name[0] == '/'
+				      ? INIT_PORT_CRDIR : INIT_PORT_CWDIR];
 
   while (file_name[0] == '/')
     file_name++;
@@ -339,6 +336,7 @@ open_file (const char *file_name, int flags,
 }
 
 check_no_hidden(__open);
+check_no_hidden (__open64);
 int weak_function
 __open (const char *file_name, int mode, ...)
 {
@@ -349,6 +347,7 @@ __open (const char *file_name, int mode, ...)
   else
     return (int)port;
 }
+weak_alias (__open, __open64)
 
 check_no_hidden(__close);
 int weak_function
@@ -359,9 +358,9 @@ __close (int fd)
   return 0;
 }
 
-check_no_hidden(__libc_read);
+check_no_hidden(__pread64);
 __ssize_t weak_function
-__libc_read (int fd, void *buf, size_t nbytes)
+__pread64 (int fd, void *buf, size_t nbytes, off64_t offset)
 {
   error_t err;
   char *data;
@@ -369,7 +368,7 @@ __libc_read (int fd, void *buf, size_t nbytes)
 
   data = buf;
   nread = nbytes;
-  err = __io_read ((mach_port_t) fd, &data, &nread, -1, nbytes);
+  err = __io_read ((mach_port_t) fd, &data, &nread, offset, nbytes);
   if (err)
     return __hurd_fail (err);
 
@@ -381,11 +380,19 @@ __libc_read (int fd, void *buf, size_t nbytes)
 
   return nread;
 }
-libc_hidden_weak (__libc_read)
+libc_hidden_weak (__pread64)
 
-check_no_hidden(__libc_write);
+check_no_hidden(__read);
 __ssize_t weak_function
-__libc_write (int fd, const void *buf, size_t nbytes)
+__read (int fd, void *buf, size_t nbytes)
+{
+  return __pread64 (fd, buf, nbytes, -1);
+}
+libc_hidden_weak (__read)
+
+check_no_hidden(__write);
+__ssize_t weak_function
+__write (int fd, const void *buf, size_t nbytes)
 {
   error_t err;
   mach_msg_type_number_t nwrote;
@@ -398,7 +405,7 @@ __libc_write (int fd, const void *buf, size_t nbytes)
 
   return nwrote;
 }
-libc_hidden_weak (__libc_write)
+libc_hidden_weak (__write)
 
 /* This is only used for printing messages (see dl-misc.c).  */
 check_no_hidden(__writev);

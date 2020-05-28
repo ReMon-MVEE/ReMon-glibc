@@ -1,5 +1,5 @@
 /* Measure strspn functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #ifndef WIDE
@@ -24,32 +24,19 @@
 #endif /* WIDE */
 #include "bench-string.h"
 
+#define BIG_CHAR MAX_CHAR
+
 #ifndef WIDE
-# define STRSPN strspn
-# define CHAR char
 # define SIMPLE_STRSPN simple_strspn
-# define STUPID_STRSPN stupid_strspn
-# define STRLEN strlen
-# define STRCHR strchr
-# define BIG_CHAR CHAR_MAX
 # define SMALL_CHAR 127
 #else
-# include <wchar.h>
-# define STRSPN wcsspn
-# define CHAR wchar_t
 # define SIMPLE_STRSPN simple_wcsspn
-# define STUPID_STRSPN stupid_wcsspn
-# define STRLEN wcslen
-# define STRCHR wcschr
-# define BIG_CHAR WCHAR_MAX
 # define SMALL_CHAR 1273
 #endif /* WIDE */
 
 typedef size_t (*proto_t) (const CHAR *, const CHAR *);
 size_t SIMPLE_STRSPN (const CHAR *, const CHAR *);
-size_t STUPID_STRSPN (const CHAR *, const CHAR *);
 
-IMPL (STUPID_STRSPN, 0)
 IMPL (SIMPLE_STRSPN, 0)
 IMPL (STRSPN, 1)
 
@@ -70,27 +57,10 @@ SIMPLE_STRSPN (const CHAR *s, const CHAR *acc)
   return s - str - 1;
 }
 
-size_t
-STUPID_STRSPN (const CHAR *s, const CHAR *acc)
-{
-  size_t ns = STRLEN (s), nacc = STRLEN (acc);
-  size_t i, j;
-
-  for (i = 0; i < ns; ++i)
-    {
-      for (j = 0; j < nacc; ++j)
-	if (s[i] == acc[j])
-	  break;
-      if (j == nacc)
-	return i;
-    }
-  return i;
-}
-
 static void
 do_one_test (impl_t *impl, const CHAR *s, const CHAR *acc, size_t exp_res)
 {
-  size_t res = CALL (impl, s, acc), i, iters = INNER_LOOP_ITERS;
+  size_t res = CALL (impl, s, acc), i, iters = INNER_LOOP_ITERS_MEDIUM;
   timing_t start, stop, cur;
 
   if (res != exp_res)

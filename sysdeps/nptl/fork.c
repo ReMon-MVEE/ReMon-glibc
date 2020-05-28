@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <stdlib.h>
@@ -55,7 +55,7 @@ __libc_fork (void)
      but our current fork implementation is not.  */
   bool multiple_threads = THREAD_GETMEM (THREAD_SELF, header.multiple_threads);
 
-  __run_fork_handlers (atfork_run_prepare);
+  __run_fork_handlers (atfork_run_prepare, multiple_threads);
 
   /* If we are not running multiple threads, we do not have to
      preserve lock state.  If fork runs from a signal handler, only
@@ -82,14 +82,6 @@ __libc_fork (void)
       /* See __pthread_once.  */
       if (__fork_generation_pointer != NULL)
 	*__fork_generation_pointer += __PTHREAD_ONCE_FORK_GEN_INCR;
-
-#if HP_TIMING_AVAIL
-      /* The CPU clock of the thread and process have to be set to zero.  */
-      hp_timing_t now;
-      HP_TIMING_NOW (now);
-      THREAD_SETMEM (self, cpuclock_offset, now);
-      GL(dl_cpuclock_offset) = now;
-#endif
 
 #ifdef __NR_set_robust_list
       /* Initialize the robust mutex list setting in the kernel which has
@@ -134,7 +126,7 @@ __libc_fork (void)
       __rtld_lock_initialize (GL(dl_load_lock));
 
       /* Run the handlers registered for the child.  */
-      __run_fork_handlers (atfork_run_child);
+      __run_fork_handlers (atfork_run_child, multiple_threads);
     }
   else
     {
@@ -149,7 +141,7 @@ __libc_fork (void)
 	}
 
       /* Run the handlers registered for the parent.  */
-      __run_fork_handlers (atfork_run_parent);
+      __run_fork_handlers (atfork_run_parent, multiple_threads);
     }
 
   return pid;

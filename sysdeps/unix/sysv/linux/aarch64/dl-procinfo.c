@@ -1,6 +1,6 @@
 /* Data for AArch64 version of processor capability information.
    Linux version.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* If anything should be added here check whether the size of each string
    is still ok with the given array size.
@@ -57,7 +57,7 @@ PROCINFO_CLASS struct cpu_features _dl_aarch64_cpu_features
 #endif
 
 /* Number of HWCAP bits set.  */
-#define _DL_HWCAP_COUNT 24
+#define _DL_HWCAP_COUNT 32
 
 #if !defined PROCINFO_DECL && defined SHARED
   ._dl_aarch64_cap_flags
@@ -69,7 +69,8 @@ PROCINFO_CLASS const char _dl_aarch64_cap_flags[_DL_HWCAP_COUNT][10]
 = { "fp", "asimd", "evtstrm", "aes", "pmull", "sha1", "sha2", "crc32",
     "atomics", "fphp", "asimdhp", "cpuid", "asimdrdm", "jscvt", "fcma",
     "lrcpc", "dcpop", "sha3", "sm3", "sm4", "asimddp", "sha512", "sve",
-    "asimdfhm" }
+    "asimdfhm", "dit", "uscat", "ilrcpc", "flagm", "ssbs", "sb", "paca",
+    "pacg" }
 #endif
 #if !defined SHARED || defined PROCINFO_DECL
 ;

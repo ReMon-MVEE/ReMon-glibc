@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1995.
 
@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -85,6 +85,9 @@ static bool replace_archive;
 /* If true list archive content.  */
 static bool list_archive;
 
+/* If true create hard links to other locales (default).  */
+bool hard_links = true;
+
 /* Maximum number of retries when opening the locale archive.  */
 int max_locarchive_open_retry = 10;
 
@@ -105,6 +108,7 @@ void (*argp_program_version_hook) (FILE *, struct argp_state *) = print_version;
 #define OPT_BIG_ENDIAN 401
 #define OPT_NO_WARN 402
 #define OPT_WARN 403
+#define OPT_NO_HARD_LINKS 404
 
 /* Definitions of arguments for argp functions.  */
 static const struct argp_option options[] =
@@ -120,6 +124,8 @@ static const struct argp_option options[] =
   { NULL, 0, NULL, 0, N_("Output control:") },
   { "force", 'c', NULL, 0,
     N_("Create output even if warning messages were issued") },
+  { "no-hard-links", OPT_NO_HARD_LINKS, NULL, 0,
+    N_("Do not create hard links between installed locales") },
   { "prefix", OPT_PREFIX, N_("PATH"), 0, N_("Optional output file prefix") },
   { "posix", OPT_POSIX, NULL, 0, N_("Strictly conform to POSIX") },
   { "quiet", OPT_QUIET, NULL, 0,
@@ -389,6 +395,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
       /* Enable the warnings.  */
       set_warnings (arg, true);
       break;
+    case OPT_NO_HARD_LINKS:
+      /* Do not hard link to other locales.  */
+      hard_links = false;
+      break;
     case 'c':
       force_output = 1;
       break;
@@ -454,7 +464,7 @@ print_version (FILE *stream, struct argp_state *state)
 Copyright (C) %s Free Software Foundation, Inc.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\
-"), "2018");
+"), "2020");
   fprintf (stream, gettext ("Written by %s.\n"), "Ulrich Drepper");
 }
 

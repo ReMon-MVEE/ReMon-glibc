@@ -1,5 +1,5 @@
-/* Generic implementation of copy_file_range.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+/* Stub implementation of copy_file_range.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,9 +14,17 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#define COPY_FILE_RANGE_DECL
-#define COPY_FILE_RANGE copy_file_range
+#include <errno.h>
+#include <unistd.h>
 
-#include <io/copy_file_range-compat.c>
+ssize_t
+copy_file_range (int infd, __off64_t *pinoff,
+                 int outfd, __off64_t *poutoff,
+                 size_t length, unsigned int flags)
+{
+  __set_errno (ENOSYS);
+  return -1;
+}
+stub_warning (copy_file_range)

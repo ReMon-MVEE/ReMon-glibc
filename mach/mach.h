@@ -1,5 +1,5 @@
 /* Standard header for all Mach programs.
-   Copyright (C) 1993-2018 Free Software Foundation, Inc.
+   Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef	_MACH_H
 
@@ -96,5 +96,8 @@ kern_return_t mach_setup_thread (task_t task, thread_t thread, void *pc,
 				 vm_address_t *stack_base,
 				 vm_size_t *stack_size);
 
+/* Give THREAD a TLS area.  */
+kern_return_t __mach_setup_tls (thread_t thread);
+kern_return_t mach_setup_tls (thread_t thread);
 
 #endif	/* mach.h */

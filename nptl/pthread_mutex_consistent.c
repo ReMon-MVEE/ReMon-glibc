@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2005.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <pthreadP.h>
@@ -23,8 +23,11 @@
 int
 pthread_mutex_consistent (pthread_mutex_t *mutex)
 {
-  /* Test whether this is a robust mutex with a dead owner.  */
-  if ((mutex->__data.__kind & PTHREAD_MUTEX_ROBUST_NORMAL_NP) == 0
+  /* Test whether this is a robust mutex with a dead owner.
+     See concurrency notes regarding __kind in struct __pthread_mutex_s
+     in sysdeps/nptl/bits/thread-shared-types.h.  */
+  if ((atomic_load_relaxed (&(mutex->__data.__kind))
+       & PTHREAD_MUTEX_ROBUST_NORMAL_NP) == 0
       || mutex->__data.__owner != PTHREAD_MUTEX_INCONSISTENT)
     return EINVAL;
 

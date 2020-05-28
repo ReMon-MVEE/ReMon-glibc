@@ -1,5 +1,5 @@
 /* Bug 20419: test for stack overflow in elf/dl-load.c open_verify()
-   Copyright (C) 2018 Free Software Foundation, Inc.
+   Copyright (C) 2018-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,13 +14,19 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This creates a .so with 8MiB PT_NOTE segment.
    On a typical Linux system with 8MiB "ulimit -s", that was enough
    to trigger stack overflow in open_verify.  */
 
+#define NOTE_SIZE 8*1024*1024
+
 .pushsection .note.big,"a"
-.balign 4
-.fill 8*1024*1024, 1, 0
+	.balign 4
+	.long 5 		/* n_namesz.  Length of "GLIBC".  */
+	.long NOTE_SIZE		/* n_descsz.  */
+	.long 0			/* n_type.  */
+	.ascii "GLIBC\0\0\0"	/* Name and alignment to four bytes.  */
+	.fill NOTE_SIZE, 1, 0
 .popsection

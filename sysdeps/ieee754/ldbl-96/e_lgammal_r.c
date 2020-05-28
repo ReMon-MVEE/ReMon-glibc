@@ -28,7 +28,7 @@
 
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, see
-    <http://www.gnu.org/licenses/>.  */
+    <https://www.gnu.org/licenses/>.  */
 
 /* __ieee754_lgammal_r(x, signgamp)
  * Reentrant version of the logarithm of the Gamma function
@@ -94,6 +94,7 @@
 #include <math.h>
 #include <math_private.h>
 #include <libc-diag.h>
+#include <libm-alias-finite.h>
 
 static const long double
   half = 0.5L,
@@ -221,11 +222,11 @@ sin_pi (long double x)
    * argument reduction, make sure inexact flag not raised if input
    * is an integer
    */
-  z = __floorl (y);
+  z = floorl (y);
   if (z != y)
     {				/* inexact anyway */
       y  *= 0.5;
-      y = 2.0*(y - __floorl(y));		/* y = |x| mod 2.0 */
+      y = 2.0*(y - floorl(y));		/* y = |x| mod 2.0 */
       n = (int) (y*4.0);
     }
   else
@@ -436,4 +437,4 @@ __ieee754_lgammal_r (long double x, int *signgamp)
   DIAG_POP_NEEDS_COMMENT;
   return r;
 }
-strong_alias (__ieee754_lgammal_r, __lgammal_r_finite)
+libm_alias_finite (__ieee754_lgammal_r, __lgammal_r)

@@ -1,5 +1,5 @@
 /* memset optimized with AVX512 for KNL hardware.
-   Copyright (C) 2015-2018 Free Software Foundation, Inc.
+   Copyright (C) 2015-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
@@ -29,12 +29,16 @@
 	.section .text.avx512,"ax",@progbits
 #if defined PIC
 ENTRY (MEMSET_CHK)
-	cmpq	%rdx, %rcx
+	cmp	%RDX_LP, %RCX_LP
 	jb	HIDDEN_JUMPTARGET (__chk_fail)
 END (MEMSET_CHK)
 #endif
 
 ENTRY (MEMSET)
+# ifdef __ILP32__
+	/* Clear the upper 32 bits.  */
+	mov	%edx, %edx
+# endif
 	vpxor	%xmm0, %xmm0, %xmm0
 	vmovd	%esi, %xmm1
 	lea	(%rdi, %rdx), %rsi

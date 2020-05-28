@@ -1,5 +1,5 @@
 /* Measure stpcpy functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define STRCPY_RESULT(dst, len) ((dst) + (len))
 #define TEST_MAIN
@@ -22,30 +22,18 @@
 # define TEST_NAME "stpcpy"
 #else
 # define TEST_NAME "wcpcpy"
+# define generic_stpcpy generic_wcpcpy
 #endif /* WIDE */
 #include "bench-string.h"
-#ifndef WIDE
-# define CHAR char
-# define SIMPLE_STPCPY simple_stpcpy
-# define STPCPY stpcpy
-#else
-# include <wchar.h>
-# define CHAR wchar_t
-# define SIMPLE_STPCPY simple_wcpcpy
-# define STPCPY wcpcpy
-#endif /* WIDE */
-
-CHAR *SIMPLE_STPCPY (CHAR *, const CHAR *);
-
-IMPL (SIMPLE_STPCPY, 0)
-IMPL (STPCPY, 1)
 
 CHAR *
-SIMPLE_STPCPY (CHAR *dst, const CHAR *src)
+generic_stpcpy (CHAR *dst, const CHAR *src)
 {
-  while ((*dst++ = *src++) != '\0');
-  return dst - 1;
+  size_t len = STRLEN (src);
+  return (CHAR *) MEMCPY (dst, src, len + 1) + len;
 }
 
-#undef CHAR
+IMPL (STPCPY, 1)
+IMPL (generic_stpcpy, 0)
+
 #include "bench-strcpy.c"

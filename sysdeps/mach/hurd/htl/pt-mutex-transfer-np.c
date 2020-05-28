@@ -1,6 +1,6 @@
 /* pthread_mutex_transfer_np.  Transfer mutex ownership to another thread.
    Hurd version.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library;  if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <pthread.h>
 #include <stdlib.h>
@@ -58,8 +58,8 @@ __pthread_mutex_transfer_np (pthread_mutex_t *mtxp, pthread_t th)
       /* Note that this can be used to transfer an inconsistent
        * mutex as well. The new owner will still have the same
        * flags as the original. */
-      if (mtxp->__owner_id != self->thread ||
-	  (int) (mtxp->__lock & LLL_OWNER_MASK) != __getpid ())
+      if (mtxp->__owner_id != self->thread
+	  || (int) (mtxp->__lock & LLL_OWNER_MASK) != __getpid ())
 	ret = EPERM;
       else
 	mtxp->__owner_id = pt->thread;

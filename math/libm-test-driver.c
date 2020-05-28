@@ -1,5 +1,5 @@
 /* Support code for testing libm functions (driver).
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "libm-test-support.h"
 
@@ -23,7 +23,6 @@
 /* Flags set by the including file.  */
 const int flag_test_errno = TEST_ERRNO;
 const int flag_test_exceptions = TEST_EXCEPTIONS;
-const int flag_test_finite = TEST_FINITE;
 const int flag_test_inline = TEST_INLINE;
 const int flag_test_mathvec = TEST_MATHVEC;
 
@@ -44,8 +43,6 @@ const int snan_tests_arg = SNAN_TESTS (FLOAT);
 # define TEST_MSG "testing " STR_FLOAT " (vector length " STR_VEC_LEN ")\n"
 #elif TEST_INLINE
 # define TEST_MSG "testing " STR_FLOAT " (inline functions)\n"
-#elif TEST_FINITE
-# define TEST_MSG "testing " STR_FLOAT " (finite-math-only)\n"
 #elif TEST_NARROW
 # define TEST_MSG "testing " STR_FLOAT " (argument " STR_ARG_FLOAT ")\n"
 #else
@@ -154,7 +151,7 @@ struct test_ff_f_data
     int exceptions;
   } rd, rn, rz, ru;
 };
-/* Strictly speaking, a j type argument is one gen-libm-test.pl will not
+/* Strictly speaking, a j type argument is one gen-libm-test.py will not
    attempt to muck with.  For now, it is only used to prevent it from
    mucking up an explicitly long double argument.  */
 struct test_fj_f_data
@@ -326,7 +323,8 @@ struct test_f_i_data
     int exceptions;
   } rd, rn, rz, ru;
 };
-/* Used for both RUN_TEST_LOOP_ff_b and RUN_TEST_LOOP_ff_i_tg.  */
+/* Used for RUN_TEST_LOOP_ff_b, RUN_TEST_LOOP_fpfp_b and
+   RUN_TEST_LOOP_ff_i_tg.  */
 struct test_ff_i_data
 {
   const char *arg_str;
@@ -389,6 +387,7 @@ struct test_Ff_b1_data
 #define IF_ROUND_INIT_FE_DOWNWARD		\
   int save_round_mode = fegetround ();		\
   if (ROUNDING_TESTS (FLOAT, FE_DOWNWARD)	\
+      && !TEST_MATHVEC				\
       && fesetround (FE_DOWNWARD) == 0)
 #define IF_ROUND_INIT_FE_TONEAREST		\
   int save_round_mode = fegetround ();		\
@@ -397,10 +396,12 @@ struct test_Ff_b1_data
 #define IF_ROUND_INIT_FE_TOWARDZERO		\
   int save_round_mode = fegetround ();		\
   if (ROUNDING_TESTS (FLOAT, FE_TOWARDZERO)	\
+      && !TEST_MATHVEC				\
       && fesetround (FE_TOWARDZERO) == 0)
 #define IF_ROUND_INIT_FE_UPWARD			\
   int save_round_mode = fegetround ();		\
   if (ROUNDING_TESTS (FLOAT, FE_UPWARD)		\
+      && !TEST_MATHVEC				\
       && fesetround (FE_UPWARD) == 0)
 #define ROUND_RESTORE_	/* Empty.  */
 #define ROUND_RESTORE_FE_DOWNWARD		\
@@ -856,6 +857,26 @@ struct test_Ff_b1_data
 		     (ARRAY)[i].arg1, (ARRAY)[i].arg2,			\
 		     (ARRAY)[i].RM_##ROUNDING_MODE.expected,		\
 		     (ARRAY)[i].RM_##ROUNDING_MODE.exceptions);		\
+  ROUND_RESTORE_ ## ROUNDING_MODE
+#define RUN_TEST_fpfp_b(ARG_STR, FUNC_NAME, ARG1, ARG2, EXPECTED,	\
+			EXCEPTIONS)					\
+  do									\
+    if (enable_test (EXCEPTIONS))					\
+      {									\
+	COMMON_TEST_SETUP (ARG_STR);					\
+	check_bool (test_name,						\
+		    FUNC_TEST (FUNC_NAME) (&(ARG1), &(ARG2)),		\
+		    EXPECTED, EXCEPTIONS);				\
+	COMMON_TEST_CLEANUP;						\
+      }									\
+  while (0)
+#define RUN_TEST_LOOP_fpfp_b(FUNC_NAME, ARRAY, ROUNDING_MODE)		\
+  IF_ROUND_INIT_ ## ROUNDING_MODE					\
+    for (size_t i = 0; i < sizeof (ARRAY) / sizeof (ARRAY)[0]; i++)	\
+      RUN_TEST_fpfp_b ((ARRAY)[i].arg_str, FUNC_NAME,			\
+		       (ARRAY)[i].arg1, (ARRAY)[i].arg2,		\
+		       (ARRAY)[i].RM_##ROUNDING_MODE.expected,		\
+		       (ARRAY)[i].RM_##ROUNDING_MODE.exceptions);	\
   ROUND_RESTORE_ ## ROUNDING_MODE
 #define RUN_TEST_ff_i_tg(ARG_STR, FUNC_NAME, ARG1, ARG2, EXPECTED,	\
 			 EXCEPTIONS)					\

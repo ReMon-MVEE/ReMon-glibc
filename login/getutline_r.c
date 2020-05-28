@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>
    and Paul Janzen <pcj@primenet.com>, 1996.
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <libc-lock.h>
@@ -36,7 +36,7 @@ __getutline_r (const struct utmp *line, struct utmp *buffer,
 
   __libc_lock_lock (__libc_utmp_lock);
 
-  retval = (*__libc_utmp_jump_table->getutline_r) (line, buffer, result);
+  retval = __libc_getutline_r (line, buffer, result);
 
   __libc_lock_unlock (__libc_utmp_lock);
 

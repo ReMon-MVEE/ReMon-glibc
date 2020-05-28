@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 1996.
 
@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -246,7 +246,7 @@ print_version (FILE *stream, struct argp_state *state)
 Copyright (C) %s Free Software Foundation, Inc.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\
-"), "2018");
+"), "2020");
   fprintf (stream, gettext ("Written by %s.\n"), "Ulrich Drepper");
 }
 
@@ -1196,7 +1196,9 @@ normalize_line (const char *fname, size_t line, iconv_t cd, wchar_t *string,
 		  ++rp;
 		}
 	      else
-		/* Simply ignore the backslash character.  */;
+		{
+		  /* Simply ignore the backslash character.  */
+		}
 	      break;
 	    }
       }
@@ -1268,7 +1270,7 @@ read_old (struct catalog *catalog, const char *file_name)
 	     Insert it at the right position.  */
 	  struct message_list *newp;
 
-	  newp = (struct message_list *) xmalloc (sizeof(*newp));
+	  newp = (struct message_list *) xmalloc (sizeof (*newp));
 	  newp->number = old_cat_obj.name_ptr[cnt * 3 + 1];
 	  newp->message =
 	    &old_cat_obj.strings[old_cat_obj.name_ptr[cnt * 3 + 2]];

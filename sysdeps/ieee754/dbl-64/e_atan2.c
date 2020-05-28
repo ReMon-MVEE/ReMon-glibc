@@ -1,7 +1,7 @@
 /*
  * IBM Accurate Mathematical Library
  * written by International Business Machines Corp.
- * Copyright (C) 2001-2018 Free Software Foundation, Inc.
+ * Copyright (C) 2001-2020 Free Software Foundation, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -14,7 +14,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, see <http://www.gnu.org/licenses/>.
+ * along with this program; if not, see <https://www.gnu.org/licenses/>.
  */
 /************************************************************************/
 /*  MODULE_NAME: atnat2.c                                               */
@@ -46,7 +46,9 @@
 #include <math.h>
 #include <math-barriers.h>
 #include <math_private.h>
+#include <fenv_private.h>
 #include <stap-probe.h>
+#include <libm-alias-finite.h>
 
 #ifndef SECTION
 # define SECTION
@@ -63,7 +65,7 @@ static double atan2Mp (double, double, const int[]);
 static double
 signArctan2 (double y, double z)
 {
-  return __copysign (z, y);
+  return copysign (z, y);
 }
 
 static double normalized (double, double, double, double);
@@ -569,7 +571,7 @@ __ieee754_atan2 (double y, double x)
 }
 
 #ifndef __ieee754_atan2
-strong_alias (__ieee754_atan2, __atan2_finite)
+libm_alias_finite (__ieee754_atan2, __atan2)
 #endif
 
 /* Treat the Denormalized case */

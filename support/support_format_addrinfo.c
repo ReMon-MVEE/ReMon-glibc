@@ -1,5 +1,5 @@
 /* Convert struct addrinfo values to a string.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <support/format_nss.h>
 
@@ -67,8 +67,6 @@ format_ai_flags (FILE *out, struct addrinfo *ai)
       FLAG (AI_ADDRCONFIG);
       FLAG (AI_IDN);
       FLAG (AI_CANONIDN);
-      FLAG (AI_IDN_ALLOW_UNASSIGNED);
-      FLAG (AI_IDN_USE_STD3_ASCII_RULES);
       FLAG (AI_NUMERICSERV);
 #undef FLAG
       int remaining = ai->ai_flags & ~flags_printed;

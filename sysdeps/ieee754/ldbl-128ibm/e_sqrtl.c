@@ -1,7 +1,7 @@
 /*
  * IBM Accurate Mathematical Library
  * written by International Business Machines Corp.
- * Copyright (C) 2001-2018 Free Software Foundation, Inc.
+ * Copyright (C) 2001-2020 Free Software Foundation, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -14,7 +14,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, see <http://www.gnu.org/licenses/>.
+ * along with this program; if not, see <https://www.gnu.org/licenses/>.
  */
 /*********************************************************************/
 /* MODULE_NAME: uroot.c                                              */
@@ -33,6 +33,7 @@
 /*********************************************************************/
 
 #include <math_private.h>
+#include <libm-alias-finite.h>
 
 typedef union {int64_t i[2]; long double x; double d[2]; } mynumber;
 
@@ -99,4 +100,4 @@ long double __ieee754_sqrtl(long double x)
     return tm256*__ieee754_sqrtl(x*t512);
   }
 }
-strong_alias (__ieee754_sqrtl, __sqrtl_finite)
+libm_alias_finite (__ieee754_sqrtl, __sqrtl)

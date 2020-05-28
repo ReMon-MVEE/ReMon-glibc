@@ -1,5 +1,5 @@
 /* Function expf vectorized with AVX-512. KNL and SKX versions.
-   Copyright (C) 2014-2018 Free Software Foundation, Inc.
+   Copyright (C) 2014-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 #include "svml_s_expf_data.h"
@@ -212,14 +212,14 @@ WRAPPER_IMPL_AVX512 _ZGVdN8v_expf
         cfi_restore_state
         movzbl    %r12b, %r15d
         vmovss    1156(%rsp,%r15,8), %xmm0
-        call      JUMPTARGET(__expf_finite)
+        call      JUMPTARGET(expf)
         vmovss    %xmm0, 1220(%rsp,%r15,8)
         jmp       .LBL_1_8
 
 .LBL_1_12:
         movzbl    %r12b, %r15d
         vmovss    1152(%rsp,%r15,8), %xmm0
-        call      JUMPTARGET(__expf_finite)
+        call      JUMPTARGET(expf)
         vmovss    %xmm0, 1216(%rsp,%r15,8)
         jmp       .LBL_1_7
 
@@ -422,7 +422,7 @@ WRAPPER_IMPL_AVX512 _ZGVdN8v_expf
         vzeroupper
         vmovss    1156(%rsp,%r15,8), %xmm0
 
-        call      JUMPTARGET(__expf_finite)
+        call      JUMPTARGET(expf)
 
         vmovss    %xmm0, 1220(%rsp,%r15,8)
         jmp       .LBL_2_8
@@ -433,7 +433,7 @@ WRAPPER_IMPL_AVX512 _ZGVdN8v_expf
         vzeroupper
         vmovss    1152(%rsp,%r15,8), %xmm0
 
-        call      JUMPTARGET(__expf_finite)
+        call      JUMPTARGET(expf)
 
         vmovss    %xmm0, 1216(%rsp,%r15,8)
         jmp       .LBL_2_7

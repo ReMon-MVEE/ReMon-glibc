@@ -1,6 +1,6 @@
 /* x86-64 __mpn_submul_1 -- Multiply a limb vector with a limb and subtract
    the result from a second limb vector.
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU MP Library.
 
    The GNU MP Library is free software; you can redistribute it and/or modify
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public License
    along with the GNU MP Library; see the file COPYING.LIB.  If not,
-   see <http://www.gnu.org/licenses/>.  */
+   see <https://www.gnu.org/licenses/>.  */
 
 #define func __mpn_submul_1
 #define ADDSUB sub

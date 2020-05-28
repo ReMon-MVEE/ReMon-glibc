@@ -1,5 +1,5 @@
 /* Implement powl for x86 using extra-precision log.
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <math.h>
 #include <math_private.h>
@@ -216,7 +216,7 @@ __powl_helper (long double x, long double y)
 
   /* Split the base-2 logarithm of the result into integer and
      fractional parts.  */
-  long double log2_res_int = __roundl (log2_res_hi);
+  long double log2_res_int = roundl (log2_res_hi);
   long double log2_res_frac = log2_res_hi - log2_res_int + log2_res_lo;
   /* If the integer part is very large, the computed fractional part
      may be outside the valid range for f2xm1.  */

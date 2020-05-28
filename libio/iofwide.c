@@ -1,4 +1,4 @@
-/* Copyright (C) 1999-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -39,44 +39,6 @@
 #include <sysdep.h>
 
 
-/* Prototypes of libio's codecvt functions.  */
-static enum __codecvt_result do_out (struct _IO_codecvt *codecvt,
-				     __mbstate_t *statep,
-				     const wchar_t *from_start,
-				     const wchar_t *from_end,
-				     const wchar_t **from_stop, char *to_start,
-				     char *to_end, char **to_stop);
-static enum __codecvt_result do_unshift (struct _IO_codecvt *codecvt,
-					 __mbstate_t *statep, char *to_start,
-					 char *to_end, char **to_stop);
-static enum __codecvt_result do_in (struct _IO_codecvt *codecvt,
-				    __mbstate_t *statep,
-				    const char *from_start,
-				    const char *from_end,
-				    const char **from_stop, wchar_t *to_start,
-				    wchar_t *to_end, wchar_t **to_stop);
-static int do_encoding (struct _IO_codecvt *codecvt);
-static int do_length (struct _IO_codecvt *codecvt, __mbstate_t *statep,
-		      const char *from_start,
-		      const char *from_end, size_t max);
-static int do_max_length (struct _IO_codecvt *codecvt);
-static int do_always_noconv (struct _IO_codecvt *codecvt);
-
-
-/* The functions used in `codecvt' for libio are always the same.  */
-const struct _IO_codecvt __libio_codecvt =
-{
-  .__codecvt_destr = NULL,		/* Destructor, never used.  */
-  .__codecvt_do_out = do_out,
-  .__codecvt_do_unshift = do_unshift,
-  .__codecvt_do_in = do_in,
-  .__codecvt_do_encoding = do_encoding,
-  .__codecvt_do_always_noconv = do_always_noconv,
-  .__codecvt_do_length = do_length,
-  .__codecvt_do_max_length = do_max_length
-};
-
-
 /* Return orientation of stream.  If mode is nonzero try to change
    the orientation first.  */
 #undef _IO_fwide
@@ -87,8 +49,7 @@ _IO_fwide (FILE *fp, int mode)
   mode = mode < 0 ? -1 : (mode == 0 ? 0 : 1);
 
 #if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_1)
-  if (__builtin_expect (&_IO_stdin_used == NULL, 0)
-      && (fp == _IO_stdin || fp == _IO_stdout || fp == _IO_stderr))
+  if (__glibc_unlikely (&_IO_stdin_used == NULL) && _IO_legacy_file (fp))
     /* This is for a stream in the glibc 2.0 format.  */
     return -1;
 #endif
@@ -119,25 +80,19 @@ _IO_fwide (FILE *fp, int mode)
 	assert (fcts.towc_nsteps == 1);
 	assert (fcts.tomb_nsteps == 1);
 
-	/* The functions are always the same.  */
-	*cc = __libio_codecvt;
+	cc->__cd_in.step = fcts.towc;
 
-	cc->__cd_in.__cd.__nsteps = fcts.towc_nsteps;
-	cc->__cd_in.__cd.__steps = fcts.towc;
+	cc->__cd_in.step_data.__invocation_counter = 0;
+	cc->__cd_in.step_data.__internal_use = 1;
+	cc->__cd_in.step_data.__flags = __GCONV_IS_LAST;
+	cc->__cd_in.step_data.__statep = &fp->_wide_data->_IO_state;
 
-	cc->__cd_in.__cd.__data[0].__invocation_counter = 0;
-	cc->__cd_in.__cd.__data[0].__internal_use = 1;
-	cc->__cd_in.__cd.__data[0].__flags = __GCONV_IS_LAST;
-	cc->__cd_in.__cd.__data[0].__statep = &fp->_wide_data->_IO_state;
+	cc->__cd_out.step = fcts.tomb;
 
-	cc->__cd_out.__cd.__nsteps = fcts.tomb_nsteps;
-	cc->__cd_out.__cd.__steps = fcts.tomb;
-
-	cc->__cd_out.__cd.__data[0].__invocation_counter = 0;
-	cc->__cd_out.__cd.__data[0].__internal_use = 1;
-	cc->__cd_out.__cd.__data[0].__flags
-	  = __GCONV_IS_LAST | __GCONV_TRANSLIT;
-	cc->__cd_out.__cd.__data[0].__statep = &fp->_wide_data->_IO_state;
+	cc->__cd_out.step_data.__invocation_counter = 0;
+	cc->__cd_out.step_data.__internal_use = 1;
+	cc->__cd_out.step_data.__flags = __GCONV_IS_LAST | __GCONV_TRANSLIT;
+	cc->__cd_out.step_data.__statep = &fp->_wide_data->_IO_state;
       }
 
       /* From now on use the wide character callback functions.  */
@@ -151,22 +106,22 @@ _IO_fwide (FILE *fp, int mode)
 }
 
 
-static enum __codecvt_result
-do_out (struct _IO_codecvt *codecvt, __mbstate_t *statep,
-	const wchar_t *from_start, const wchar_t *from_end,
-	const wchar_t **from_stop, char *to_start, char *to_end,
-	char **to_stop)
+enum __codecvt_result
+__libio_codecvt_out (struct _IO_codecvt *codecvt, __mbstate_t *statep,
+		     const wchar_t *from_start, const wchar_t *from_end,
+		     const wchar_t **from_stop, char *to_start, char *to_end,
+		     char **to_stop)
 {
   enum __codecvt_result result;
 
-  struct __gconv_step *gs = codecvt->__cd_out.__cd.__steps;
+  struct __gconv_step *gs = codecvt->__cd_out.step;
   int status;
   size_t dummy;
   const unsigned char *from_start_copy = (unsigned char *) from_start;
 
-  codecvt->__cd_out.__cd.__data[0].__outbuf = (unsigned char *) to_start;
-  codecvt->__cd_out.__cd.__data[0].__outbufend = (unsigned char *) to_end;
-  codecvt->__cd_out.__cd.__data[0].__statep = statep;
+  codecvt->__cd_out.step_data.__outbuf = (unsigned char *) to_start;
+  codecvt->__cd_out.step_data.__outbufend = (unsigned char *) to_end;
+  codecvt->__cd_out.step_data.__statep = statep;
 
   __gconv_fct fct = gs->__fct;
 #ifdef PTR_DEMANGLE
@@ -175,12 +130,12 @@ do_out (struct _IO_codecvt *codecvt, __mbstate_t *statep,
 #endif
 
   status = DL_CALL_FCT (fct,
-			(gs, codecvt->__cd_out.__cd.__data, &from_start_copy,
+			(gs, &codecvt->__cd_out.step_data, &from_start_copy,
 			 (const unsigned char *) from_end, NULL,
 			 &dummy, 0, 0));
 
   *from_stop = (wchar_t *) from_start_copy;
-  *to_stop = (char *) codecvt->__cd_out.__cd.__data[0].__outbuf;
+  *to_stop = (char *) codecvt->__cd_out.step_data.__outbuf;
 
   switch (status)
     {
@@ -203,68 +158,22 @@ do_out (struct _IO_codecvt *codecvt, __mbstate_t *statep,
 }
 
 
-static enum __codecvt_result
-do_unshift (struct _IO_codecvt *codecvt, __mbstate_t *statep,
-	    char *to_start, char *to_end, char **to_stop)
+enum __codecvt_result
+__libio_codecvt_in (struct _IO_codecvt *codecvt, __mbstate_t *statep,
+		    const char *from_start, const char *from_end,
+		    const char **from_stop,
+		    wchar_t *to_start, wchar_t *to_end, wchar_t **to_stop)
 {
   enum __codecvt_result result;
 
-  struct __gconv_step *gs = codecvt->__cd_out.__cd.__steps;
-  int status;
-  size_t dummy;
-
-  codecvt->__cd_out.__cd.__data[0].__outbuf = (unsigned char *) to_start;
-  codecvt->__cd_out.__cd.__data[0].__outbufend = (unsigned char *) to_end;
-  codecvt->__cd_out.__cd.__data[0].__statep = statep;
-
-  __gconv_fct fct = gs->__fct;
-#ifdef PTR_DEMANGLE
-  if (gs->__shlib_handle != NULL)
-    PTR_DEMANGLE (fct);
-#endif
-
-  status = DL_CALL_FCT (fct,
-			(gs, codecvt->__cd_out.__cd.__data, NULL, NULL,
-			 NULL, &dummy, 1, 0));
-
-  *to_stop = (char *) codecvt->__cd_out.__cd.__data[0].__outbuf;
-
-  switch (status)
-    {
-    case __GCONV_OK:
-    case __GCONV_EMPTY_INPUT:
-      result = __codecvt_ok;
-      break;
-
-    case __GCONV_FULL_OUTPUT:
-    case __GCONV_INCOMPLETE_INPUT:
-      result = __codecvt_partial;
-      break;
-
-    default:
-      result = __codecvt_error;
-      break;
-    }
-
-  return result;
-}
-
-
-static enum __codecvt_result
-do_in (struct _IO_codecvt *codecvt, __mbstate_t *statep,
-       const char *from_start, const char *from_end, const char **from_stop,
-       wchar_t *to_start, wchar_t *to_end, wchar_t **to_stop)
-{
-  enum __codecvt_result result;
-
-  struct __gconv_step *gs = codecvt->__cd_in.__cd.__steps;
+  struct __gconv_step *gs = codecvt->__cd_in.step;
   int status;
   size_t dummy;
   const unsigned char *from_start_copy = (unsigned char *) from_start;
 
-  codecvt->__cd_in.__cd.__data[0].__outbuf = (unsigned char *) to_start;
-  codecvt->__cd_in.__cd.__data[0].__outbufend = (unsigned char *) to_end;
-  codecvt->__cd_in.__cd.__data[0].__statep = statep;
+  codecvt->__cd_in.step_data.__outbuf = (unsigned char *) to_start;
+  codecvt->__cd_in.step_data.__outbufend = (unsigned char *) to_end;
+  codecvt->__cd_in.step_data.__statep = statep;
 
   __gconv_fct fct = gs->__fct;
 #ifdef PTR_DEMANGLE
@@ -273,12 +182,12 @@ do_in (struct _IO_codecvt *codecvt, __mbstate_t *statep,
 #endif
 
   status = DL_CALL_FCT (fct,
-			(gs, codecvt->__cd_in.__cd.__data, &from_start_copy,
+			(gs, &codecvt->__cd_in.step_data, &from_start_copy,
 			 (const unsigned char *) from_end, NULL,
 			 &dummy, 0, 0));
 
   *from_stop = (const char *) from_start_copy;
-  *to_stop = (wchar_t *) codecvt->__cd_in.__cd.__data[0].__outbuf;
+  *to_stop = (wchar_t *) codecvt->__cd_in.step_data.__outbuf;
 
   switch (status)
     {
@@ -301,43 +210,37 @@ do_in (struct _IO_codecvt *codecvt, __mbstate_t *statep,
 }
 
 
-static int
-do_encoding (struct _IO_codecvt *codecvt)
+int
+__libio_codecvt_encoding (struct _IO_codecvt *codecvt)
 {
   /* See whether the encoding is stateful.  */
-  if (codecvt->__cd_in.__cd.__steps[0].__stateful)
+  if (codecvt->__cd_in.step->__stateful)
     return -1;
   /* Fortunately not.  Now determine the input bytes for the conversion
      necessary for each wide character.  */
-  if (codecvt->__cd_in.__cd.__steps[0].__min_needed_from
-      != codecvt->__cd_in.__cd.__steps[0].__max_needed_from)
+  if (codecvt->__cd_in.step->__min_needed_from
+      != codecvt->__cd_in.step->__max_needed_from)
     /* Not a constant value.  */
     return 0;
 
-  return codecvt->__cd_in.__cd.__steps[0].__min_needed_from;
+  return codecvt->__cd_in.step->__min_needed_from;
 }
 
 
-static int
-do_always_noconv (struct _IO_codecvt *codecvt)
-{
-  return 0;
-}
-
-
-static int
-do_length (struct _IO_codecvt *codecvt, __mbstate_t *statep,
-	   const char *from_start, const char *from_end, size_t max)
+int
+__libio_codecvt_length (struct _IO_codecvt *codecvt, __mbstate_t *statep,
+			const char *from_start, const char *from_end,
+			size_t max)
 {
   int result;
   const unsigned char *cp = (const unsigned char *) from_start;
   wchar_t to_buf[max];
-  struct __gconv_step *gs = codecvt->__cd_in.__cd.__steps;
+  struct __gconv_step *gs = codecvt->__cd_in.step;
   size_t dummy;
 
-  codecvt->__cd_in.__cd.__data[0].__outbuf = (unsigned char *) to_buf;
-  codecvt->__cd_in.__cd.__data[0].__outbufend = (unsigned char *) &to_buf[max];
-  codecvt->__cd_in.__cd.__data[0].__statep = statep;
+  codecvt->__cd_in.step_data.__outbuf = (unsigned char *) to_buf;
+  codecvt->__cd_in.step_data.__outbufend = (unsigned char *) &to_buf[max];
+  codecvt->__cd_in.step_data.__statep = statep;
 
   __gconv_fct fct = gs->__fct;
 #ifdef PTR_DEMANGLE
@@ -346,18 +249,11 @@ do_length (struct _IO_codecvt *codecvt, __mbstate_t *statep,
 #endif
 
   DL_CALL_FCT (fct,
-	       (gs, codecvt->__cd_in.__cd.__data, &cp,
+	       (gs, &codecvt->__cd_in.step_data, &cp,
 		(const unsigned char *) from_end, NULL,
 		&dummy, 0, 0));
 
   result = cp - (const unsigned char *) from_start;
 
   return result;
-}
-
-
-static int
-do_max_length (struct _IO_codecvt *codecvt)
-{
-  return codecvt->__cd_in.__cd.__steps[0].__max_needed_from;
 }

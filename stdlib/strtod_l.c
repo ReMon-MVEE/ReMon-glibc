@@ -1,5 +1,5 @@
 /* Convert string representing a number to float value, using given locale.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <bits/floatn.h>
 
@@ -280,11 +280,12 @@ round_and_return (mp_limb_t *retval, intmax_t exponent, int negative,
 		  mp_limb_t cy = __mpn_add_1 (retval_normal, retval,
 					      RETURN_LIMB_SIZE, 1);
 
-		  if (((MANT_DIG % BITS_PER_MP_LIMB) == 0 && cy) ||
-		      ((MANT_DIG % BITS_PER_MP_LIMB) != 0 &&
-		       ((retval_normal[RETURN_LIMB_SIZE - 1]
-			& (((mp_limb_t) 1) << (MANT_DIG % BITS_PER_MP_LIMB)))
-			!= 0)))
+		  if (((MANT_DIG % BITS_PER_MP_LIMB) == 0 && cy)
+		      || ((MANT_DIG % BITS_PER_MP_LIMB) != 0
+			  && ((retval_normal[RETURN_LIMB_SIZE - 1]
+			       & (((mp_limb_t) 1)
+				  << (MANT_DIG % BITS_PER_MP_LIMB)))
+			      != 0)))
 		    is_tiny = false;
 		}
 	    }
@@ -310,7 +311,7 @@ round_and_return (mp_limb_t *retval, intmax_t exponent, int negative,
 	}
     }
 
-  if (exponent > MAX_EXP)
+  if (exponent >= MAX_EXP)
     goto overflow;
 
   bool half_bit = (round_limb & (((mp_limb_t) 1) << round_bit)) != 0;
@@ -325,10 +326,10 @@ round_and_return (mp_limb_t *retval, intmax_t exponent, int negative,
     {
       mp_limb_t cy = __mpn_add_1 (retval, retval, RETURN_LIMB_SIZE, 1);
 
-      if (((MANT_DIG % BITS_PER_MP_LIMB) == 0 && cy) ||
-	  ((MANT_DIG % BITS_PER_MP_LIMB) != 0 &&
-	   (retval[RETURN_LIMB_SIZE - 1]
-	    & (((mp_limb_t) 1) << (MANT_DIG % BITS_PER_MP_LIMB))) != 0))
+      if (((MANT_DIG % BITS_PER_MP_LIMB) == 0 && cy)
+	  || ((MANT_DIG % BITS_PER_MP_LIMB) != 0
+	      && (retval[RETURN_LIMB_SIZE - 1]
+		  & (((mp_limb_t) 1) << (MANT_DIG % BITS_PER_MP_LIMB))) != 0))
 	{
 	  ++exponent;
 	  (void) __mpn_rshift (retval, retval, RETURN_LIMB_SIZE, 1);
@@ -343,7 +344,7 @@ round_and_return (mp_limb_t *retval, intmax_t exponent, int negative,
 	exponent = MIN_EXP - 1;
     }
 
-  if (exponent > MAX_EXP)
+  if (exponent >= MAX_EXP)
   overflow:
     return overflow_value (negative);
 
@@ -678,7 +679,7 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
 	  if (endptr != NULL)
 	    *endptr = (STRING_TYPE *) cp;
 
-	  return retval;
+	  return negative ? -retval : retval;
 	}
 
       /* It is really a text we do not recognize.  */
@@ -861,9 +862,9 @@ ____STRTOF_INTERNAL (const STRING_TYPE *nptr, STRING_TYPE **endptr, int group,
     {
       cp += decimal_len;
       c = *cp;
-      while ((c >= L_('0') && c <= L_('9')) ||
-	     (base == 16 && ({ CHAR_TYPE lo = TOLOWER (c);
-			       lo >= L_('a') && lo <= L_('f'); })))
+      while ((c >= L_('0') && c <= L_('9'))
+	     || (base == 16 && ({ CHAR_TYPE lo = TOLOWER (c);
+				  lo >= L_('a') && lo <= L_('f'); })))
 	{
 	  if (c != L_('0') && lead_zero == (size_t) -1)
 	    lead_zero = dig_no - int_no;

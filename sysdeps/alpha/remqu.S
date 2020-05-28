@@ -1,4 +1,4 @@
-/* Copyright (C) 2004-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2004-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "div_libc.h"
 
@@ -57,19 +57,19 @@ __remqu:
 	   ready -- all the time in the world to figure out how we're
 	   going to use the results.  */
 	subq	Y, 1, AT
-	stt	$f0, 0(sp)
 	and	Y, AT, AT
-
-	stt	$f1, 8(sp)
-	excb
-	stt	$f3, 48(sp)
 	beq	AT, $powerof2
+
+	stt	$f0, 0(sp)
+	excb
+	stt	$f1, 8(sp)
+	stt	$f3, 48(sp)
 	cfi_rel_offset ($f0, 0)
 	cfi_rel_offset ($f1, 8)
 	cfi_rel_offset ($f3, 48)
+	mf_fpcr	$f3
 
 	_ITOFT2	X, $f0, 16, Y, $f1, 24
-	mf_fpcr	$f3
 	cvtqt	$f0, $f0
 	cvtqt	$f1, $f1
 
@@ -116,11 +116,13 @@ $x_is_neg:
 	cfi_rel_offset ($f2, 24)
 	_ITOFS	AT, $f2, 16
 
+	.align	4
 	addt	$f0, $f2, $f0
+	unop
 	divt/c	$f0, $f1, $f0
+	unop
 
 	/* Ok, we've now the divide issued.  Continue with other checks.  */
-	.align	4
 	ldt	$f1, 8(sp)
 	unop
 	ldt	$f2, 24(sp)
@@ -246,12 +248,16 @@ $y_is_neg:
 	   quotient must be either 0 or 1, so the remainder must be X
 	   or X-Y, so just compute it directly.  */
 	cmpule	Y, X, AT
+	excb
+	mt_fpcr	$f3
 	subq	X, Y, RV
 	ldt	$f0, 0(sp)
+	ldt	$f3, 48(sp)
 	cmoveq	AT, X, RV
 
 	lda	sp, FRAME(sp)
 	cfi_restore ($f0)
+	cfi_restore ($f3)
 	cfi_def_cfa_offset (0)
 	ret	$31, (RA), 1
 

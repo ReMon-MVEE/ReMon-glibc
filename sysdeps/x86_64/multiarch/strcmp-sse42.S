@@ -1,5 +1,5 @@
 /* strcmp with SSE4.2
-   Copyright (C) 2009-2018 Free Software Foundation, Inc.
+   Copyright (C) 2009-2020 Free Software Foundation, Inc.
    Contributed by Intel Corporation.
    This file is part of the GNU C Library.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
@@ -126,6 +126,7 @@ END (GLABEL(__strncasecmp))
 
 STRCMP_SSE42:
 	cfi_startproc
+	_CET_ENDBR
 	CALL_MCOUNT
 
 /*
@@ -155,11 +156,11 @@ STRCMP_SSE42:
 #endif
 
 #if defined USE_AS_STRNCMP || defined USE_AS_STRNCASECMP_L
-	test	%rdx, %rdx
+	test	%RDX_LP, %RDX_LP
 	je	LABEL(strcmp_exitz)
-	cmp	$1, %rdx
+	cmp	$1, %RDX_LP
 	je	LABEL(Byte0)
-	mov	%rdx, %r11
+	mov	%RDX_LP, %R11_LP
 #endif
 	mov	%esi, %ecx
 	mov	%edi, %eax
@@ -274,7 +275,7 @@ LABEL(bigger):
 	movslq	(%r10, %r9,4), %r9
 	pcmpeqb	%xmm1, D(%xmm0)		/* Any null chars? */
 	lea	(%r10, %r9), %r10
-	jmp	*%r10			/* jump to corresponding case */
+	_CET_NOTRACK jmp *%r10		/* jump to corresponding case */
 
 /*
  * The following cases will be handled by ashr_0

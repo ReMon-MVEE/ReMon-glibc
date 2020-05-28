@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; see the file COPYING.LIB.  If
-   not, see <http://www.gnu.org/licenses/>.  */
+   not, see <https://www.gnu.org/licenses/>.  */
 
 #include <dlfcn.h>
 #include <stdio.h>
@@ -79,9 +79,9 @@ pthread_cancel_init (void)
   libgcc_s_handle = handle;
 }
 
+/* Register for cleanup in libpthread.so.  */
 void
-__libc_freeres_fn_section
-__unwind_freeres (void)
+__nptl_unwind_freeres (void)
 {
   void *handle = libgcc_s_handle;
   if (handle != NULL)

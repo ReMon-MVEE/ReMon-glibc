@@ -1,5 +1,5 @@
 /* ioctl commands which must be done in the C library.
-   Copyright (C) 1994-2018 Free Software Foundation, Inc.
+   Copyright (C) 1994-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <hurd.h>
 #include <hurd/fd.h>
@@ -78,16 +78,16 @@ fioctl (int fd,
       break;
 
     case FIONBIO:
-      err = HURD_DPORT_USE (fd, (*arg ?
-				 __io_set_some_openmodes :
-				 __io_clear_some_openmodes)
+      err = HURD_DPORT_USE (fd, (*arg
+				 ? __io_set_some_openmodes
+				 : __io_clear_some_openmodes)
 			    (port, O_NONBLOCK));
       break;
 
     case FIOASYNC:
-      err = HURD_DPORT_USE (fd, (*arg ?
-				 __io_set_some_openmodes :
-				 __io_clear_some_openmodes)
+      err = HURD_DPORT_USE (fd, (*arg
+				 ? __io_set_some_openmodes
+				 : __io_clear_some_openmodes)
 			    (port, O_ASYNC));
       break;
 

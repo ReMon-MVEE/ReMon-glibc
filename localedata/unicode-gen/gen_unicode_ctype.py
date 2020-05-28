@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 #
 # Generate a Unicode conforming LC_CTYPE category from a UnicodeData file.
-# Copyright (C) 2014-2018 Free Software Foundation, Inc.
+# Copyright (C) 2014-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 # Based on gen-unicode-ctype.c by Bruno Haible <haible@clisp.cons.org>, 2000.
 #
@@ -17,7 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 '''
 Generate a Unicode conforming LC_CTYPE category from UnicodeData.txt and

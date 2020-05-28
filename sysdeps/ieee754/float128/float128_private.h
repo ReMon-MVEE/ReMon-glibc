@@ -1,5 +1,5 @@
 /* _Float128 overrides for building ldbl-128 as _Float128.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This must be included before the function renames below.  */
 #include <gmp.h>
@@ -29,6 +29,7 @@
 
 /* Renames derived from math_private.h.  */
 #include <math_private.h>
+#include <fenv_private.h>
 #include <ieee754_float128.h>
 #define ieee854_long_double_shape_type ieee854_float128_shape_type
 #define ieee854_long_double ieee854_float128
@@ -138,6 +139,21 @@
 #undef libm_alias_double_ldouble
 #define libm_alias_double_ldouble(func) libm_alias_float64_float128 (func)
 
+#include <math-use-builtins.h>
+#undef USE_NEARBYINTL_BUILTIN
+#define USE_NEARBYINTL_BUILTIN USE_NEARBYINTF128_BUILTIN
+#undef USE_RINTL_BUILTIN
+#define USE_RINTL_BUILTIN USE_RINTF128_BUILTIN
+#undef USE_FLOORL_BUILTIN
+#define USE_FLOORL_BUILTIN USE_FLOORF128_BUILTIN
+#undef USE_CEILL_BUILTIN
+#define USE_CEILL_BUILTIN USE_CEILF128_BUILTIN
+#undef USE_TRUNCL_BUILTIN
+#define USE_TRUNCL_BUILTIN USE_TRUNCF128_BUILTIN
+#undef USE_ROUNDL_BUILTIN
+#define USE_ROUNDL_BUILTIN USE_ROUNDF128_BUILTIN
+#undef USE_COPYSIGNL_BUILTIN
+#define USE_COPYSIGNL_BUILTIN USE_COPYSIGNF128_BUILTIN
 
 /* IEEE function renames.  */
 #define __ieee754_acoshl __ieee754_acoshf128
@@ -252,14 +268,46 @@
 #define __tanhl __tanhf128
 #define __tanl __tanf128
 #define __totalorderl __totalorderf128
+#define __totalorder_compatl __totalorder_compatf128
 #define __totalordermagl __totalordermagf128
+#define __totalordermag_compatl __totalordermag_compatf128
 #define __truncl __truncf128
 #define __x2y2m1l __x2y2m1f128
 
 #define __faddl __f32addf128
 #define __daddl __f64addf128
+#define __fdivl __f32divf128
+#define __ddivl __f64divf128
+#define __fmull __f32mulf128
+#define __dmull __f64mulf128
 #define __fsubl __f32subf128
 #define __dsubl __f64subf128
+
+/* Used on __finite compat alias.  */
+#define __acosl __acosf128
+#define __acoshl __acoshf128
+#define __asinl __asinf128
+#define __atan2l __atan2f128
+#define __atanhl __atanhf128
+#define __coshl __coshf128
+#define __exp10l __exp10f128
+#define __expl __expf128
+#define __fmodl __fmodf128
+#define __gammal_r __gammaf128_r
+#define __hypotl __hypotf128
+#define __j0l __j0f128
+#define __j1l __j1f128
+#define __jnl __jnf128
+#define __lgammal_r __lgammaf128_r
+#define __log10l __log10f128
+#define __log2l __log2f128
+#define __logl __logf128
+#define __powl __powf128
+#define __remainderl __remainderf128
+#define __sinhl __sinhf128
+#define __y0l __y0f128
+#define __y1l __y1f128
+#define __ynl __ynf128
 
 /* __nexttowardf128 is not _Float128 API. */
 #define __nexttowardl __nexttowardf128_do_not_use
@@ -335,6 +383,13 @@
 /* Builtin renames.  */
 #define __builtin_copysignl __builtin_copysignf128
 #define __builtin_signbitl __builtin_signbit
+#define __builtin_nearbyintl __builtin_nearbyintf128
+#define __builtin_rintl __builtin_rintf128
+#define __builtin_floorl __builtin_floorf128
+#define __builtin_ceill __builtin_ceilf128
+#define __builtin_truncl __builtin_truncf128
+#define __builtin_roundl __builtin_roundf128
+#define __builtin_copysignl __builtin_copysignf128
 
 /* Get the constant suffix from bits/floatn-compat.h.  */
 #define L(x) __f128 (x)

@@ -1,5 +1,5 @@
 /* Malloc implementation for multiple threads without lock contention.
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+   Copyright (C) 2001-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Wolfram Gloger <wg@malloc.de>, 2001.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; see the file COPYING.LIB.  If
-   not, see <http://www.gnu.org/licenses/>.  */
+   not, see <https://www.gnu.org/licenses/>.  */
 
 /* What to do if the standard debugging hooks are in place and a
    corrupt pointer is detected: do nothing (0), print an error message
@@ -52,30 +52,10 @@ memalign_hook_ini (size_t alignment, size_t sz, const void *caller)
 /* Whether we are using malloc checking.  */
 static int using_malloc_checking;
 
-/* A flag that is set by malloc_set_state, to signal that malloc checking
-   must not be enabled on the request from the user (via the MALLOC_CHECK_
-   environment variable).  It is reset by __malloc_check_init to tell
-   malloc_set_state that the user has requested malloc checking.
-
-   The purpose of this flag is to make sure that malloc checking is not
-   enabled when the heap to be restored was constructed without malloc
-   checking, and thus does not contain the required magic bytes.
-   Otherwise the heap would be corrupted by calls to free and realloc.  If
-   it turns out that the heap was created with malloc checking and the
-   user has requested it malloc_set_state just calls __malloc_check_init
-   again to enable it.  On the other hand, reusing such a heap without
-   further malloc checking is safe.  */
-static int disallow_malloc_check;
-
 /* Activate a standard set of debugging hooks. */
 void
 __malloc_check_init (void)
 {
-  if (disallow_malloc_check)
-    {
-      disallow_malloc_check = 0;
-      return;
-    }
   using_malloc_checking = 1;
   atomic_store_relaxed(&__malloc_hook, malloc_check);
   atomic_store_relaxed(&__free_hook, free_check);
@@ -246,8 +226,9 @@ static void *
 malloc_check (size_t sz, const void *caller)
 {
   void *victim;
+  size_t nb;
 
-  if (sz + 1 == 0)
+  if (__builtin_add_overflow (sz, 1, &nb))
     {
       __set_errno (ENOMEM);
       return NULL;
@@ -255,7 +236,7 @@ malloc_check (size_t sz, const void *caller)
 
   __libc_lock_lock (main_arena.mutex);
   top_check ();
-  victim = _int_malloc (&main_arena, sz + 1);
+  victim = _int_malloc (&main_arena, nb);
   __libc_lock_unlock (main_arena.mutex);
   return mem2mem_check (victim, sz);
 }
@@ -288,8 +269,9 @@ realloc_check (void *oldmem, size_t bytes, const void *caller)
   INTERNAL_SIZE_T nb;
   void *newmem = 0;
   unsigned char *magic_p;
+  size_t rb;
 
-  if (bytes + 1 == 0)
+  if (__builtin_add_overflow (bytes, 1, &rb))
     {
       __set_errno (ENOMEM);
       return NULL;
@@ -309,7 +291,9 @@ realloc_check (void *oldmem, size_t bytes, const void *caller)
     malloc_printerr ("realloc(): invalid pointer");
   const INTERNAL_SIZE_T oldsize = chunksize (oldp);
 
-  checked_request2size (bytes + 1, nb);
+  if (!checked_request2size (rb, &nb))
+    goto invert;
+
   __libc_lock_lock (main_arena.mutex);
 
   if (chunk_is_mmapped (oldp))
@@ -328,7 +312,7 @@ realloc_check (void *oldmem, size_t bytes, const void *caller)
           {
             /* Must alloc, copy, free. */
 	    top_check ();
-	    newmem = _int_malloc (&main_arena, bytes + 1);
+	    newmem = _int_malloc (&main_arena, rb);
             if (newmem)
               {
                 memcpy (newmem, oldmem, oldsize - 2 * SIZE_SZ);
@@ -340,8 +324,6 @@ realloc_check (void *oldmem, size_t bytes, const void *caller)
   else
     {
       top_check ();
-      INTERNAL_SIZE_T nb;
-      checked_request2size (bytes + 1, nb);
       newmem = _int_realloc (&main_arena, oldp, oldsize, nb);
     }
 
@@ -354,6 +336,7 @@ realloc_check (void *oldmem, size_t bytes, const void *caller)
   /* mem2chunk_check changed the magic byte in the old chunk.
      If newmem is NULL, then the old chunk will still be used though,
      so we need to invert that change here.  */
+invert:
   if (newmem == NULL)
     *magic_p ^= 0xFF;
   DIAG_POP_NEEDS_COMMENT;
@@ -407,21 +390,11 @@ memalign_check (size_t alignment, size_t bytes, const void *caller)
 
 #if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_25)
 
-/* Get/set state: malloc_get_state() records the current state of all
-   malloc variables (_except_ for the actual heap contents and `hook'
-   function pointers) in a system dependent, opaque data structure.
-   This data structure is dynamically allocated and can be free()d
-   after use.  malloc_set_state() restores the state of all malloc
-   variables to the previously obtained state.  This is especially
-   useful when using this malloc as part of a shared library, and when
-   the heap contents are saved/restored via some other method.  The
-   primary example for this is GNU Emacs with its `dumping' procedure.
-   `Hook' function pointers are never saved or restored by these
-   functions, with two exceptions: If malloc checking was in use when
-   malloc_get_state() was called, then malloc_set_state() calls
-   __malloc_check_init() if possible; if malloc checking was not in
-   use in the recorded state but the user requested malloc checking,
-   then the hooks are reset to 0.  */
+/* Support for restoring dumped heaps contained in historic Emacs
+   executables.  The heap saving feature (malloc_get_state) is no
+   longer implemented in this version of glibc, but we have a heap
+   rewriter in malloc_set_state which transforms the heap into a
+   version compatible with current malloc.  */
 
 #define MALLOC_STATE_MAGIC   0x444c4541l
 #define MALLOC_STATE_VERSION (0 * 0x100l + 5l) /* major*0x100 + minor */
@@ -476,7 +449,7 @@ malloc_set_state (void *msptr)
   if ((ms->version & ~0xffl) > (MALLOC_STATE_VERSION & ~0xffl))
     return -2;
 
-  /* We do not need to perform locking here because __malloc_set_state
+  /* We do not need to perform locking here because malloc_set_state
      must be called before the first call into the malloc subsytem
      (usually via __malloc_initialize_hook).  pthread_create always
      calls calloc and thus must be called only afterwards, so there

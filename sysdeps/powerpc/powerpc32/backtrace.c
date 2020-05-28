@@ -1,5 +1,5 @@
 /* Return backtrace of current program state.
-   Copyright (C) 1998-2018 Free Software Foundation, Inc.
+   Copyright (C) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <execinfo.h>
 #include <stddef.h>
@@ -51,14 +51,14 @@ struct signal_frame_32 {
   /* We don't care about the rest, since IP value is at 'mctx' field.  */
 };
 
-static inline int
+static inline bool
 is_sigtramp_address (void *nip)
 {
-#ifdef SHARED
-  if (nip == VDSO_SYMBOL (sigtramp32))
-    return 1;
+#ifdef HAVE_SIGTRAMP_RT32
+  if (nip == GLRO (dl_vdso_sigtramp_32))
+    return true;
 #endif
-  return 0;
+  return false;
 }
 
 struct rt_signal_frame_32 {
@@ -68,14 +68,14 @@ struct rt_signal_frame_32 {
   /* We don't care about the rest, since IP value is at 'uc' field.  */
 };
 
-static inline int
+static inline bool
 is_sigtramp_address_rt (void * nip)
 {
-#ifdef SHARED
-  if (nip == VDSO_SYMBOL (sigtramp_rt32))
-    return 1;
+#ifdef HAVE_SIGTRAMP_32
+  if (nip == GLRO (dl_vdso_sigtramp_rt32))
+    return true;
 #endif
-  return 0;
+  return false;
 }
 
 int
@@ -114,6 +114,8 @@ __backtrace (void **array, int size)
         }
       if (gregset)
 	{
+	  if (count + 1 == size)
+	    break;
 	  array[++count] = (void*)((*gregset)[PT_NIP]);
 	  current = (void*)((*gregset)[PT_R1]);
 	}

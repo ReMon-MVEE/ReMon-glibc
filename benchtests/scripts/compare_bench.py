@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (C) 2015-2018 Free Software Foundation, Inc.
+# Copyright (C) 2015-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 #
 # The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 """Compare two benchmark results
 
 Given two benchmark result files and a threshold, this script compares the
@@ -25,6 +25,7 @@ import sys
 import os
 import pylab
 import import_bench as bench
+import argparse
 
 def do_compare(func, var, tl1, tl2, par, threshold):
     """Compare one of the aggregate measurements
@@ -41,17 +42,26 @@ def do_compare(func, var, tl1, tl2, par, threshold):
         threshold: The threshold for differences, beyond which the script should
         print a warning.
     """
-    d = abs(tl2[par] - tl1[par]) * 100 / tl1[str(par)]
+    try:
+        v1 = tl1[str(par)]
+        v2 = tl2[str(par)]
+        d = abs(v2 - v1) * 100 / v1
+    except KeyError:
+        sys.stderr.write('%s(%s)[%s]: stat does not exist\n' % (func, var, par))
+        return
+    except ZeroDivisionError:
+        return
+
     if d > threshold:
-        if tl1[par] > tl2[par]:
+        if v1 > v2:
             ind = '+++'
         else:
             ind = '---'
         print('%s %s(%s)[%s]: (%.2lf%%) from %g to %g' %
-                (ind, func, var, par, d, tl1[par], tl2[par]))
+                (ind, func, var, par, d, v1, v2))
 
 
-def compare_runs(pts1, pts2, threshold):
+def compare_runs(pts1, pts2, threshold, stats):
     """Compare two benchmark runs
 
     Args:
@@ -69,14 +79,14 @@ def compare_runs(pts1, pts2, threshold):
 
             # Compare the consolidated numbers
             # do_compare(func, var, tl1, tl2, 'max', threshold)
-            do_compare(func, var, tl1, tl2, 'min', threshold)
-            do_compare(func, var, tl1, tl2, 'mean', threshold)
+            for stat in stats.split():
+                do_compare(func, var, tl1, tl2, stat, threshold)
 
             # Skip over to the next variant or function if there is no detailed
             # timing info for the function variant.
             if 'timings' not in pts1['functions'][func][var].keys() or \
                 'timings' not in pts2['functions'][func][var].keys():
-                    return
+                continue
 
             # If two lists do not have the same length then it is likely that
             # the performance characteristics of the function have changed.
@@ -124,7 +134,7 @@ def plot_graphs(bench1, bench2):
             # No point trying to print a graph if there are no detailed
             # timings.
             if u'timings' not in bench1['functions'][func][var].keys():
-                print('Skipping graph for %s(%s)' % (func, var))
+                sys.stderr.write('Skipping graph for %s(%s)\n' % (func, var))
                 continue
 
             pylab.clf()
@@ -148,37 +158,35 @@ def plot_graphs(bench1, bench2):
                 filename = "%s-%s.png" % (func, var)
             else:
                 filename = "%s.png" % func
-            print('Writing out %s' % filename)
+            sys.stderr.write('Writing out %s' % filename)
             pylab.savefig(filename)
 
-
-def main(args):
-    """Program Entry Point
-
-    Take two benchmark output files and compare their timings.
-    """
-    if len(args) > 4 or len(args) < 3:
-        print('Usage: %s <schema> <file1> <file2> [threshold in %%]' % sys.argv[0])
-        sys.exit(os.EX_USAGE)
-
-    bench1 = bench.parse_bench(args[1], args[0])
-    bench2 = bench.parse_bench(args[2], args[0])
-    if len(args) == 4:
-        threshold = float(args[3])
-    else:
-        threshold = 10.0
-
-    if (bench1['timing_type'] != bench2['timing_type']):
-        print('Cannot compare benchmark outputs: timing types are different')
-        return
+def main(bench1, bench2, schema, threshold, stats):
+    bench1 = bench.parse_bench(bench1, schema)
+    bench2 = bench.parse_bench(bench2, schema)
 
     plot_graphs(bench1, bench2)
 
     bench.compress_timings(bench1)
     bench.compress_timings(bench2)
 
-    compare_runs(bench1, bench2, threshold)
+    compare_runs(bench1, bench2, threshold, stats)
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    parser = argparse.ArgumentParser(description='Take two benchmark and compare their timings.')
+
+    # Required parameters
+    parser.add_argument('bench1', help='First bench to compare')
+    parser.add_argument('bench2', help='Second bench to compare')
+
+    # Optional parameters
+    parser.add_argument('--schema',
+                        default=os.path.join(os.path.dirname(os.path.realpath(__file__)),'benchout.schema.json'),
+                        help='JSON file to validate source/dest files (default: %(default)s)')
+    parser.add_argument('--threshold', default=10.0, type=float, help='Only print those with equal or higher threshold (default: %(default)s)')
+    parser.add_argument('--stats', default='min mean', type=str, help='Only consider values from the statistics specified as a space separated list (default: %(default)s)')
+
+    args = parser.parse_args()
+
+    main(args.bench1, args.bench2, args.schema, args.threshold, args.stats)

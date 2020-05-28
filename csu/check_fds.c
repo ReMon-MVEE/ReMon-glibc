@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -39,8 +39,7 @@
 static void
 check_one_fd (int fd, int mode)
 {
-  /* Note that fcntl() with this parameter is not a cancellation point.  */
-  if (__builtin_expect (__libc_fcntl (fd, F_GETFD), 0) == -1
+  if (__builtin_expect (__fcntl64_nocancel (fd, F_GETFD), 0) == -1
       && errno == EBADF)
     {
       const char *name;

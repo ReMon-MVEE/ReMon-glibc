@@ -6,6 +6,8 @@
 libc_hidden_proto (_exit, __noreturn__)
 rtld_hidden_proto (_exit, __noreturn__)
 libc_hidden_proto (alarm)
+extern size_t __confstr (int name, char *buf, size_t len);
+libc_hidden_proto (__confstr)
 libc_hidden_proto (confstr)
 libc_hidden_proto (execl)
 libc_hidden_proto (execle)
@@ -23,7 +25,8 @@ libc_hidden_proto (tcgetpgrp)
 libc_hidden_proto (readlinkat)
 
 /* Now define the internal interfaces.  */
-extern int __access (const char *__name, int __type) attribute_hidden;
+extern int __access (const char *__name, int __type);
+libc_hidden_proto (__access)
 extern int __euidaccess (const char *__name, int __type);
 extern int __faccessat (int __fd, const char *__file, int __type, int __flag);
 extern int __faccessat_noerrno (int __fd, const char *__file, int __type,
@@ -73,10 +76,13 @@ extern int __lchown (const char *__file, __uid_t __owner,
 		     __gid_t __group);
 extern int __chdir (const char *__path) attribute_hidden;
 extern int __fchdir (int __fd) attribute_hidden;
-extern char *__getcwd (char *__buf, size_t __size) attribute_hidden;
+extern char *__getcwd (char *__buf, size_t __size);
+libc_hidden_proto (__getcwd)
 extern int __rmdir (const char *__path) attribute_hidden;
 extern int __execvpe (const char *file, char *const argv[],
 		      char *const envp[]) attribute_hidden;
+extern int __execvpex (const char *file, char *const argv[],
+		       char *const envp[]) attribute_hidden;
 
 /* Get the canonical absolute name of the named directory, and put it in SIZE
    bytes of BUF.  Returns NULL if the directory couldn't be determined or

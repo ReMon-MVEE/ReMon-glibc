@@ -1,4 +1,4 @@
-/* Copyright (c) 1998-2018 Free Software Foundation, Inc.
+/* Copyright (c) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@suse.de>, 1998.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This file defines everything that client code should need to
    know to talk to the nscd daemon.  */
@@ -445,8 +445,6 @@ extern ssize_t __readall (int fd, void *buf, size_t len)
 extern ssize_t __readvall (int fd, const struct iovec *iov, int iovcnt)
   attribute_hidden;
 extern ssize_t writeall (int fd, const void *buf, size_t len)
-  attribute_hidden;
-extern ssize_t sendfileall (int tofd, int fromfd, off_t off, size_t len)
   attribute_hidden;
 
 /* Get netlink timestamp counter from mapped area or zero.  */

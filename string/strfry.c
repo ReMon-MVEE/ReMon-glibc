@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,11 +13,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
+#include <random-bits.h>
 #include <unistd.h>
 
 char *
@@ -30,7 +30,7 @@ strfry (char *string)
     {
       static char state[32];
       rdata.state = NULL;
-      __initstate_r (time ((time_t *) NULL) ^ getpid (),
+      __initstate_r (random_bits (),
 		     state, sizeof (state), &rdata);
       init = 1;
     }

@@ -1,5 +1,5 @@
 /* Common database routines for nss_db.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -63,5 +63,9 @@ internal_setent (const char *file, struct nss_db_map *mapping)
 void
 internal_endent (struct nss_db_map *mapping)
 {
-  munmap (mapping->header, mapping->len);
+  if (mapping->header != NULL)
+    {
+      munmap (mapping->header, mapping->len);
+      mapping->header = NULL;
+    }
 }

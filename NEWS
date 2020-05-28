@@ -1,13 +1,776 @@
 GNU C Library NEWS -- history of user-visible changes.
-Copyright (C) 1992-2018 Free Software Foundation, Inc.
+Copyright (C) 1992-2020 Free Software Foundation, Inc.
 See the end for copying conditions.
 
 Please send GNU C library bug reports via <https://sourceware.org/bugzilla/>
 using `glibc' in the "product" field.
 
+Version 2.31.1
+
+The following bugs are resolved with this release:
+  [20543] Please move from .gnu.linkonce to comdat
+  [23296] Data race in setting function descriptor during lazy binding
+  [25487] sinl() stack corruption from crafted input (CVE-2020-10029)
+  [25523] MIPS/Linux inline syscall template is miscompiled
+  [25623] test-sysvmsg, test-sysvsem, test-sysvshm fail with 2.31 on 32 bit and
+    old kernel
+  [25635] arm: Wrong sysdep order selection for soft-fp
+  [25639] localedata: Some names of days and months wrongly spelt in
+    Occitan
+  [25715] system() returns wrong errors when posix_spawn fails
+  [25810] x32: Incorrect syscall entries with pointer, off_t and size_t
+  [25896] Incorrect prctl
+  [25902] Bad LOADARGS_N
+  [25966] Incorrect access of __x86_shared_non_temporal_threshold for x32
+  [25976] nss_compat: internal_end*ent may clobber errno, hiding ERANGE
+
+Security related changes:
+
+  CVE-2020-10029: Trigonometric functions on x86 targets suffered from stack
+  corruption when they were passed a pseudo-zero argument.  Reported by Guido
+  Vranken / ForAllSecure Mayhem.
+
+  CVE-2020-1751: A defect in the PowerPC backtrace function could cause an
+  out-of-bounds write when executed in a signal frame context.
+
+  CVE-2020-1752: A use-after-free vulnerability in the glob function when
+  expanding ~user has been fixed.
+
+
+Version 2.31
+
+Major new features:
+
+* The GNU C Library now supports a feature test macro _ISOC2X_SOURCE to
+  enable features from the draft ISO C2X standard.  Only some features from
+  this draft standard are supported by the GNU C Library, and as the draft
+  is under active development, the set of features enabled by this macro is
+  liable to change.  Features from C2X are also enabled by _GNU_SOURCE, or
+  by compiling with "gcc -std=gnu2x".
+
+* The <math.h> functions that round their results to a narrower type now
+  have corresponding type-generic macros in <tgmath.h>, as defined in TS
+  18661-1:2014 and TS 18661-3:2015 as amended by the resolution of
+  Clarification Request 13 to TS 18661-3.
+
+* The function pthread_clockjoin_np has been added, enabling join with a
+  terminated thread with a specific clock.  It allows waiting against
+  CLOCK_MONOTONIC and CLOCK_REALTIME.  This function is a GNU extension.
+
+* New locale added: mnw_MM (Mon language spoken in Myanmar).
+
+* The DNS stub resolver will optionally send the AD (authenticated data) bit
+  in queries if the trust-ad option is set via the options directive in
+  /etc/resolv.conf (or if RES_TRUSTAD is set in _res.options).  In this
+  mode, the AD bit, as provided by the name server, is available to
+  applications which call res_search and related functions.  In the default
+  mode, the AD bit is not set in queries, and it is automatically cleared in
+  responses, indicating a lack of DNSSEC validation.  (Therefore, the name
+  servers and the network path to them are treated as untrusted.)
+
+Deprecated and removed features, and other changes affecting compatibility:
+
+* The totalorder and totalordermag functions, and the corresponding
+  functions for other floating-point types, now take pointer arguments to
+  avoid signaling NaNs possibly being converted to quiet NaNs in argument
+  passing.  This is in accordance with the resolution of Clarification
+  Request 25 to TS 18661-1, as applied for C2X.  Existing binaries that pass
+  floating-point arguments directly will continue to work.
+
+* The obsolete function stime is no longer available to newly linked
+  binaries, and its declaration has been removed from <time.h>.
+  Programs that set the system time should use clock_settime instead.
+
+* We plan to remove the obsolete function ftime, and the header <sys/timeb.h>,
+  in a future version of glibc.  In this release, the header still exists
+  but calling ftime will cause a compiler warning.  All programs should use
+  gettimeofday or clock_gettime instead.
+
+* The gettimeofday function no longer reports information about a
+  system-wide time zone.  This 4.2-BSD-era feature has been deprecated for
+  many years, as it cannot handle the full complexity of the world's
+  timezones, but hitherto we have supported it on a best-effort basis.
+  Changes required to support 64-bit time_t on 32-bit architectures have
+  made this no longer practical.
+
+  As of this release, callers of gettimeofday with a non-null 'tzp' argument
+  should expect to receive a 'struct timezone' whose tz_minuteswest and
+  tz_dsttime fields are zero.  (For efficiency reasons, this does not always
+  happen on a few Linux-based ports.  This will be corrected in a future
+  release.)
+
+  All callers should supply a null pointer for the 'tzp' argument to
+  gettimeofday.  For accurate information about the time zone associated
+  with the current time, use the localtime function.
+
+  gettimeofday itself is obsolescent according to POSIX.  We have no plans
+  to remove access to this function, but portable programs should consider
+  using clock_gettime instead.
+
+* The settimeofday function can still be used to set a system-wide time
+  zone when the operating system supports it.  This is because the Linux
+  kernel reused the API, on some architectures, to describe a system-wide
+  time-zone-like offset between the software clock maintained by the kernel,
+  and the "RTC" clock that keeps time when the system is shut down.
+
+  However, to reduce the odds of this offset being set by accident,
+  settimeofday can no longer be used to set the time and the offset
+  simultaneously.  If both of its two arguments are non-null, the call
+  will fail (setting errno to EINVAL).
+
+  Callers attempting to set this offset should also be prepared for the call
+  to fail and set errno to ENOSYS; this already happens on the Hurd and on
+  some Linux architectures.  The Linux kernel maintainers are discussing a
+  more principled replacement for the reused API.  After a replacement
+  becomes available, we will change settimeofday to fail with ENOSYS on all
+  platforms when its 'tzp' argument is not a null pointer.
+
+  settimeofday itself is obsolescent according to POSIX.  Programs that set
+  the system time should use clock_settime and/or the adjtime family of
+  functions instead.  We may cease to make settimeofday available to newly
+  linked binaries after there is a replacement for Linux's time-zone-like
+  offset API.
+
+* SPARC ISA v7 is no longer supported.  v8 is still supported, but only if
+  the optional CAS instruction is implemented (for instance, LEON processors
+  are still supported, but SuperSPARC processors are not).
+
+  As the oldest 64-bit SPARC ISA is v9, this only affects 32-bit
+  configurations.
+
+* If a lazy binding failure happens during dlopen, during the execution of
+  an ELF constructor, the process is now terminated.  Previously, the
+  dynamic loader would return NULL from dlopen, with the lazy binding error
+  captured in a dlerror message.  In general, this is unsafe because
+  resetting the stack in an arbitrary function call is not possible.
+
+* For MIPS hard-float ABIs, the GNU C Library will be configured to need an
+  executable stack unless explicitly configured at build time to require
+  minimum kernel version 4.8 or newer.  This is because executing
+  floating-point branches on a non-executable stack on Linux kernels prior to
+  4.8 can lead to application crashes for some MIPS configurations. While
+  currently PT_GNU_STACK is not widely used on MIPS, future releases of GCC are
+  expected to enable non-executable stack by default  with PT_GNU_STACK by
+  default and is thus likely to trigger a crash on older kernels.
+
+  The GNU C Library can be built with --enable-kernel=4.8.0 in order to keep a
+  non-executable stack while dropping support for older kernels.
+
+* System call wrappers for time system calls now use the new time64 system
+  calls when available. On 32-bit targets, these wrappers attempt to call
+  the new system calls first and fall back to the older 32-bit time system
+  calls if they are not present.  This may cause issues in environments
+  that cannot handle unsupported system calls gracefully by returning
+  -ENOSYS. Seccomp sandboxes are affected by this issue.
+
+Changes to build and runtime requirements:
+
+* It is no longer necessary to have recent Linux kernel headers to build
+  working (non-stub) system call wrappers on all architectures except 64-bit
+  RISC-V.  64-bit RISC-V requires a minimum kernel headers version of 5.0.
+
+* The ChangeLog file is no longer present in the toplevel directory of the
+  source tree.  ChangeLog files are located in the ChangeLog.old directory as
+  ChangeLog.N where the highest N has the latest entries.
+
+Security related changes:
+
+  CVE-2019-19126: ld.so failed to ignore the LD_PREFER_MAP_32BIT_EXEC
+  environment variable during program execution after a security
+  transition, allowing local attackers to restrict the possible mapping
+  addresses for loaded libraries and thus bypass ASLR for a setuid
+  program.  Reported by Marcin Kościelnicki.
+
+The following bugs are resolved with this release:
+
+  [12031] localedata: iconv -t ascii//translit with Greek characters
+  [15813] libc: Multiple issues in __gen_tempname
+  [17726] libc: [arm, sparc] profil_counter should be compat symbol
+  [18231] libc: ipc_perm struct's mode member has wrong type in sys/ipc.h
+  [19767] libc: vdso is not used with static linking
+  [19903] hurd: Shared mappings not being inherited by children processes
+  [20358] network: RES_USE_DNSSEC sets DO; should also have a way to set AD
+  [20839] dynamic-link: Incomplete rollback of dynamic linker state on
+    linking failure
+  [23132] localedata: Missing transliterations in Miscellaneous Mathematical
+    Symbols-A/B Unicode blocks
+  [23518] libc: Eliminate __libc_utmp_jump_table
+  [24026] malloc: malloc_info() returns wrong numbers
+  [24054] localedata: Many locales are missing date_fmt
+  [24214] dynamic-link: user defined ifunc resolvers may run in ldd mode
+  [24304] dynamic-link: Lazy binding failure during ELF
+    constructors/destructors is not fatal
+  [24376] libc: RISC-V symbol size confusion with _start
+  [24682] localedata: zh_CN first weekday should be Monday per GB/T
+    7408-2005
+  [24824] libc: test-in-container does not install charmap files compatible
+    with localedef
+  [24844] regex: regex bad pointer / leakage if malloc fails
+  [24867] malloc: Unintended malloc_info formatting changes
+  [24879] libc: login: utmp alarm timer can arrive after lock acquisition
+  [24880] libc: login: utmp implementation uses struct flock with fcntl64
+  [24882] libc: login: pututline uses potentially outdated cache
+  [24899] libc: Missing nonstring attributes in <utmp.h>, <utmpx.h>
+  [24902] libc: login: Repeating pututxline on EINTR/EAGAIN causes stale
+    utmp entries
+  [24916] dynamic-link: [MIPS] Highest EI_ABIVERSION value not raised to
+    ABSOLUTE ABI
+  [24930] dynamic-link: dlopen of PIE executable can result in
+    _dl_allocate_tls_init assertion failure
+  [24950] localedata: Top-of-tree glibc does not build with top-of-tree GCC
+    (stringop-overflow error)
+  [24959] time: librt IFUNC resolvers for clock_gettime and clock_*
+    functions other  can lead to crashes
+  [24967] libc: jemalloc static linking causes runtime failure
+  [24986] libc: alpha: new getegid, geteuid and getppid syscalls used
+    unconditionally
+  [25035] libc: sbrk() failure handled poorly in tunables_strdup
+  [25087] dynamic-link: ldconfig mishandles unusual .dynstr placement
+  [25097] libc: new -Warray-bounds with GCC 10
+  [25112] dynamic-link: dlopen must not make new objects accessible when it
+    still can fail with an error
+  [25139] localedata: Please add the new mnw_MM locale
+  [25149] regex: Array bounds violation in proceed_next_node
+  [25157] dynamic-link: Audit cookie for the dynamic loader is not
+    initialized correctly
+  [25189] libc: glibc's __glibc_has_include causes issues with clang
+    -frewrite-includes
+  [25194] malloc: malloc.c: do_set_mxfast incorrectly casts the mallopt
+    value to an unsigned
+  [25204] dynamic-link: LD_PREFER_MAP_32BIT_EXEC not ignored in setuid
+    binaries (CVE-2019-19126)
+  [25225] libc: ld.so fails to link on x86 if GCC defaults to -fcf-
+    protection
+  [25226] string: strstr: Invalid result if needle crosses page on s390-z15
+    ifunc variant.
+  [25232] string: <string.h> does not enable const correctness for strchr et
+    al. for Clang++
+  [25233] localedata: Consider "." as the thousands separator for sl_SI
+    (Slovenian)
+  [25241] nptl: __SIZEOF_PTHREAD_MUTEX_T defined twice for x86
+  [25251] build: Failure to run tests when CFLAGS contains -DNDEBUG.
+  [25271] libc: undeclared identifier PTHREAD_MUTEX_DEFAULT when compiling
+    with -std=c11
+  [25323] localedata: km_KH: d_t_fmt contains "m" instead of "%M"
+  [25324] localedata: lv_LV: d_t_fmt contains suspicious words in the time
+    part
+  [25396] dynamic-link: Failing dlopen can leave behind dangling GL
+    (dl_initfirst) link map pointer
+  [25401] malloc: pvalloc must not have __attribute_alloc_size__
+  [25423] libc: Array overflow in backtrace on powerpc
+  [25425] network: Missing call to __resolv_context_put in
+    getaddrinfo.c:gethosts
+
+
+Version 2.30
+
+Major new features:
+
+* Unicode 12.1.0 Support: Character encoding, character type info, and
+  transliteration tables are all updated to Unicode 12.1.0, using
+  generator scripts contributed by Mike FABIAN (Red Hat).
+
+* The dynamic linker accepts the --preload argument to preload shared
+  objects, in addition to the LD_PRELOAD environment variable.
+
+* The twalk_r function has been added.  It is similar to the existing
+  twalk function, but it passes an additional caller-supplied argument
+  to the callback function.
+
+* On Linux, the getdents64, gettid, and tgkill functions have been added.
+
+* Minguo (Republic of China) calendar support has been added as an
+  alternative calendar for the following locales: zh_TW, cmn_TW, hak_TW,
+  nan_TW, lzh_TW.
+
+* The entry for the new Japanese era has been added for ja_JP locale.
+
+* Memory allocation functions malloc, calloc, realloc, reallocarray, valloc,
+  pvalloc, memalign, and posix_memalign fail now with total object size
+  larger than PTRDIFF_MAX.  This is to avoid potential undefined behavior with
+  pointer subtraction within the allocated object, where results might
+  overflow the ptrdiff_t type.
+
+* The dynamic linker no longer refuses to load objects which reference
+  versioned symbols whose implementation has moved to a different soname
+  since the object has been linked.  The old error message, symbol
+  FUNCTION-NAME, version SYMBOL-VERSION not defined in file DSO-NAME with
+  link time reference, is gone.
+
+* Add new POSIX-proposed pthread_cond_clockwait, pthread_mutex_clocklock,
+  pthread_rwlock_clockrdlock, pthread_rwlock_clockwrlock and sem_clockwait
+  functions.  These behave similarly to their "timed" equivalents, but also
+  accept a clockid_t parameter to determine which clock their timeout should
+  be measured against.  All functions allow waiting against CLOCK_MONOTONIC
+  and CLOCK_REALTIME.  The decision of which clock to be used is made at the
+  time of the wait (unlike with pthread_condattr_setclock, which requires
+  the clock choice at initialization time).
+
+* On AArch64 the GNU IFUNC resolver call ABI changed: old resolvers still
+  work, new resolvers can use a second argument which can be extended in
+  the future, currently it contains the AT_HWCAP2 value.
+
+Deprecated and removed features, and other changes affecting compatibility:
+
+* The copy_file_range function fails with ENOSYS if the kernel does not
+  support the system call of the same name.  Previously, user space
+  emulation was performed, but its behavior did not match the kernel
+  behavior, which was deemed too confusing.  Applications which use the
+  copy_file_range function can no longer rely on glibc to provide a fallback
+  on kernels that do not support the copy_file_range system call, and if
+  this function returns ENOSYS, they will need to use their own fallback.
+  Support for copy_file_range for most architectures was added in version
+  4.5 of the mainline Linux kernel.
+
+* The functions clock_gettime, clock_getres, clock_settime,
+  clock_getcpuclockid, clock_nanosleep were removed from the librt library
+  for new applications (on architectures which had them).  Instead, the
+  definitions in libc will be used automatically, which have been available
+  since glibc 2.17.
+
+* The obsolete and never-implemented XSI STREAMS header files <stropts.h>
+  and <sys/stropts.h> have been removed.
+
+* Support for the "inet6" option in /etc/resolv.conf and the RES_USE_INET6
+  resolver flag (deprecated in glibc 2.25) have been removed.
+
+* The obsolete RES_INSECURE1 and RES_INSECURE2 option flags for the DNS stub
+  resolver have been removed from <resolv.h>.
+
+* With --enable-bind-now, installed programs are now linked with the
+  BIND_NOW flag.
+
+* Support for the PowerPC SPE ISA extension (powerpc-*-*gnuspe*
+  configurations) has been removed, following the deprecation of this
+  subarchitecture in version 8 of GCC, and its removal in version 9.
+
+* On 32-bit Arm, support for the port-based I/O emulation and the <sys/io.h>
+  header have been removed.
+
+* The Linux-specific <sys/sysctl.h> header and the sysctl function have been
+  deprecated and will be removed from a future version of glibc.
+  Application should directly access /proc instead.  For obtaining random
+  bits, the getentropy function can be used.
+
+Changes to build and runtime requirements:
+
+* GCC 6.2 or later is required to build the GNU C Library.
+
+  Older GCC versions and non-GNU compilers are still supported when
+  compiling programs that use the GNU C Library.
+
+Security related changes:
+
+  CVE-2019-7309: x86-64 memcmp used signed Jcc instructions to check
+  size.  For x86-64, memcmp on an object size larger than SSIZE_MAX
+  has undefined behavior.  On x32, the size_t argument may be passed
+  in the lower 32 bits of the 64-bit RDX register with non-zero upper
+  32 bits.  When it happened with the sign bit of RDX register set,
+  memcmp gave the wrong result since it treated the size argument as
+  zero.  Reported by H.J. Lu.
+
+  CVE-2019-9169: Attempted case-insensitive regular-expression match
+  via proceed_next_node in posix/regexec.c leads to heap-based buffer
+  over-read.  Reported by Hongxu Chen.
+
+The following bugs are resolved with this release:
+
+  [2872] locale: Transliteration Cyrillic -> ASCII fails
+  [6399] libc: gettid() should have a wrapper
+  [16573] malloc: mtrace hangs when MALLOC_TRACE is defined
+  [16976] glob: fnmatch unbounded stack VLA for collating symbols
+  [17396] localedata: globbing for locale by [[.collating-element.]]
+  [18035] dynamic-link: pldd does no longer work, enters infinite loop
+  [18465] malloc: memusagestat is built using system C library
+  [18830] locale: iconv -c -f ascii with >buffer size worth of input before
+    invalid input drops valid char
+  [20188] nptl: libpthread IFUNC resolver for vfork can lead to crash
+  [20568] locale: Segfault with wide characters and setlocale/fgetwc/UTF-8
+  [21897] localedata: Afar locales: Fix mon, abmon, and abday
+  [22964] localedata: The Japanese Era name will be changed on May 1, 2019
+  [23352] malloc: __malloc_check_init still defined in public header
+    malloc.h.
+  [23403] nptl: Wrong alignment of TLS variables
+  [23501] libc: nftw() doesn't return dangling symlink's inode
+  [23733] malloc: Check the count before calling tcache_get()
+  [23741] malloc: Missing __attribute_alloc_size__ in many allocation
+    functions
+  [23831] localedata: nl_NL missing LC_NUMERIC thousands_sep
+  [23844] nptl: pthread_rwlock_trywrlock results in hang
+  [23983] argparse: Missing compat versions of argp_failure and argp_error
+    for long double = double
+  [23984] libc: Missing compat versions of err.h and error.h functions for
+    long double = double
+  [23996] localedata: Dutch salutations
+  [24040] libc: riscv64: unterminated call chain in __thread_start
+  [24047] network: libresolv should use IP_RECVERR/IPV6_RECVERR to avoid
+    long timeouts
+  [24051] stdio: puts and putchar ouput to _IO_stdout instead of stdout
+  [24059] nss: nss_files: get_next_alias calls fgets_unlocked without
+    checking for NULL.
+  [24114] regex: regexec buffer read overrun in "grep -i
+    '\(\(\)*.\)*\(\)\(\)\1'"
+  [24122] libc: Segfaults if 0 returned from la_version
+  [24153] stdio: Some input functions do not react to stdin assignment
+  [24155] string: x32 memcmp can treat positive length as 0 (if sign bit in
+    RDX is set) (CVE-2019-7309)
+  [24161] nptl: __run_fork_handlers self-deadlocks in malloc/tst-mallocfork2
+  [24164] libc: Systemtap probes need to use "nr" constraint on 32-bit Arm,
+    not the default "nor"
+  [24166] dynamic-link: Dl_serinfo.dls_serpath[1] in dlfcn.h causes UBSAN
+    false positives, change to modern flexible array
+  [24180] nptl: pthread_mutex_trylock does not use the correct order of
+    instructions while maintaining the robust mutex list due to missing
+    compiler barriers.
+  [24194] librt: Non-compatibility symbols for clock_gettime etc. cause
+    unnecessary librt dependencies
+  [24200] localedata: Revert first_weekday removal in en_IE locale
+  [24211] nptl: Use-after-free in Systemtap probe in pthread_join
+  [24215] nptl: pthread_timedjoin_np should be a cancellation point
+  [24216] malloc: Check for large bin list corruption when inserting
+    unsorted chunk
+  [24228] stdio: old x86 applications that use legacy libio crash on exit
+  [24231] dynamic-link: [sparc64] R_SPARC_H34 implementation falls through
+    to R_SPARC_H44
+  [24293] localedata: Missing Minguo calendar support for TW locales
+  [24296] localedata: Orthographic mistakes in 'day' and 'abday' sections in
+    tt_RU (Tatar) locale
+  [24307] localedata: Update locale data to Unicode 12.0.0
+  [24323] dynamic-link: dlopen should not be able open PIE objects
+  [24335] build: "Obsolete types detected" with Linux 5.0 headers
+  [24369] localedata: Orthographic mistakes in 'mon' and 'abmon' sections in
+    tt_RU (Tatar) locale
+  [24370] localedata: Add lang_name for tt_RU locale
+  [24372] locale: Binary locale files are not architecture independent
+  [24394] time: strptime %Ey mis-parses final year of era
+  [24476] dynamic-link: __libc_freeres triggers bad free in libdl if dlerror
+    was not used
+  [24506] dynamic-link: FAIL: elf/tst-pldd with --enable-hardcoded-path-in-
+    tests
+  [24531] malloc: Malloc tunables give tcache assertion failures
+  [24532] libc: conform/arpa/inet.h failures due to linux kernel 64-bit
+    time_t changes
+  [24535] localedata: Update locale data to Unicode 12.1.0
+  [24537] build: nptl/tst-eintr1 test case can hit task limits on some
+    kernels and break testing
+  [24544] build: elf/tst-pldd doesn't work if you install with a --prefix
+  [24556] build: [GCC 9] error: ‘%s’ directive argument is null
+    [-Werror=format-overflow=]
+  [24570] libc: alpha: compat msgctl uses __IPC_64
+  [24584] locale: Data race in __wcsmbs_clone_conv
+  [24588] stdio: Remove codecvt vtables from libio
+  [24603] math: sysdeps/ieee754/dbl-64/branred.c is slow when compiled with
+    -O3 -march=skylake
+  [24614] localedata: nl_NL LC_MONETARY doesn't match CLDR 35
+  [24632] stdio: Old binaries which use freopen with default stdio handles
+    crash
+  [24640] libc: __ppc_get_timebase_freq() always return 0 when using static
+    linked glibc
+  [24652] localedata: szl_PL spelling correction
+  [24695] nss: nss_db: calling getpwent after endpwent crashes
+  [24696] nss: endgrent() clobbers errno=ERRNO for 'group: db files' entry
+    in /etc/nsswitch.conf
+  [24699] libc: mmap64 with very large offset broken on MIPS64 n32
+  [24740] libc: getdents64 type confusion
+  [24741] dynamic-link: ld.so should not require that a versioned symbol is
+    always implemented in the same library
+  [24744] libc: Remove copy_file_range emulation
+  [24757] malloc: memusagestat is linked against system libpthread
+  [24794] libc: Partial test suite run builds corrupt test-in-container
+    testroot
+
+
+Version 2.29
+
+Major new features:
+
+* The getcpu wrapper function has been added, which returns the currently
+  used CPU and NUMA node.  This function is Linux-specific.
+
+* A new convenience target has been added for distribution maintainers
+  to build and install all locales as directories with files.  The new
+  target is run by issuing the following command in your build tree:
+  'make localedata/install-locale-files', with an optional DESTDIR
+  to set the install root if you wish to install into a non-default
+  configured location.
+
+* Optimized generic exp, exp2, log, log2, pow, sinf, cosf, sincosf and tanf.
+
+* The reallocarray function is now declared under _DEFAULT_SOURCE, not just
+  for _GNU_SOURCE, to match BSD environments.
+
+* For powercp64le ABI, Transactional Lock Elision is now enabled iff kernel
+  indicates that it will abort the transaction prior to entering the kernel
+  (PPC_FEATURE2_HTM_NOSC on hwcap2).  On older kernels the transaction is
+  suspended, and this caused some undefined side-effects issues by aborting
+  transactions manually.  Glibc avoided it by abort transactions manually on
+  each syscall, but it lead to performance issues on newer kernels where the
+  HTM state is saved and restore lazily (the state being saved even when the
+  process actually does not use HTM).
+
+* The functions posix_spawn_file_actions_addchdir_np and
+  posix_spawn_file_actions_addfchdir_np have been added, enabling
+  posix_spawn and posix_spawnp to run the new process in a different
+  directory.  These functions are GNU extensions.  The function
+  posix_spawn_file_actions_addchdir_np is similar to the Solaris function
+  of the same name.
+
+* The popen and system do not run atfork handlers anymore (BZ#17490).
+  Although it is a possible POSIX violation, the POSIX rationale in
+  pthread_atfork documentation regarding atfork handlers is to handle
+  inconsistent mutex state after a fork call in a multi-threaded process.
+  In both popen and system there is no direct access to user-defined mutexes.
+
+* Support for the C-SKY ABIV2 running on Linux has been added.  This port
+  requires at least binutils-2.32, gcc-9.0, and linux-4.20.  Two ABIs are
+  supported:
+    - C-SKY ABIV2 soft-float little-endian
+    - C-SKY ABIV2 hard-float little-endian
+
+* strftime's default formatting of a locale's alternative year (%Ey)
+  has been changed to zero-pad the year to a minimum of two digits,
+  like "%y".  This improves the display of Japanese era years during
+  the first nine years of a new era, and is expected to be harmless
+  for all other locales (only Japanese locales regularly have
+  alternative year numbers less than 10).  Zero-padding can be
+  overridden with the '_' or '-' flags (which are GNU extensions).
+
+* As a GNU extension, the '_' and '-' flags can now be applied to
+  "%EY" to control how the year number is formatted; they have the
+  same effect that they would on "%Ey".
+
+Deprecated and removed features, and other changes affecting compatibility:
+
+* The glibc.tune tunable namespace has been renamed to glibc.cpu and the
+  tunable glibc.tune.cpu has been renamed to glibc.cpu.name.
+
+* The type of the pr_uid and pr_gid members of struct elf_prpsinfo, defined
+  in <sys/procfs.h>, has been corrected to match the type actually used by
+  the Linux kernel.  This affects the size and layout of that structure on
+  MicroBlaze, MIPS (n64 ABI only), Nios II and RISC-V.
+
+* For the MIPS n32 ABI, the type of the pr_sigpend and pr_sighold members of
+  struct elf_prstatus, and the pr_flag member of struct elf_prpsinfo,
+  defined in <sys/procfs.h>, has been corrected to match the type actually
+  used by the Linux kernel.  This affects the size and layout of those
+  structures.
+
+* An archaic GNU extension to scanf, under which '%as', '%aS', and '%a[...]'
+  meant to scan a string and allocate space for it with malloc, is now
+  restricted to programs compiled in C89 or C++98 mode with _GNU_SOURCE
+  defined.  This extension conflicts with C99's use of '%a' to scan a
+  hexadecimal floating-point number, which is now available to programs
+  compiled as C99 or C++11 or higher, regardless of _GNU_SOURCE.
+
+  POSIX.1-2008 includes the feature of allocating a buffer for string input
+  with malloc, using the modifier letter 'm' instead.  Programs using
+  '%as', '%aS', or '%a[...]' with the old GNU meaning should change to
+  '%ms', '%mS', or '%m[...]' respectively.  Programs that wish to use the
+  C99 '%a' no longer need to avoid _GNU_SOURCE.
+
+  GCC's -Wformat warnings can detect most uses of this extension, as long
+  as all functions that call vscanf, vfscanf, or vsscanf are annotated with
+  __attribute__ ((format (scanf, ...))).
+
+Changes to build and runtime requirements:
+
+* Python 3.4 or later is required to build the GNU C Library.
+
+* On most architectures, GCC 5 or later is required to build the GNU C
+  Library.  (On powerpc64le, GCC 6.2 or later is still required, as before.)
+
+  Older GCC versions and non-GNU compilers are still supported when
+  compiling programs that use the GNU C Library.
+
+Security related changes:
+
+  CVE-2018-19591: A file descriptor leak in if_nametoindex can lead to a
+  denial of service due to resource exhaustion when processing getaddrinfo
+  calls with crafted host names.  Reported by Guido Vranken.
+
+  CVE-2019-6488: On x32, the size_t parameter may be passed in the lower
+  32 bits of a 64-bit register with with non-zero upper 32 bit.  When it
+  happened, accessing the 32-bit size_t value as the full 64-bit register
+  in the assembly string/memory functions would cause a buffer overflow.
+  Reported by H.J. Lu.
+
+  CVE-2016-10739: The getaddrinfo function could successfully parse IPv4
+  addresses with arbitrary trailing characters, potentially leading to data
+  or command injection issues in applications.
+
+The following bugs are resolved with this release:
+
+  [10425] localedata: it_IT/it_CH: LC_TIME format is wrong
+  [10496] localedata: 12h time representation in multiple locales faulty
+  [10797] localedata: it_IT locale numeric does not have a separator for
+    thousands
+  [11319] libc: dprintf doesn't handle errors properly
+  [16346] time: mktime: potentially unsafe use of localtime_offset
+  [17248] build: glibc should not sort CFLAGS (support gcc plugins and
+    --param options)
+  [17405] libc: Implement posix_spawn_file_actions_addchdir_np,
+    posix_spawn_file_actions_addfchdir_np
+  [17426] localedata: Indian locales: set the correct date format
+  [17490] stdio: popen should not invoke atfork handlers
+  [17783] libc: TIOCSER_TEMT conditions inconsistent
+  [18040] regex: use-after-free in regexec/get_subexp
+  [18093] libc: Corrupted aux-cache causes ldconfig to segfault
+  [20018] network: getaddrinfo should reject IP addresses with trailing
+    characters (CVE-2016-10739)
+  [20209] localedata: Spelling mistake for Sunday in Greenlandic kl_GL
+  [20271] libc: Missing "\n" in __libc_fatal calls
+  [20480] dynamic-link: Patch: ifunc not executable, crashes sudo qemu
+  [20544] libc: RFE: atexit, __cxa_atexit, on_exit should assert function
+    pointer argument is non-NULL
+  [21037] stdio: open_memstream and freopen
+  [21286] libc: bits/siginfo.h  is missing enum definition for TRAP_HWBKPT
+  [21716] time: Crash in glibc's mktime in low-memory situations
+  [22834] stdio: Subprocess forked by popen may crash in Linux when
+    multithreads call popen
+  [22927] network: crash in vn_gai_enqueue_request if requests_tail was NULL
+    and pthread_create fails.
+  [23032] hurd: sysdeps/htl/pt-barrier-init.c:39: bad call to memcmp ?
+  [23125] libc: riscv64: endless loop when throwing an exception from a
+    constructor
+  [23275] nptl: Race in pthread_mutex_lock while promoting to
+    PTHREAD_MUTEX_ELISION_NP.
+  [23400] libc: stdlib/test-bz22786.c creates temporary files in glibc
+    source tree
+  [23479] math: [mips] bits/fenv.h should not define some macros for soft-
+    float
+  [23490] libc: sysdeps/unix/sysv/linux/x86/tst-cet-property-2.c:49: off by
+    one error
+  [23497] libc: readdir64@GLIBC_2.1 cannot parse the kernel directory stream
+  [23509] dynamic-link: CET enabled glibc is incompatible with the older
+    linker
+  [23520] nscd: nscd: Use-after-free in addgetnetgrentX and its callers
+  [23521] nss: get_next_alias nss_files file stream leak
+  [23538] nptl: Hang in pthread_cond_broadcast
+  [23562] libc: Wrong type for si_band in Linux-specific siginfo_t
+  [23578] regex: Invalid memory access if regex pattern contains NUL byte
+  [23579] libc: Errors misreported in preadv2
+  [23597] build: support/test-container.c doesn't work with different
+    filesystems
+  [23603] time: mktime signed integer overflow on large timestamps
+  [23606] libc: Missing ENDBR32 in sysdeps/i386/start.S
+  [23614] libc: powerpc: missing CFI register information in __mpn_*
+    functions
+  [23637] string: Generic strstr/strcasestr fails with huge needles
+  [23640] libc: no way to easily clear FD_CLOEXEC in
+    posix_spawn_file_actions_adddup2()
+  [23649] libc: [microblaze/mips/nios2/riscv] sys/procfs.h pr_uid, pr_gid
+    have wrong type
+  [23656] libc: [mips n32] sys/procfs.h pr_sigpend, pr_sighold, pr_flag have
+    wrong type
+  [23679] libc: gethostid: Missing NULL check for gethostbyname_r result
+  [23689] libc: Bug in documentation for rusage.ru_ixrss in
+    bits/types/struct_rusage.h
+  [23690] dynamic-link: Segfault in _dl_profile_fixup with a high number of
+    threads
+  [23707] dynamic-link: Missing unwind info in sysdeps/powerpc/powerpc32/dl-
+    start.S
+  [23709] string: glibc 2.25 lacks sse2 optimized strstr()
+  [23716] dynamic-link: _dl_runtime_resolve_shstk isn't selected properly
+  [23717] libc: glibc: stdlib/tst-setcontext9 test suite failure on
+    powerpc64le
+  [23724] localedata: Albanian date formats are incorrect
+  [23735] math: libnldbl_nonshared.a references internal libm symbols
+  [23740] localedata: kl_GL: Month names and date formats need update
+  [23744] regex: regex refactorings to remove BE, avoid duplication
+  [23745] time: mktime fix for Gnulib + coreutils
+  [23758] time: Improve the width of alternate representation for year in
+    strftime
+  [23783] libc: [mips] Missing CMSPAR bits/termios.h
+  [23789] time: mktime does not set errno on failure
+  [23791] localedata: Wrong monetary format for ca_ES locale
+  [23793] locale: c32rtomb and mbrtoc32 should not alias wcrtomb and mbrtowc
+  [23794] locale: c16rtomb does not handle surrogate pairs
+  [23821] libc: si_band in siginfo_t has wrong type long int on sparc64
+  [23822] math: ia64 static libm.a is missing exp2f, log2f and powf symbols
+  [23836] time: time/tst-mktime2 test failure on Arm (32-bit)
+  [23848] libc: [sparc] Some socket syscalls wrongly assumed to be present
+  [23861] nptl: rdlock stalls indefinitely on an unlocked pthread rwlock
+  [23862] libc: [sh] missing kernel-features.h undefines
+  [23864] libc: [riscv] missing kernel-features.h undefines
+  [23867] libc: [arm/microblaze] __ASSUME_MLOCK2 incorrect
+  [23907] malloc: Incorrect double-free malloc tcache check disregards
+    tcache size
+  [23913] libc: off-by-one in function maybe_script_execute in
+    sysdeps/posix/spawni.c
+  [23915] libc: [arm] __ASSUME_COPY_FILE_RANGE incorrect
+  [23923] locale: Add --no-hard-links option to localedef
+  [23927] network: Linux if_nametoindex() does not close descriptor
+    (CVE-2018-19591)
+  [23961] math: powf can overflow to inf without setting errno in non-
+    nearest rounding mode
+  [23967] libc: [2.28 Regression]: New sigaction implementation breaks m68k
+  [23972] libc: __old_getdents64 uses wrong d_off value on overflow
+  [23993] libc: glibc 2.29 doesn't build with gcc 4.9
+  [23995] localedata: Remove execution flags from localedata/locales/bi_VU
+  [24011] localedata: Fixed small type in comment for locale bs_BA
+  [24018] libc: gettext() may return NULL
+  [24022] build: riscv build failure with Linux kernel 4.20-rc7
+  [24023] build: [2.29 Regression] FAIL: elf/check-localplt
+  [24024] string: strerror() might set errno to ENOMEM due to -fno-math-
+    error
+  [24027] malloc: glibc: realloc() ncopies 32-bit integer overflow
+  [24034] libc: tst-cancel21-static fails with SIGBUS on pre-ARMv7 when
+    using GCC 8
+  [24046] localedata: en_US locale doesn't define date_fmt
+  [24063] manual: @var{errno} should be @code{errno}
+  [24066] soft-fp: Inconsistent _FP_W_TYPE_SIZE check
+  [24088] libc: VSCR field is not being correctly read in ucontext_t on
+    ppc64le
+  [24096] time: Specifying '_' or '-' flag for "%EY" does not produce the
+    expected result
+  [24097] string: Can't use 64-bit register for size_t in assembly codes for
+    x32 (CVE-2019-6488)
+  [24110] hurd: SS_DISABLE never set in stack_t value returned by
+    sigaltstack
+  [24112] network: Do not send DNS queries for non-host names (where all
+    answers will be rejected)
+  [24130] libc: alpha __remqu corrupts $f3 register
+
+
 Version 2.28
 
 Major new features:
+
+* The localization data for ISO 14651 is updated to match the 2016
+  Edition 4 release of the standard, this matches data provided by
+  Unicode 9.0.0.  This update introduces significant improvements to the
+  collation of Unicode characters.  This release deviates slightly from
+  the standard in that the collation element ordering for lowercase and
+  uppercase LATIN script characters is adjusted to ensure that regular
+  expressions with ranges like [a-z] and [A-Z] don't interleave e.g. A
+  is not matched by [a-z].  With the update many locales have been
+  updated to take advantage of the new collation information.  The new
+  collation information has increased the size of the compiled locale
+  archive or binary locales.
+
+* The GNU C Library can now be compiled with support for Intel CET, AKA
+  Intel Control-flow Enforcement Technology.  When the library is built
+  with --enable-cet, the resulting glibc is protected with indirect
+  branch tracking (IBT) and shadow stack (SHSTK).  CET-enabled glibc is
+  compatible with all existing executables and shared libraries.  This
+  feature is currently supported on i386, x86_64 and x32 with GCC 8 and
+  binutils 2.29 or later.  Note that CET-enabled glibc requires CPUs
+  capable of multi-byte NOPs, like x86-64 processors as well as Intel
+  Pentium Pro or newer.  NOTE: --enable-cet has been tested for i686,
+  x86_64 and x32 on non-CET processors.  --enable-cet has been tested
+  for x86_64 and x32 on CET SDVs, but Intel CET support hasn't been
+  validated for i686.
+
+* The GNU C Library now has correct support for ABSOLUTE symbols
+  (SHN_ABS-relative symbols).  Previously such ABSOLUTE symbols were
+  relocated incorrectly or in some cases discarded.  The GNU linker can
+  make use of the newer semantics, but it must communicate it to the
+  dynamic loader by setting the ELF file's identification (EI_ABIVERSION
+  field) to indicate such support is required.
+
+* Unicode 11.0.0 Support: Character encoding, character type info, and
+  transliteration tables are all updated to Unicode 11.0.0, using
+  generator scripts contributed by Mike FABIAN (Red Hat).
 
 * <math.h> functions that round their results to a narrower type are added
   from TS 18661-1:2014 and TS 18661-3:2015:
@@ -18,12 +781,77 @@ Major new features:
   - fsub, fsubl, dsubl and corresponding fMsubfN, fMsubfNx, fMxsubfN and
     fMxsubfNx functions.
 
-* Nominative and genitive month names are now supported for the Catalan and
-  Czech languages.  The Catalan and Greek languages now support abbreviated
-  alternative month names.
+  - fmul, fmull, dmull and corresponding fMmulfN, fMmulfNx, fMxmulfN and
+    fMxmulfNx functions.
+
+  - fdiv, fdivl, ddivl and corresponding fMdivfN, fMdivfNx, fMxdivfN and
+    fMxdivfNx functions.
+
+* Two grammatical forms of month names are now supported for the following
+  languages: Armenian, Asturian, Catalan, Czech, Kashubian, Occitan, Ossetian,
+  Scottish Gaelic, Upper Sorbian, and Walloon.  The following languages now
+  support two grammatical forms in abbreviated month names: Catalan, Greek,
+  and Kashubian.
+
+* Newly added locales: Lower Sorbian (dsb_DE) and Yakut (sah_RU) also
+  include the support for two grammatical forms of month names.
 
 * Building and running on GNU/Hurd systems now works without out-of-tree
   patches.
+
+* The renameat2 function has been added, a variant of the renameat function
+  which has a flags argument.  If the flags are zero, the renameat2 function
+  acts like renameat.  If the flag is not zero and there is no kernel
+  support for renameat2, the function will fail with an errno value of
+  EINVAL.  This is different from the existing gnulib function renameatu,
+  which performs a plain rename operation in case of a RENAME_NOREPLACE
+  flags and a non-existing destination (and therefore has a race condition
+  that can clobber the destination inadvertently).
+
+* The statx function has been added, a variant of the fstatat64
+  function with an additional flags argument.  If there is no direct
+  kernel support for statx, glibc provides basic stat support based on
+  the fstatat64 function.
+
+* IDN domain names in getaddrinfo and getnameinfo now use the system libidn2
+  library if installed.  libidn2 version 2.0.5 or later is recommended.  If
+  libidn2 is not available, internationalized domain names are not encoded
+  or decoded even if the AI_IDN or NI_IDN flags are passed to getaddrinfo or
+  getnameinfo.  (getaddrinfo calls with non-ASCII names and AI_IDN will fail
+  with an encoding error.)  Flags which used to change the IDN encoding and
+  decoding behavior (AI_IDN_ALLOW_UNASSIGNED, AI_IDN_USE_STD3_ASCII_RULES,
+  NI_IDN_ALLOW_UNASSIGNED, NI_IDN_USE_STD3_ASCII_RULES) have been
+  deprecated.  They no longer have any effect.
+
+* Parsing of dynamic string tokens in DT_RPATH, DT_RUNPATH, DT_NEEDED,
+  DT_AUXILIARY, and DT_FILTER has been expanded to support the full
+  range of ELF gABI expressions including such constructs as
+  '$ORIGIN$ORIGIN' (if valid).  For SUID/GUID applications the rules
+  have been further restricted, and where in the past a dynamic string
+  token sequence may have been interpreted as a literal string it will
+  now cause a load failure.  These load failures were always considered
+  unspecified behaviour from the perspective of the dynamic loader, and
+  for safety are now load errors e.g. /foo/${ORIGIN}.so in DT_NEEDED
+  results in a load failure now.
+
+* Support for ISO C threads (ISO/IEC 9899:2011) has been added.  The
+  implementation includes all the standard functions provided by
+  <threads.h>:
+
+  - thrd_current, thrd_equal, thrd_sleep, thrd_yield, thrd_create,
+    thrd_detach, thrd_exit, and thrd_join for thread management.
+
+  - mtx_init, mtx_lock, mtx_timedlock, mtx_trylock, mtx_unlock, and
+    mtx_destroy for mutual exclusion.
+
+  - call_once for function call synchronization.
+
+  - cnd_broadcast, cnd_destroy, cnd_init, cnd_signal, cnd_timedwait, and
+    cnd_wait for conditional variables.
+
+  - tss_create, tss_delete, tss_get, and tss_set for thread-local storage.
+
+  Application developers must link against libpthread to use ISO C threads.
 
 Deprecated and removed features, and other changes affecting compatibility:
 
@@ -63,18 +891,264 @@ Deprecated and removed features, and other changes affecting compatibility:
   binaries; the headers <ustat.h> and <sys/ustat.h> have been removed.  This
   function has been deprecated in favor of fstatfs and statfs.
 
+* The obsolete function nfsservctl is no longer available to newly linked
+  binaries.  This function was specific to systems using the Linux kernel
+  and could not usefully be used with the GNU C Library on systems with
+  version 3.1 or later of the Linux kernel.
+
+* The obsolete function name llseek is no longer available to newly linked
+  binaries.  This function was specific to systems using the Linux kernel
+  and was not declared in a header.  Programs should use the lseek64 name
+  for this function instead.
+
+* The AI_IDN_ALLOW_UNASSIGNED and NI_IDN_ALLOW_UNASSIGNED flags for the
+  getaddrinfo and getnameinfo functions have been deprecated.  The behavior
+  previously selected by them is now always enabled.
+
+* The AI_IDN_USE_STD3_ASCII_RULES and NI_IDN_USE_STD3_ASCII_RULES flags for
+  the getaddrinfo and getnameinfo functions have been deprecated.  The STD3
+  restriction (rejecting '_' in host names, among other things) has been
+  removed, for increased compatibility with non-IDN name resolution.
+
+* The fcntl function now have a Long File Support variant named fcntl64.  It
+  is added to fix some Linux Open File Description (OFD) locks usage on non
+  LFS mode.  As for others *64 functions, fcntl64 semantics are analogous with
+  fcntl and LFS support is handled transparently.  Also for Linux, the OFD
+  locks act as a cancellation entrypoint.
+
+* The obsolete functions encrypt, encrypt_r, setkey, setkey_r, cbc_crypt,
+  ecb_crypt, and des_setparity are no longer available to newly linked
+  binaries, and the headers <rpc/des_crypt.h> and <rpc/rpc_des.h> are no
+  longer installed.  These functions encrypted and decrypted data with the
+  DES block cipher, which is no longer considered secure.  Software that
+  still uses these functions should switch to a modern cryptography library,
+  such as libgcrypt.
+
+* Reflecting the removal of the encrypt and setkey functions above, the
+  macro _XOPEN_CRYPT is no longer defined.  As a consequence, the crypt
+  function is no longer declared unless _DEFAULT_SOURCE or _GNU_SOURCE is
+  enabled.
+
+* The obsolete function fcrypt is no longer available to newly linked
+  binaries.  It was just another name for the standard function crypt,
+  and it has not appeared in any header file in many years.
+
+* We have tentative plans to hand off maintenance of the passphrase-hashing
+  library, libcrypt, to a separate development project that will, we hope,
+  keep up better with new passphrase-hashing algorithms.  We will continue
+  to declare 'crypt' in <unistd.h>, and programs that use 'crypt' or
+  'crypt_r' should not need to change at all; however, distributions will
+  need to install <crypt.h> and libcrypt from a separate project.
+
+  In this release, if the configure option --disable-crypt is used, glibc
+  will not install <crypt.h> or libcrypt, making room for the separate
+  project's versions of these files.  The plan is to make this the default
+  behavior in a future release.
+
 Changes to build and runtime requirements:
 
-  [Add changes to build and runtime requirements here]
+  GNU make 4.0 or later is now required to build glibc.
 
 Security related changes:
 
-  [Add security related changes here]
+  CVE-2016-6261, CVE-2016-6263, CVE-2017-14062: Various vulnerabilities have
+  been fixed by removing the glibc-internal IDNA implementation and using
+  the system-provided libidn2 library instead.  Originally reported by Hanno
+  Böck and Christian Weisgerber.
+
+  CVE-2017-18269: An SSE2-based memmove implementation for the i386
+  architecture could corrupt memory.  Reported by Max Horn.
+
+  CVE-2018-11236: Very long pathname arguments to realpath function could
+  result in an integer overflow and buffer overflow.  Reported by Alexey
+  Izbyshev.
+
+  CVE-2018-11237: The mempcpy implementation for the Intel Xeon Phi
+  architecture could write beyond the target buffer, resulting in a buffer
+  overflow.  Reported by Andreas Schwab.
 
 The following bugs are resolved with this release:
 
-  [The release manager will add the list generated by
-  scripts/list-fixed-bugs.py just before the release.]
+  [1190] stdio: fgetc()/fread() behaviour is not POSIX compliant
+  [6889] manual: 'PWD' mentioned but not specified
+  [13575] libc: SSIZE_MAX defined as LONG_MAX is inconsistent with ssize_t,
+    when __WORDSIZE != 64
+  [13762] regex: re_search etc. should return -2 on memory exhaustion
+  [13888] build: /tmp usage during testing
+  [13932] math: dbl-64 pow unexpectedly slow for some inputs
+  [14092] nptl: Support C11 threads
+  [14095] localedata: Review / update collation data from Unicode / ISO
+    14651
+  [14508] libc: -Wformat warnings
+  [14553] libc: Namespace pollution loff_t in sys/types.h
+  [14890] libc: Make NT_PRFPREG canonical.
+  [15105] libc: Extra PLT references with -Os
+  [15512] libc: __bswap_constant_16 not compiled when -Werror -Wsign-
+    conversion is given
+  [16335] manual: Feature test macro documentation incomplete and out of
+    date
+  [16552] libc: Unify umount implementations in terms of umount2
+  [17082] libc: htons et al.: statement-expressions prevent use on global
+    scope with -O1 and higher
+  [17343] libc: Signed integer overflow in /stdlib/random_r.c
+  [17438] localedata: pt_BR: wrong d_fmt delimiter
+  [17662] libc: please implement binding for the new renameat2 syscall
+  [17721] libc: __restrict defined as /* Ignore */ even in c11
+  [17979] libc: inconsistency between uchar.h and stdint.h
+  [18018] dynamic-link: Additional $ORIGIN handling issues (CVE-2011-0536)
+  [18023] libc: extend_alloca is broken (questionable pointer comparison,
+    horrible machine code)
+  [18124] libc: hppa: setcontext erroneously returns -1 as exit code for
+    last constant.
+  [18471] libc: llseek should be a compat symbol
+  [18473] soft-fp: [powerpc-nofpu] __sqrtsf2, __sqrtdf2 should be compat
+    symbols
+  [18991] nss: nss_files skips large entry in database
+  [19239] libc: Including stdlib.h ends up with macros major and minor being
+    defined
+  [19463] libc: linknamespace failures when compiled with -Os
+  [19485] localedata: csb_PL: Update month translations + add yesstr/nostr
+  [19527] locale: Normalized charset name not recognized by setlocale
+  [19667] string: Missing Sanity Check for malloc calls in file 'testcopy.c'
+  [19668] libc: Missing Sanity Check for malloc() in file 'tst-setcontext-
+    fpscr.c'
+  [19728] network: out of bounds stack read in libidn function
+    idna_to_ascii_4i (CVE-2016-6261)
+  [19729] network: out of bounds heap read on invalid utf-8 inputs in
+    stringprep_utf8_nfkc_normalize (CVE-2016-6263)
+  [19818] dynamic-link: Absolute (SHN_ABS) symbols incorrectly relocated by
+    the base address
+  [20079] libc: Add SHT_X86_64_UNWIND to elf.h
+  [20251] libc: 32bit programs pass garbage in struct flock for OFD locks
+  [20419] dynamic-link: files with large allocated notes crash in
+    open_verify
+  [20530] libc: bswap_16 should use __builtin_bswap16() when available
+  [20890] dynamic-link: ldconfig: fsync the files before atomic rename
+  [20980] manual: CFLAGS environment variable replaces vital options
+  [21163] regex: Assertion failure in pop_fail_stack when executing a
+    malformed regexp (CVE-2015-8985)
+  [21234] manual: use of CFLAGS makes glibc detect no optimization
+  [21269] dynamic-link: i386 sigaction sa_restorer handling is wrong
+  [21313] build: Compile Error GCC 5.4.0 MIPS with -0S
+  [21314] build: Compile Error GCC 5.2.0 MIPS with -0s
+  [21508] locale: intl/tst-gettext failure with latest msgfmt
+  [21547] localedata: Tibetan script collation broken (Dzongkha and Tibetan)
+  [21812] network: getifaddrs() returns entries with ifa_name == NULL
+  [21895] libc: ppc64 setjmp/longjmp not fully interoperable with static
+    dlopen
+  [21942] dynamic-link: _dl_dst_substitute incorrectly handles $ORIGIN: with
+    AT_SECURE=1
+  [22241] localedata: New locale: Yakut (Sakha) locale for Russia (sah_RU)
+  [22247] network: Integer overflow in the decode_digit function in
+    puny_decode.c in libidn (CVE-2017-14062)
+  [22342] nscd: NSCD not properly caching netgroup
+  [22391] nptl: Signal function clear NPTL internal symbols inconsistently
+  [22550] localedata: es_ES locale (and  other es_* locales):  collation
+    should treat ñ  as a primary different character,  sync the collation
+    for Spanish with CLDR
+  [22638] dynamic-link: sparc: static binaries are broken if glibc is built
+    by gcc configured with --enable-default-pie
+  [22639] time: year 2039 bug for localtime etc. on 64-bit platforms
+  [22644] string: memmove-sse2-unaligned on 32bit x86 produces garbage when
+    crossing 2GB threshold (CVE-2017-18269)
+  [22646] localedata: redundant data (LC_TIME) for es_CL, es_CU, es_EC and
+    es_BO
+  [22735] time: Misleading typo in time.h source comment regarding
+    CLOCKS_PER_SECOND
+  [22753] libc: preadv2/pwritev2 fallback code should handle offset=-1
+  [22761] libc: No trailing `%n' conversion specifier in FMT passed from
+    `__assert_perror_fail ()' to `__assert_fail_base ()'
+  [22766] libc: all glibc internal dlopen should use RTLD_NOW for robust
+    dlopen failures
+  [22786] libc: Stack buffer overflow in realpath() if input size is close
+    to SSIZE_MAX (CVE-2018-11236)
+  [22787] dynamic-link: _dl_check_caller returns false when libc is linked
+    through an absolute DT_NEEDED path
+  [22792] build: tcb-offsets.h dependency dropped
+  [22797] libc: pkey_get() uses non-reserved name of argument
+  [22807] libc: PTRACE_* constants missing for powerpc
+  [22818] glob: posix/tst-glob_lstat_compat failure on alpha
+  [22827] dynamic-link: RISC-V ELF64 parser mis-reads flag in ldconfig
+  [22830] malloc: malloc_stats doesn't restore cancellation state on stderr
+  [22848] localedata: ca_ES: update date definitions from CLDR
+  [22862] build: _DEFAULT_SOURCE is defined even when _ISOC11_SOURCE is
+  [22884] math: RISCV fmax/fmin handle signalling NANs incorrectly
+  [22896] localedata: Update locale data for an_ES
+  [22902] math: float128 test failures with GCC 8
+  [22918] libc: multiple common of `__nss_shadow_database'
+  [22919] libc: sparc32: backtrace yields infinite backtrace with
+    makecontext
+  [22926] libc: FTBFS on powerpcspe
+  [22932] localedata: lt_LT: Update of abbreviated month names from CLDR
+    required
+  [22937] localedata: Greek (el_GR, el_CY) locales actually need ab_alt_mon
+  [22947] libc: FAIL: misc/tst-preadvwritev2
+  [22963] localedata: cs_CZ: Add alternative month names
+  [22987] math: [powerpc/sparc] fdim inlines errno, exceptions handling
+  [22996] localedata: change LC_PAPER to en_US in es_BO locale
+  [22998] dynamic-link: execstack tests are disabled when SELinux is
+    disabled
+  [23005] network: Crash in __res_context_send after memory allocation
+    failure
+  [23007] math: strtod cannot handle -nan
+  [23024] nss: getlogin_r is performing NSS lookups when loginid isn't set
+  [23036] regex: regex equivalence class regression
+  [23037] libc: initialize msg_flags to zero for sendmmsg() calls
+  [23069] libc: sigaction broken on riscv64-linux-gnu
+  [23094] localedata: hr_HR: wrong thousands_sep and mon_thousands_sep
+  [23102] dynamic-link: Incorrect parsing of multiple consecutive $variable
+    patterns in runpath entries (e.g. $ORIGIN$ORIGIN)
+  [23137] nptl: s390: pthread_join sometimes block indefinitely (on 31bit
+    and libc build with -Os)
+  [23140] localedata: More languages need two forms of month names
+  [23145] libc: _init/_fini aren't marked as hidden
+  [23152] localedata: gd_GB: Fix typo in "May" (abbreviated)
+  [23171] math: C++ iseqsig for long double converts arguments to double
+  [23178] nscd: sudo will fail when it is run in concurrent with commands
+    that changes /etc/passwd
+  [23196] string: __mempcpy_avx512_no_vzeroupper mishandles large copies
+    (CVE-2018-11237)
+  [23206] dynamic-link: static-pie + dlopen breaks debugger interaction
+  [23208] localedata: New locale - Lower Sorbian (dsb)
+  [23233] regex: Memory leak in build_charclass_op function in file
+    posix/regcomp.c
+  [23236] stdio: Harden function pointers in _IO_str_fields
+  [23250] nptl: Offset of __private_ss differs from GCC
+  [23253] math: tgamma test suite failures on i686 with -march=x86-64
+    -mtune=generic -mfpmath=sse
+  [23259] dynamic-link: Unsubstituted ${ORIGIN} remains in DT_NEEDED for
+    AT_SECURE
+  [23264] libc: posix_spawnp wrongly executes ENOEXEC in non compat mode
+  [23266] nis: stringop-truncation warning with new gcc8.1 in nisplus-
+    parser.c
+  [23272] math: fma(INFINITY,INFIITY,0.0) should be INFINITY
+  [23277] math: nan function should not have const attribute
+  [23279] math: scanf and strtod wrong for some hex floating-point
+  [23280] math: wscanf rounds wrong; wcstod is ok for negative numbers and
+    directed rounding
+  [23290] localedata: IBM273 is not equivalent to ISO-8859-1
+  [23303] build: undefined reference to symbol
+    '__parse_hwcap_and_convert_at_platform@@GLIBC_2.23'
+  [23307] dynamic-link: Absolute symbols whose value is zero ignored in
+    lookup
+  [23313] stdio: libio vtables validation and standard file object
+    interposition
+  [23329] libc: The __libc_freeres infrastructure is not properly run across
+    DSO boundaries.
+  [23349] libc: Various glibc headers no longer compatible with
+    <linux/time.h>
+  [23351] malloc: Remove unused code related to heap dumps and malloc
+    checking
+  [23363] stdio: stdio-common/tst-printf.c has non-free license
+  [23396] regex: Regex equivalence regression in single-byte locales
+  [23422] localedata: oc_FR: More updates of locale data
+  [23442] build: New warning with GCC 8
+  [23448] libc: Out of bounds access in IBM-1390 converter
+  [23456] libc: Wrong index_cpu_LZCNT
+  [23458] build: tst-get-cpu-features-static isn't added to tests
+  [23459] libc: COMMON_CPUID_INDEX_80000001 isn't populated for Intel
+    processors
+  [23467] dynamic-link: x86/CET: A property note parser bug
 
 
 Version 2.27
@@ -3370,7 +4444,7 @@ Version 2.3.6
   1110, 1111, 1112, 1113, 1125, 1137, 1138, 1249, 1250, 1251, 1252,
   1253, 1254, 1350, 1358, 1394, 1438, 1498, 1534
 
-  Visit <http://sources.redhat.com/bugzilla/> for the details of each bug.
+  Visit <https://sourceware.org/bugzilla/> for the details of each bug.
 
 * As of this release, GCC 4 can be used to compile the C Library.
 
@@ -3385,7 +4459,7 @@ Version 2.3.5
   737, 738, 739, 740, 741, 742, 743, 744, 745, 765, 767, 768, 769, 776,
   777, 787, 821, 822, 823, 825
 
-  Visit <http://sources.redhat.com/bugzilla/> for the details of each bug.
+  Visit <https://sourceware.org/bugzilla/> for the details of each bug.
 
 Version 2.3.4
 
@@ -4804,7 +5878,7 @@ Version 1.04
 ----------------------------------------------------------------------
 Copyright information:
 
-Copyright (C) 1992-2018 Free Software Foundation, Inc.
+Copyright (C) 1992-2020 Free Software Foundation, Inc.
 
    Permission is granted to anyone to make or distribute verbatim copies
    of this document as received, in any medium, provided that the

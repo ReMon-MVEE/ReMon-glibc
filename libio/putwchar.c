@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "libioP.h"
 #include <wchar.h>
@@ -22,8 +22,8 @@ wint_t
 putwchar (wchar_t wc)
 {
   wint_t result;
-  _IO_acquire_lock (_IO_stdout);
-  result = _IO_putwc_unlocked (wc, _IO_stdout);
-  _IO_release_lock (_IO_stdout);
+  _IO_acquire_lock (stdout);
+  result = _IO_putwc_unlocked (wc, stdout);
+  _IO_release_lock (stdout);
   return result;
 }

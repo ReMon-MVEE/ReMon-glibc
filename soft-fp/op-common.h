@@ -1,5 +1,5 @@
 /* Software floating-point emulation. Common operations.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Richard Henderson (rth@cygnus.com),
 		  Jakub Jelinek (jj@ultra.linux.cz),
@@ -27,7 +27,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef SOFT_FP_OP_COMMON_H
 #define SOFT_FP_OP_COMMON_H	1
@@ -2038,6 +2038,27 @@
 		}							\
 	    }								\
 	}								\
+    }									\
+  while (0)
+
+/* Truncate from a wider floating-point format to a narrower one.
+   Input and output are cooked.  */
+#define FP_TRUNC_COOKED(dfs, sfs, dwc, swc, D, S)			\
+  do									\
+    {									\
+      _FP_STATIC_ASSERT (_FP_FRACBITS_##sfs >= _FP_FRACBITS_##dfs,	\
+			 "destination mantissa wider than source");	\
+      if (S##_c == FP_CLS_NAN)						\
+	_FP_FRAC_SRL_##swc (S, (_FP_WFRACBITS_##sfs			\
+				- _FP_WFRACBITS_##dfs));		\
+      else								\
+	_FP_FRAC_SRS_##swc (S, (_FP_WFRACBITS_##sfs			\
+				- _FP_WFRACBITS_##dfs),			\
+			    _FP_WFRACBITS_##sfs);			\
+      _FP_FRAC_COPY_##dwc##_##swc (D, S);				\
+      D##_e = S##_e;							\
+      D##_c = S##_c;							\
+      D##_s = S##_s;							\
     }									\
   while (0)
 

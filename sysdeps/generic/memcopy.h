@@ -1,5 +1,5 @@
 /* memcopy.h -- definitions for memory copy functions.  Generic C version.
-   Copyright (C) 1991-2018 Free Software Foundation, Inc.
+   Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Torbjorn Granlund (tege@sics.se).
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _MEMCOPY_H
 #define _MEMCOPY_H	1
@@ -60,7 +60,7 @@
    This should normally be the biggest type supported by a single load
    and store.  */
 #define	op_t	unsigned long int
-#define OPSIZ	(sizeof(op_t))
+#define OPSIZ	(sizeof (op_t))
 
 /* Type to use for unaligned operations.  */
 typedef unsigned char byte;
@@ -164,8 +164,8 @@ extern void _wordcopy_bwd_dest_aligned (long int, long int, size_t)
 # define PAGE_COPY_FWD_MAYBE(dstp, srcp, nbytes_left, nbytes)		      \
   do									      \
     {									      \
-      if ((nbytes) >= PAGE_COPY_THRESHOLD &&				      \
-	  PAGE_OFFSET ((dstp) - (srcp)) == 0) 				      \
+      if ((nbytes) >= PAGE_COPY_THRESHOLD				      \
+	  && PAGE_OFFSET ((dstp) - (srcp)) == 0)			      \
 	{								      \
 	  /* The amount to copy is past the threshold for copying	      \
 	     pages virtually with kernel VM operations, and the		      \

@@ -39,11 +39,14 @@ $2 == "l" { next }
 
 # If the target uses ST_OTHER, it will be output before the symbol name.
 $2 == "g" || $2 == "w" && (NF == 7 || NF == 8) {
-  weak = $2;
   type = $3;
   size = $5;
   sub(/^0*/, "", size);
-  size = " 0x" size;
+  if (size == "") {
+      size = " 0x0";
+  } else {
+      size = " 0x" size;
+  }
   version = $6;
   symbol = $NF;
   gsub(/[()]/, "", version);
@@ -55,7 +58,7 @@ $2 == "g" || $2 == "w" && (NF == 7 || NF == 8) {
   if (version == "GLIBC_PRIVATE") next;
 
   desc = "";
-  if (type == "D" && $4 == ".tbss") {
+  if (type == "D" && ($4 == ".tbss" || $4 == ".tdata")) {
     type = "T";
   }
   else if (type == "D" && $4 == ".opd") {
@@ -74,6 +77,9 @@ $2 == "g" || $2 == "w" && (NF == 7 || NF == 8) {
   else if ($4 == "*ABS*") {
     next;
   }
+  else if (type == "D") {
+    # Accept unchanged.
+  }
   else if (type == "DO") {
     type = "D";
   }
@@ -90,14 +96,10 @@ $2 == "g" || $2 == "w" && (NF == 7 || NF == 8) {
     size = "";
   }
   else {
-    desc = symbol " " version " " weak " ? " type " " $4 " " $5;
-  }
-  if (size == " 0x") {
-    desc = symbol " " version " " weak " ? " type " " $4 " " $5;
+    print "ERROR: Unable to handle this type of symbol:", $0
+    exit 1
   }
 
-  # Disabled -- weakness should not matter to shared library ABIs any more.
-  #if (weak == "w") type = tolower(type);
   if (desc == "")
     desc = symbol " " type size;
 
@@ -113,7 +115,8 @@ $2 == "g" || $2 == "w" && (NF == 7 || NF == 8) {
 NF == 0 || /DYNAMIC SYMBOL TABLE/ || /file format/ { next }
 
 {
-  print "Don't grok this line:", $0
+  print "ERROR: Unable to interpret this line:", $0
+  exit 1
 }
 
 function emit(end) {

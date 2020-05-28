@@ -1,5 +1,5 @@
 /* lgammal expanding around zeros.
-   Copyright (C) 2015-2018 Free Software Foundation, Inc.
+   Copyright (C) 2015-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,11 +14,12 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <float.h>
 #include <math.h>
 #include <math_private.h>
+#include <fenv_private.h>
 
 static const _Float128 lgamma_zeros[][2] =
   {
@@ -448,7 +449,7 @@ __lgamma_negl (_Float128 x, int *signgamp)
 {
   /* Determine the half-integer region X lies in, handle exact
      integers and determine the sign of the result.  */
-  int i = __floorl (-2 * x);
+  int i = floorl (-2 * x);
   if ((i & 1) == 0 && i == -2 * x)
     return L(1.0) / L(0.0);
   _Float128 xn = ((i & 1) == 0 ? -i / 2 : (-i - 1) / 2);
@@ -465,7 +466,7 @@ __lgamma_negl (_Float128 x, int *signgamp)
      approximations to an adjusted version of the gamma function.  */
   if (i < 2)
     {
-      int j = __floorl (-8 * x) - 16;
+      int j = floorl (-8 * x) - 16;
       _Float128 xm = (-33 - 2 * j) * L(0.0625);
       _Float128 x_adj = x - xm;
       size_t deg = poly_deg[j];

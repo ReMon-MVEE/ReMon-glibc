@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,11 +13,9 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-
-/* MicroBlaze uses socketcall.  */
-#define __ASSUME_SOCKETCALL	1
+#include <endian.h>
 
 /* All supported kernel versions for MicroBlaze have these syscalls.  */
 #define __ASSUME_SOCKET_SYSCALL		1
@@ -48,15 +46,30 @@
 # undef __ASSUME_SENDMMSG_SYSCALL
 #endif
 
+/* Support for the renameat2 syscall was added in 3.17.  */
+#if __LINUX_KERNEL_VERSION < 0x031100
+# undef __ASSUME_RENAMEAT2
+#endif
+
 /* Support for the execveat syscall was added in 4.0.  */
 #if __LINUX_KERNEL_VERSION < 0x040000
 # undef __ASSUME_EXECVEAT
 #endif
 
-/* Support for the copy_file_range syscall was added in 4.10.  */
-#if __LINUX_KERNEL_VERSION < 0x040A00
-# undef __ASSUME_COPY_FILE_RANGE
+/* Support for the mlock2 syscall was added in 4.7.  */
+#if __LINUX_KERNEL_VERSION < 0x040700
+# undef __ASSUME_MLOCK2
+#endif
+
+/* Support for statx was added in kernel 4.12.  */
+#if __LINUX_KERNEL_VERSION < 0X040C00
+# undef __ASSUME_STATX
 #endif
 
 #undef __ASSUME_CLONE_DEFAULT
 #define __ASSUME_CLONE_BACKWARDS3
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+# define __ASSUME_SYSVIPC_BROKEN_MODE_T
+#endif
+#undef __ASSUME_SYSVIPC_DEFAULT_IPC_64

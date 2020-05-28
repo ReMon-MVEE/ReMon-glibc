@@ -1,5 +1,5 @@
 /* Measure strlen functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,50 +14,44 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #ifndef WIDE
 # define TEST_NAME "strnlen"
 #else
 # define TEST_NAME "wcsnlen"
+# define generic_strnlen generic_wcsnlen
+# define memchr_strnlen wcschr_wcsnlen
 #endif /* WIDE */
 #include "bench-string.h"
 
+#define BIG_CHAR MAX_CHAR
+
 #ifndef WIDE
-# define STRNLEN strnlen
-# define CHAR char
-# define BIG_CHAR CHAR_MAX
 # define MIDDLE_CHAR 127
-# define SIMPLE_STRNLEN simple_strnlen
 #else
-# include <wchar.h>
-# define STRNLEN wcsnlen
-# define CHAR wchar_t
-# define BIG_CHAR WCHAR_MAX
 # define MIDDLE_CHAR 1121
-# define SIMPLE_STRNLEN simple_wcsnlen
 #endif /* WIDE */
 
 typedef size_t (*proto_t) (const CHAR *, size_t);
-size_t SIMPLE_STRNLEN (const CHAR *, size_t);
-
-IMPL (SIMPLE_STRNLEN, 0)
-IMPL (STRNLEN, 1)
+size_t generic_strnlen (const CHAR *, size_t);
 
 size_t
-SIMPLE_STRNLEN (const CHAR *s, size_t maxlen)
+memchr_strnlen (const CHAR *s, size_t maxlen)
 {
-  size_t i;
-
-  for (i = 0; i < maxlen && s[i]; ++i);
-  return i;
+  const CHAR *s1 = MEMCHR (s, 0, maxlen);
+  return (s1 == NULL) ? maxlen : s1 - s;
 }
+
+IMPL (STRNLEN, 1)
+IMPL (memchr_strnlen, 0)
+IMPL (generic_strnlen, 0)
 
 static void
 do_one_test (impl_t *impl, const CHAR *s, size_t maxlen, size_t exp_len)
 {
-  size_t len = CALL (impl, s, maxlen), i, iters = INNER_LOOP_ITERS;
+  size_t len = CALL (impl, s, maxlen), i, iters = INNER_LOOP_ITERS_LARGE;
   timing_t start, stop, cur;
 
   if (len != exp_len)
@@ -151,3 +145,13 @@ test_main (void)
 }
 
 #include <support/test-driver.c>
+
+#define libc_hidden_def(X)
+#ifndef WIDE
+# undef STRNLEN
+# define STRNLEN generic_strnlen
+# include <string/strnlen.c>
+#else
+# define WCSNLEN generic_strnlen
+# include <wcsmbs/wcsnlen.c>
+#endif

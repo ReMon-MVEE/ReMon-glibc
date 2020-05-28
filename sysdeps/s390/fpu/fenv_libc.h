@@ -1,4 +1,4 @@
-/* Copyright (C) 2000-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Denis Joseph Barrow (djbarrow@de.ibm.com).
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _FENV_LIBC_H
 #define _FENV_LIBC_H    1
@@ -28,8 +28,8 @@
 #define FPC_FLAGS_MASK		0x00F80000
 #define FPC_DXC_MASK		0x0000FF00
 #define FPC_RM_MASK		0x00000003
-#define FPC_VALID_MASK		((FPC_EXCEPTION_MASK|FPC_FLAGS_MASK| \
-				 FPC_DXC_MASK|FPC_RM_MASK))
+#define FPC_VALID_MASK		((FPC_EXCEPTION_MASK|FPC_FLAGS_MASK \
+				  |FPC_DXC_MASK|FPC_RM_MASK))
 
 #define FPC_EXCEPTION_MASK_SHIFT	24
 #define FPC_FLAGS_SHIFT			16

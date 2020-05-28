@@ -1,5 +1,5 @@
 /* Test for AIO POSIX compliance.
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+   Copyright (C) 2001-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <aio.h>
 #include <error.h>
@@ -23,10 +23,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-
-/* We might wait for 3 seconds, so increase timeout to 10 seconds.  */
-#define TIMEOUT 10
 
 
 #define TEST_FUNCTION do_test ()

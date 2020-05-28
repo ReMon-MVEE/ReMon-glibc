@@ -1,5 +1,5 @@
 /* Computing deadlines for timeouts.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <net-internal.h>
 
@@ -29,13 +29,7 @@ __deadline_current_time (void)
 {
   struct deadline_current_time result;
   if (__clock_gettime (CLOCK_MONOTONIC, &result.current) != 0)
-    {
-      struct timeval current_tv;
-      if (__gettimeofday (&current_tv, NULL) == 0)
-        __libc_fatal ("Fatal error: gettimeofday system call failed\n");
-      result.current.tv_sec = current_tv.tv_sec;
-      result.current.tv_nsec = current_tv.tv_usec * 1000;
-    }
+    __clock_gettime (CLOCK_REALTIME, &result.current);
   assert (result.current.tv_sec >= 0);
   return result;
 }

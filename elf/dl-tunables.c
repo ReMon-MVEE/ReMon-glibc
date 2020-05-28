@@ -1,7 +1,7 @@
 /* The tunable framework.  See the README.tunables to know how to use the
    tunable in a glibc module.
 
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <startup.h>
 #include <stdint.h>
@@ -45,12 +45,11 @@ tunables_strdup (const char *in)
   while (in[i++] != '\0');
   char *out = __sbrk (i);
 
-  /* FIXME: In reality if the allocation fails, __sbrk will crash attempting to
-     set the thread-local errno since the TCB has not yet been set up.  This
-     needs to be fixed with an __sbrk implementation that does not set
-     errno.  */
+  /* For most of the tunables code, we ignore user errors.  However,
+     this is a system error - and running out of memory at program
+     startup should be reported, so we do.  */
   if (out == (void *)-1)
-    return NULL;
+    _dl_fatal_printf ("sbrk() failure while processing tunables\n");
 
   i--;
 
@@ -272,8 +271,7 @@ parse_tunables (char *tunestr, char *valstring)
    for setuid binaries.  We use the special version of access() to avoid
    setting ERRNO, which is a TLS variable since TLS has not yet been set
    up.  */
-static inline void
-__always_inline
+static __always_inline void
 maybe_enable_malloc_check (void)
 {
   tunable_id_t id = TUNABLE_ENUM_NAME (glibc, malloc, check);

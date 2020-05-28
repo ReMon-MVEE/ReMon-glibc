@@ -1,5 +1,5 @@
 /* Function log vectorized with AVX2.
-   Copyright (C) 2014-2018 Free Software Foundation, Inc.
+   Copyright (C) 2014-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 #include "svml_d_log_data.h"
@@ -191,7 +191,7 @@ ENTRY (_ZGVdN4v_log_avx2)
         vmovsd    328(%rsp,%r15), %xmm0
         vzeroupper
 
-        call      JUMPTARGET(__log_finite)
+        call      JUMPTARGET(log)
 
         vmovsd    %xmm0, 392(%rsp,%r15)
         jmp       .LBL_1_8
@@ -202,7 +202,7 @@ ENTRY (_ZGVdN4v_log_avx2)
         vmovsd    320(%rsp,%r15), %xmm0
         vzeroupper
 
-        call      JUMPTARGET(__log_finite)
+        call      JUMPTARGET(log)
 
         vmovsd    %xmm0, 384(%rsp,%r15)
         jmp       .LBL_1_7

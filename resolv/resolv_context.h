@@ -1,5 +1,5 @@
 /* Temporary, thread-local resolver state.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* struct resolv_context objects are allocated on the heap,
    initialized by __resolv_context_get (and its variants), and
@@ -26,9 +26,7 @@
    allocating a new context.  This prevents unexpected reloading of
    the resolver configuration.  Care is taken to keep the context in
    sync with the thread-local _res object.  (This does not happen with
-   __resolv_context_get_override, and __resolv_context_get_no_inet6 may
-   also interpose another context object if RES_USE_INET6 needs to be
-   disabled.)
+   __resolv_context_get_override.)
 
    In contrast to struct __res_state, struct resolv_context is not
    affected by ABI compatibility concerns.
@@ -62,8 +60,8 @@ struct resolv_context
   size_t __refcount;            /* Count of reusages by the get functions.  */
   bool __from_res;              /* True if created from _res.  */
 
-  /* If RES_USE_INET6 was disabled at this level, this field points to
-     the previous context.  */
+  /* Single-linked list of resolver contexts.  Used for memory
+     deallocation on thread cancellation.  */
   struct resolv_context *__next;
 };
 
@@ -75,8 +73,7 @@ struct resolv_context *__resolv_context_get (void)
 libc_hidden_proto (__resolv_context_get)
 
 /* Deallocate the temporary resolver context.  Converse of
-   __resolv_context_get.  Restore the RES_USE_INET6 flag if necessary.
-   Do nothing if CTX is NULL.  */
+   __resolv_context_get.  Do nothing if CTX is NULL.  */
 void __resolv_context_put (struct resolv_context *ctx);
 libc_hidden_proto (__resolv_context_put)
 

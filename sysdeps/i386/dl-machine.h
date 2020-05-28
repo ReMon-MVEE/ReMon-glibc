@@ -1,5 +1,5 @@
 /* Machine-dependent ELF dynamic relocation inline functions.  i386 version.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef dl_machine_h
 #define dl_machine_h
@@ -67,6 +67,11 @@ elf_machine_runtime_setup (struct link_map *l, int lazy, int profile)
   Elf32_Addr *got;
   extern void _dl_runtime_resolve (Elf32_Word) attribute_hidden;
   extern void _dl_runtime_profile (Elf32_Word) attribute_hidden;
+  extern void _dl_runtime_resolve_shstk (Elf32_Word) attribute_hidden;
+  extern void _dl_runtime_profile_shstk (Elf32_Word) attribute_hidden;
+  /* Check if SHSTK is enabled by kernel.  */
+  bool shstk_enabled
+    = (GL(dl_x86_feature_1)[0] & GNU_PROPERTY_X86_FEATURE_1_SHSTK) != 0;
 
   if (l->l_info[DT_JMPREL] && lazy)
     {
@@ -93,7 +98,9 @@ elf_machine_runtime_setup (struct link_map *l, int lazy, int profile)
 	 end in this function.  */
       if (__glibc_unlikely (profile))
 	{
-	  got[2] = (Elf32_Addr) &_dl_runtime_profile;
+	  got[2] = (shstk_enabled
+		    ? (Elf32_Addr) &_dl_runtime_profile_shstk
+		    : (Elf32_Addr) &_dl_runtime_profile);
 
 	  if (GLRO(dl_profile) != NULL
 	      && _dl_name_match_p (GLRO(dl_profile), l))
@@ -104,7 +111,9 @@ elf_machine_runtime_setup (struct link_map *l, int lazy, int profile)
       else
 	/* This function will get called to fix up the GOT entry indicated by
 	   the offset on the stack, and then jump to the resolved address.  */
-	got[2] = (Elf32_Addr) &_dl_runtime_resolve;
+	got[2] = (shstk_enabled
+		  ? (Elf32_Addr) &_dl_runtime_resolve_shstk
+		  : (Elf32_Addr) &_dl_runtime_resolve);
     }
 
   return lazy;
@@ -471,7 +480,8 @@ elf_machine_rel (struct link_map *map, const Elf32_Rel *reloc,
 	  break;
 	case R_386_IRELATIVE:
 	  value = map->l_addr + *reloc_addr;
-	  value = ((Elf32_Addr (*) (void)) value) ();
+	  if (__glibc_likely (!skip_ifunc))
+	    value = ((Elf32_Addr (*) (void)) value) ();
 	  *reloc_addr = value;
 	  break;
 	default:
@@ -513,6 +523,7 @@ elf_machine_rela (struct link_map *map, const Elf32_Rela *reloc,
 	case R_386_SIZE32:
 	  /* Set to symbol size plus addend.  */
 	  value = sym->st_size;
+	  /* Fall through.  */
 	case R_386_GLOB_DAT:
 	case R_386_JMP_SLOT:
 	case R_386_32:
@@ -617,7 +628,8 @@ elf_machine_rela (struct link_map *map, const Elf32_Rela *reloc,
 #  endif /* !RESOLVE_CONFLICT_FIND_MAP */
 	case R_386_IRELATIVE:
 	  value = map->l_addr + reloc->r_addend;
-	  value = ((Elf32_Addr (*) (void)) value) ();
+	  if (__glibc_likely (!skip_ifunc))
+	    value = ((Elf32_Addr (*) (void)) value) ();
 	  *reloc_addr = value;
 	  break;
 	default:

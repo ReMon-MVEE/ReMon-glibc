@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "libioP.h"
 #include "strfile.h"
@@ -92,8 +92,8 @@ open_wmemstream (wchar_t **bufloc, size_t *sizeloc)
   _IO_wstr_init_static (&new_f->fp._sf._sbf._f, buf,
 			BUFSIZ / sizeof (wchar_t), buf);
   new_f->fp._sf._sbf._f._flags2 &= ~_IO_FLAGS2_USER_WBUF;
-  new_f->fp._sf._s._allocate_buffer = (_IO_alloc_type) malloc;
-  new_f->fp._sf._s._free_buffer = (_IO_free_type) free;
+  new_f->fp._sf._s._allocate_buffer_unused = (_IO_alloc_type) malloc;
+  new_f->fp._sf._s._free_buffer_unused = (_IO_free_type) free;
 
   new_f->fp.bufloc = bufloc;
   new_f->fp.sizeloc = sizeloc;

@@ -1,5 +1,5 @@
 /* Implementation of the internal dcigettext function.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -12,7 +12,7 @@
    GNU Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Tell glibc's <string.h> to provide a prototype for mempcpy().
    This must come before <config.h> because <config.h> may include
@@ -360,8 +360,7 @@ static const char *guess_category_value (int category,
 
 #ifdef _LIBC
 # include "../locale/localeinfo.h"
-# define category_to_name(category) \
-  _nl_category_names.str + _nl_category_name_idxs[category]
+# define category_to_name(category) _nl_category_names_get (category)
 #else
 static const char *category_to_name (int category);
 #endif
@@ -631,7 +630,7 @@ DCIGETTEXT (const char *domainname, const char *msgid1, const char *msgid2,
 	  int ret = __asprintf (&xdirname, "%s/%s", cwd, dirname);
 	  free (cwd);
 	  if (ret < 0)
-	      return NULL;
+	    goto return_untranslated;
 	  dirname = xdirname;
 	}
 #ifndef IN_LIBGLOCALE

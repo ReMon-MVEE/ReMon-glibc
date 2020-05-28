@@ -1,4 +1,4 @@
-# Copyright (C) 1999-2018 Free Software Foundation, Inc.
+# Copyright (C) 1999-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 #
 #	Sub-makefile for conform portion of the library.
@@ -34,9 +34,9 @@ conformtest-headers-ISO := assert.h ctype.h errno.h float.h limits.h locale.h \
 conformtest-headers-ISO99 := $(conformtest-headers-ISO) complex.h fenv.h \
 			     inttypes.h iso646.h stdbool.h stdint.h tgmath.h \
 			     wchar.h wctype.h
-# Missing ISO11 expectations for: stdatomic.h threads.h.
+# Missing ISO11 expectations for: stdatomic.h
 conformtest-headers-ISO11 := $(conformtest-headers-ISO99) stdalign.h \
-			     stdnoreturn.h uchar.h
+			     stdnoreturn.h threads.h uchar.h
 conformtest-headers-POSIX := $(conformtest-headers-ISO) aio.h dirent.h \
 			     fcntl.h fnmatch.h glob.h grp.h mqueue.h \
 			     pthread.h pwd.h regex.h sched.h semaphore.h \
@@ -52,44 +52,44 @@ conformtest-headers-XPG4 := $(conformtest-headers-ISO) cpio.h dirent.h \
 			    sys/wait.h tar.h termios.h ulimit.h unistd.h \
 			    utime.h varargs.h wordexp.h
 # Missing XPG42 expectations for: re_comp.h regexp.h wchar.h.
-# XPG42 includes XTI, but xti.h is outside the scope of these tests.
+# XPG42 includes XTI and STREAMS, but those are not implemented by glibc.
 conformtest-headers-XPG42 := $(conformtest-headers-XPG4) arpa/inet.h fmtmsg.h \
 			    libgen.h ndbm.h netdb.h netinet/in.h poll.h \
-			    strings.h stropts.h sys/mman.h sys/resource.h \
+			    strings.h sys/mman.h sys/resource.h \
 			    sys/socket.h sys/statvfs.h sys/time.h sys/timeb.h \
 			    sys/uio.h sys/un.h syslog.h ucontext.h utmpx.h
 # Missing UNIX98 expectations for: inttypes.h re_comp.h regexp.h.
 # The online UNIX98 includes XCURSES, but curses.h, term.h and
 # unctrl.h are outside the scope of these tests.  It also includes
-# XTI, but xti.h is outside the scope of these tests.
+# XTI and STREAMS, but those are not implemented by glibc.
 conformtest-headers-UNIX98 := $(conformtest-headers-POSIX) arpa/inet.h cpio.h \
 			      dlfcn.h fmtmsg.h ftw.h iconv.h iso646.h \
 			      langinfo.h libgen.h monetary.h ndbm.h netdb.h \
 			      netinet/in.h nl_types.h poll.h search.h \
-			      strings.h stropts.h sys/ipc.h sys/msg.h \
+			      strings.h sys/ipc.h sys/msg.h \
 			      sys/resource.h sys/sem.h sys/shm.h sys/socket.h \
 			      sys/statvfs.h sys/time.h sys/timeb.h sys/uio.h \
 			      sys/un.h syslog.h ucontext.h ulimit.h utmpx.h \
 			      varargs.h wchar.h wctype.h
-# Missing XOPEN2K expectations for: trace.h.
+# Missing XOPEN2K expectations for: trace.h, stropts.h.
 conformtest-headers-XOPEN2K := $(conformtest-headers-POSIX) arpa/inet.h \
 			       complex.h cpio.h dlfcn.h fenv.h fmtmsg.h ftw.h \
 			       iconv.h inttypes.h iso646.h langinfo.h \
 			       libgen.h monetary.h ndbm.h net/if.h netdb.h \
 			       netinet/in.h netinet/tcp.h nl_types.h poll.h \
 			       search.h spawn.h stdbool.h stdint.h strings.h \
-			       stropts.h sys/ipc.h sys/msg.h sys/resource.h \
+			       sys/ipc.h sys/msg.h sys/resource.h \
 			       sys/select.h sys/sem.h sys/shm.h sys/socket.h \
 			       sys/statvfs.h sys/time.h sys/timeb.h sys/uio.h \
 			       sys/un.h syslog.h tgmath.h ucontext.h ulimit.h \
 			       utmpx.h wchar.h wctype.h
-# Missing POSIX2008 expectations for: trace.h.
+# Missing POSIX2008 expectations for: trace.h, stropts.h.
 conformtest-headers-POSIX2008 := $(conformtest-headers-POSIX) arpa/inet.h \
 				 complex.h cpio.h dlfcn.h fenv.h iconv.h \
 				 inttypes.h iso646.h langinfo.h monetary.h \
 				 net/if.h netdb.h netinet/in.h netinet/tcp.h \
 				 nl_types.h poll.h spawn.h stdbool.h stdint.h \
-				 strings.h stropts.h sys/select.h \
+				 strings.h sys/select.h \
 				 sys/socket.h sys/statvfs.h sys/un.h tgmath.h \
 				 wchar.h wctype.h
 # Missing XOPEN2K8 expectations for: trace.h.
@@ -172,20 +172,19 @@ else
 conformtest-cross = --cross
 endif
 $(conformtest-header-tests): $(objpfx)%/conform.out: \
-			     conformtest.pl $(conformtest-headers-data)
+			     conformtest.py $(conformtest-headers-data)
 	(set -e; std_hdr=$*; std=$${std_hdr%%/*}; hdr=$${std_hdr#*/}; \
-	 mkdir -p $(@D)/scratch; \
-	 $(PERL) -I. conformtest.pl --tmpdir=$(@D)/scratch --cc='$(CC)' \
-		 --flags='$(conformtest-cc-flags)' --standard=$$std \
-		 --headers=$$hdr $(conformtest-xfail) $(conformtest-cross) \
-		 > $@); \
+	 mkdir -p $(@D); \
+	 $(PYTHON) $< --cc='$(CC)' --flags='$(conformtest-cc-flags)' \
+		   --standard=$$std --header=$$hdr $(conformtest-xfail) \
+		   $(conformtest-cross) \
+		   > $@ 2>&1); \
 	$(evaluate-test)
 
-$(linknamespace-symlists-tests): $(objpfx)symlist-%: list-header-symbols.pl
-	$(PERL) -I. -w $< --tmpdir=$(objpfx) --cc='$(CC)' \
-		--flags='$(conformtest-cc-flags)' --standard=$* \
-		--headers="$(strip $(conformtest-headers-$*))" \
-		> $@ 2> $@.err; \
+$(linknamespace-symlists-tests): $(objpfx)symlist-%: list-header-symbols.py
+	$(PYTHON) $< --cc='$(CC)' --flags='$(conformtest-cc-flags)' \
+		  --standard=$* --headers="$(strip $(conformtest-headers-$*))" \
+		  > $@ 2> $@.err; \
 	$(evaluate-test)
 
 linknamespace-libs-isoc = $(common-objpfx)libc.a $(common-objpfx)math/libm.a
@@ -193,13 +192,12 @@ linknamespace-libs-thr = $(linknamespace-libs-isoc) \
 			 $(common-objpfx)rt/librt.a $(static-thread-library)
 linknamespace-libs-posix = $(linknamespace-libs-thr) \
 			   $(common-objpfx)dlfcn/libdl.a
-linknamespace-libs-xsi = $(linknamespace-libs-posix) \
-			 $(common-objpfx)crypt/libcrypt.a
+linknamespace-libs-xsi = $(linknamespace-libs-posix)
 linknamespace-libs-ISO = $(linknamespace-libs-isoc)
 linknamespace-libs-ISO99 = $(linknamespace-libs-isoc)
-linknamespace-libs-ISO11 = $(linknamespace-libs-isoc)
-linknamespace-libs-XPG4 = $(linknamespace-libs-isoc) \
-			  $(common-objpfx)crypt/libcrypt.a
+linknamespace-libs-ISO11 = $(linknamespace-libs-isoc) \
+			   $(static-thread-library)
+linknamespace-libs-XPG4 = $(linknamespace-libs-isoc)
 linknamespace-libs-XPG42 = $(linknamespace-libs-XPG4)
 linknamespace-libs-POSIX = $(linknamespace-libs-thr)
 linknamespace-libs-UNIX98 = $(linknamespace-libs-xsi)
@@ -209,23 +207,27 @@ linknamespace-libs-XOPEN2K8 = $(linknamespace-libs-xsi)
 linknamespace-libs = $(foreach std,$(conformtest-standards),\
 				   $(linknamespace-libs-$(std)))
 
+ifeq ($(build-crypt),yes)
+linknamespace-libs-xsi += $(common-objpfx)crypt/libcrypt.a
+linknamespace-libs-XPG4 += $(common-objpfx)crypt/libcrypt.a
+endif
+
 $(linknamespace-symlist-stdlibs-tests): $(objpfx)symlist-stdlibs-%: \
 					$(linknamespace-libs)
 	LC_ALL=C $(READELF) -W -s $(linknamespace-libs-$*) > $@; \
 	$(evaluate-test)
 
 $(linknamespace-header-tests): $(objpfx)%/linknamespace.out: \
-			       linknamespace.pl \
+			       linknamespace.py \
 			       $(linknamespace-symlists-tests) \
 			       $(linknamespace-symlist-stdlibs-tests)
 	(set -e; std_hdr=$*; std=$${std_hdr%%/*}; hdr=$${std_hdr#*/}; \
-	 mkdir -p $(@D)/scratch; \
-	 $(PERL) -I. -w $< --tmpdir=$(@D)/scratch --cc='$(CC)' \
-		 --flags='$(conformtest-cc-flags)' --standard=$$std \
-		 --stdsyms=$(objpfx)symlist-$$std --header=$$hdr \
-		 --libsyms=$(objpfx)symlist-stdlibs-$$std \
-		 --readelf='$(READELF)' \
-		 > $@ 2>&1); \
+	 mkdir -p $(@D); \
+	 $(PYTHON) $< --cc='$(CC)' --flags='$(conformtest-cc-flags)' \
+		   --standard=$$std --stdsyms=$(objpfx)symlist-$$std \
+		   --header=$$hdr --libsyms=$(objpfx)symlist-stdlibs-$$std \
+		   --readelf='$(READELF)' \
+		   > $@ 2>&1); \
 	$(evaluate-test)
 
 # Pre-standard C feature no longer supported by GCC (obsoleted in

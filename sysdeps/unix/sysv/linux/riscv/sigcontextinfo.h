@@ -1,5 +1,5 @@
 /* RISC-V definitions for signal handling calling conventions.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,9 +14,17 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
+
+#ifndef _SIGCONTEXTINFO_H
+#define _SIGCONTEXTINFO_H
 
 #include <sys/ucontext.h>
 
-#define SIGCONTEXT siginfo_t *_si, ucontext_t *
-#define GET_PC(ctx)	((void *) ctx->uc_mcontext.__gregs[REG_PC])
+static inline uintptr_t
+sigcontext_get_pc (const ucontext_t *ctx)
+{
+ return ctx->uc_mcontext.__gregs[REG_PC];
+}
+
+#endif

@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2005-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Richard Henderson <rth@redhat.com>, 2005.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdbool.h>
 #include <math.h>
@@ -51,22 +51,22 @@ __divtc3 (long double a, long double b, long double c, long double d)
     {
       if (denom == 0.0 && (!isnan (a) || !isnan (b)))
 	{
-	  x = __copysignl (INFINITY, c) * a;
-	  y = __copysignl (INFINITY, c) * b;
+	  x = copysignl (INFINITY, c) * a;
+	  y = copysignl (INFINITY, c) * b;
 	}
       else if ((isinf (a) || isinf (b))
 	       && isfinite (c) && isfinite (d))
 	{
-	  a = __copysignl (isinf (a) ? 1 : 0, a);
-	  b = __copysignl (isinf (b) ? 1 : 0, b);
+	  a = copysignl (isinf (a) ? 1 : 0, a);
+	  b = copysignl (isinf (b) ? 1 : 0, b);
 	  x = INFINITY * (a * c + b * d);
 	  y = INFINITY * (b * c - a * d);
 	}
       else if ((isinf (c) || isinf (d))
 	       && isfinite (a) && isfinite (b))
 	{
-	  c = __copysignl (isinf (c) ? 1 : 0, c);
-	  d = __copysignl (isinf (d) ? 1 : 0, d);
+	  c = copysignl (isinf (c) ? 1 : 0, c);
+	  d = copysignl (isinf (d) ? 1 : 0, d);
 	  x = 0.0 * (a * c + b * d);
 	  y = 0.0 * (b * c - a * d);
 	}

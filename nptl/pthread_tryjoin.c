@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "pthreadP.h"
 
@@ -26,7 +26,8 @@ pthread_tryjoin_np (pthread_t threadid, void **thread_return)
   if (pd->tid != 0)
     return EBUSY;
 
-  /* If pd->tid != 0 then lll_wait_tid will not block on futex
+  /* If pd->tid == 0 then lll_wait_tid will not block on futex
      operation.  */
-  return __pthread_timedjoin_ex (threadid, thread_return, NULL, false);
+  return __pthread_clockjoin_ex (threadid, thread_return, 0 /* Ignored */,
+				 NULL, false);
 }

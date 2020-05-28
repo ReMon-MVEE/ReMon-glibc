@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,11 +13,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
+#include <stdlib.h>
 #include <sys/wait.h>
-#include <sys/types.h>
 
 
 /* Wait for a child matching PID to die.
@@ -35,16 +35,7 @@
 pid_t
 __waitpid (pid_t pid, int *stat_loc, int options)
 {
-  if ((options & ~(WNOHANG|WUNTRACED)) != 0)
-    {
-      __set_errno (EINVAL);
-      return (pid_t) -1;
-    }
-
-  __set_errno (ENOSYS);
-  return (pid_t) -1;
+  return __wait4 (pid, stat_loc, options, NULL);
 }
 libc_hidden_def (__waitpid)
 weak_alias (__waitpid, waitpid)
-
-stub_warning (waitpid)

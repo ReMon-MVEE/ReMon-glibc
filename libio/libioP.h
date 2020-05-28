@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -108,9 +108,14 @@
   (IO_validate_vtable                                                   \
    (*(struct _IO_jump_t **) ((void *) &_IO_JUMPS_FILE_plus (THIS)	\
 			     + (THIS)->_vtable_offset)))
+# define _IO_JUMPS_FUNC_UPDATE(THIS, VTABLE)				\
+  (*(const struct _IO_jump_t **) ((void *) &_IO_JUMPS_FILE_plus (THIS)	\
+				  + (THIS)->_vtable_offset) = (VTABLE))
 # define _IO_vtable_offset(THIS) (THIS)->_vtable_offset
 #else
 # define _IO_JUMPS_FUNC(THIS) (IO_validate_vtable (_IO_JUMPS_FILE_plus (THIS)))
+# define _IO_JUMPS_FUNC_UPDATE(THIS, VTABLE) \
+  (_IO_JUMPS_FILE_plus (THIS) = (VTABLE))
 # define _IO_vtable_offset(THIS) 0
 #endif
 #define _IO_WIDE_JUMPS_FUNC(THIS) _IO_WIDE_JUMPS(THIS)
@@ -476,7 +481,6 @@ extern const struct _IO_jump_t _IO_streambuf_jumps;
 extern const struct _IO_jump_t _IO_old_proc_jumps attribute_hidden;
 extern const struct _IO_jump_t _IO_str_jumps attribute_hidden;
 extern const struct _IO_jump_t _IO_wstr_jumps attribute_hidden;
-extern const struct _IO_codecvt __libio_codecvt attribute_hidden;
 extern int _IO_do_write (FILE *, const char *, size_t);
 libc_hidden_proto (_IO_do_write)
 extern int _IO_new_do_write (FILE *, const char *, size_t);
@@ -658,12 +662,72 @@ extern off64_t _IO_wstr_seekoff (FILE *, off64_t, int, int)
 extern wint_t _IO_wstr_pbackfail (FILE *, wint_t) __THROW;
 extern void _IO_wstr_finish (FILE *, int) __THROW;
 
-extern int _IO_vasprintf (char **result_ptr, const char *format,
-			  va_list args) __THROW;
-extern int _IO_vdprintf (int d, const char *format, va_list arg);
-extern int _IO_vsnprintf (char *string, size_t maxlen,
-			  const char *format, va_list args) __THROW;
+/* Internal versions of v*printf that take an additional flags
+   parameter.  */
+extern int __vfprintf_internal (FILE *fp, const char *format, va_list ap,
+				unsigned int mode_flags)
+    attribute_hidden;
+extern int __vfwprintf_internal (FILE *fp, const wchar_t *format, va_list ap,
+				 unsigned int mode_flags)
+    attribute_hidden;
 
+extern int __vasprintf_internal (char **result_ptr, const char *format,
+				 va_list ap, unsigned int mode_flags)
+    attribute_hidden;
+extern int __vdprintf_internal (int d, const char *format, va_list ap,
+				unsigned int mode_flags)
+    attribute_hidden;
+extern int __obstack_vprintf_internal (struct obstack *ob, const char *fmt,
+				       va_list ap, unsigned int mode_flags)
+    attribute_hidden;
+
+/* Note: __vsprintf_internal, unlike vsprintf, does take a maxlen argument,
+   because it's called by both vsprintf and vsprintf_chk.  If maxlen is
+   not set to -1, overrunning the buffer will cause a prompt crash.
+   This is the behavior of ordinary (v)sprintf functions, thus they call
+   __vsprintf_internal with that argument set to -1.  */
+extern int __vsprintf_internal (char *string, size_t maxlen,
+				const char *format, va_list ap,
+				unsigned int mode_flags)
+    attribute_hidden;
+
+extern int __vsnprintf_internal (char *string, size_t maxlen,
+				 const char *format, va_list ap,
+				 unsigned int mode_flags)
+    attribute_hidden;
+extern int __vswprintf_internal (wchar_t *string, size_t maxlen,
+				 const wchar_t *format, va_list ap,
+				 unsigned int mode_flags)
+    attribute_hidden;
+
+/* Flags for __v*printf_internal.
+
+   PRINTF_LDBL_IS_DBL indicates whether long double values are to be
+   handled as having the same format as double, in which case the flag
+   should be set to one, or as another format, otherwise.
+
+   PRINTF_FORTIFY, when set to one, indicates that fortification checks
+   are to be performed in input parameters.  This is used by the
+   __*printf_chk functions, which are used when _FORTIFY_SOURCE is
+   defined to 1 or 2.  Otherwise, such checks are ignored.
+
+   PRINTF_CHK indicates, to the internal function being called, that the
+   call is originated from one of the __*printf_chk functions.
+
+   PRINTF_LDBL_USES_FLOAT128 is used on platforms where the long double
+   format used to be different from the IEC 60559 double format *and*
+   also different from the Quadruple 128-bits IEC 60559 format (such as
+   the IBM Extended Precision format on powerpc or the 80-bits IEC 60559
+   format on x86), but was later converted to the Quadruple 128-bits IEC
+   60559 format, which is the same format that the _Float128 always has
+   (hence the `USES_FLOAT128' suffix in the name of the flag).  When set
+   to one, this macro indicates that long double values are to be
+   handled as having this new format.  Otherwise, they should be handled
+   as the previous format on that platform.  */
+#define PRINTF_LDBL_IS_DBL		0x0001
+#define PRINTF_FORTIFY			0x0002
+#define PRINTF_CHK			0x0004
+#define PRINTF_LDBL_USES_FLOAT128	0x0008
 
 extern size_t _IO_getline (FILE *,char *, size_t, int, int);
 libc_hidden_proto (_IO_getline)
@@ -704,6 +768,40 @@ extern off64_t _IO_seekpos_unlocked (FILE *, off64_t, int)
 
 #endif /* _G_HAVE_MMAP */
 
+/* Flags for __vfscanf_internal and __vfwscanf_internal.
+
+   SCANF_LDBL_IS_DBL indicates whether long double values are to be
+   handled as having the same format as double, in which case the flag
+   should be set to one, or as another format, otherwise.
+
+   SCANF_ISOC99_A, when set to one, indicates that the ISO C99 or POSIX
+   behavior of the scanf functions is to be used, i.e. automatic
+   allocation for input strings with %as, %aS and %a[, a GNU extension,
+   is disabled. This is the behavior that the __isoc99_scanf family of
+   functions use.  When the flag is set to zero, automatic allocation is
+   enabled.
+
+   SCANF_LDBL_USES_FLOAT128 is used on platforms where the long double
+   format used to be different from the IEC 60559 double format *and*
+   also different from the Quadruple 128-bits IEC 60559 format (such as
+   the IBM Extended Precision format on powerpc or the 80-bits IEC 60559
+   format on x86), but was later converted to the Quadruple 128-bits IEC
+   60559 format, which is the same format that the _Float128 always has
+   (hence the `USES_FLOAT128' suffix in the name of the flag).  When set
+   to one, this macros indicates that long double values are to be
+   handled as having this new format.  Otherwise, they should be handled
+   as the previous format on that platform.  */
+#define SCANF_LDBL_IS_DBL		0x0001
+#define SCANF_ISOC99_A			0x0002
+#define SCANF_LDBL_USES_FLOAT128	0x0004
+
+extern int __vfscanf_internal (FILE *fp, const char *format, va_list argp,
+			       unsigned int flags)
+  attribute_hidden;
+extern int __vfwscanf_internal (FILE *fp, const wchar_t *format, va_list argp,
+				unsigned int flags)
+  attribute_hidden;
+
 extern int _IO_vscanf (const char *, va_list) __THROW;
 
 #ifdef _IO_MTSAFE_IO
@@ -735,16 +833,44 @@ extern int _IO_vscanf (const char *, va_list) __THROW;
 # endif
 #endif
 
-extern struct _IO_fake_stdiobuf _IO_stdin_buf, _IO_stdout_buf, _IO_stderr_buf;
+#if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_1)
+/* See oldstdfiles.c.  These are the old stream variables.  */
+extern struct _IO_FILE_plus _IO_stdin_;
+extern struct _IO_FILE_plus _IO_stdout_;
+extern struct _IO_FILE_plus _IO_stderr_;
+
+static inline bool
+_IO_legacy_file (FILE *fp)
+{
+  return fp == (FILE *) &_IO_stdin_ || fp == (FILE *) &_IO_stdout_
+    || fp == (FILE *) &_IO_stderr_;
+}
+#endif
+
+/* Deallocate a stream if it is heap-allocated.  Preallocated
+   stdin/stdout/stderr streams are not deallocated. */
+static inline void
+_IO_deallocate_file (FILE *fp)
+{
+  /* The current stream variables.  */
+  if (fp == (FILE *) &_IO_2_1_stdin_ || fp == (FILE *) &_IO_2_1_stdout_
+      || fp == (FILE *) &_IO_2_1_stderr_)
+    return;
+#if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_1)
+  if (_IO_legacy_file (fp))
+    return;
+#endif
+  free (fp);
+}
 
 #ifdef IO_DEBUG
-# define CHECK_FILE(FILE, RET) do {			\
-    if ((FILE) == NULL ||				\
-	((FILE)->_flags & _IO_MAGIC_MASK) != _IO_MAGIC) \
-      {							\
-	__set_errno (EINVAL);				\
-	return RET;					\
-      }							\
+# define CHECK_FILE(FILE, RET) do {				\
+    if ((FILE) == NULL						\
+	|| ((FILE)->_flags & _IO_MAGIC_MASK) != _IO_MAGIC)	\
+      {								\
+	__set_errno (EINVAL);					\
+	return RET;						\
+      }								\
   } while (0)
 #else
 # define CHECK_FILE(FILE, RET) do { } while (0)
@@ -759,27 +885,10 @@ _IO_acquire_lock_fct (FILE **p)
     _IO_funlockfile (fp);
 }
 
-static inline void
-__attribute__ ((__always_inline__))
-_IO_acquire_lock_clear_flags2_fct (FILE **p)
-{
-  FILE *fp = *p;
-  fp->_flags2 &= ~(_IO_FLAGS2_FORTIFY | _IO_FLAGS2_SCANF_STD);
-  if ((fp->_flags & _IO_USER_LOCK) == 0)
-    _IO_funlockfile (fp);
-}
-
 #if !defined _IO_MTSAFE_IO && IS_IN (libc)
 # define _IO_acquire_lock(_fp)						      \
-  do {									      \
-    FILE *_IO_acquire_lock_file = NULL
-# define _IO_acquire_lock_clear_flags2(_fp)				      \
-  do {									      \
-    FILE *_IO_acquire_lock_file = (_fp)
+  do {
 # define _IO_release_lock(_fp)						      \
-    if (_IO_acquire_lock_file != NULL)					      \
-      _IO_acquire_lock_file->_flags2 &= ~(_IO_FLAGS2_FORTIFY		      \
-                                          | _IO_FLAGS2_SCANF_STD);	      \
   } while (0)
 #endif
 
@@ -830,13 +939,41 @@ IO_validate_vtable (const struct _IO_jump_t *vtable)
   /* Fast path: The vtable pointer is within the __libc_IO_vtables
      section.  */
   uintptr_t section_length = __stop___libc_IO_vtables - __start___libc_IO_vtables;
-  const char *ptr = (const char *) vtable;
-  uintptr_t offset = ptr - __start___libc_IO_vtables;
+  uintptr_t ptr = (uintptr_t) vtable;
+  uintptr_t offset = ptr - (uintptr_t) __start___libc_IO_vtables;
   if (__glibc_unlikely (offset >= section_length))
     /* The vtable pointer is not in the expected section.  Use the
        slow path, which will terminate the process if necessary.  */
     _IO_vtable_check ();
   return vtable;
 }
+
+/* Character set conversion.  */
+
+enum __codecvt_result
+{
+  __codecvt_ok,
+  __codecvt_partial,
+  __codecvt_error,
+  __codecvt_noconv
+};
+
+enum __codecvt_result __libio_codecvt_out (struct _IO_codecvt *,
+					   __mbstate_t *,
+					   const wchar_t *,
+					   const wchar_t *,
+					   const wchar_t **, char *,
+					   char *, char **)
+  attribute_hidden;
+enum __codecvt_result __libio_codecvt_in (struct _IO_codecvt *,
+					  __mbstate_t *,
+					  const char *, const char *,
+					  const char **, wchar_t *,
+					  wchar_t *, wchar_t **)
+  attribute_hidden;
+int __libio_codecvt_encoding (struct _IO_codecvt *) attribute_hidden;
+int __libio_codecvt_length (struct _IO_codecvt *, __mbstate_t *,
+			    const char *, const char *, size_t)
+  attribute_hidden;
 
 #endif /* libioP.h.  */

@@ -1,5 +1,5 @@
 /* Declarations of internal pthread functions used by libc.  Hurd version.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _PTHREADP_H
 #define _PTHREADP_H	1
@@ -29,6 +29,8 @@ extern struct __pthread **__pthread_threads;
 
 extern int _pthread_mutex_init (pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
 extern int __pthread_mutex_lock (pthread_mutex_t *__mutex);
+extern int __pthread_mutex_timedlock (pthread_mutex_t *__mutex,
+     const struct timespec *__abstime);
 extern int __pthread_mutex_unlock (pthread_mutex_t *__mutex);
 
 extern int __pthread_cond_broadcast (pthread_cond_t *cond);
@@ -45,6 +47,7 @@ int __pthread_create (pthread_t *newthread,
 void __cthread_detach (__cthread_t);
 int __pthread_detach (pthread_t __threadp);
 void __pthread_exit (void *value) __attribute__ ((__noreturn__));
+int __pthread_join (pthread_t, void **);
 int __cthread_keycreate (__cthread_key_t *);
 int __cthread_getspecific (__cthread_key_t, void **);
 int __cthread_setspecific (__cthread_key_t, void *);
@@ -64,11 +67,17 @@ int __pthread_attr_setstacksize (pthread_attr_t *__attr, size_t __stacksize);
 int __pthread_attr_setstack (pthread_attr_t *__attr, void *__stackaddr,
 			     size_t __stacksize);
 int __pthread_attr_getstack (const pthread_attr_t *, void **, size_t *);
-struct __pthread_cancelation_handler **___pthread_get_cleanup_stack (void);
+struct __pthread_cancelation_handler **___pthread_get_cleanup_stack (void) attribute_hidden;
 
 #if IS_IN (libpthread)
 hidden_proto (__pthread_key_create)
+hidden_proto (__pthread_getspecific)
+hidden_proto (__pthread_setspecific)
 hidden_proto (_pthread_mutex_init)
 #endif
+
+#define ASSERT_TYPE_SIZE(type, size) 					\
+  _Static_assert (sizeof (type) == size,				\
+		  "sizeof (" #type ") != " #size)
 
 #endif	/* pthreadP.h */

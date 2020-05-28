@@ -1,5 +1,5 @@
 /* Test re.translate != NULL.
-   Copyright (C) 2004-2018 Free Software Foundation, Inc.
+   Copyright (C) 2004-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>, 2004.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <ctype.h>
 #include <locale.h>
@@ -99,8 +99,8 @@ main (void)
   s = re_compile_pattern ("[[:DIGIT:]]", 11, &re);
   if (s == NULL)
     {
-      printf ("compilation of \"[[:DIGIT:]]\" pattern unexpectedly succeeded: %s\n",
-	      s);
+      puts ("compilation of \"[[:DIGIT:]]\" pattern unexpectedly succeeded: "
+	    "length 11");
       result = 1;
     }
 
@@ -109,8 +109,8 @@ main (void)
   s = re_compile_pattern ("[[:DIGIT:]]", 2, &re);
   if (s == NULL)
     {
-      printf ("compilation of \"[[:DIGIT:]]\" pattern unexpectedly succeeded: %s\n",
-	      s);
+      puts ("compilation of \"[[:DIGIT:]]\" pattern unexpectedly succeeded: "
+	    "length 2");
       result = 1;
     }
 

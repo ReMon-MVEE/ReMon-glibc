@@ -1,7 +1,7 @@
 ! SPARC v9 64-bit VIS3 __mpn_add_n -- Add two limb vectors of the same length > 0 and
 ! store sum in a third limb vector.
 !
-! Copyright (C) 2013-2018 Free Software Foundation, Inc.
+! Copyright (C) 2013-2020 Free Software Foundation, Inc.
 ! This file is part of the GNU C Library.
 ! Contributed by David S. Miller <davem@davemloft.net>
 !
@@ -17,7 +17,7 @@
 !
 ! You should have received a copy of the GNU Lesser General Public
 ! License along with the GNU C Library; if not, see
-! <http://www.gnu.org/licenses/>.
+! <https://www.gnu.org/licenses/>.
 
 #include <sysdep.h>
 

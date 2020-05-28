@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,9 +13,8 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
-#include <errno.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 
@@ -27,15 +26,7 @@
 pid_t
 __wait3 (int *stat_loc, int options, struct rusage *usage)
 {
-  if ((options & ~(WNOHANG|WUNTRACED)) != 0)
-    {
-      __set_errno (EINVAL);
-      return (pid_t) -1;
-    }
-
-  __set_errno (ENOSYS);
-  return (pid_t) -1;
+  return __wait4 (WAIT_ANY, stat_loc, options, usage);
 }
-stub_warning (wait3)
 
 weak_alias (__wait3, wait3)

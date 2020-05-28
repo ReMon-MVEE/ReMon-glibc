@@ -1,5 +1,5 @@
 /* Helper macros for type generic function implementations within libm.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _MATH_TYPE_MACROS
 #define _MATH_TYPE_MACROS
@@ -40,7 +40,11 @@
 
   declare_mgen_alias_r(from,to)
       This exposes the appropriate symbol(s) for a
-      function f_r of type FLOAT.  */
+      function f_r of type FLOAT.
+
+  SET_NAN_PAYLOAD(flt, mant)
+      Set the NaN payload bits of the variable FLT of type FLOAT to
+      the mantissa MANT.  */
 
 #ifndef M_PFX
 # error "M_PFX must be defined."
@@ -66,6 +70,24 @@
 #ifndef declare_mgen_alias_r
 # error "declare_mgen_alias_r must be defined."
 #endif
+#ifndef SET_NAN_PAYLOAD
+# error "SET_NAN_PAYLOAD must be defined."
+#endif
+
+#ifndef declare_mgen_finite_alias_x
+#define declare_mgen_finite_alias_x(from, to)   \
+  libm_alias_finite (from, to)
+#endif
+
+#ifndef declare_mgen_finite_alias_s
+# define declare_mgen_finite_alias_s(from,to)	\
+  declare_mgen_finite_alias_x (from, to)
+#endif
+
+#ifndef declare_mgen_finite_alias
+# define declare_mgen_finite_alias(from, to)	\
+  declare_mgen_finite_alias_s (M_SUF (from), M_SUF (to))
+#endif
 
 #define __M_CONCAT(a,b) a ## b
 #define __M_CONCATX(a,b) __M_CONCAT(a,b)
@@ -79,7 +101,7 @@
 #define M_HUGE_VAL (M_SUF (__builtin_huge_val) ())
 
 /* Helper macros for commonly used functions.  */
-#define M_COPYSIGN M_SUF (__copysign)
+#define M_COPYSIGN M_SUF (copysign)
 #define M_FABS M_SUF (fabs)
 #define M_SINCOS M_SUF (__sincos)
 #define M_SCALBN M_SUF (__scalbn)
@@ -95,6 +117,7 @@
 
 /* Needed to evaluate M_MANT_DIG below.  */
 #include <float.h>
+#include <libm-alias-finite.h>
 
 /* Use a special epsilon value for IBM long double
    to avoid spurious overflows/underflows.  */

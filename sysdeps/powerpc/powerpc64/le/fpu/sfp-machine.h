@@ -6,7 +6,7 @@
 typedef int TItype __attribute__ ((mode (TI)));
 typedef unsigned int UTItype __attribute__ ((mode (TI)));
 
-#define TI_BITS (__CHAR_BIT__ * (int)sizeof(TItype))
+#define TI_BITS (__CHAR_BIT__ * (int) sizeof (TItype))
 
 /* The type of the result of a floating point comparison.  This must
    match `__libgcc_cmp_return__' in GCC for the target.  */
@@ -107,8 +107,7 @@ void __sfp_handle_exceptions (int);
 
 #define FP_INIT_ROUNDMODE			\
   do {						\
-    __asm__ __volatile__ ("mffs %0"		\
-			  : "=f" (_fpscr.d));	\
+    _fpscr.d = __builtin_mffs ();		\
   } while (0)
 
 # define FP_ROUNDMODE	(_fpscr.i & FP_RND_MASK)

@@ -1,5 +1,5 @@
 /* Generic test case for CPU affinity functions.
-   Copyright (C) 2015-2018 Free Software Foundation, Inc.
+   Copyright (C) 2015-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This file is included by the tst-affinity*.c files to test the two
    variants of the functions, under different conditions.  The
@@ -189,6 +189,18 @@ test_size (const struct conf *conf, size_t size)
 	  printf ("error: Unexpected CPU %d, expected %d\n", active_cpu, cpu);
 	  return false;
 	}
+      unsigned int numa_cpu, numa_node;
+      if (getcpu (&numa_cpu, &numa_node) != 0)
+	{
+	  printf ("error: getcpu: %m\n");
+	  return false;
+	}
+      if ((unsigned int) active_cpu != numa_cpu)
+	{
+	  printf ("error: Unexpected CPU %d, expected %d\n",
+		  active_cpu, numa_cpu);
+	  return false;
+	}
       if (getaffinity (kernel_size, set2) < 0)
 	{
 	  printf ("error: size %zu: getaffinity (2): %m\n", size);
@@ -252,6 +264,11 @@ do_test (void)
 
   struct conf conf;
   setup_conf (&conf);
+  /* Note: The CPU set size in bits can be less than the CPU count
+     (and the maximum test CPU) because the userspace interface rounds
+     up the bit count, and the rounded-up buffer size is passed into
+     the kernel.  The kernel does not know that some of the buffer are
+     actually padding, and writes data there.  */
   printf ("info: Detected CPU set size (in bits): %d\n", conf.set_size);
   printf ("info: Maximum test CPU: %d\n", conf.last_cpu);
   if (conf.set_size < 0 || conf.last_cpu < 0)

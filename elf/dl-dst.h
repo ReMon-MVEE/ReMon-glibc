@@ -1,5 +1,5 @@
 /* Handling of dynamic sring tokens.
-   Copyright (C) 1999-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,22 +14,9 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include "trusted-dirs.h"
-
-/* Determine the number of DST elements in the name.  Only if IS_PATH is
-   nonzero paths are recognized (i.e., multiple, ':' separated filenames).  */
-#define DL_DST_COUNT(name) \
-  ({									      \
-    size_t __cnt = 0;							      \
-    const char *__sf = strchr (name, '$');				      \
-									      \
-    if (__glibc_unlikely (__sf != NULL))				      \
-      __cnt = _dl_dst_count (__sf);					      \
-									      \
-    __cnt; })
-
 
 #ifdef SHARED
 # define IS_RTLD(l) (l) == &GL(dl_rtld_map)

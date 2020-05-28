@@ -1,5 +1,5 @@
 /* Round a 64-bit floating point value to the nearest integer.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,30 +14,16 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
+#define NO_MATH_REDIRECT
 #include <math.h>
 #include <libm-alias-double.h>
+#include <round_to_integer.h>
 
 double
 __rint (double x)
 {
-  static const float TWO52 = 4503599627370496.0;
-
-  if (fabs (x) < TWO52)
-    {
-      if (x > 0.0)
-	{
-	  x += TWO52;
-	  x -= TWO52;
-	}
-      else if (x < 0.0)
-	{
-	  x = TWO52 - x;
-	  x = -(x - TWO52);
-	}
-    }
-
-  return x;
+  return round_to_integer_double (RINT, x);
 }
 libm_alias_double (__rint, rint)

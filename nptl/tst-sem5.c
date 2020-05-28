@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
@@ -14,80 +14,50 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <semaphore.h>
-#include <stdio.h>
 #include <time.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <support/check.h>
+#include <support/timespec.h>
+#include <support/xtime.h>
 
+/* A bogus clock value that tells run_test to use sem_timedwait rather than
+   sem_clockwait.  */
+#define CLOCK_USE_TIMEDWAIT (-1)
 
-static int
-do_test (void)
+static void
+do_test_clock (clockid_t clockid)
 {
+  const clockid_t clockid_for_get =
+    clockid == CLOCK_USE_TIMEDWAIT ? CLOCK_REALTIME : clockid;
   sem_t s;
   struct timespec ts;
-  struct timeval tv;
 
-  if (sem_init (&s, 0, 1) == -1)
-    {
-      puts ("sem_init failed");
-      return 1;
-    }
-
-  if (TEMP_FAILURE_RETRY (sem_wait (&s)) == -1)
-    {
-      puts ("sem_wait failed");
-      return 1;
-    }
-
-  if (gettimeofday (&tv, NULL) != 0)
-    {
-      puts ("gettimeofday failed");
-      return 1;
-    }
-
-  TIMEVAL_TO_TIMESPEC (&tv, &ts);
+  TEST_COMPARE (sem_init (&s, 0, 1), 0);
+  TEST_COMPARE (TEMP_FAILURE_RETRY (sem_wait (&s)), 0);
 
   /* We wait for half a second.  */
-  ts.tv_nsec += 500000000;
-  if (ts.tv_nsec >= 1000000000)
-    {
-      ++ts.tv_sec;
-      ts.tv_nsec -= 1000000000;
-    }
+  xclock_gettime (clockid_for_get, &ts);
+  ts = timespec_add (ts, make_timespec (0, TIMESPEC_HZ/2));
 
   errno = 0;
-  if (TEMP_FAILURE_RETRY (sem_timedwait (&s, &ts)) != -1)
-    {
-      puts ("sem_timedwait succeeded");
-      return 1;
-    }
-  if (errno != ETIMEDOUT)
-    {
-      printf ("sem_timedwait return errno = %d instead of ETIMEDOUT\n",
-	      errno);
-      return 1;
-    }
+  TEST_COMPARE (TEMP_FAILURE_RETRY ((clockid == CLOCK_USE_TIMEDWAIT)
+                                    ? sem_timedwait (&s, &ts)
+                                    : sem_clockwait (&s, clockid, &ts)), -1);
+  TEST_COMPARE (errno, ETIMEDOUT);
+  TEST_TIMESPEC_NOW_OR_AFTER (clockid_for_get, ts);
+}
 
-  struct timespec ts2;
-  if (clock_gettime (CLOCK_REALTIME, &ts2) != 0)
-    {
-      puts ("clock_gettime failed");
-      return 1;
-    }
-
-  if (ts2.tv_sec < ts.tv_sec
-      || (ts2.tv_sec == ts.tv_sec && ts2.tv_nsec < ts.tv_nsec))
-    {
-      puts ("timeout too short");
-      return 1;
-    }
-
+static int do_test (void)
+{
+  do_test_clock (CLOCK_USE_TIMEDWAIT);
+  do_test_clock (CLOCK_REALTIME);
+  do_test_clock (CLOCK_MONOTONIC);
   return 0;
 }
 
-#define TEST_FUNCTION do_test ()
-#include "../test-skeleton.c"
+#include <support/test-driver.c>

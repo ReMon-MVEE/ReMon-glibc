@@ -1,5 +1,5 @@
 /* Utilities for reading/writing fstab, mtab, etc.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,10 +14,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <alloca.h>
 #include <mntent.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdio_ext.h>
 #include <string.h>
@@ -112,26 +113,18 @@ decode_name (char *buf)
   return buf;
 }
 
-
-/* Read one mount table entry from STREAM.  Returns a pointer to storage
-   reused on the next call, or null for EOF or error (use feof/ferror to
-   check).  */
-struct mntent *
-__getmntent_r (FILE *stream, struct mntent *mp, char *buffer, int bufsiz)
+static bool
+get_mnt_entry (FILE *stream, struct mntent *mp, char *buffer, int bufsiz)
 {
   char *cp;
   char *head;
 
-  flockfile (stream);
   do
     {
       char *end_ptr;
 
       if (__fgets_unlocked (buffer, bufsiz, stream) == NULL)
-	{
-	  funlockfile (stream);
-	  return NULL;
-	}
+	  return false;
 
       end_ptr = strchr (buffer, '\n');
       if (end_ptr != NULL)	/* chop newline */
@@ -174,14 +167,47 @@ __getmntent_r (FILE *stream, struct mntent *mp, char *buffer, int bufsiz)
     {
     case 0:
       mp->mnt_freq = 0;
+      /* Fall through.  */
     case 1:
       mp->mnt_passno = 0;
+      /* Fall through.  */
     case 2:
       break;
     }
+
+  return true;
+}
+
+/* Read one mount table entry from STREAM.  Returns a pointer to storage
+   reused on the next call, or null for EOF or error (use feof/ferror to
+   check).  */
+struct mntent *
+__getmntent_r (FILE *stream, struct mntent *mp, char *buffer, int bufsiz)
+{
+  struct mntent *result;
+
+  flockfile (stream);
+  while (true)
+    if (get_mnt_entry (stream, mp, buffer, bufsiz))
+      {
+	/* If the file system is autofs look for a mount option hint
+	   ("ignore") to skip the entry.  */
+	if (strcmp (mp->mnt_type, "autofs") == 0 && __hasmntopt (mp, "ignore"))
+	  memset (mp, 0, sizeof (*mp));
+	else
+	  {
+	    result = mp;
+	    break;
+	  }
+      }
+    else
+      {
+	result = NULL;
+	break;
+      }
   funlockfile (stream);
 
-  return mp;
+  return result;
 }
 libc_hidden_def (__getmntent_r)
 weak_alias (__getmntent_r, getmntent_r)

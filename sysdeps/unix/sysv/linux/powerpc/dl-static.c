@@ -1,5 +1,5 @@
 /* Variable initialization.  PowerPC version.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <ldsodefs.h>
 
@@ -26,17 +26,29 @@ _dl_var_init (void *array[])
   /* It has to match "variables" below. */
   enum
     {
-      DL_PAGESIZE = 0
+      DL_PAGESIZE = 0,
+      DL_AUXV = 1,
+      DL_HWCAP = 2,
+      DL_HWCAP2 = 3,
+      DL_CACHE_LINE_SIZE = 4
     };
 
   GLRO(dl_pagesize) = *((size_t *) array[DL_PAGESIZE]);
+  GLRO(dl_auxv) = (ElfW(auxv_t) *) *((size_t *) array[DL_AUXV]);
+  GLRO(dl_hwcap)  = *((unsigned long int *) array[DL_HWCAP]);
+  GLRO(dl_hwcap2) = *((unsigned long int *) array[DL_HWCAP2]);
+  GLRO(dl_cache_line_size) = (int) *((int *) array[DL_CACHE_LINE_SIZE]);
 }
 
 #else
 
 static void *variables[] =
 {
-  &GLRO(dl_pagesize)
+  &GLRO(dl_pagesize),
+  &GLRO(dl_auxv),
+  &GLRO(dl_hwcap),
+  &GLRO(dl_hwcap2),
+  &GLRO(dl_cache_line_size)
 };
 
 static void

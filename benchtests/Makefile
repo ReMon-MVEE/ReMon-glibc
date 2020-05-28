@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2018 Free Software Foundation, Inc.
+# Copyright (C) 2013-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 # Makefile for benchmark tests.  The only useful target here is `bench`.
 # Add benchmark functions in alphabetical order.
@@ -24,7 +24,7 @@ include ../Makeconfig
 bench-math := acos acosh asin asinh atan atanh cos cosh exp exp2 log log2 \
 	      modf pow rint sin sincos sinh sqrt tan tanh fmin fmax fminf \
 	      fmaxf powf trunc truncf expf exp2f logf log2f sincosf sinf \
-	      cosf
+	      cosf isnan isinf isfinite hypot logb logbf
 
 bench-pthread := pthread_once thread_create
 
@@ -37,7 +37,7 @@ bench := $(foreach B,$(filter bench-%,${BENCHSET}), ${${B}})
 endif
 
 # String function benchmarks.
-string-benchset := bcopy bzero memccpy memchr memcmp memcpy memmem memmove \
+string-benchset := memccpy memchr memcmp memcpy memmem memmove \
 		   mempcpy memset rawmemchr stpcpy stpncpy strcasecmp strcasestr \
 		   strcat strchr strchrnul strcmp strcpy strcspn strlen \
 		   strncasecmp strncat strncmp strncpy strnlen strpbrk strrchr \
@@ -88,9 +88,12 @@ CFLAGS-bench-fmax.c += -fno-builtin
 CFLAGS-bench-fmaxf.c += -fno-builtin
 CFLAGS-bench-trunc.c += -fno-builtin
 CFLAGS-bench-truncf.c += -fno-builtin
+CFLAGS-bench-isnan.c += -fsignaling-nans
+CFLAGS-bench-isinf.c += -fsignaling-nans
+CFLAGS-bench-isfinite.c += -fsignaling-nans
 
 ifeq (${BENCHSET},)
-bench-malloc := malloc-thread
+bench-malloc := malloc-thread malloc-simple
 else
 bench-malloc := $(filter malloc-%,${BENCHSET})
 endif
@@ -98,7 +101,7 @@ endif
 $(addprefix $(objpfx)bench-,$(bench-math)): $(libm)
 $(addprefix $(objpfx)bench-,$(math-benchset)): $(libm)
 $(addprefix $(objpfx)bench-,$(bench-pthread)): $(shared-thread-library)
-$(objpfx)bench-malloc-thread: $(shared-thread-library)
+$(addprefix $(objpfx)bench-,$(bench-malloc)): $(shared-thread-library)
 
 
 
@@ -120,17 +123,17 @@ binaries-bench := $(addprefix $(objpfx)bench-,$(bench))
 binaries-benchset := $(addprefix $(objpfx)bench-,$(benchset))
 binaries-bench-malloc := $(addprefix $(objpfx)bench-,$(bench-malloc))
 
-# The default duration: 10 seconds.
+# The default duration: 1 seconds.
 ifndef BENCH_DURATION
-BENCH_DURATION := 10
+BENCH_DURATION := 1
 endif
 
 CPPFLAGS-nonlib += -DDURATION=$(BENCH_DURATION) -D_ISOMAC
 
-# Use clock_gettime to measure performance of functions.  The default is to use
-# HP_TIMING if it is available.
-ifdef USE_CLOCK_GETTIME
-CPPFLAGS-nonlib += -DUSE_CLOCK_GETTIME
+# On x86 processors, use RDTSCP, instead of RDTSC, to measure performance
+# of functions.  All x86 processors since 2010 support RDTSCP instruction.
+ifdef USE_RDTSCP
+CPPFLAGS-nonlib += -DUSE_RDTSCP
 endif
 
 DETAILED_OPT :=
@@ -165,7 +168,7 @@ bench-clean:
 ifneq ($(strip ${BENCHSET}),)
 VALIDBENCHSETNAMES := bench-pthread bench-math bench-string string-benchset \
    wcsmbs-benchset stdlib-benchset stdio-common-benchset math-benchset \
-   malloc-thread
+   malloc-thread malloc-simple
 INVALIDBENCHSETNAMES := $(filter-out ${VALIDBENCHSETNAMES},${BENCHSET})
 ifneq (${INVALIDBENCHSETNAMES},)
 $(info The following values in BENCHSET are invalid: ${INVALIDBENCHSETNAMES})
@@ -174,14 +177,7 @@ $(error Invalid BENCHSET value)
 endif
 endif
 
-# Define the bench target only if the target has a usable python installation.
-ifdef PYTHON
 bench: bench-build bench-set bench-func bench-malloc
-else
-bench:
-	@echo "The bench target needs python to run."
-	@exit 1
-endif
 
 # Target to only build the benchmark without running it.  We generate locales
 # only if we're building natively.
@@ -201,10 +197,18 @@ bench-set: $(binaries-benchset)
 
 bench-malloc: $(binaries-bench-malloc)
 	for run in $^; do \
+	  echo "$${run}"; \
+	  if [ `basename $${run}` = "bench-malloc-thread" ]; then \
 		for thr in 1 8 16 32; do \
 			echo "Running $${run} $${thr}"; \
-	  $(run-bench) $${thr} > $${run}-$${thr}.out; \
-	  done;\
+			$(run-bench) $${thr} > $${run}-$${thr}.out; \
+		done;\
+	  else \
+		for thr in 8 16 32 64 128 256 512 1024 2048 4096; do \
+		  echo "Running $${run} $${thr}"; \
+		  $(run-bench) $${thr} > $${run}-$${thr}.out; \
+		done;\
+	  fi;\
 	done
 
 # Build and execute the benchmark functions.  This target generates JSON
@@ -213,7 +217,10 @@ bench-malloc: $(binaries-bench-malloc)
 # capable language or tool.
 bench-func: $(binaries-bench)
 	if [ -n '$^' ] ; then \
-	{ timing_type=$$($(timing-type)); \
+	{ timing_type=$$($(test-wrapper-env) \
+			 $(run-program-env) \
+			 $(test-via-rtld-prefix) \
+			 $(timing-type)); \
 	  echo "{\"timing_type\": \"$${timing_type}\","; \
 	  echo " \"functions\": {"; \
 	  for run in $^; do \
@@ -235,12 +242,20 @@ bench-func: $(binaries-bench)
 	  scripts/benchout.schema.json; \
 	fi
 
-$(timing-type) $(binaries-bench) $(binaries-benchset) \
-	$(binaries-bench-malloc): %: %.o $(objpfx)json-lib.o \
+ifeq ($(bind-now),yes)
+link-bench-bind-now = -Wl,-z,now
+endif
+
+bench-link-targets = $(timing-type) $(binaries-bench) $(binaries-benchset) \
+	$(binaries-bench-malloc)
+
+$(bench-link-targets): %: %.o $(objpfx)json-lib.o \
 	$(link-extra-libs-tests) \
   $(sort $(filter $(common-objpfx)lib%,$(link-libc))) \
   $(addprefix $(csu-objpfx),start.o) $(+preinit) $(+postinit)
 	$(+link-tests)
+
+$(bench-link-targets): LDFLAGS += $(link-bench-bind-now)
 
 $(objpfx)bench-%.c: %-inputs $(bench-deps)
 	{ if [ -n "$($*-INCLUDE)" ]; then \

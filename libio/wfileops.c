@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Ulrich Drepper <drepper@cygnus.com>.
    Based on the single byte version by Per Bothner <bothner@cygnus.com>.
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -72,11 +72,11 @@ _IO_wdo_write (FILE *fp, const wchar_t *data, size_t to_do)
 	    }
 
 	  /* Now convert from the internal format into the external buffer.  */
-	  result = (*cc->__codecvt_do_out) (cc, &fp->_wide_data->_IO_state,
-					    data, data + to_do, &new_data,
-					    write_ptr,
-					    buf_end,
-					    &write_ptr);
+	  result = __libio_codecvt_out (cc, &fp->_wide_data->_IO_state,
+					data, data + to_do, &new_data,
+					write_ptr,
+					buf_end,
+					&write_ptr);
 
 	  /* Write out what we produced so far.  */
 	  if (_IO_new_do_write (fp, write_base, write_ptr - write_base) == EOF)
@@ -140,12 +140,12 @@ _IO_wfile_underflow (FILE *fp)
       fp->_wide_data->_IO_last_state = fp->_wide_data->_IO_state;
       fp->_wide_data->_IO_read_base = fp->_wide_data->_IO_read_ptr =
 	fp->_wide_data->_IO_buf_base;
-      status = (*cd->__codecvt_do_in) (cd, &fp->_wide_data->_IO_state,
-				       fp->_IO_read_ptr, fp->_IO_read_end,
-				       &read_stop,
-				       fp->_wide_data->_IO_read_ptr,
-				       fp->_wide_data->_IO_buf_end,
-				       &fp->_wide_data->_IO_read_end);
+      status = __libio_codecvt_in (cd, &fp->_wide_data->_IO_state,
+				   fp->_IO_read_ptr, fp->_IO_read_end,
+				   &read_stop,
+				   fp->_wide_data->_IO_read_ptr,
+				   fp->_wide_data->_IO_buf_end,
+				   &fp->_wide_data->_IO_read_end);
 
       fp->_IO_read_base = fp->_IO_read_ptr;
       fp->_IO_read_ptr = (char *) read_stop;
@@ -208,13 +208,13 @@ _IO_wfile_underflow (FILE *fp)
 	 traditional Unix systems did this for stdout.  stderr better
 	 not be line buffered.  So we do just that here
 	 explicitly.  --drepper */
-      _IO_acquire_lock (_IO_stdout);
+      _IO_acquire_lock (stdout);
 
-      if ((_IO_stdout->_flags & (_IO_LINKED | _IO_NO_WRITES | _IO_LINE_BUF))
+      if ((stdout->_flags & (_IO_LINKED | _IO_NO_WRITES | _IO_LINE_BUF))
 	  == (_IO_LINKED | _IO_LINE_BUF))
-	_IO_OVERFLOW (_IO_stdout, EOF);
+	_IO_OVERFLOW (stdout, EOF);
 
-      _IO_release_lock (_IO_stdout);
+      _IO_release_lock (stdout);
     }
 
   _IO_switch_to_get_mode (fp);
@@ -266,11 +266,11 @@ _IO_wfile_underflow (FILE *fp)
       naccbuf += to_copy;
       from = accbuf;
     }
-  status = (*cd->__codecvt_do_in) (cd, &fp->_wide_data->_IO_state,
-				   from, to, &read_ptr_copy,
-				   fp->_wide_data->_IO_read_end,
-				   fp->_wide_data->_IO_buf_end,
-				   &fp->_wide_data->_IO_read_end);
+  status = __libio_codecvt_in (cd, &fp->_wide_data->_IO_state,
+			       from, to, &read_ptr_copy,
+			       fp->_wide_data->_IO_read_end,
+			       fp->_wide_data->_IO_buf_end,
+			       &fp->_wide_data->_IO_read_end);
 
   if (__glibc_unlikely (naccbuf != 0))
     fp->_IO_read_ptr += MAX (0, read_ptr_copy - &accbuf[naccbuf - to_copy]);
@@ -372,12 +372,12 @@ _IO_wfile_underflow_mmap (FILE *fp)
   fp->_wide_data->_IO_last_state = fp->_wide_data->_IO_state;
   fp->_wide_data->_IO_read_base = fp->_wide_data->_IO_read_ptr =
     fp->_wide_data->_IO_buf_base;
-  (*cd->__codecvt_do_in) (cd, &fp->_wide_data->_IO_state,
-			  fp->_IO_read_ptr, fp->_IO_read_end,
-			  &read_stop,
-			  fp->_wide_data->_IO_read_ptr,
-			  fp->_wide_data->_IO_buf_end,
-			  &fp->_wide_data->_IO_read_end);
+  __libio_codecvt_in (cd, &fp->_wide_data->_IO_state,
+		      fp->_IO_read_ptr, fp->_IO_read_end,
+		      &read_stop,
+		      fp->_wide_data->_IO_read_ptr,
+		      fp->_wide_data->_IO_buf_end,
+		      &fp->_wide_data->_IO_read_end);
 
   fp->_IO_read_ptr = (char *) read_stop;
 
@@ -495,7 +495,7 @@ _IO_wfile_sync (FILE *fp)
       struct _IO_codecvt *cv = fp->_codecvt;
       off64_t new_pos;
 
-      int clen = (*cv->__codecvt_do_encoding) (cv);
+      int clen = __libio_codecvt_encoding (cv);
 
       if (clen > 0)
 	/* It is easy, a fixed number of input bytes are used for each
@@ -508,11 +508,12 @@ _IO_wfile_sync (FILE *fp)
 	     generate the wide characters up to the current reading
 	     position.  */
 	  int nread;
-
+	  size_t wnread = (fp->_wide_data->_IO_read_ptr
+			   - fp->_wide_data->_IO_read_base);
 	  fp->_wide_data->_IO_state = fp->_wide_data->_IO_last_state;
-	  nread = (*cv->__codecvt_do_length) (cv, &fp->_wide_data->_IO_state,
-					      fp->_IO_read_base,
-					      fp->_IO_read_end, delta);
+	  nread = __libio_codecvt_length (cv, &fp->_wide_data->_IO_state,
+					  fp->_IO_read_base,
+					  fp->_IO_read_end, wnread);
 	  fp->_IO_read_ptr = fp->_IO_read_base + nread;
 	  delta = -(fp->_IO_read_end - fp->_IO_read_base - nread);
 	}
@@ -547,7 +548,7 @@ adjust_wide_data (FILE *fp, bool do_convert)
 {
   struct _IO_codecvt *cv = fp->_codecvt;
 
-  int clen = (*cv->__codecvt_do_encoding) (cv);
+  int clen = __libio_codecvt_encoding (cv);
 
   /* Take the easy way out for constant length encodings if we don't need to
      convert.  */
@@ -564,12 +565,12 @@ adjust_wide_data (FILE *fp, bool do_convert)
     {
 
       fp->_wide_data->_IO_last_state = fp->_wide_data->_IO_state;
-      status = (*cv->__codecvt_do_in) (cv, &fp->_wide_data->_IO_state,
-				       fp->_IO_read_base, fp->_IO_read_ptr,
-				       &read_stop,
-				       fp->_wide_data->_IO_read_base,
-				       fp->_wide_data->_IO_buf_end,
-				       &fp->_wide_data->_IO_read_end);
+      status = __libio_codecvt_in (cv, &fp->_wide_data->_IO_state,
+				   fp->_IO_read_base, fp->_IO_read_ptr,
+				   &read_stop,
+				   fp->_wide_data->_IO_read_base,
+				   fp->_wide_data->_IO_buf_end,
+				   &fp->_wide_data->_IO_read_end);
 
       /* Should we return EILSEQ?  */
       if (__glibc_unlikely (status == __codecvt_error))
@@ -647,7 +648,7 @@ do_ftell_wide (FILE *fp)
 	}
 
       struct _IO_codecvt *cv = fp->_codecvt;
-      int clen = (*cv->__codecvt_do_encoding) (cv);
+      int clen = __libio_codecvt_encoding (cv);
 
       if (!unflushed_writes)
 	{
@@ -662,9 +663,9 @@ do_ftell_wide (FILE *fp)
 
 	      size_t delta = wide_read_ptr - wide_read_base;
 	      __mbstate_t state = fp->_wide_data->_IO_last_state;
-	      nread = (*cv->__codecvt_do_length) (cv, &state,
-						  fp->_IO_read_base,
-						  fp->_IO_read_end, delta);
+	      nread = __libio_codecvt_length (cv, &state,
+					      fp->_IO_read_base,
+					      fp->_IO_read_end, delta);
 	      offset -= fp->_IO_read_end - fp->_IO_read_base - nread;
 	    }
 	}
@@ -687,9 +688,8 @@ do_ftell_wide (FILE *fp)
 	      enum __codecvt_result status;
 
 	      __mbstate_t state = fp->_wide_data->_IO_last_state;
-	      status = (*cv->__codecvt_do_out) (cv, &state,
-						in, in + delta, &in,
-						out, out + outsize, &outstop);
+	      status = __libio_codecvt_out (cv, &state, in, in + delta, &in,
+					    out, out + outsize, &outstop);
 
 	      /* We don't check for __codecvt_partial because it can be
 		 returned on one of two conditions: either the output
@@ -800,7 +800,7 @@ _IO_wfile_seekoff (FILE *fp, off64_t offset, int dir, int mode)
 	 find out which position in the external buffer corresponds to
 	 the current position in the internal buffer.  */
       cv = fp->_codecvt;
-      clen = (*cv->__codecvt_do_encoding) (cv);
+      clen = __libio_codecvt_encoding (cv);
 
       if (mode != 0 || !was_writing)
 	{
@@ -818,10 +818,10 @@ _IO_wfile_seekoff (FILE *fp, off64_t offset, int dir, int mode)
 	      delta = (fp->_wide_data->_IO_read_ptr
 		       - fp->_wide_data->_IO_read_base);
 	      fp->_wide_data->_IO_state = fp->_wide_data->_IO_last_state;
-	      nread = (*cv->__codecvt_do_length) (cv,
-						  &fp->_wide_data->_IO_state,
-						  fp->_IO_read_base,
-						  fp->_IO_read_end, delta);
+	      nread = __libio_codecvt_length (cv,
+					      &fp->_wide_data->_IO_state,
+					      fp->_IO_read_base,
+					      fp->_IO_read_end, delta);
 	      fp->_IO_read_ptr = fp->_IO_read_base + nread;
 	      fp->_wide_data->_IO_read_end = fp->_wide_data->_IO_read_ptr;
 	      offset -= fp->_IO_read_end - fp->_IO_read_base - nread;

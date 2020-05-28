@@ -1,5 +1,5 @@
 /* Linux implementation for renameat function.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -22,7 +22,7 @@
 #include <errno.h>
 
 int
-renameat (int oldfd, const char *old, int newfd, const char *new)
+__renameat (int oldfd, const char *old, int newfd, const char *new)
 {
 #ifdef __NR_renameat
   return INLINE_SYSCALL_CALL (renameat, oldfd, old, newfd, new);
@@ -30,3 +30,5 @@ renameat (int oldfd, const char *old, int newfd, const char *new)
   return INLINE_SYSCALL_CALL (renameat2, oldfd, old, newfd, new, 0);
 #endif
 }
+libc_hidden_def (__renameat)
+weak_alias (__renameat, renameat)

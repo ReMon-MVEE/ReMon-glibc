@@ -1,5 +1,5 @@
 /* Entering namespaces for test case isolation.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef SUPPORT_NAMESPACE_H
 #define SUPPORT_NAMESPACE_H
@@ -74,6 +74,7 @@ struct support_chroot_configuration
   const char *resolv_conf;      /* /etc/resolv.conf.  */
   const char *hosts;            /* /etc/hosts.  */
   const char *host_conf;        /* /etc/host.conf.  */
+  const char *aliases;          /* /etc/aliases.  */
 };
 
 /* The result of the creation of a chroot.  */
@@ -90,6 +91,7 @@ struct support_chroot
   char *path_resolv_conf;       /* /etc/resolv.conf.  */
   char *path_hosts;             /* /etc/hosts.  */
   char *path_host_conf;         /* /etc/host.conf.  */
+  char *path_aliases;           /* /etc/aliases.  */
 };
 
 /* Create a chroot environment.  The returned data should be freed

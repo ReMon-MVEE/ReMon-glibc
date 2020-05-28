@@ -1,5 +1,5 @@
 /* logbf(). PowerPC32/POWER7 version.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,13 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
-
-#include <math.h>
-
-#undef weak_alias
-#define weak_alias(a, b)
+   <https://www.gnu.org/licenses/>.  */
 
 #define __logbf __logbf_power7
-
-#include <sysdeps/powerpc/power7/fpu/s_logbf.c>
+#include <sysdeps/powerpc/fpu/s_logbf.c>

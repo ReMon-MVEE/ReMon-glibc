@@ -1,5 +1,5 @@
 /* File tree walker functions.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -423,10 +423,12 @@ process_entry (struct ftw_data *data, struct dir_data *dir, const char *name,
 	result = -1;
       else if (data->flags & FTW_PHYS)
 	flag = FTW_NS;
-      else if (d_type == DT_LNK)
-	flag = FTW_SLN;
       else
 	{
+	  /* Old code left ST undefined for dangling DT_LNK without
+	     FTW_PHYS set; a clarification at the POSIX level suggests
+	     it should contain information about the link (ala lstat).
+	     We do our best to fill in what data we can.  */
 	  if (dir->streamfd != -1)
 	    statres = FXSTATAT (_STAT_VER, dir->streamfd, name, &st,
 				AT_SYMLINK_NOFOLLOW);

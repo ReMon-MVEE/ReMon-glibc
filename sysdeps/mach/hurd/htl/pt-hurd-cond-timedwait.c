@@ -1,5 +1,5 @@
 /* pthread_hurd_cond_timedwait_np.  Hurd-specific wait on a condition.
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,11 +14,12 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library;  if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <pthread.h>
 #include <assert.h>
 #include <hurd/signal.h>
+#include <time.h>
 
 #include <pt-internal.h>
 
@@ -69,7 +70,7 @@ __pthread_hurd_cond_timedwait_internal (pthread_cond_t *cond,
 
   assert (ss->intr_port == MACH_PORT_NULL);	/* Sanity check for signal bugs. */
 
-  if (abstime != NULL && (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000))
+  if (abstime != NULL && ! valid_nanoseconds (abstime->tv_nsec))
     return EINVAL;
 
   /* Atomically enqueue our thread on the condition variable's queue of

@@ -1,5 +1,5 @@
 /* Measure memcpy performance.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define MIN_PAGE_SIZE 131072
 #define TEST_MAIN
@@ -101,7 +101,7 @@ do_one_test (json_ctx_t *json_ctx, impl_t *impl, char *dst, char *src,
 	     copy_t *copy, size_t n)
 {
   timing_t start, stop, cur;
-  size_t iters = INNER_LOOP_ITERS * 20;
+  size_t iters = INNER_LOOP_ITERS_MEDIUM;
 
   TIMING_NOW (start);
   for (int i = 0; i < iters; ++i)

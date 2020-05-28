@@ -1,5 +1,5 @@
 /* SSE2 version of strlen/wcslen.
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
@@ -59,21 +59,21 @@ ENTRY(strlen)
 
 #ifdef AS_STRNLEN
 /* Do not read anything when n==0.  */
-	test	%rsi, %rsi
+	test	%RSI_LP, %RSI_LP
 	jne	L(n_nonzero)
 	xor	%rax, %rax
 	ret
 L(n_nonzero):
 # ifdef AS_WCSLEN
-	shlq	$2, %rsi
+	shl	$2, %RSI_LP
 # endif
 
 /* Initialize long lived registers.  */
 
-	add	%rdi, %rsi
-	mov	%rsi, %r10
-	and	$-64, %r10
-	mov	%rsi, %r11
+	add	%RDI_LP, %RSI_LP
+	mov	%RSI_LP, %R10_LP
+	and	$-64, %R10_LP
+	mov	%RSI_LP, %R11_LP
 #endif
 
 	pxor	%xmm0, %xmm0

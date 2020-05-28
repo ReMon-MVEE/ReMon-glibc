@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1993-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.
+   <https://www.gnu.org/licenses/>.
 
    As a special exception, if you link the code in this file with
    files compiled with a GNU compiler to produce an executable,
@@ -58,12 +58,7 @@ _IO_old_fclose (FILE *fp)
   _IO_FINISH (fp);
   if (_IO_have_backup (fp))
     _IO_free_backup_area (fp);
-  if (fp != _IO_stdin && fp != _IO_stdout && fp != _IO_stderr)
-    {
-      fp->_flags = 0;
-      free(fp);
-    }
-
+  _IO_deallocate_file (fp);
   return status;
 }
 

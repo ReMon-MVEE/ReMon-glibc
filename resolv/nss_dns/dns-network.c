@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Extended from original form by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Parts of this file are plain copies of the file `getnetnamadr.c' from
    the bind package and it has the following copyright.  */
@@ -344,9 +344,6 @@ getanswer_r (const querybuf *answer, int anslen, struct netent *result,
 
 	  n = -1;
 	}
-
-      if (n > 0 && bp[0] == '.')
-	bp[0] = '\0';
 
       if (n < 0 || res_dnok (bp) == 0)
 	break;

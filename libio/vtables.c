@@ -1,5 +1,5 @@
 /* libio vtable validation.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <dlfcn.h>
 #include <libioP.h>
@@ -71,3 +71,19 @@ _IO_vtable_check (void)
 
   __libc_fatal ("Fatal error: glibc detected an invalid stdio handle\n");
 }
+
+/* Some variants of libstdc++ interpose _IO_2_1_stdin_ etc. and
+   install their own vtables directly, without calling _IO_init or
+   other functions.  Detect this by looking at the vtables values
+   during startup, and disable vtable validation in this case.  */
+#ifdef SHARED
+__attribute__ ((constructor))
+static void
+check_stdfiles_vtables (void)
+{
+  if (_IO_2_1_stdin_.vtable != &_IO_file_jumps
+      || _IO_2_1_stdout_.vtable != &_IO_file_jumps
+      || _IO_2_1_stderr_.vtable != &_IO_file_jumps)
+    IO_set_accept_foreign_vtables (&_IO_vtable_check);
+}
+#endif

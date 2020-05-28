@@ -1,6 +1,6 @@
 /* Set flags signalling availability of kernel features based on given
    kernel version number.
-   Copyright (C) 1999-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,10 +15,15 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This file must not contain any C code.  At least it must be protected
    to allow using the file also in assembler files.  */
+
+#ifndef _LINUX_KERNEL_FEATURES_H
+#define _LINUX_KERNEL_FEATURES_H 1
+
+#include <bits/wordsize.h>
 
 #ifndef __LINUX_KERNEL_VERSION
 /* We assume the worst; all kernels should be supported.  */
@@ -37,17 +42,6 @@
    introduced.  If somebody cares these values can afterwards be
    corrected.  */
 
-/* The sendfile syscall was introduced in 2.2.0.  */
-#define __ASSUME_SENDFILE		1
-
-/* Some architectures use the socketcall multiplexer for some or all
-   socket-related operations instead of separate syscalls.
-   __ASSUME_SOCKETCALL is defined for such architectures.  */
-
-/* The changed st_ino field appeared in 2.4.0-test6.  However, SH is lame,
-   and still does not have a 64-bit inode field.  */
-#define __ASSUME_ST_INO_64_BIT		1
-
 /* The statfs64 syscalls are available in 2.5.74 (but not for alpha).  */
 #define __ASSUME_STATFS64	1
 
@@ -64,15 +58,9 @@
    configurations).  */
 #define __ASSUME_SET_ROBUST_LIST	1
 
-/* Support for private futexes was added in 2.6.22.  */
-#define __ASSUME_PRIVATE_FUTEX	1
-
 /* Support for various CLOEXEC and NONBLOCK flags was added in
    2.6.27.  */
 #define __ASSUME_IN_NONBLOCK	1
-
-/* Support for the FUTEX_CLOCK_REALTIME flag was added in 2.6.29.  */
-#define __ASSUME_FUTEX_CLOCK_REALTIME	1
 
 /* Support for preadv and pwritev was added in 2.6.30.  */
 #define __ASSUME_PREADV	1
@@ -97,11 +85,27 @@
 /* Support for SysV IPC through wired syscalls.  All supported architectures
    either support ipc syscall and/or all the ipc correspondent syscalls.  */
 #define __ASSUME_DIRECT_SYSVIPC_SYSCALLS	1
+/* The generic default __IPC_64 value is 0x0, however some architectures
+   require a different value of 0x100.  */
+#define __ASSUME_SYSVIPC_DEFAULT_IPC_64		1
+
+/* All supported architectures reserve a 32-bit for MODE field in sysvipc
+   ipc_perm.  However, some kernel ABI interfaces still expect a 16-bit
+   field.  This is only an issue if arch-defined IPC_PERM padding is on a
+   wrong position regarding endianness.  In this case, the IPC control
+   routines (msgctl, semctl, and semtctl) requires to shift the value to
+   correct place.
+   The ABIs that requires it define __ASSUME_SYSVIPC_BROKEN_MODE_T.  */
 
 /* Support for p{read,write}v2 was added in 4.6.  However Linux default
    implementation does not assume the __ASSUME_* and instead use a fallback
    implementation based on p{read,write}v and returning an error for
    non supported flags.  */
+
+/* Support for the renameat2 system call was added in kernel 3.15.  */
+#if __LINUX_KERNEL_VERSION >= 0x030F00
+# define __ASSUME_RENAMEAT2
+#endif
 
 /* Support for the execveat syscall was added in 3.19.  */
 #if __LINUX_KERNEL_VERSION >= 0x031300
@@ -112,8 +116,9 @@
 # define __ASSUME_MLOCK2 1
 #endif
 
-#if __LINUX_KERNEL_VERSION >= 0x040500
-# define __ASSUME_COPY_FILE_RANGE 1
+/* Support for statx was added in kernel 4.11.  */
+#if __LINUX_KERNEL_VERSION >= 0x040B00
+# define __ASSUME_STATX 1
 #endif
 
 /* Support for clone call used on fork.  The signature varies across the
@@ -150,3 +155,63 @@
    */
 
 #define __ASSUME_CLONE_DEFAULT 1
+
+/* Support for 64-bit time_t in the system call interface.  When this
+   flag is set, the kernel provides a version of each of these system
+   calls that accepts 64-bit time_t:
+
+     clock_adjtime(64)
+     clock_gettime(64)
+     clock_settime(64)
+     clock_getres(_time64)
+     clock_nanosleep(_time64)
+     futex(_time64)
+     mq_timedreceive(_time64)
+     mq_timedsend(_time64)
+     ppoll(_time64)
+     pselect6(_time64)
+     rt_sigtimedwait(_time64)
+     sched_rr_get_interval(_time64)
+     timer_gettime(64)
+     timer_settime(64)
+     timerfd_gettime(64)
+     timerfd_settime(64)
+     utimensat(_time64)
+
+   On architectures where time_t has historically been 64 bits,
+   only the 64-bit version of each system call exists, and there
+   are no suffixes on the __NR_ constants.
+
+   On architectures where time_t has historically been 32 bits,
+   both 32-bit and 64-bit versions of each system call may exist,
+   depending on the kernel version.  When the 64-bit version exists,
+   there is a '64' or '_time64' suffix on the name of its __NR_
+   constant, as shown above.
+
+   This flag is always set for Linux 5.1 and later.  Prior to that
+   version, it is set only for some CPU architectures and ABIs:
+
+   - __WORDSIZE == 64 - all supported architectures where pointers
+     are 64 bits also have always had 64-bit time_t.
+
+   - __WORDSIZE == 32 && __SYSCALL_WORDSIZE == 64 - this describes
+     only one supported configuration, x86's 'x32' subarchitecture,
+     where pointers are 32 bits but time_t has always been 64 bits.
+
+   __ASSUME_TIME64_SYSCALLS being set does not mean __TIMESIZE is 64,
+   and __TIMESIZE equal to 64 does not mean __ASSUME_TIME64_SYSCALLS
+   is set.  All four cases are possible.  */
+
+#if __LINUX_KERNEL_VERSION >= 0x050100                          \
+  || __WORDSIZE == 64                                           \
+  || (defined __SYSCALL_WORDSIZE && __SYSCALL_WORDSIZE == 64)
+# define __ASSUME_TIME64_SYSCALLS 1
+#endif
+
+/* Linux waitid prior kernel 5.4 does not support waiting for the current
+   process group.  */
+#if __LINUX_KERNEL_VERSION >= 0x050400
+# define __ASSUME_WAITID_PID0_P_PGID
+#endif
+
+#endif /* kernel-features.h */

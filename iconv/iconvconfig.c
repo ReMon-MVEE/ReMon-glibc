@@ -1,5 +1,5 @@
 /* Generate fastloading iconv module configuration files.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2000.
 
@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #include <argp.h>
 #include <assert.h>
@@ -397,7 +397,7 @@ print_version (FILE *stream, struct argp_state *state)
 Copyright (C) %s Free Software Foundation, Inc.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\
-"), "2018");
+"), "2020");
   fprintf (stream, gettext ("Written by %s.\n"), "Ulrich Drepper");
 }
 
@@ -1079,9 +1079,9 @@ write_output (void)
 
   /* Create the hashing table.  We know how many strings we have.
      Creating a perfect hash table is not reasonable here.  Therefore
-     we use open hashing and a table size which is the next prime 40%
+     we use open hashing and a table size which is the next prime 50%
      larger than the number of strings.  */
-  hash_size = next_prime (nnames * 1.4);
+  hash_size = next_prime (nnames + (nnames >> 1));
   hash_table = (struct hash_entry *) xcalloc (hash_size,
 					      sizeof (struct hash_entry));
   /* Fill the hash table.  */

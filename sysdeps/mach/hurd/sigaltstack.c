@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <hurd.h>
@@ -36,8 +36,9 @@ __sigaltstack (const stack_t *argss, stack_t *oss)
   s = _hurd_self_sigstate ();
   __spin_lock (&s->lock);
 
-  if (argss != NULL &&
-      (ss.ss_flags & SS_DISABLE) && (s->sigaltstack.ss_flags & SS_ONSTACK))
+  if (argss != NULL
+      && (ss.ss_flags & SS_DISABLE)
+      && (s->sigaltstack.ss_flags & SS_ONSTACK))
     {
       /* Can't disable a stack that is in use.  */
       __spin_unlock (&s->lock);

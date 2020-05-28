@@ -1,7 +1,7 @@
 /*
  * UFC-crypt: ultra fast crypt(3) implementation
  *
- * Copyright (C) 1991-2018 Free Software Foundation, Inc.
+ * Copyright (C) 1991-2020 Free Software Foundation, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; see the file COPYING.LIB.  If not,
- * see <http://www.gnu.org/licenses/>.
+ * see <https://www.gnu.org/licenses/>.
  *
  * @(#)crypt.c	2.25 12/20/96
  *

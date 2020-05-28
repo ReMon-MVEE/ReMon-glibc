@@ -1,5 +1,5 @@
 /* Create new context.
-   Copyright (C) 2008-2018 Free Software Foundation, Inc.
+   Copyright (C) 2008-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Helge Deller <deller@gmx.de>, 2008.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <libintl.h>
 #include <stdarg.h>
@@ -31,9 +31,9 @@
 /* Size of frame marker in unsigned long words.  */
 #define FRAME_SIZE_UL 8
 /* Size of frame marker in bytes.  */
-#define FRAME_SIZE_BYTES (8 * sizeof(unsigned long))
+#define FRAME_SIZE_BYTES (8 * sizeof (unsigned long))
 /* Size of X arguments in bytes.  */
-#define ARGS(x) (x * sizeof(unsigned long))
+#define ARGS(x) (x * sizeof (unsigned long))
 
 void
 __makecontext (ucontext_t *ucp, void (*func) (void), int argc, ...)
@@ -61,14 +61,14 @@ __makecontext (ucontext_t *ucp, void (*func) (void), int argc, ...)
   if (ucp->uc_link)
     {
       /* Returning to the next context and next frame.  */
-      sp[-4/sizeof(unsigned long)] = ucp->uc_link->uc_mcontext.sc_gr[30];
-      sp[-20/sizeof(unsigned long)] = ucp->uc_link->uc_mcontext.sc_gr[2];
+      sp[-4 / sizeof (unsigned long)] = ucp->uc_link->uc_mcontext.sc_gr[30];
+      sp[-20 / sizeof (unsigned long)] = ucp->uc_link->uc_mcontext.sc_gr[2];
     }
   else
     {
       /* This is the main context. No frame marker, and no return address.  */
-      sp[-4/sizeof(unsigned long)] = 0x0;
-      sp[-20/sizeof(unsigned long)] = 0x0;
+      sp[-4 / sizeof (unsigned long)] = 0x0;
+      sp[-20 / sizeof (unsigned long)] = 0x0;
     }
 
   /* Store address to jump to.  */
@@ -84,7 +84,7 @@ __makecontext (ucontext_t *ucp, void (*func) (void), int argc, ...)
 	  continue;
 	}
 
-      if ((i < 8) && (sizeof(unsigned long) == 8))
+      if ((i < 8) && (sizeof (unsigned long) == 8))
 	{
 	  /* 64bit: r19-r22 are arg7-arg4.  */
 	  ucp->uc_mcontext.sc_gr[22+4-i] = va_arg (ap, int);

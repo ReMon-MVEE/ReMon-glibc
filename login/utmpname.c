@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Mark Kettenis <kettenis@phys.uva.nl>, 1997.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <libc-lock.h>
 #include <stdlib.h>
@@ -42,8 +42,7 @@ __utmpname (const char *file)
   __libc_lock_lock (__libc_utmp_lock);
 
   /* Close the old file.  */
-  (*__libc_utmp_jump_table->endutent) ();
-  __libc_utmp_jump_table = &__libc_utmp_unknown_functions;
+  __libc_endutent ();
 
   if (strcmp (file, __libc_utmp_file_name) != 0)
     {

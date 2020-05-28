@@ -1,5 +1,5 @@
 /* Prototypes for compatibility double == long double entry points.
-   Copyright (C) 2006-2018 Free Software Foundation, Inc.
+   Copyright (C) 2006-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@cygnus.com>, 2006.
 
@@ -15,13 +15,20 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef __NLDBL_COMPAT_H
 #define __NLDBL_COMPAT_H	1
 
+/* Ensure calls to libm functions from libnldbl_nonshared.a call
+   public names, not libm-internal names.  */
+#define NO_MATH_REDIRECT
+
 /* Avoid long double prototypes.  */
 #define __NO_LONG_DOUBLE_MATH	1
+#include <argp.h>
+#include <err.h>
+#include <error.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -60,7 +67,6 @@ NLDBL_DECL (vsyslog);
 NLDBL_DECL (qecvt);
 NLDBL_DECL (qfcvt);
 NLDBL_DECL (qgcvt);
-NLDBL_DECL (__vstrfmon_l);
 NLDBL_DECL (__isoc99_scanf);
 NLDBL_DECL (__isoc99_fscanf);
 NLDBL_DECL (__isoc99_sscanf);
@@ -73,10 +79,25 @@ NLDBL_DECL (__isoc99_swscanf);
 NLDBL_DECL (__isoc99_vwscanf);
 NLDBL_DECL (__isoc99_vfwscanf);
 NLDBL_DECL (__isoc99_vswscanf);
+NLDBL_DECL (argp_error);
+NLDBL_DECL (argp_failure);
+NLDBL_DECL (warn);
+NLDBL_DECL (vwarn);
+NLDBL_DECL (warnx);
+NLDBL_DECL (vwarnx);
+NLDBL_DECL (err);
+NLDBL_DECL (verr);
+NLDBL_DECL (errx);
+NLDBL_DECL (verrx);
+NLDBL_DECL (error);
+NLDBL_DECL (error_at_line);
 
-/* This one does not exist in the normal interface, only
-   __nldbl___vstrfmon really exists.  */
+/* These do not exist in the normal interface, but must exist in the
+   __nldbl interface so that they can be called from libnldbl.  */
 extern ssize_t __nldbl___vstrfmon (char *, size_t, const char *, va_list)
+  __THROW;
+extern ssize_t __nldbl___vstrfmon_l (char *, size_t, locale_t, const char *,
+				     va_list)
   __THROW;
 
 /* These don't use __typeof because they were not declared by the headers,
@@ -104,6 +125,8 @@ extern void __nldbl___vsyslog_chk (int, int, const char *, va_list);
 /* The original declarations of these were hidden by the including
    file.  */
 extern double __nldbl_daddl (double, double) __THROW;
+extern double __nldbl_ddivl (double, double) __THROW;
+extern double __nldbl_dmull (double, double) __THROW;
 extern double __nldbl_dsubl (double, double) __THROW;
 
 #endif /* __NLDBL_COMPAT_H */

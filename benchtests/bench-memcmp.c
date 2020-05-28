@@ -1,5 +1,5 @@
 /* Measure memcmp functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #ifdef WIDE
@@ -24,17 +24,8 @@
 #endif
 #include "bench-string.h"
 #ifdef WIDE
-# include <inttypes.h>
-# include <wchar.h>
 
-# define MEMCMP wmemcmp
-# define MEMCPY wmemcpy
 # define SIMPLE_MEMCMP simple_wmemcmp
-# define CHAR wchar_t
-# define UCHAR wchar_t
-# define CHARBYTES 4
-# define CHAR__MIN WCHAR_MIN
-# define CHAR__MAX WCHAR_MAX
 int
 simple_wmemcmp (const wchar_t *s1, const wchar_t *s2, size_t n)
 {
@@ -49,15 +40,7 @@ simple_wmemcmp (const wchar_t *s1, const wchar_t *s2, size_t n)
 #else
 # include <limits.h>
 
-# define MEMCMP memcmp
-# define MEMCPY memcpy
 # define SIMPLE_MEMCMP simple_memcmp
-# define CHAR char
-# define MAX_CHAR 255
-# define UCHAR unsigned char
-# define CHARBYTES 1
-# define CHAR__MIN CHAR_MIN
-# define CHAR__MAX CHAR_MAX
 
 int
 simple_memcmp (const char *s1, const char *s2, size_t n)
@@ -80,7 +63,7 @@ static void
 do_one_test (json_ctx_t *json_ctx, impl_t *impl, const CHAR *s1,
 	     const CHAR *s2, size_t len, int exp_result)
 {
-  size_t i, iters = INNER_LOOP_ITERS;
+  size_t i, iters = INNER_LOOP_ITERS8;
   timing_t start, stop, cur;
 
   TIMING_NOW (start);
@@ -125,14 +108,14 @@ do_test (json_ctx_t *json_ctx, size_t align1, size_t align2, size_t len,
       s2 = (CHAR *) (buf2 + align2);
 
       for (i = 0; i < len; i++)
-	s1[i] = s2[i] = 1 + (23 << ((CHARBYTES - 1) * 8)) * i % CHAR__MAX;
+	s1[i] = s2[i] = 1 + (23 << ((CHARBYTES - 1) * 8)) * i % MAX_CHAR;
 
       s1[len] = align1;
       s2[len] = align2;
       s2[len - 1] -= exp_result;
 
       do_one_test (json_ctx, impl, s1, s2, len, exp_result);
-      realloc_bufs ();
+      alloc_bufs ();
     }
 
   json_array_end (json_ctx);

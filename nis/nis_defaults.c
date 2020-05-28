@@ -1,4 +1,4 @@
-/* Copyright (c) 1997-2018 Free Software Foundation, Inc.
+/* Copyright (c) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@vt.uni-paderborn.de>, 1997.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <stdio.h>
@@ -278,18 +278,18 @@ searchaccess (char *str, unsigned int access)
 	  cptr++;		/* Remove "=" from beginning */
 	  /* Clear */
 	  if (n)
-	    result = result & ~((NIS_READ_ACC + NIS_MODIFY_ACC +
-				 NIS_CREATE_ACC + NIS_DESTROY_ACC) << 24);
+	    result = result & ~((NIS_READ_ACC + NIS_MODIFY_ACC
+				 + NIS_CREATE_ACC + NIS_DESTROY_ACC) << 24);
 
 	  if (o)
-	    result = result & ~((NIS_READ_ACC + NIS_MODIFY_ACC +
-				 NIS_CREATE_ACC + NIS_DESTROY_ACC) << 16);
+	    result = result & ~((NIS_READ_ACC + NIS_MODIFY_ACC
+				 + NIS_CREATE_ACC + NIS_DESTROY_ACC) << 16);
 	  if (g)
-	    result = result & ~((NIS_READ_ACC + NIS_MODIFY_ACC +
-				 NIS_CREATE_ACC + NIS_DESTROY_ACC) << 8);
+	    result = result & ~((NIS_READ_ACC + NIS_MODIFY_ACC
+				 + NIS_CREATE_ACC + NIS_DESTROY_ACC) << 8);
 	  if (w)
-	    result = result & ~(NIS_READ_ACC + NIS_MODIFY_ACC +
-				NIS_CREATE_ACC + NIS_DESTROY_ACC);
+	    result = result & ~(NIS_READ_ACC + NIS_MODIFY_ACC
+				+ NIS_CREATE_ACC + NIS_DESTROY_ACC);
 	  while (*cptr != '\0' && *cptr != ',')
 	    {
 	      switch (*cptr)

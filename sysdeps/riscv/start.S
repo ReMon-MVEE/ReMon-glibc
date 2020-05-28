@@ -1,5 +1,5 @@
 /* Startup code compliant to the ELF RISC-V ABI.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -31,7 +31,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define __ASSEMBLY__ 1
 #include <entry.h>
@@ -43,7 +43,11 @@
    __libc_start_main wants this in a5.  */
 
 ENTRY (ENTRY_POINT)
-	call  .Lload_gp
+	/* Terminate call stack by noting ra is undefined.  Use a dummy
+	   .cfi_label to force starting the FDE.  */
+	.cfi_label .Ldummy
+	cfi_undefined (ra)
+	call  load_gp
 	mv    a5, a0  /* rtld_fini.  */
 	/* main may be in a shared library.  */
 	la   a0, main
@@ -54,7 +58,8 @@ ENTRY (ENTRY_POINT)
 	lla   a4, __libc_csu_fini
 	mv    a6, sp  /* stack_end.  */
 
-	tail  __libc_start_main@plt
+	call  __libc_start_main@plt
+	ebreak
 END (ENTRY_POINT)
 
 /* Dynamic links need the global pointer to be initialized prior to calling
@@ -63,7 +68,7 @@ END (ENTRY_POINT)
    needs to be initialized before calling __libc_start_main in that case.
    So we redundantly initialize it at the beginning of _start.  */
 
-.Lload_gp:
+load_gp:
 .option push
 .option norelax
 	lla   gp, __global_pointer$
@@ -71,7 +76,7 @@ END (ENTRY_POINT)
 	ret
 
 	.section .preinit_array,"aw"
-	.dc.a .Lload_gp
+	.dc.a load_gp
 
 /* Define a symbol for the first piece of initialized data.  */
 	.data

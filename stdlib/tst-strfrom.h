@@ -1,5 +1,5 @@
 /* Tests for strfromf, strfromd, strfroml functions.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -103,10 +103,10 @@ test_ ## FSUF (void)							\
   for (i = 0; i < sizeof (htest) / sizeof (htest[0]); i++)		\
     {									\
       rc = FTOSTR (buf, 50, htest[i].fmt, htest[i].t.FSUF);		\
-      if (strcmp (buf, htest[i].exp[0]) == 0 ||				\
-	  strcmp (buf, htest[i].exp[1]) == 0 ||				\
-	  strcmp (buf, htest[i].exp[2]) == 0 ||				\
-	  strcmp (buf, htest[i].exp[3]) == 0)				\
+      if (strcmp (buf, htest[i].exp[0]) == 0				\
+	  || strcmp (buf, htest[i].exp[1]) == 0				\
+	  || strcmp (buf, htest[i].exp[2]) == 0				\
+	  || strcmp (buf, htest[i].exp[3]) == 0)			\
 	continue;							\
       else								\
 	{								\

@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@suse.de>, 1996.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <nss.h>
 #include <netdb.h>
@@ -197,9 +197,9 @@ _nss_nis_getrpcbyname_r (const char *name, struct rpcent *rpc,
     return status;
 
   int found = 0;
-  while (!found &&
-         ((status = internal_nis_getrpcent_r (rpc, buffer, buflen, errnop,
-					      &data)) == NSS_STATUS_SUCCESS))
+  while (!found
+         && ((status = internal_nis_getrpcent_r (rpc, buffer, buflen, errnop,
+						 &data)) == NSS_STATUS_SUCCESS))
     {
       if (strcmp (rpc->r_name, name) == 0)
 	found = 1;

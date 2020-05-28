@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stddef.h>
 #include <errno.h>
@@ -29,7 +29,7 @@
    of BUF with the value corresponding to NAME and zero-terminate BUF.
    Return the number of bytes required to hold NAME's entire value.  */
 size_t
-confstr (int name, char *buf, size_t len)
+__confstr (int name, char *buf, size_t len)
 {
   const char *string = "";
   size_t string_len = 1;
@@ -289,4 +289,6 @@ confstr (int name, char *buf, size_t len)
     }
   return string_len;
 }
+libc_hidden_def (__confstr)
 libc_hidden_def (confstr)
+weak_alias (__confstr, confstr)

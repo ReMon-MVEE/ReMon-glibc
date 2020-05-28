@@ -1,5 +1,5 @@
 /* clock_getres -- Get the resolution of a POSIX clockid_t.
-   Copyright (C) 1999-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <stdint.h>
@@ -22,38 +22,7 @@
 #include <unistd.h>
 #include <sys/param.h>
 #include <libc-internal.h>
-
-
-#if HP_TIMING_AVAIL
-static long int nsec;		/* Clock frequency of the processor.  */
-
-static int
-hp_timing_getres (struct timespec *res)
-{
-  if (__glibc_unlikely (nsec == 0))
-    {
-      hp_timing_t freq;
-
-      /* This can only happen if we haven't initialized the `nsec'
-	 variable yet.  Do this now.  We don't have to protect this
-	 code against multiple execution since all of them should
-	 lead to the same result.  */
-      freq = __get_clockfreq ();
-      if (__glibc_unlikely (freq == 0))
-	/* Something went wrong.  */
-	return -1;
-
-      nsec = MAX (UINT64_C (1000000000) / freq, 1);
-    }
-
-  /* Fill in the values.
-     The seconds are always zero (unless we have a 1Hz machine).  */
-  res->tv_sec = 0;
-  res->tv_nsec = nsec;
-
-  return 0;
-}
-#endif
+#include <shlib-compat.h>
 
 static inline int
 realtime_getres (struct timespec *res)
@@ -82,37 +51,22 @@ __clock_getres (clockid_t clock_id, struct timespec *res)
 
   switch (clock_id)
     {
-#ifdef SYSDEP_GETRES
-      SYSDEP_GETRES;
-#endif
-
-#ifndef HANDLED_REALTIME
     case CLOCK_REALTIME:
       retval = realtime_getres (res);
       break;
-#endif	/* handled REALTIME */
 
     default:
-#ifdef SYSDEP_GETRES_CPU
-      SYSDEP_GETRES_CPU;
-#endif
-#if HP_TIMING_AVAIL
-      if ((clock_id & ((1 << CLOCK_IDFIELD_SIZE) - 1))
-	  == CLOCK_THREAD_CPUTIME_ID)
-	retval = hp_timing_getres (res);
-      else
-#endif
-	__set_errno (EINVAL);
+      __set_errno (EINVAL);
       break;
-
-#if HP_TIMING_AVAIL && !defined HANDLED_CPUTIME
-    case CLOCK_PROCESS_CPUTIME_ID:
-    case CLOCK_THREAD_CPUTIME_ID:
-      retval = hp_timing_getres (res);
-      break;
-#endif
     }
 
   return retval;
 }
-weak_alias (__clock_getres, clock_getres)
+
+versioned_symbol (libc, __clock_getres, clock_getres, GLIBC_2_17);
+/* clock_getres moved to libc in version 2.17;
+   old binaries may expect the symbol version it had in librt.  */
+#if SHLIB_COMPAT (libc, GLIBC_2_2, GLIBC_2_17)
+strong_alias (__clock_getres, __clock_getres_2);
+compat_symbol (libc, __clock_getres_2, clock_getres, GLIBC_2_2);
+#endif

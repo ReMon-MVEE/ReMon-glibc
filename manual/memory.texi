@@ -404,7 +404,7 @@ this function is in @file{stdlib.h}.
 @c      reads&writes next_to_use and iterates over arena next without guards
 @c      those are harmless as long as we don't drop arenas from the
 @c      NEXT list, and we never do; when a thread terminates,
-@c      arena_thread_freeres prepends the arena to the free_list
+@c      __malloc_arena_thread_freeres prepends the arena to the free_list
 @c      NEXT_FREE list, but NEXT is never modified, so it's safe!
 @c     mutex_trylock (arena lock) @asulock @aculock
 @c     mutex_lock (arena lock) dup @asulock @aculock
@@ -1056,7 +1056,6 @@ systems that do not support @w{ISO C11}.
 @c   next_env_entry ok
 @c   strcspn dup ok
 @c   __libc_mallopt dup @mtasuconst:mallopt [setting mp_]
-@c   __malloc_check_init @mtasuconst:malloc_hooks [setting hooks]
 @c   *__malloc_initialize_hook unguarded, ok
 @c  *__memalign_hook dup ok, unguarded
 @c  arena_get dup @asulock @aculock @acsfd @acsmem
@@ -3289,6 +3288,10 @@ in which memory protection keys are disabled.
 
 @item ENOSPC
 All available protection keys already have been allocated.
+
+The system does not implement memory protection keys or runs in a mode
+in which memory protection keys are disabled.
+
 @end table
 @end deftypefun
 
@@ -3452,7 +3455,7 @@ system performance.  In this case, locking pages can help.
 @item
 Privacy.  If you keep secrets in virtual memory and that virtual memory
 gets paged out, that increases the chance that the secrets will get out.
-If a password gets written out to disk swap space, for example, it might
+If a passphrase gets written out to disk swap space, for example, it might
 still be there long after virtual and real memory have been wiped clean.
 
 @end itemize

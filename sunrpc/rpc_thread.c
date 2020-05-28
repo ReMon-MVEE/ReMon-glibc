@@ -5,8 +5,8 @@
 #include <libc-lock.h>
 #include <libc-tsd.h>
 #include <shlib-compat.h>
+#include <libc-symbols.h>
 
-#ifdef _RPC_THREAD_SAFE_
 
 /* Variable used in non-threaded applications or for the first thread.  */
 static struct rpc_thread_variables __libc_tsd_RPC_VARS_mem;
@@ -16,7 +16,7 @@ static __thread struct rpc_thread_variables *thread_rpc_vars
 /*
  * Task-variable destructor
  */
-void __attribute__ ((section ("__libc_thread_freeres_fn")))
+void
 __rpc_thread_destroy (void)
 {
 	struct rpc_thread_variables *tvp = thread_rpc_vars;
@@ -37,11 +37,7 @@ __rpc_thread_destroy (void)
 		thread_rpc_vars = NULL;
 	}
 }
-#ifdef _LIBC_REENTRANT
-text_set_element (__libc_thread_subfreeres, __rpc_thread_destroy);
-#endif
 text_set_element (__libc_subfreeres, __rpc_thread_destroy);
-
 
 /*
  * Initialize RPC multi-threaded operation
@@ -136,5 +132,3 @@ libc_hidden_def (__rpc_thread_svc_max_pollfd)
 #else
 libc_hidden_nolink_sunrpc (__rpc_thread_svc_max_pollfd, GLIBC_2_2_3)
 #endif
-
-#endif /* _RPC_THREAD_SAFE_ */

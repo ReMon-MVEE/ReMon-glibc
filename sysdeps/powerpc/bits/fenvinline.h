@@ -1,5 +1,5 @@
 /* Inline floating-point environment handling functions for powerpc.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,17 +14,40 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #if defined __GNUC__ && !defined _SOFT_FLOAT && !defined __NO_FPRS__
 
-/* Inline definition for fegetround.  */
-# define __fegetround() \
-  (__extension__  ({ int __fegetround_result;				      \
-		     __asm__ __volatile__				      \
-		       ("mcrfs 7,7 ; mfcr %0"				      \
-			: "=r"(__fegetround_result) : : "cr7");		      \
-		     __fegetround_result & 3; }))
+/* Inline definitions for fegetround.  */
+# define __fegetround_ISA300()						\
+  (__extension__  ({							\
+    union { double __d; unsigned long long __ll; } __u;			\
+    __asm__ __volatile__ (						\
+      ".machine push; .machine \"power9\"; mffsl %0; .machine pop"	\
+      : "=f" (__u.__d));						\
+    __u.__ll & 0x0000000000000003LL;					\
+  }))
+
+# define __fegetround_ISA2()						\
+  (__extension__  ({							\
+     int __fegetround_result;						\
+     __asm__ __volatile__ ("mcrfs 7,7 ; mfcr %0"			\
+			   : "=r"(__fegetround_result) : : "cr7");	\
+     __fegetround_result & 3;						\
+  }))
+
+# ifdef _ARCH_PWR9
+#  define __fegetround() __fegetround_ISA300()
+# elif defined __BUILTIN_CPU_SUPPORTS__
+#  define __fegetround()						\
+  (__glibc_likely (__builtin_cpu_supports ("arch_3_00"))		\
+   ? __fegetround_ISA300()						\
+   : __fegetround_ISA2()						\
+  )
+# else
+#  define __fegetround() __fegetround_ISA2()
+# endif
+
 # define fegetround() __fegetround ()
 
 # ifndef __NO_MATH_INLINES

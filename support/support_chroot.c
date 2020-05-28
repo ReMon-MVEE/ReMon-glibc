@@ -1,5 +1,5 @@
 /* Setup a chroot environment for use within tests.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdlib.h>
 #include <support/check.h>
@@ -56,6 +56,7 @@ support_chroot_create (struct support_chroot_configuration conf)
               &chroot->path_resolv_conf);
   write_file (path_etc, "hosts", conf.hosts, &chroot->path_hosts);
   write_file (path_etc, "host.conf", conf.host_conf, &chroot->path_host_conf);
+  write_file (path_etc, "aliases", conf.aliases, &chroot->path_aliases);
 
   free (path_etc);
 
@@ -77,5 +78,6 @@ support_chroot_free (struct support_chroot *chroot)
   free (chroot->path_resolv_conf);
   free (chroot->path_hosts);
   free (chroot->path_host_conf);
+  free (chroot->path_aliases);
   free (chroot);
 }

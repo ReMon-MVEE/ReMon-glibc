@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1998.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <wchar.h>
 
@@ -26,24 +26,10 @@
 size_t
 __wcsnlen (const wchar_t *s, size_t maxlen)
 {
-  size_t len = 0;
-
-  while (maxlen > 0 && s[len] != L'\0')
-    {
-      ++len;
-      if (--maxlen == 0 || s[len] == L'\0')
-	return len;
-      ++len;
-      if (--maxlen == 0 || s[len] == L'\0')
-	return len;
-      ++len;
-      if (--maxlen == 0 || s[len] == L'\0')
-	return len;
-      ++len;
-      --maxlen;
-    }
-
-  return len;
+  const wchar_t *ret = __wmemchr (s, L'\0', maxlen);
+  if (ret)
+    maxlen = ret - s;
+  return maxlen;
 }
 #ifndef WCSNLEN
 weak_alias (__wcsnlen, wcsnlen)

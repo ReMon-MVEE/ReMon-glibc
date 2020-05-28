@@ -1,5 +1,5 @@
 /* Determine various system internal values, Linux/Sparc version.
-   Copyright (C) 1999-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Andreas Schwab <schwab@suse.de> and
 		  Jakub Jelinek <jj@ultra.linux.cz>
@@ -16,7 +16,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 
 /* We need to define a special parser for /proc/cpuinfo.  */

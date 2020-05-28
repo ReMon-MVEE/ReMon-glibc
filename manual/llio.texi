@@ -1404,10 +1404,13 @@ failure occurs.  The return value is zero if the end of the input file
 is encountered immediately.
 
 If no bytes can be copied, to report an error, @code{copy_file_range}
-returns the value @math{-1} and sets @code{errno}.  The following
-@code{errno} error conditions are specific to this function:
+returns the value @math{-1} and sets @code{errno}.  The table below
+lists some of the error conditions for this function.
 
 @table @code
+@item ENOSYS
+The kernel does not implement the required functionality.
+
 @item EISDIR
 At least one of the descriptors @var{inputfd} or @var{outputfd} refers
 to a directory.
@@ -1437,9 +1440,6 @@ reading.
 
 The argument @var{outputfd} is not a valid file descriptor open for
 writing, or @var{outputfd} has been opened with @code{O_APPEND}.
-
-@item EXDEV
-The input and output files reside on different file systems.
 @end table
 
 In addition, @code{copy_file_range} can fail with the error codes
@@ -2094,11 +2094,11 @@ descriptors.  The usual thing is to pass @code{FD_SETSIZE} as the value
 of this argument.
 
 The @var{timeout} specifies the maximum time to wait.  If you pass a
-null pointer for this argument, it means to block indefinitely until one
-of the file descriptors is ready.  Otherwise, you should provide the
-time in @code{struct timeval} format; see @ref{High-Resolution
-Calendar}.  Specify zero as the time (a @code{struct timeval} containing
-all zeros) if you want to find out which descriptors are ready without
+null pointer for this argument, it means to block indefinitely until
+one of the file descriptors is ready.  Otherwise, you should provide
+the time in @code{struct timeval} format; see @ref{Time Types}.
+Specify zero as the time (a @code{struct timeval} containing all
+zeros) if you want to find out which descriptors are ready without
 waiting if none are ready.
 
 The normal return value from @code{select} is the total number of ready file
@@ -2197,7 +2197,7 @@ protected using cancellation handlers.
 @c ref pthread_cleanup_push / pthread_cleanup_pop
 
 The return value of the function is zero if no error occurred.  Otherwise
-it is @math{-1} and the global variable @var{errno} is set to the
+it is @math{-1} and the global variable @code{errno} is set to the
 following values:
 @table @code
 @item EBADF
@@ -2230,7 +2230,7 @@ required by @code{fdatasync}.
 The prototype for @code{fdatasync} is in @file{unistd.h}.
 
 The return value of the function is zero if no error occurred.  Otherwise
-it is @math{-1} and the global variable @var{errno} is set to the
+it is @math{-1} and the global variable @code{errno} is set to the
 following values:
 @table @code
 @item EBADF
@@ -3281,12 +3281,13 @@ Set process or process group ID to receive @code{SIGIO} signals.
 @xref{Interrupt Input}.
 @end vtable
 
-This function is a cancellation point in multi-threaded programs.  This
-is a problem if the thread allocates some resources (like memory, file
-descriptors, semaphores or whatever) at the time @code{fcntl} is
-called.  If the thread gets canceled these resources stay allocated
-until the program ends.  To avoid this calls to @code{fcntl} should be
-protected using cancellation handlers.
+This function is a cancellation point in multi-threaded programs for the
+commands @code{F_SETLKW} (and the LFS analogous @code{F_SETLKW64}) and
+@code{F_OFD_SETLKW}.  This is a problem if the thread allocates some
+resources (like memory, file descriptors, semaphores or whatever) at the time
+@code{fcntl} is called.  If the thread gets canceled these resources stay
+allocated until the program ends.  To avoid this calls to @code{fcntl} should
+be protected using cancellation handlers.
 @c ref pthread_cleanup_push / pthread_cleanup_pop
 @end deftypefun
 
@@ -3668,6 +3669,13 @@ clobber an existing file.
 
 The @code{O_EXCL} flag has a special meaning in combination with
 @code{O_TMPFILE}; see below.
+@end deftypevr
+
+@deftypevr Macro int O_DIRECTORY
+@standards{POSIX.1, fcntl.h}
+If set, the open operation fails if the given name is not the name of
+a directory.  The @code{errno} variable is set to @code{ENOTDIR} for
+this error condition.
 @end deftypevr
 
 @deftypevr Macro int O_TMPFILE

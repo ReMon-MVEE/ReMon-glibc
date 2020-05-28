@@ -51,23 +51,13 @@ extern int _IO_sscanf (const char*, const char*, ...) __THROW;
 extern int _IO_sprintf (char *, const char*, ...) __THROW;
 extern int _IO_ungetc (int, FILE*) __THROW;
 extern int _IO_vsscanf (const char *, const char *, __gnuc_va_list) __THROW;
-extern int _IO_vsprintf (char*, const char*, __gnuc_va_list) __THROW;
-libc_hidden_proto (_IO_vsprintf)
-extern int _IO_vswprintf (wchar_t*, size_t, const wchar_t*, __gnuc_va_list)
-       __THROW;
 
-struct obstack;
-extern int _IO_obstack_vprintf (struct obstack *, const char *, __gnuc_va_list)
-       __THROW;
-extern int _IO_obstack_printf (struct obstack *, const char *, ...) __THROW;
 #define _IO_clearerr(FP) ((FP)->_flags &= ~(_IO_ERR_SEEN|_IO_EOF_SEEN))
 #define _IO_fseek(__fp, __offset, __whence) \
   (_IO_seekoff_unlocked (__fp, __offset, __whence, _IOS_INPUT|_IOS_OUTPUT) \
    == _IO_pos_BAD ? EOF : 0)
 #define _IO_rewind(FILE) \
   (void) _IO_seekoff_unlocked (FILE, 0, 0, _IOS_INPUT|_IOS_OUTPUT)
-#define _IO_vprintf(FORMAT, ARGS) \
-  _IO_vfprintf (_IO_stdout, FORMAT, ARGS)
 #define _IO_freopen(FILENAME, MODE, FP) \
   (_IO_file_close_it (FP), \
    _IO_file_fopen (FP, FILENAME, MODE, 1))

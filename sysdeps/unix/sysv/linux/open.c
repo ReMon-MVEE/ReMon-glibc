@@ -1,4 +1,5 @@
-/* Copyright (C) 2017-2018 Free Software Foundation, Inc.
+/* Linux open syscall implementation, non-LFS.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Chris Metcalf <cmetcalf@tilera.com>, 2011.
 
@@ -14,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -22,7 +23,6 @@
 #include <stdarg.h>
 
 #include <sysdep-cancel.h>
-#include <not-cancel.h>
 
 #ifndef __OFF_T_MATCHES_OFF64_T
 
@@ -48,25 +48,4 @@ libc_hidden_def (__libc_open)
 weak_alias (__libc_open, __open)
 libc_hidden_weak (__open)
 weak_alias (__libc_open, open)
-
-# if !IS_IN (rtld)
-int
-__open_nocancel (const char *file, int oflag, ...)
-{
-  int mode = 0;
-
-  if (__OPEN_NEEDS_MODE (oflag))
-    {
-      va_list arg;
-      va_start (arg, oflag);
-      mode = va_arg (arg, int);
-      va_end (arg);
-    }
-
-  return INLINE_SYSCALL_CALL (openat, AT_FDCWD, file, oflag, mode);
-}
-# else
-strong_alias (__libc_open, __open_nocancel)
-# endif
-libc_hidden_def (__open_nocancel)
 #endif

@@ -1,5 +1,5 @@
 /* Configuration for math routines.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _MATH_CONFIG_H
 #define _MATH_CONFIG_H
@@ -38,13 +38,23 @@
 #endif
 
 #ifndef TOINT_INTRINSICS
+/* When set, the roundtoint and converttoint functions are provided with
+   the semantics documented below.  */
 # define TOINT_INTRINSICS 0
 #endif
-#ifndef TOINT_RINT
-# define TOINT_RINT 0
-#endif
-#ifndef TOINT_SHIFT
-# define TOINT_SHIFT 1
+
+#if TOINT_INTRINSICS
+/* Round x to nearest int in all rounding modes, ties have to be rounded
+   consistently with converttoint so the results match.  If the result
+   would be outside of [-2^31, 2^31-1] then the semantics is unspecified.  */
+static inline double_t
+roundtoint (double_t x);
+
+/* Convert x to nearest int in all rounding modes, ties have to be rounded
+   consistently with roundtoint.  If the result is not representible in an
+   int32_t then the semantics is unspecified.  */
+static inline int32_t
+converttoint (double_t x);
 #endif
 
 static inline uint32_t
@@ -91,21 +101,12 @@ asdouble (uint64_t i)
   return u.f;
 }
 
-static inline int
-issignalingf_inline (float x)
-{
-  uint32_t ix = asuint (x);
-  if (HIGH_ORDER_BIT_IS_SET_FOR_SNAN)
-    return (ix & 0x7fc00000) == 0x7fc00000;
-  return 2 * (ix ^ 0x00400000) > 2u * 0x7fc00000;
-}
-
 #define NOINLINE __attribute__ ((noinline))
 
-attribute_hidden float __math_oflowf (unsigned long);
-attribute_hidden float __math_uflowf (unsigned long);
-attribute_hidden float __math_may_uflowf (unsigned long);
-attribute_hidden float __math_divzerof (unsigned long);
+attribute_hidden float __math_oflowf (uint32_t);
+attribute_hidden float __math_uflowf (uint32_t);
+attribute_hidden float __math_may_uflowf (uint32_t);
+attribute_hidden float __math_divzerof (uint32_t);
 attribute_hidden float __math_invalidf (float);
 
 /* Shared between expf, exp2f and powf.  */

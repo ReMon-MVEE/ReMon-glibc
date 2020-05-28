@@ -1,5 +1,5 @@
 /* Miscellaneous support functions for dynamic linker
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <fcntl.h>
@@ -33,7 +33,7 @@
 #include <sysdep.h>
 #include <_itoa.h>
 #include <dl-writev.h>
-
+#include <not-cancel.h>
 
 /* Read the whole contents of FILE into new mmap'd space with given
    protections.  *SIZEP gets the size of the file.  On error MAP_FAILED
@@ -44,7 +44,7 @@ _dl_sysdep_read_whole_file (const char *file, size_t *sizep, int prot)
 {
   void *result = MAP_FAILED;
   struct stat64 st;
-  int fd = __open (file, O_RDONLY | O_CLOEXEC);
+  int fd = __open64_nocancel (file, O_RDONLY | O_CLOEXEC);
   if (fd >= 0)
     {
       if (__fxstat64 (_STAT_VER, fd, &st) >= 0)
@@ -65,7 +65,7 @@ _dl_sysdep_read_whole_file (const char *file, size_t *sizep, int prot)
 #endif
 			     , fd, 0);
 	}
-      __close (fd);
+      __close_nocancel (fd);
     }
   return result;
 }

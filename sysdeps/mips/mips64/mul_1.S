@@ -1,7 +1,7 @@
 /* MIPS3 __mpn_mul_1 -- Multiply a limb vector with a single limb and
  * store the product in a second limb vector.
  *
- * Copyright (C) 1992-2018 Free Software Foundation, Inc.
+ * Copyright (C) 1992-2020 Free Software Foundation, Inc.
  *
  * This file is part of the GNU MP Library.
  *
@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with the GNU MP Library.  If not, see
- * <http://www.gnu.org/licenses/>.
+ * <https://www.gnu.org/licenses/>.
  */
 
 #include <sysdep.h>

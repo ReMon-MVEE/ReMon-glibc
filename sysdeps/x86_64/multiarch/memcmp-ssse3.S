@@ -1,5 +1,5 @@
 /* memcmp with SSSE3, wmemcmp with SSSE3
-   Copyright (C) 2011-2018 Free Software Foundation, Inc.
+   Copyright (C) 2011-2020 Free Software Foundation, Inc.
    Contributed by Intel Corporation.
    This file is part of the GNU C Library.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #if IS_IN (libc)
 
@@ -33,9 +33,12 @@
 	atom_text_section
 ENTRY (MEMCMP)
 # ifdef USE_AS_WMEMCMP
-	shl	$2, %rdx
-	test	%rdx, %rdx
+	shl	$2, %RDX_LP
+	test	%RDX_LP, %RDX_LP
 	jz	L(equal)
+# elif defined __ILP32__
+	/* Clear the upper 32 bits.  */
+	mov	%edx, %edx
 # endif
 	mov	%rdx, %rcx
 	mov	%rdi, %rdx

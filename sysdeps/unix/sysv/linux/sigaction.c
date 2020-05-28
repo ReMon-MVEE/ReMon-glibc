@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <signal.h>
@@ -33,7 +33,7 @@
 
 /* SPARC passes the restore function as an argument to rt_sigaction.  */
 #ifndef STUB
-# define STUB(act)
+# define STUB(act, sigsetsize) (sigsetsize)
 #endif
 
 /* If ACT is not NULL, change the action for SIG to *ACT.
@@ -57,7 +57,7 @@ __libc_sigaction (int sig, const struct sigaction *act, struct sigaction *oact)
      real size of the user-level sigset_t.  */
   result = INLINE_SYSCALL_CALL (rt_sigaction, sig,
 				act ? &kact : NULL,
-				oact ? &koact : NULL, STUB(act) _NSIG / 8);
+				oact ? &koact : NULL, STUB (act, _NSIG / 8));
 
   if (oact && result >= 0)
     {

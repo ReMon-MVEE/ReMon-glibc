@@ -1,5 +1,5 @@
 /* Cache handling for host lookup.
-   Copyright (C) 2004-2018 Free Software Foundation, Inc.
+   Copyright (C) 2004-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@redhat.com>, 2004.
 
@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -29,9 +29,6 @@
 
 #include "dbg_log.h"
 #include "nscd.h"
-#ifdef HAVE_SENDFILE
-# include <kernel-features.h>
-#endif
 
 #include "../nss/nsswitch.h"
 
@@ -91,8 +88,8 @@ addinitgroupsX (struct database_dyn *db, int fd, request_header *req,
   int no_more;
 
   if (group_database == NULL)
-    no_more = __nss_database_lookup ("group", NULL, DEFAULT_CONFIG,
-				     &group_database);
+    no_more = __nss_database_lookup2 ("group", NULL, DEFAULT_CONFIG,
+				      &group_database);
   else
     no_more = 0;
   nip = group_database;
@@ -162,7 +159,7 @@ addinitgroupsX (struct database_dyn *db, int fd, request_header *req,
 
       /* This is really only for debugging.  */
       if (NSS_STATUS_TRYAGAIN > status || status > NSS_STATUS_RETURN)
-	__libc_fatal ("illegal status in internal_getgrouplist");
+	__libc_fatal ("Illegal status in internal_getgrouplist.\n");
 
       any_success |= status == NSS_STATUS_SUCCESS;
 
@@ -353,37 +350,9 @@ addinitgroupsX (struct database_dyn *db, int fd, request_header *req,
 	     unnecessarily let the receiver wait.  */
 	  assert (fd != -1);
 
-#ifdef HAVE_SENDFILE
-	  if (__builtin_expect (db->mmap_used, 1) && !alloca_used)
-	    {
-	      assert (db->wr_fd != -1);
-	      assert ((char *) &dataset->resp > (char *) db->data);
-	      assert ((char *) dataset - (char *) db->head
-		      + total
-		      <= (sizeof (struct database_pers_head)
-			  + db->head->module * sizeof (ref_t)
-			  + db->head->data_size));
-	      ssize_t written = sendfileall (fd, db->wr_fd,
-					     (char *) &dataset->resp
-					     - (char *) db->head,
-					     dataset->head.recsize);
-	      if (written != dataset->head.recsize)
-		{
-# ifndef __ASSUME_SENDFILE
-		  if (written == -1 && errno == ENOSYS)
-		    goto use_write;
-# endif
-		  all_written = false;
-		}
-	    }
-	  else
-# ifndef __ASSUME_SENDFILE
-	  use_write:
-# endif
-#endif
-	    if (writeall (fd, &dataset->resp, dataset->head.recsize)
-		!= dataset->head.recsize)
-	      all_written = false;
+	  if (writeall (fd, &dataset->resp, dataset->head.recsize)
+	      != dataset->head.recsize)
+	    all_written = false;
 	}
 
 
@@ -397,8 +366,8 @@ addinitgroupsX (struct database_dyn *db, int fd, request_header *req,
 	      // XXX async OK?
 	      uintptr_t pval = (uintptr_t) dataset & ~pagesize_m1;
 	      msync ((void *) pval,
-		     ((uintptr_t) dataset & pagesize_m1) + total +
-		     req->key_len, MS_ASYNC);
+		     ((uintptr_t) dataset & pagesize_m1) + total
+		     + req->key_len, MS_ASYNC);
 	    }
 
 	  (void) cache_add (INITGROUPS, cp, req->key_len, &dataset->head, true,

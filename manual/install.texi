@@ -117,6 +117,20 @@ problem and suppress these constructs, so that the library will still be
 usable, but functionality may be lost---for example, you can't build a
 shared libc with old binutils.
 
+@item --with-nonshared-cflags=@var{cflags}
+Use additional compiler flags @var{cflags} to build the parts of the
+library which are always statically linked into applications and
+libraries even with shared linking (that is, the object files contained
+in @file{lib*_nonshared.a} libraries).  The build process will
+automatically use the appropriate flags, but this option can be used to
+set additional flags required for building applications and libraries,
+to match local policy.  For example, if such a policy requires that all
+code linked into applications must be built with source fortification,
+@samp{--with-nonshared-cflags=-Wp,-D_FORTIFY_SOURCE=2} will make sure
+that the objects in @file{libc_nonshared.a} are compiled with this flag
+(although this will not affect the generated code in this particular
+case and potentially change debugging information and metadata only).
+
 @c disable static doesn't work currently
 @c @item --disable-static
 @c Don't build static libraries.  Static libraries aren't that useful these
@@ -136,6 +150,22 @@ with no-pie.  The resulting glibc can be used with the GCC option,
 -static-pie, which is available with GCC 8 or above, to create static
 PIE.  This option also implies that glibc programs and tests are created
 as dynamic position independent executables (PIE) by default.
+
+@item --enable-cet
+Enable Intel Control-flow Enforcement Technology (CET) support.  When
+@theglibc{} is built with @option{--enable-cet}, the resulting library
+is protected with indirect branch tracking (IBT) and shadow stack
+(SHSTK)@.  When CET is enabled, @theglibc{} is compatible with all
+existing executables and shared libraries.  This feature is currently
+supported on i386, x86_64 and x32 with GCC 8 and binutils 2.29 or later.
+Note that when CET is enabled, @theglibc{} requires CPUs capable of
+multi-byte NOPs, like x86-64 processors as well as Intel Pentium Pro or
+newer.
+
+NOTE: @option{--enable-cet} has been tested for i686, x86_64 and x32
+on non-CET processors.  @option{--enable-cet} has been tested for
+x86_64 and x32 on CET SDVs, but Intel CET support hasn't been validated
+for i686.
 
 @item --disable-profile
 Don't build libraries with profiling information.  You may want to use
@@ -174,10 +204,10 @@ number of routines called directly from assembler are excluded from this
 protection.
 
 @item --enable-bind-now
-Disable lazy binding for installed shared objects.  This provides
-additional security hardening because it enables full RELRO and a
-read-only global offset table (GOT), at the cost of slightly increased
-program load times.
+Disable lazy binding for installed shared objects and programs.  This
+provides additional security hardening because it enables full RELRO
+and a read-only global offset table (GOT), at the cost of slightly
+increased program load times.
 
 @pindex pt_chown
 @findex grantpt
@@ -229,6 +259,20 @@ compatibility and the NSS modules libnss_compat, libnss_nis and
 libnss_nisplus are not built at all.
 Use this option to enable libnsl with all depending NSS modules and
 header files.
+For architectures and ABIs that have been added after version 2.28 of
+@theglibc{} this option is not available, and the libnsl compatibility
+library is not built.
+
+@item --disable-crypt
+Do not install the passphrase-hashing library @file{libcrypt} or the
+header file @file{crypt.h}.  @file{unistd.h} will still declare the
+function @code{crypt}.  Using this option does not change the set of
+programs that may need to be linked with @option{-lcrypt}; it only
+means that @theglibc{} will not provide that library.
+
+This option is for hackers and distributions experimenting with
+independently-maintained implementations of libcrypt.  It may become
+the default in a future release.
 
 @item --disable-experimental-malloc
 By default, a per-thread cache is enabled in @code{malloc}.  While
@@ -302,36 +346,6 @@ all problems found and exiting with error status if any problems
 occurred.  You can specify @samp{stop-on-test-failure=y} when running
 @code{make check} to make the test run stop and exit with an error
 status immediately when a failure occurs.
-
-The @glibcadj{} pretty printers come with their own set of scripts for testing,
-which run together with the rest of the testsuite through @code{make check}.
-These scripts require the following tools to run successfully:
-
-@itemize @bullet
-@item
-Python 2.7.6/3.4.3 or later
-
-Python is required for running the printers' test scripts.
-
-@item PExpect 4.0
-
-The printer tests drive GDB through test programs and compare its output
-to the printers'.  PExpect is used to capture the output of GDB, and should be
-compatible with the Python version in your system.
-
-@item
-GDB 7.8 or later with support for Python 2.7.6/3.4.3 or later
-
-GDB itself needs to be configured with Python support in order to use the
-pretty printers.  Notice that your system having Python available doesn't imply
-that GDB supports it, nor that your system's Python and GDB's have the same
-version.
-@end itemize
-
-@noindent
-If these tools are absent, the printer tests will report themselves as
-@code{UNSUPPORTED}.  Notice that some of the printer tests require @theglibc{}
-to be compiled with debugging symbols.
 
 To format the @cite{GNU C Library Reference Manual} for printing, type
 @w{@code{make dvi}}.  You need a working @TeX{} installation to do
@@ -435,13 +449,30 @@ permissions on a pseudoterminal so it can be used by the calling process.
 If you are using a Linux kernel with the @code{devpts} filesystem enabled
 and mounted at @file{/dev/pts}, you don't need this program.
 
-After installation you might want to configure the timezone and locale
-installation of your system.  @Theglibc{} comes with a locale
-database which gets configured with @code{localedef}.  For example, to
-set up a German locale with name @code{de_DE}, simply issue the command
-@samp{localedef -i de_DE -f ISO-8859-1 de_DE}.  To configure all locales
-that are supported by @theglibc{}, you can issue from your build directory the
-command @samp{make localedata/install-locales}.
+After installation you should configure the timezone and install locales
+for your system.  The time zone configuration ensures that your system
+time matches the time for your current timezone.  The locales ensure that
+the display of information on your system matches the expectations of
+your language and geographic region.
+
+@Theglibc{} is able to use two kinds of localization information sources, the
+first is a locale database named @file{locale-archive} which is generally
+installed as @file{/usr/lib/locale/locale-archive}.  The locale archive has the
+benefit of taking up less space and being very fast to load, but only if you
+plan to install sixty or more locales.  If you plan to install one or two
+locales you can instead install individual locales into their self-named
+directories e.g.@: @file{/usr/lib/locale/en_US.utf8}.  For example to install
+the German locale using the character set for UTF-8 with name @code{de_DE} into
+the locale archive issue the command @samp{localedef -i de_DE -f UTF-8 de_DE},
+and to install just the one locale issue the command @samp{localedef
+--no-archive -i de_DE -f UTF-8 de_DE}.  To configure all locales that are
+supported by @theglibc{}, you can issue from your build directory the command
+@samp{make localedata/install-locales} to install all locales into the locale
+archive or @samp{make localedata/install-locale-files} to install all locales
+as files in the default configured locale installation directory (derived from
+@samp{--prefix} or @code{--localedir}).  To install into an alternative system
+root use @samp{DESTDIR} e.g.@: @samp{make localedata/install-locale-files
+DESTDIR=/opt/glibc}, but note that this does not change the configured prefix.
 
 To configure the locally used timezone, set the @code{TZ} environment
 variable.  The script @code{tzselect} helps you to select the right value.
@@ -462,26 +493,19 @@ build @theglibc{}:
 
 @itemize @bullet
 @item
-GNU @code{make} 3.79 or newer
+GNU @code{make} 4.0 or newer
 
-You need the latest version of GNU @code{make}.  Modifying @theglibc{}
-to work with other @code{make} programs would be so difficult that
-we recommend you port GNU @code{make} instead.  @strong{Really.}  We
-recommend GNU @code{make} version 3.79.  All earlier versions have severe
-bugs or lack features.
+As of relase time, GNU @code{make} 4.2.1 is the newest verified to work
+to build @theglibc{}.
 
 @item
-GCC 4.9 or newer
+GCC 6.2 or newer
 
-GCC 4.9 or higher is required.  In general it is recommended to use
+GCC 6.2 or higher is required.  In general it is recommended to use
 the newest version of the compiler that is known to work for building
 @theglibc{}, as newer compilers usually produce better code.  As of
-release time, GCC 7.3 is the newest compiler verified to work to build
+release time, GCC 9.2.1 is the newest compiler verified to work to build
 @theglibc{}.
-
-For PowerPC 64-bits little-endian (powerpc64le), GCC 6.2 or higher is
-required.  This compiler version is the first to provide the features
-required for building @theglibc{} with support for @code{_Float128}.
 
 For multi-arch support it is recommended to use a GCC which has been built with
 support for GNU indirect functions.  This ensures that correct debugging
@@ -501,7 +525,7 @@ GNU @code{binutils} 2.25 or later
 
 You must use GNU @code{binutils} (as and ld) to build @theglibc{}.
 No other assembler or linker has the necessary functionality at the
-moment. As of release time, GNU @code{binutils} 2.29.1 is the newest
+moment. As of release time, GNU @code{binutils} 2.32 is the newest
 verified to work to build @theglibc{}.
 
 @item
@@ -511,7 +535,7 @@ To correctly translate and install the Texinfo documentation you need
 this version of the @code{texinfo} package.  Earlier versions do not
 understand all the tags used in the document, and the installation
 mechanism for the info files is not present or works differently.
-As of release time, @code{texinfo} 6.5 is the newest verified to work
+As of release time, @code{texinfo} 6.6 is the newest verified to work
 to build @theglibc{}.
 
 @item
@@ -520,29 +544,59 @@ GNU @code{awk} 3.1.2, or higher
 @code{awk} is used in several places to generate files.
 Some @code{gawk} extensions are used, including the @code{asorti}
 function, which was introduced in version 3.1.2 of @code{gawk}.
-As of release time, @code{gawk} version 4.2.0 is the newest verified
+As of release time, @code{gawk} version 5.0.1 is the newest verified
 to work to build @theglibc{}.
 
 @item
 GNU @code{bison} 2.7 or later
 
 @code{bison} is used to generate the @code{yacc} parser code in the @file{intl}
-subdirectory.  As of release time, @code{bison} version 3.0.4 is the newest
+subdirectory.  As of release time, @code{bison} version 3.4.1 is the newest
 verified to work to build @theglibc{}.
 
 @item
 Perl 5
 
-Perl is not required, but it is used if present to test the
-installation.  We may decide to use it elsewhere in the future.
+Perl is not required, but if present it is used in some tests and the
+@code{mtrace} program, to build the @glibcadj{} manual.  As of release
+time @code{perl} version 5.30.1 is the newest verified to work to
+build @theglibc{}.
 
 @item
 GNU @code{sed} 3.02 or newer
 
 @code{Sed} is used in several places to generate files.  Most scripts work
 with any version of @code{sed}.  As of release time, @code{sed} version
-4.4 is the newest verified to work to build @theglibc{}.
+4.5 is the newest verified to work to build @theglibc{}.
 
+@item
+Python 3.4 or later
+
+Python is required to build @theglibc{}.  As of release time, Python
+3.7.4 is the newest verified to work for building and testing
+@theglibc{}.
+
+@item PExpect 4.0
+
+The pretty printer tests drive GDB through test programs and compare
+its output to the printers'.  PExpect is used to capture the output of
+GDB, and should be compatible with the Python version in your system.
+As of release time PExpect 4.3 is the newest verified to work to test
+the pretty printers.
+
+@item
+GDB 7.8 or later with support for Python 2.7/3.4 or later
+
+GDB itself needs to be configured with Python support in order to use
+the pretty printers.  Notice that your system having Python available
+doesn't imply that GDB supports it, nor that your system's Python and
+GDB's have the same version.  As of release time GNU @code{debugger}
+8.3 is the newest verified to work to test the pretty printers.
+
+Unless Python, PExpect and GDB with Python support are present, the
+printer tests will report themselves as @code{UNSUPPORTED}.  Notice
+that some of the printer tests require @theglibc{} to be compiled with
+debugging symbols.
 @end itemize
 
 @noindent
@@ -559,6 +613,9 @@ and if you change any of the message translation files you will need
 @itemize @bullet
 @item
 GNU @code{gettext} 0.10.36 or later
+
+As of release time, GNU @code{gettext} version 0.19.8.1 is the newest
+version verified to work to build @theglibc{}.
 @end itemize
 
 

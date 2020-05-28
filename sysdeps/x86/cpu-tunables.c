@@ -1,6 +1,6 @@
 /* x86 CPU feature tuning.
    This file is part of the GNU C Library.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -14,10 +14,10 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #if HAVE_TUNABLES
-# define TUNABLE_NAMESPACE tune
+# define TUNABLE_NAMESPACE cpu
 # include <stdbool.h>
 # include <stdint.h>
 # include <unistd.h>		/* Get STDOUT_FILENO for _dl_printf.  */
@@ -116,7 +116,7 @@ TUNABLE_CALLBACK (set_hwcaps) (tunable_val_t *valp)
      the hardware which wasn't available when the selection was made.
      The environment variable:
 
-     GLIBC_TUNABLES=glibc.tune.hwcaps=-xxx,yyy,-zzz,....
+     GLIBC_TUNABLES=glibc.cpu.hwcaps=-xxx,yyy,-zzz,....
 
      can be used to enable CPU/ARCH feature yyy, disable CPU/ARCH feature
      yyy and zzz, where the feature name is case-sensitive and has to
@@ -241,6 +241,8 @@ TUNABLE_CALLBACK (set_hwcaps) (tunable_val_t *valp)
 	  CHECK_GLIBC_IFUNC_ARCH_NEED_CPU_BOTH (n, cpu_features,
 						Slow_SSE4_2, SSE4_2,
 						disable, 11);
+	  CHECK_GLIBC_IFUNC_ARCH_BOTH (n, cpu_features, Prefer_FSRM,
+				       disable, 11);
 	  break;
 	case 13:
 	  if (disable)
@@ -332,4 +334,52 @@ TUNABLE_CALLBACK (set_hwcaps) (tunable_val_t *valp)
     }
   while (*p != '\0');
 }
+
+# if CET_ENABLED
+#  include <cet-tunables.h>
+
+attribute_hidden
+void
+TUNABLE_CALLBACK (set_x86_ibt) (tunable_val_t *valp)
+{
+  if (DEFAULT_MEMCMP (valp->strval, "on", sizeof ("on")) == 0)
+    {
+      GL(dl_x86_feature_1)[1] &= ~((1 << CET_MAX) - 1);
+      GL(dl_x86_feature_1)[1] |= CET_ALWAYS_ON;
+    }
+  else if (DEFAULT_MEMCMP (valp->strval, "off", sizeof ("off")) == 0)
+    {
+      GL(dl_x86_feature_1)[1] &= ~((1 << CET_MAX) - 1);
+      GL(dl_x86_feature_1)[1] |= CET_ALWAYS_OFF;
+    }
+  else if (DEFAULT_MEMCMP (valp->strval, "permissive",
+			   sizeof ("permissive")) == 0)
+    {
+      GL(dl_x86_feature_1)[1] &= ~((1 << CET_MAX) - 1);
+      GL(dl_x86_feature_1)[1] |= CET_PERMISSIVE;
+    }
+}
+
+attribute_hidden
+void
+TUNABLE_CALLBACK (set_x86_shstk) (tunable_val_t *valp)
+{
+  if (DEFAULT_MEMCMP (valp->strval, "on", sizeof ("on")) == 0)
+    {
+      GL(dl_x86_feature_1)[1] &= ~(((1 << CET_MAX) - 1) << CET_MAX);
+      GL(dl_x86_feature_1)[1] |= (CET_ALWAYS_ON << CET_MAX);
+    }
+  else if (DEFAULT_MEMCMP (valp->strval, "off", sizeof ("off")) == 0)
+    {
+      GL(dl_x86_feature_1)[1] &= ~(((1 << CET_MAX) - 1) << CET_MAX);
+      GL(dl_x86_feature_1)[1] |= (CET_ALWAYS_OFF << CET_MAX);
+    }
+  else if (DEFAULT_MEMCMP (valp->strval, "permissive",
+			   sizeof ("permissive")) == 0)
+    {
+      GL(dl_x86_feature_1)[1] &= ~(((1 << CET_MAX) - 1) << CET_MAX);
+      GL(dl_x86_feature_1)[1] |= (CET_PERMISSIVE << CET_MAX);
+    }
+}
+# endif
 #endif

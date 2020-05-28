@@ -1,5 +1,5 @@
 /* spawn a new process running an executable.  Hurd version.
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+   Copyright (C) 2001-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; see the file COPYING.LIB.  If
-   not, see <http://www.gnu.org/licenses/>.  */
+   not, see <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <fcntl.h>
@@ -113,6 +113,9 @@ __spawni (pid_t *pid, const char *file,
   struct hurd_userlink *ulink_dtable = NULL;
   struct hurd_sigstate *ss;
 
+  /* Child current working dir */
+  file_t ccwdir = MACH_PORT_NULL;
+
   /* For POSIX_SPAWN_RESETIDS, this reauthenticates our root/current
      directory ports with the new AUTH port.  */
   file_t rcrdir = MACH_PORT_NULL, rcwdir = MACH_PORT_NULL;
@@ -123,16 +126,25 @@ __spawni (pid_t *pid, const char *file,
       if (*result != MACH_PORT_NULL)
 	return 0;
       ref = __mach_reply_port ();
-      err = HURD_PORT_USE
-	(&_hurd_ports[which],
-	 ({
-	   err = __io_reauthenticate (port, ref, MACH_MSG_TYPE_MAKE_SEND);
-	   if (!err)
-	     err = __auth_user_authenticate (auth,
-					     ref, MACH_MSG_TYPE_MAKE_SEND,
-					     result);
-	   err;
-	 }));
+      if (which == INIT_PORT_CWDIR && ccwdir != MACH_PORT_NULL)
+	{
+	  err = __io_reauthenticate (ccwdir, ref, MACH_MSG_TYPE_MAKE_SEND);
+	  if (!err)
+	    err = __auth_user_authenticate (auth,
+					    ref, MACH_MSG_TYPE_MAKE_SEND,
+					    result);
+	}
+      else
+	err = HURD_PORT_USE
+	  (&_hurd_ports[which],
+	   ({
+	     err = __io_reauthenticate (port, ref, MACH_MSG_TYPE_MAKE_SEND);
+	     if (!err)
+	       err = __auth_user_authenticate (auth,
+					       ref, MACH_MSG_TYPE_MAKE_SEND,
+					       result);
+	     err;
+	   }));
       __mach_port_destroy (__mach_task_self (), ref);
       return err;
     }
@@ -177,6 +189,14 @@ __spawni (pid_t *pid, const char *file,
 	    return (reauthenticate (INIT_PORT_CWDIR, &rcwdir)
 		    ?: (*operate) (rcwdir));
 	  }
+      else
+	switch (which)
+	  {
+	  case INIT_PORT_CWDIR:
+	    if (ccwdir != MACH_PORT_NULL)
+	      return (*operate) (ccwdir);
+	    break;
+	  }
       assert (which != INIT_PORT_PROC);
       return _hurd_ports_use (which, operate);
     }
@@ -204,6 +224,80 @@ __spawni (pid_t *pid, const char *file,
     {
       return __hurd_file_name_lookup (&child_init_port, &child_fd, 0,
 				      file, oflag, mode, result);
+    }
+  auto error_t child_chdir (const char *name)
+    {
+      file_t new_ccwdir;
+
+      /* Append trailing "/." to directory name to force ENOTDIR if
+	 it's not a directory and EACCES if we don't have search
+	 permission.  */
+      len = strlen (name);
+      const char *lookup = name;
+      if (len >= 2 && name[len - 2] == '/' && name[len - 1] == '.')
+	lookup = name;
+      else if (len == 0)
+	/* Special-case empty file name according to POSIX.  */
+	return __hurd_fail (ENOENT);
+      else
+	{
+	  char *n = alloca (len + 3);
+	  memcpy (n, name, len);
+	  n[len] = '/';
+	  n[len + 1] = '.';
+	  n[len + 2] = '\0';
+	  lookup = n;
+	}
+
+      error_t err = child_lookup (lookup, 0, 0, &new_ccwdir);
+      if (!err)
+	{
+	  if (ccwdir != MACH_PORT_NULL)
+	    __mach_port_deallocate (__mach_task_self (), ccwdir);
+	  ccwdir = new_ccwdir;
+	}
+
+      return err;
+    }
+  inline error_t child_lookup_under (file_t startdir, const char *file,
+				     int oflag, mode_t mode, file_t *result)
+    {
+      error_t use_init_port (int which, error_t (*operate) (mach_port_t))
+	{
+	  return (which == INIT_PORT_CWDIR ? (*operate) (startdir)
+		  : child_init_port (which, operate));
+	}
+
+      return __hurd_file_name_lookup (&use_init_port, &child_fd, 0,
+				      file, oflag, mode, result);
+    }
+  auto error_t child_fchdir (int fd)
+    {
+      file_t new_ccwdir;
+      error_t err;
+
+      if ((unsigned int)fd >= dtablesize
+	  || dtable[fd] == MACH_PORT_NULL)
+	return EBADF;
+
+      /* We look up "." to force ENOTDIR if it's not a directory and EACCES if
+         we don't have search permission.  */
+      if (dtable_cells[fd] != NULL)
+	  err = HURD_PORT_USE (dtable_cells[fd],
+		    ({
+		      child_lookup_under (port, ".", O_NOTRANS, 0, &new_ccwdir);
+		     }));
+      else
+	  err = child_lookup_under (dtable[fd], ".", O_NOTRANS, 0, &new_ccwdir);
+
+      if (!err)
+	{
+	  if (ccwdir != MACH_PORT_NULL)
+	    __mach_port_deallocate (__mach_task_self (), ccwdir);
+	  ccwdir = new_ccwdir;
+	}
+
+      return err;
     }
 
 
@@ -242,26 +336,29 @@ __spawni (pid_t *pid, const char *file,
   assert (! __spin_lock_locked (&ss->critical_section_lock));
   __spin_lock (&ss->critical_section_lock);
 
-  __spin_lock (&ss->lock);
+  _hurd_sigstate_lock (ss);
   ints[INIT_SIGMASK] = ss->blocked;
-  ints[INIT_SIGPENDING] = ss->pending;
+  ints[INIT_SIGPENDING] = 0;
   ints[INIT_SIGIGN] = 0;
   /* Unless we were asked to reset all handlers to SIG_DFL,
      pass down the set of signals that were set to SIG_IGN.  */
-  if ((flags & POSIX_SPAWN_SETSIGDEF) == 0)
-    for (i = 1; i < NSIG; ++i)
-      if (ss->actions[i].sa_handler == SIG_IGN)
-	ints[INIT_SIGIGN] |= __sigmask (i);
+  {
+    struct sigaction *actions = _hurd_sigstate_actions (ss);
+    if ((flags & POSIX_SPAWN_SETSIGDEF) == 0)
+      for (i = 1; i < NSIG; ++i)
+	if (actions[i].sa_handler == SIG_IGN)
+	  ints[INIT_SIGIGN] |= __sigmask (i);
+  }
 
-  /* We hold the sigstate lock until the exec has failed so that no signal
-     can arrive between when we pack the blocked and ignored signals, and
-     when the exec actually happens.  A signal handler could change what
+  /* We hold the critical section lock until the exec has failed so that no
+     signal can arrive between when we pack the blocked and ignored signals,
+     and when the exec actually happens.  A signal handler could change what
      signals are blocked and ignored.  Either the change will be reflected
      in the exec, or the signal will never be delivered.  Setting the
      critical section flag avoids anything we call trying to acquire the
      sigstate lock.  */
 
-  __spin_unlock (&ss->lock);
+  _hurd_sigstate_unlock (ss);
 
   /* Set signal mask.  */
   if ((flags & POSIX_SPAWN_SETSIGMASK) != 0)
@@ -351,7 +448,7 @@ __spawni (pid_t *pid, const char *file,
   dtable = __alloca (dtablesize * sizeof (dtable[0]));
   ulink_dtable = __alloca (dtablesize * sizeof (ulink_dtable[0]));
   dtable_cells = __alloca (dtablesize * sizeof (dtable_cells[0]));
-  dtable_cloexec = __alloca (dtablesize);
+  dtable_cloexec = __alloca (orig_dtablesize);
   for (i = 0; i < dtablesize; ++i)
     {
       struct hurd_fd *const d = _hurd_dtable[i];
@@ -403,7 +500,7 @@ __spawni (pid_t *pid, const char *file,
 	    {								      \
 	      /* We need to expand the dtable for the child.  */	      \
 	      NEW_TABLE (dtable, newfd);				      \
-	      NEW_TABLE (ulink_dtable, newfd);				      \
+	      NEW_ULINK_TABLE (ulink_dtable, newfd);			      \
 	      NEW_TABLE (dtable_cells, newfd);				      \
 	      dtablesize = newfd + 1;					      \
 	    }								      \
@@ -412,6 +509,16 @@ __spawni (pid_t *pid, const char *file,
 #define NEW_TABLE(x, newfd) \
   do { __typeof (x) new_##x = __alloca ((newfd + 1) * sizeof (x[0]));	      \
   memcpy (new_##x, x, dtablesize * sizeof (x[0]));			      \
+  memset (&new_##x[dtablesize], 0, (newfd + 1 - dtablesize) * sizeof (x[0])); \
+  x = new_##x; } while (0)
+#define NEW_ULINK_TABLE(x, newfd) \
+  do { __typeof (x) new_##x = __alloca ((newfd + 1) * sizeof (x[0]));	      \
+  unsigned i;								      \
+  for (i = 0; i < dtablesize; i++)					      \
+    if (dtable_cells[i] != NULL)					      \
+      _hurd_port_move (dtable_cells[i], &new_##x[i], &x[i]);		      \
+    else								      \
+      memset (&new_##x[i], 0, sizeof (new_##x[i]));			      \
   memset (&new_##x[dtablesize], 0, (newfd + 1 - dtablesize) * sizeof (x[0])); \
   x = new_##x; } while (0)
 
@@ -485,6 +592,14 @@ __spawni (pid_t *pid, const char *file,
 	      dtable_cells[fd] = NULL;
 	      break;
 	    }
+
+	  case spawn_do_chdir:
+	    err = child_chdir (action->action.chdir_action.path);
+	    break;
+
+	  case spawn_do_fchdir:
+	    err = child_fchdir (action->action.fchdir_action.fd);
+	    break;
 	  }
 
 	if (err)
@@ -561,10 +676,10 @@ __spawni (pid_t *pid, const char *file,
 	  /* There is no `PATH' in the environment.
 	     The default search path is the current directory
 	     followed by the path `confstr' returns for `_CS_PATH'.  */
-	  len = confstr (_CS_PATH, (char *) NULL, 0);
+	  len = __confstr (_CS_PATH, (char *) NULL, 0);
 	  path = (char *) __alloca (1 + len);
 	  path[0] = ':';
-	  (void) confstr (_CS_PATH, path + 1, len);
+	  (void) __confstr (_CS_PATH, path + 1, len);
 	}
 
       len = strlen (file) + 1;
@@ -708,6 +823,11 @@ __spawni (pid_t *pid, const char *file,
 		ports[i] = rcwdir;
 		continue;
 	      }
+	    if (ccwdir != MACH_PORT_NULL)
+	      {
+		ports[i] = ccwdir;
+		continue;
+	      }
 	    break;
 	  }
 	ports[i] = _hurd_port_get (&_hurd_ports[i], &ulink_ports[i]);
@@ -748,6 +868,8 @@ __spawni (pid_t *pid, const char *file,
 	  case INIT_PORT_CWDIR:
 	    if (flags & POSIX_SPAWN_RESETIDS)
 	      continue;
+	    if (ccwdir != MACH_PORT_NULL)
+	      continue;
 	    break;
 	  }
 	_hurd_port_free (&_hurd_ports[i], &ulink_ports[i], ports[i]);
@@ -773,6 +895,8 @@ __spawni (pid_t *pid, const char *file,
     }
   __mach_port_deallocate (__mach_task_self (), auth);
   __mach_port_deallocate (__mach_task_self (), proc);
+  if (ccwdir != MACH_PORT_NULL)
+    __mach_port_deallocate (__mach_task_self (), ccwdir);
   if (rcrdir != MACH_PORT_NULL)
     __mach_port_deallocate (__mach_task_self (), rcrdir);
   if (rcwdir != MACH_PORT_NULL)

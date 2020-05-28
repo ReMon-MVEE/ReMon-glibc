@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,11 +13,12 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _LINUX_POWERPC_SYSDEP_H
 #define _LINUX_POWERPC_SYSDEP_H 1
 
+#include <sysdeps/unix/sysv/linux/powerpc/sysdep.h>
 #include <sysdeps/unix/sysv/linux/sysdep.h>
 #include <sysdeps/unix/powerpc/sysdep.h>
 #include <tls.h>
@@ -40,7 +41,7 @@
    function call, with the exception of LR (which is needed for the
    "sc; bnslr+" sequence) and CR (where only CR0.SO is clobbered to signal
    an error return status).  */
-# define INTERNAL_VSYSCALL_CALL_TYPE(funcptr, err, nr, type, args...)	      \
+# define INTERNAL_VSYSCALL_CALL_TYPE(funcptr, err, type, nr, args...)	      \
   ({									      \
     register void *r0  __asm__ ("r0");					      \
     register long int r3  __asm__ ("r3");				      \
@@ -68,7 +69,7 @@
   })
 
 #define INTERNAL_VSYSCALL_CALL(funcptr, err, nr, args...) \
-  INTERNAL_VSYSCALL_CALL_TYPE(funcptr, err, nr, long int, args)
+  INTERNAL_VSYSCALL_CALL_TYPE(funcptr, err, long int, nr, args)
 
 # undef INLINE_SYSCALL
 # define INLINE_SYSCALL(name, nr, args...)				\
@@ -109,7 +110,6 @@
     register long int r11 __asm__ ("r11");				\
     register long int r12 __asm__ ("r12");				\
     LOADARGS_##nr(name, args);						\
-    ABORT_TRANSACTION;							\
     __asm__ __volatile__						\
       ("sc   \n\t"							\
        "mfcr %0"							\
@@ -131,70 +131,50 @@
 # undef INTERNAL_SYSCALL_ERRNO
 # define INTERNAL_SYSCALL_ERRNO(val, err)     (val)
 
-# define INTERNAL_VSYSCALL_NO_SYSCALL_FALLBACK(name, err, type, nr, args...)  \
-  ({									      \
-    type sc_ret = ENOSYS;						      \
-									      \
-    __typeof (__vdso_##name) vdsop = __vdso_##name;			      \
-    PTR_DEMANGLE (vdsop);						      \
-    if (vdsop != NULL)							      \
-      sc_ret = 								      \
-        INTERNAL_VSYSCALL_CALL_TYPE (vdsop, err, nr, type, ##args);	      \
-    else								      \
-      err = 1 << 28;							      \
-    sc_ret;								      \
-  })
-
-/* List of system calls which are supported as vsyscalls.  */
-# define HAVE_CLOCK_GETRES_VSYSCALL	1
-# define HAVE_CLOCK_GETTIME_VSYSCALL	1
-# define HAVE_GETCPU_VSYSCALL		1
-
-
 # define LOADARGS_0(name, dummy)					      \
 	r0 = name
 # define LOADARGS_1(name, __arg1) \
-	long int arg1 = (long int) (__arg1);	\
+	long int _arg1 = (long int) (__arg1);	\
   LOADARGS_0(name, 0);					   \
 	extern void __illegally_sized_syscall_arg1 (void); \
 	if (__builtin_classify_type (__arg1) != 5 && sizeof (__arg1) > 4) \
 	  __illegally_sized_syscall_arg1 (); \
-	r3 = arg1
+	r3 = _arg1
 # define LOADARGS_2(name, __arg1, __arg2) \
-	long int arg2 = (long int) (__arg2); \
+	long int _arg2 = (long int) (__arg2); \
 	LOADARGS_1(name, __arg1); \
 	extern void __illegally_sized_syscall_arg2 (void); \
 	if (__builtin_classify_type (__arg2) != 5 && sizeof (__arg2) > 4) \
 	  __illegally_sized_syscall_arg2 (); \
-	r4 = arg2
+	r4 = _arg2
 # define LOADARGS_3(name, __arg1, __arg2, __arg3) \
-	long int arg3 = (long int) (__arg3); \
+	long int _arg3 = (long int) (__arg3); \
 	LOADARGS_2(name, __arg1, __arg2); \
 	extern void __illegally_sized_syscall_arg3 (void); \
 	if (__builtin_classify_type (__arg3) != 5 && sizeof (__arg3) > 4) \
 	  __illegally_sized_syscall_arg3 (); \
-	r5 = arg3
+	r5 = _arg3
 # define LOADARGS_4(name, __arg1, __arg2, __arg3, __arg4) \
-	long int arg4 = (long int) (__arg4); \
+	long int _arg4 = (long int) (__arg4); \
 	LOADARGS_3(name, __arg1, __arg2, __arg3); \
 	extern void __illegally_sized_syscall_arg4 (void); \
 	if (__builtin_classify_type (__arg4) != 5 && sizeof (__arg4) > 4) \
 	  __illegally_sized_syscall_arg4 (); \
-	r6 = arg4
+	r6 = _arg4
 # define LOADARGS_5(name, __arg1, __arg2, __arg3, __arg4, __arg5) \
-	long int arg5 = (long int) (__arg5); \
+	long int _arg5 = (long int) (__arg5); \
 	LOADARGS_4(name, __arg1, __arg2, __arg3, __arg4); \
 	extern void __illegally_sized_syscall_arg5 (void); \
 	if (__builtin_classify_type (__arg5) != 5 && sizeof (__arg5) > 4) \
 	  __illegally_sized_syscall_arg5 (); \
-	r7 = arg5
+	r7 = _arg5
 # define LOADARGS_6(name, __arg1, __arg2, __arg3, __arg4, __arg5, __arg6) \
-	long int arg6 = (long int) (__arg6); \
+	long int _arg6 = (long int) (__arg6); \
 	LOADARGS_5(name, __arg1, __arg2, __arg3, __arg4, __arg5); \
 	extern void __illegally_sized_syscall_arg6 (void); \
 	if (__builtin_classify_type (__arg6) != 5 && sizeof (__arg6) > 4) \
 	  __illegally_sized_syscall_arg6 (); \
-	r8 = arg6
+	r8 = _arg6
 
 # define ASM_INPUT_0 "0" (r0)
 # define ASM_INPUT_1 ASM_INPUT_0, "1" (r3)

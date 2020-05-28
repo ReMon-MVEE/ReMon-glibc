@@ -1,5 +1,5 @@
 /* RISC-V instruction cache flushing VDSO calls
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -15,13 +15,18 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <dl-vdso.h>
 #include <stdlib.h>
 #include <atomic.h>
 #include <sys/cachectl.h>
-#include <asm/syscalls.h>
+#if __has_include (<asm/syscalls.h>)
+# include <asm/syscalls.h>
+#else
+# include <asm/unistd.h>
+#endif
+#include <sys/syscall.h>
 
 typedef int (*func_type) (void *, void *, unsigned long int);
 
@@ -34,9 +39,7 @@ __riscv_flush_icache_syscall (void *start, void *end, unsigned long int flags)
 static func_type
 __lookup_riscv_flush_icache (void)
 {
-  PREPARE_VERSION_KNOWN (linux_version, LINUX_4_15);
-
-  func_type func = _dl_vdso_vsym ("__vdso_flush_icache", &linux_version);
+  func_type func = dl_vdso_vsym ("__vdso_flush_icache");
 
   /* If there is no vDSO entry then call the system call directly.  All Linux
      versions provide the vDSO entry, but QEMU's user-mode emulation doesn't

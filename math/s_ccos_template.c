@@ -1,5 +1,5 @@
 /* Return cosine of complex float type.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997.
 
@@ -15,12 +15,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <complex.h>
 #include <fenv.h>
 #include <math.h>
-#include <math_private.h>
 
 CFLOAT
 M_DECL_FUNC (__ccos) (CFLOAT x)

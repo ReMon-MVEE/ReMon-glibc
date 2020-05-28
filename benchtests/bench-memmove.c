@@ -1,5 +1,5 @@
 /* Measure memmove functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,59 +14,23 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
-#ifdef TEST_BCOPY
-# define TEST_NAME "bcopy"
-#else
-# define TEST_NAME "memmove"
-#endif
+#define TEST_NAME "memmove"
 #include "bench-string.h"
 #include "json-lib.h"
 
-char *simple_memmove (char *, const char *, size_t);
+void *generic_memmove (void *, const void *, size_t);
 
-#ifdef TEST_BCOPY
-typedef void (*proto_t) (const char *, char *, size_t);
-void simple_bcopy (const char *, char *, size_t);
+typedef void *(*proto_t) (void *, const void *, size_t);
 
-IMPL (simple_bcopy, 0)
-IMPL (bcopy, 1)
-
-void
-simple_bcopy (const char *src, char *dst, size_t n)
-{
-  simple_memmove (dst, src, n);
-}
-#else
-typedef char *(*proto_t) (char *, const char *, size_t);
-
-IMPL (simple_memmove, 0)
 IMPL (memmove, 1)
-#endif
-
-char *
-inhibit_loop_to_libcall
-simple_memmove (char *dst, const char *src, size_t n)
-{
-  char *ret = dst;
-  if (src < dst)
-    {
-      dst += n;
-      src += n;
-      while (n--)
-	*--dst = *--src;
-    }
-  else
-    while (n--)
-      *dst++ = *src++;
-  return ret;
-}
+IMPL (generic_memmove, 0)
 
 static void
-do_one_test (json_ctx_t *json_ctx, impl_t *impl, char *dst, char *src, const
-	     char *orig_src, size_t len)
+do_one_test (json_ctx_t *json_ctx, impl_t *impl, char *dst, char *src,
+	     size_t len)
 {
   size_t i, iters = INNER_LOOP_ITERS;
   timing_t start, stop, cur;
@@ -74,11 +38,7 @@ do_one_test (json_ctx_t *json_ctx, impl_t *impl, char *dst, char *src, const
   TIMING_NOW (start);
   for (i = 0; i < iters; ++i)
     {
-#ifdef TEST_BCOPY
-      CALL (impl, src, dst, len);
-#else
       CALL (impl, dst, src, len);
-#endif
     }
   TIMING_NOW (stop);
 
@@ -101,7 +61,7 @@ do_test (json_ctx_t *json_ctx, size_t align1, size_t align2, size_t len)
   if (align2 + len >= page_size)
     return;
 
-  s1 = (char *) (buf1 + align1);
+  s1 = (char *) (buf2 + align1);
   s2 = (char *) (buf2 + align2);
 
   for (i = 0, j = 1; i < len; i++, j += 23)
@@ -114,7 +74,7 @@ do_test (json_ctx_t *json_ctx, size_t align1, size_t align2, size_t len)
   json_array_begin (json_ctx, "timings");
 
   FOR_EACH_IMPL (impl, 0)
-    do_one_test (json_ctx, impl, s2, (char *) (buf2 + align1), s1, len);
+    do_one_test (json_ctx, impl, s2, s1, len);
 
   json_array_end (json_ctx);
   json_element_object_end (json_ctx);
@@ -187,3 +147,9 @@ test_main (void)
 }
 
 #include <support/test-driver.c>
+
+#define libc_hidden_builtin_def(X)
+#undef MEMMOVE
+#define MEMMOVE generic_memmove
+#include <string/memmove.c>
+#include <string/wordcopy.c>

@@ -1,5 +1,5 @@
 /* pthread_mutex_unlock.  Hurd version.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library;  if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <pthread.h>
 #include <stdlib.h>
@@ -65,15 +65,15 @@ __pthread_mutex_unlock (pthread_mutex_t *mtxp)
       self = _pthread_self ();
       if (mtxp->__owner_id == NOTRECOVERABLE_ID)
 	;			/* Nothing to do. */
-      else if (mtxp->__owner_id != self->thread ||
-	       (int) (mtxp->__lock & LLL_OWNER_MASK) != __getpid ())
+      else if (mtxp->__owner_id != self->thread
+	       || (int) (mtxp->__lock & LLL_OWNER_MASK) != __getpid ())
 	ret = EPERM;
       else if (--mtxp->__cnt == 0)
 	{
 	  /* Release the lock. If it's in an inconsistent
 	   * state, mark it as irrecoverable. */
-	  mtxp->__owner_id = (mtxp->__lock & LLL_DEAD_OWNER) ?
-	      NOTRECOVERABLE_ID : 0;
+	  mtxp->__owner_id = ((mtxp->__lock & LLL_DEAD_OWNER)
+			      ? NOTRECOVERABLE_ID : 0);
 	  __lll_robust_unlock (&mtxp->__lock, flags);
 	}
 

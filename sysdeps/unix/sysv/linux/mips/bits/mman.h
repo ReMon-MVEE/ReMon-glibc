@@ -1,5 +1,5 @@
 /* Definitions for POSIX memory map interface.  Linux/MIPS version.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _SYS_MMAN_H
 # error "Never use <bits/mman.h> directly; include <sys/mman.h> instead."
@@ -34,6 +34,8 @@
 # define MAP_NONBLOCK   0x20000         /* do not block on IO */
 # define MAP_STACK	0x40000		/* Allocation is for a stack.  */
 # define MAP_HUGETLB	0x80000		/* Create huge page mapping.  */
+# define MAP_FIXED_NOREPLACE 0x100000	/* MAP_FIXED but do not unmap
+					   underlying mapping.  */
 #endif
 
 #define __MAP_ANONYMOUS 0x0800

@@ -1,5 +1,5 @@
 /* Replacement for mach_msg used in interruptible Hurd RPCs.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <mach.h>
 #include <mach/mig_errors.h>
@@ -114,23 +114,10 @@ _hurd_intr_rpc_mach_msg (mach_msg_header_t *msg,
 
  message:
 
-  /* XXX
-     At all points here (once SS->intr_port is set), the signal thread
-     thinks we are "about to enter the syscall", and might mutate our
-     return-value register.  This is bogus.
-   */
-
-  if (ss->cancel)
-    {
-      /* We have been cancelled.  Don't do an RPC at all.  */
-      ss->intr_port = MACH_PORT_NULL;
-      ss->cancel = 0;
-      return EINTR;
-    }
-
   /* Note that the signal trampoline code might modify our OPTION!  */
   err = INTR_MSG_TRAP (msg, option, send_size,
-		       rcv_size, rcv_name, timeout, notify);
+		       rcv_size, rcv_name, timeout, notify,
+		       &ss->cancel, &ss->intr_port);
 
   switch (err)
     {
@@ -141,7 +128,7 @@ _hurd_intr_rpc_mach_msg (mach_msg_header_t *msg,
       else
 	/* The operation was supposedly interrupted, but still has
 	   not returned.  Declare it interrupted.  */
-	goto interrupted;
+	goto dead;
 
     case MACH_SEND_INTERRUPTED: /* RPC didn't get out.  */
       if (!(option & MACH_SEND_MSG))
@@ -324,17 +311,21 @@ _hurd_intr_rpc_mach_msg (mach_msg_header_t *msg,
 	  timeout = user_timeout;
 	  goto message;
 	}
-      /* FALLTHROUGH */
+      err = EINTR;
+
+      /* The EINTR return indicates cancellation, so clear the flag.  */
+      ss->cancel = 0;
+      break;
 
     case MACH_RCV_PORT_DIED:
       /* Server didn't respond to interrupt_operation,
 	 so the signal thread destroyed the reply port.  */
       /* FALLTHROUGH */
 
-    interrupted:
-      err = EINTR;
+    dead:
+      err = EIEIO;
 
-      /* The EINTR return indicates cancellation, so clear the flag.  */
+      /* The EIEIO return indicates cancellation, so clear the flag.  */
       ss->cancel = 0;
       break;
 
@@ -371,12 +362,12 @@ _hurd_intr_rpc_mach_msg (mach_msg_header_t *msg,
 		 1, TRUE, FALSE, FALSE, 0 } };
 #endif
 
-        if (m->reply.RetCode == EINTR &&
-	    m->header.msgh_size == sizeof m->reply &&
+        if (m->reply.RetCode == EINTR
+	    && m->header.msgh_size == sizeof m->reply
 #ifdef MACH_MSG_TYPE_BIT
-	    m->check.type == check.i &&
+	    && m->check.type == check.i
 #endif
-	    !(m->header.msgh_bits & MACH_MSGH_BITS_COMPLEX))
+	    && !(m->header.msgh_bits & MACH_MSGH_BITS_COMPLEX))
 	  {
 	    /* It is indeed EINTR.  Is the interrupt for us?  */
 	    if (ss->intr_port != MACH_PORT_NULL)

@@ -1,5 +1,5 @@
 /* Close a shared object opened by `_dl_open'.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -106,6 +106,30 @@ remove_slotinfo (size_t idx, struct dtv_slotinfo_list *listp, size_t disp,
   return false;
 }
 
+/* Invoke dstructors for CLOSURE (a struct link_map *).  Called with
+   exception handling temporarily disabled, to make errors fatal.  */
+static void
+call_destructors (void *closure)
+{
+  struct link_map *map = closure;
+
+  if (map->l_info[DT_FINI_ARRAY] != NULL)
+    {
+      ElfW(Addr) *array =
+	(ElfW(Addr) *) (map->l_addr
+			+ map->l_info[DT_FINI_ARRAY]->d_un.d_ptr);
+      unsigned int sz = (map->l_info[DT_FINI_ARRAYSZ]->d_un.d_val
+			 / sizeof (ElfW(Addr)));
+
+      while (sz-- > 0)
+	((fini_t) array[sz]) ();
+    }
+
+  /* Next try the old-style destructor.  */
+  if (map->l_info[DT_FINI] != NULL)
+    DL_CALL_DT_FINI (map, ((void *) map->l_addr
+			   + map->l_info[DT_FINI]->d_un.d_ptr));
+}
 
 void
 _dl_close_worker (struct link_map *map, bool force)
@@ -144,14 +168,6 @@ _dl_close_worker (struct link_map *map, bool force)
   char done[nloaded];
   struct link_map *maps[nloaded];
 
-  /* Clear DF_1_NODELETE to force object deletion.  We don't need to touch
-     l_tls_dtor_count because forced object deletion only happens when an
-     error occurs during object load.  Destructor registration for TLS
-     non-POD objects should not have happened till then for this
-     object.  */
-  if (force)
-    map->l_flags_1 &= ~DF_1_NODELETE;
-
   /* Run over the list and assign indexes to the link maps and enter
      them into the MAPS array.  */
   int idx = 0;
@@ -181,7 +197,7 @@ _dl_close_worker (struct link_map *map, bool force)
       /* Check whether this object is still used.  */
       if (l->l_type == lt_loaded
 	  && l->l_direct_opencount == 0
-	  && (l->l_flags_1 & DF_1_NODELETE) == 0
+	  && !l->l_nodelete_active
 	  /* See CONCURRENCY NOTES in cxa_thread_atexit_impl.c to know why
 	     acquire is sufficient and correct.  */
 	  && atomic_load_acquire (&l->l_tls_dtor_count) == 0
@@ -263,11 +279,11 @@ _dl_close_worker (struct link_map *map, bool force)
 
       if (!used[i])
 	{
-	  assert (imap->l_type == lt_loaded
-		  && (imap->l_flags_1 & DF_1_NODELETE) == 0);
+	  assert (imap->l_type == lt_loaded && !imap->l_nodelete_active);
 
 	  /* Call its termination function.  Do not do it for
-	     half-cooked objects.  */
+	     half-cooked objects.  Temporarily disable exception
+	     handling, so that errors are fatal.  */
 	  if (imap->l_init_called)
 	    {
 	      /* When debugging print a message first.  */
@@ -276,22 +292,9 @@ _dl_close_worker (struct link_map *map, bool force)
 		_dl_debug_printf ("\ncalling fini: %s [%lu]\n\n",
 				  imap->l_name, nsid);
 
-	      if (imap->l_info[DT_FINI_ARRAY] != NULL)
-		{
-		  ElfW(Addr) *array =
-		    (ElfW(Addr) *) (imap->l_addr
-				    + imap->l_info[DT_FINI_ARRAY]->d_un.d_ptr);
-		  unsigned int sz = (imap->l_info[DT_FINI_ARRAYSZ]->d_un.d_val
-				     / sizeof (ElfW(Addr)));
-
-		  while (sz-- > 0)
-		    ((fini_t) array[sz]) ();
-		}
-
-	      /* Next try the old-style destructor.  */
-	      if (imap->l_info[DT_FINI] != NULL)
-		DL_CALL_DT_FINI (imap, ((void *) imap->l_addr
-			 + imap->l_info[DT_FINI]->d_un.d_ptr));
+	      if (imap->l_info[DT_FINI_ARRAY] != NULL
+		  || imap->l_info[DT_FINI] != NULL)
+		_dl_catch_exception (NULL, call_destructors, imap);
 	    }
 
 #ifdef SHARED
@@ -302,8 +305,12 @@ _dl_close_worker (struct link_map *map, bool force)
 	      for (unsigned int cnt = 0; cnt < GLRO(dl_naudit); ++cnt)
 		{
 		  if (afct->objclose != NULL)
-		    /* Return value is ignored.  */
-		    (void) afct->objclose (&imap->l_audit[cnt].cookie);
+		    {
+		      struct auditstate *state
+			= link_map_audit_state (imap, cnt);
+		      /* Return value is ignored.  */
+		      (void) afct->objclose (&state->cookie);
+		    }
 
 		  afct = afct->next;
 		}
@@ -478,7 +485,10 @@ _dl_close_worker (struct link_map *map, bool force)
 	  for (unsigned int cnt = 0; cnt < GLRO(dl_naudit); ++cnt)
 	    {
 	      if (afct->activity != NULL)
-		afct->activity (&head->l_audit[cnt].cookie, LA_ACT_DELETE);
+		{
+		  struct auditstate *state = link_map_audit_state (head, cnt);
+		  afct->activity (&state->cookie, LA_ACT_DELETE);
+		}
 
 	      afct = afct->next;
 	    }
@@ -746,6 +756,10 @@ _dl_close_worker (struct link_map *map, bool force)
 	  if (imap->l_runpath_dirs.dirs != (void *) -1)
 	    free (imap->l_runpath_dirs.dirs);
 
+	  /* Clear GL(dl_initfirst) when freeing its link_map memory.  */
+	  if (imap == GL(dl_initfirst))
+	    GL(dl_initfirst) = NULL;
+
 	  free (imap);
 	}
     }
@@ -774,7 +788,10 @@ _dl_close_worker (struct link_map *map, bool force)
 	  for (unsigned int cnt = 0; cnt < GLRO(dl_naudit); ++cnt)
 	    {
 	      if (afct->activity != NULL)
-		afct->activity (&head->l_audit[cnt].cookie, LA_ACT_CONSISTENT);
+		{
+		  struct auditstate *state = link_map_audit_state (head, cnt);
+		  afct->activity (&state->cookie, LA_ACT_CONSISTENT);
+		}
 
 	      afct = afct->next;
 	    }
@@ -816,7 +833,7 @@ _dl_close (void *_map)
      before we took the lock. There is no way to detect this (see below)
      so we proceed assuming this isn't the case.  First see whether we
      can remove the object at all.  */
-  if (__glibc_unlikely (map->l_flags_1 & DF_1_NODELETE))
+  if (__glibc_unlikely (map->l_nodelete_active))
     {
       /* Nope.  Do nothing.  */
       __rtld_lock_unlock_recursive (GL(dl_load_lock));

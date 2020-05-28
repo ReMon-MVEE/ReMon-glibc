@@ -1,4 +1,4 @@
-/* Copyright (C) 1998-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1998-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1998.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <resolv/resolv-internal.h>
@@ -40,11 +40,7 @@ __nscd_gethostbyname_r (const char *name, struct hostent *resultbuf,
 			char *buffer, size_t buflen, struct hostent **result,
 			int *h_errnop)
 {
-  request_type reqtype;
-
-  reqtype = res_use_inet6 () ? GETHOSTBYNAMEv6 : GETHOSTBYNAME;
-
-  return nscd_gethst_r (name, strlen (name) + 1, reqtype, resultbuf,
+  return nscd_gethst_r (name, strlen (name) + 1, GETHOSTBYNAME, resultbuf,
 			buffer, buflen, result, h_errnop);
 }
 
@@ -117,7 +113,7 @@ __nscd_get_nl_timestamp (void)
   if (map == NULL
       || (map != NO_MAPPING
 	  && map->head->nscd_certainly_running == 0
-	  && map->head->timestamp + MAPPING_TIMEOUT < time (NULL)))
+	  && map->head->timestamp + MAPPING_TIMEOUT < time_now ()))
     map = __nscd_get_mapping (GETFDHST, "hosts", &__hst_map_handle.mapped);
 
   if (map == NO_MAPPING)

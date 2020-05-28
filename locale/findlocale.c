@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <assert.h>
 #include <errno.h>
@@ -118,8 +118,7 @@ _nl_find_locale (const char *locale_path, size_t locale_path_len,
 	 variables.  */
       cloc_name = getenv ("LC_ALL");
       if (!name_present (cloc_name))
-	cloc_name = getenv (_nl_category_names.str
-			    + _nl_category_name_idxs[category]);
+	cloc_name = getenv (_nl_category_names_get (category));
       if (!name_present (cloc_name))
 	cloc_name = getenv ("LANG");
       if (!name_present (cloc_name))
@@ -207,8 +206,7 @@ _nl_find_locale (const char *locale_path, size_t locale_path_len,
 				    locale_path, locale_path_len, mask,
 				    language, territory, codeset,
 				    normalized_codeset, modifier,
-				    _nl_category_names.str
-				    + _nl_category_name_idxs[category], 0);
+				    _nl_category_names_get (category), 0);
 
   if (locale_file == NULL)
     {
@@ -218,8 +216,7 @@ _nl_find_locale (const char *locale_path, size_t locale_path_len,
 					locale_path, locale_path_len, mask,
 					language, territory, codeset,
 					normalized_codeset, modifier,
-					_nl_category_names.str
-					+ _nl_category_name_idxs[category], 1);
+					_nl_category_names_get (category), 1);
       if (locale_file == NULL)
 	/* This means we are out of core.  */
 	return NULL;

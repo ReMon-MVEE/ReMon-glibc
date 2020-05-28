@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdio.h>
 #include <unistd.h>
@@ -30,8 +30,8 @@ rename (const char *old, const char *new)
 	{
 	  __set_errno (save);
 	  /* Race condition, required for 1003.1 conformance.  */
-	  if (__unlink (new) < 0 ||
-	      __link (old, new) < 0)
+	  if (__unlink (new) < 0
+	      || __link (old, new) < 0)
 	    return -1;
 	}
       else

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
+/* Copyright (C) 2011-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Chris Metcalf <cmetcalf@tilera.com>, 2011.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Hide the prototype for __xstat so that GCC will not complain about
    the different function signature if it is aliased to  __xstat64.
@@ -32,13 +32,25 @@
 #include <sysdep.h>
 #include <sys/syscall.h>
 
+#include <statx_cp.h>
+
 /* Get information about the file NAME in BUF.  */
 int
 __xstat64 (int vers, const char *name, struct stat64 *buf)
 {
   if (vers == _STAT_VER_KERNEL)
-    return INLINE_SYSCALL (fstatat64, 4, AT_FDCWD, name, buf, 0);
-
+    {
+#ifdef __NR_fstatat64
+      return INLINE_SYSCALL (fstatat64, 4, AT_FDCWD, name, buf, 0);
+#else
+      struct statx tmp;
+      int rc = INLINE_SYSCALL (statx, 5, AT_FDCWD, name, AT_NO_AUTOMOUNT,
+                               STATX_BASIC_STATS, &tmp);
+      if (rc == 0)
+        __cp_stat64_statx (buf, &tmp);
+      return rc;
+#endif
+    }
   errno = EINVAL;
   return -1;
 }

@@ -1,5 +1,5 @@
 /* ld.so error exception allocation and deallocation.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <ldsodefs.h>
 #include <limits.h>
@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <_itoa.h>
 
 /* This message we return as a last resort.  We define the string in a
    variable since we have to avoid freeing it and so have to enable
@@ -111,6 +112,21 @@ _dl_exception_create_format (struct dl_exception *exception, const char *objname
             case 's':
               length += strlen (va_arg (ap, const char *));
               break;
+	      /* Recognize the l modifier.  It is only important on some
+		 platforms where long and int have a different size.  We
+		 can use the same code for size_t.  */
+	    case 'l':
+	    case 'z':
+	      if (p[1] == 'x')
+		{
+		  length += LONG_WIDTH / 4;
+		  ++p;
+		  break;
+		}
+	      /* Fall through.  */
+	    case 'x':
+	      length += INT_WIDTH / 4;
+	      break;
             default:
               /* Assumed to be '%'.  */
               ++length;
@@ -167,6 +183,32 @@ _dl_exception_create_format (struct dl_exception *exception, const char *objname
               *wptr = '%';
               ++wptr;
               break;
+	    case 'x':
+	      {
+		unsigned long int num = va_arg (ap, unsigned int);
+		char *start = wptr;
+		wptr += INT_WIDTH / 4;
+		char *cp = _itoa (num, wptr, 16, 0);
+		/* Pad to the full width with 0.  */
+		while (cp != start)
+		  *--cp = '0';
+	      }
+	      break;
+	    case 'l':
+	    case 'z':
+	      if (p[1] == 'x')
+		{
+		  unsigned long int num = va_arg (ap, unsigned long int);
+		  char *start = wptr;
+		  wptr += LONG_WIDTH / 4;
+		  char *cp = _itoa (num, wptr, 16, 0);
+		  /* Pad to the full width with 0.  */
+		  while (cp != start)
+		    *--cp = '0';
+		  ++p;
+		  break;
+		}
+	       /* FALLTHROUGH */
             default:
               _dl_fatal_printf ("Fatal error:"
                                 " invalid format in exception string\n");

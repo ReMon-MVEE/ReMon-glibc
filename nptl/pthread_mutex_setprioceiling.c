@@ -1,5 +1,5 @@
 /* Set current priority ceiling of pthread_mutex_t.
-   Copyright (C) 2006-2018 Free Software Foundation, Inc.
+   Copyright (C) 2006-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Jakub Jelinek <jakub@redhat.com>, 2006.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stdbool.h>
 #include <errno.h>
@@ -27,9 +27,10 @@ int
 pthread_mutex_setprioceiling (pthread_mutex_t *mutex, int prioceiling,
 			      int *old_ceiling)
 {
-  /* The low bits of __kind aren't ever changed after pthread_mutex_init,
-     so we don't need a lock yet.  */
-  if ((mutex->__data.__kind & PTHREAD_MUTEX_PRIO_PROTECT_NP) == 0)
+  /* See concurrency notes regarding __kind in struct __pthread_mutex_s
+     in sysdeps/nptl/bits/thread-shared-types.h.  */
+  if ((atomic_load_relaxed (&(mutex->__data.__kind))
+       & PTHREAD_MUTEX_PRIO_PROTECT_NP) == 0)
     return EINVAL;
 
   /* See __init_sched_fifo_prio.  */

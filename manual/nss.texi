@@ -56,13 +56,17 @@ functions to access the databases.
 @noindent
 The databases available in the NSS are
 
+@cindex aliases
 @cindex ethers
 @cindex group
+@cindex gshadow
 @cindex hosts
+@cindex initgroups
 @cindex netgroup
 @cindex networks
-@cindex protocols
 @cindex passwd
+@cindex protocols
+@cindex publickey
 @cindex rpc
 @cindex services
 @cindex shadow
@@ -75,29 +79,35 @@ Ethernet numbers,
 @comment @pxref{Ethernet Numbers}.
 @item group
 Groups of users, @pxref{Group Database}.
+@item gshadow
+Group passphrase hashes and related information.
 @item hosts
 Host names and numbers, @pxref{Host Names}.
+@item initgroups
+Supplementary group access list.
 @item netgroup
 Network wide list of host and users, @pxref{Netgroup Database}.
 @item networks
 Network names and numbers, @pxref{Networks Database}.
+@item passwd
+User identities, @pxref{User Database}.
 @item protocols
 Network protocols, @pxref{Protocols Database}.
-@item passwd
-User passwords, @pxref{User Database}.
+@item publickey
+Public keys for Secure RPC.
 @item rpc
-Remote procedure call names and numbers,
+Remote procedure call names and numbers.
 @comment @pxref{RPC Database}.
 @item services
 Network services, @pxref{Services Database}.
 @item shadow
-Shadow user passwords,
-@comment @pxref{Shadow Password Database}.
+User passphrase hashes and related information.
+@comment @pxref{Shadow Passphrase Database}.
 @end table
 
 @noindent
-There will be some more added later (@code{automount}, @code{bootparams},
-@code{netmasks}, and @code{publickey}).
+@c We currently don't implement automount, netmasks, or bootparams.
+More databases may be added later.
 
 @node NSS Configuration File, NSS Module Internals, NSS Basics, Name Service Switch
 @section The NSS Configuration File
@@ -158,6 +168,10 @@ change frequently.  Normally the user should not have to be cognizant of
 these files since they should be placed in a directory where they are
 found automatically.  Only the names of all available services are
 important.
+
+Lastly, some system software may make use of the NSS configuration file
+to store their own configuration for similar purposes.  Examples of this
+include the @code{automount} service which is used by @code{autofs}.
 
 @node Actions in the NSS configuration, Notes on NSS Configuration File, Services in the NSS configuration, NSS Configuration File
 @subsection Actions in the NSS configuration
@@ -526,7 +540,7 @@ with the main application.)
 The @code{get@var{XXX}by@var{YYY}} functions are the most important
 functions in the NSS modules.  But there are others which implement
 the other ways to access system databases (say for the
-password database, there are @code{setpwent}, @code{getpwent}, and
+user database, there are @code{setpwent}, @code{getpwent}, and
 @code{endpwent}).  These will be described in more detail later.
 Here we give a general way to determine the
 signature of the module function:
@@ -650,7 +664,7 @@ general rules must be followed by all functions.
 In fact there are four kinds of different functions which may appear in
 the interface.  All derive from the traditional ones for system databases.
 @var{db} in the following table is normally an abbreviation for the
-database (e.g., it is @code{pw} for the password database).
+database (e.g., it is @code{pw} for the user database).
 
 @table @code
 @item enum nss_status _nss_@var{database}_set@var{db}ent (void)
@@ -691,7 +705,7 @@ function.  Therefore one must not misuse this buffer to save some state
 information from one call to another.
 
 Before the function returns with a failure code, the implementation
-should store the value of the local @var{errno} variable in the variable
+should store the value of the local @code{errno} variable in the variable
 pointed to be @var{errnop}.  This is important to guarantee the module
 working in statically linked programs.  The stored value must not be
 zero.
@@ -725,7 +739,7 @@ The implementation of this function should honor the @var{stayopen}
 flag set by the @code{set@var{DB}ent} function whenever this makes sense.
 
 Before the function returns, the implementation should store the value of
-the local @var{errno} variable in the variable pointed to by
+the local @code{errno} variable in the variable pointed to by
 @var{errnop}.  This is important to guarantee the module works in
 statically linked programs.
 

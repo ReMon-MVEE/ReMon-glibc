@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Thorsten Kukuk <kukuk@vt.uni-paderborn.de>, 1996.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <ctype.h>
 #include <errno.h>
@@ -85,8 +85,8 @@ static bool in_blacklist (const char *, int, ent_t *);
 static void
 init_nss_interface (void)
 {
-  if (__nss_database_lookup ("shadow_compat", "passwd_compat",
-			     "nis", &ni) >= 0)
+  if (__nss_database_lookup2 ("shadow_compat", "passwd_compat",
+			      "nis", &ni) >= 0)
     {
       nss_setspent = __nss_lookup_function (ni, "setspent");
       nss_getspnam_r = __nss_lookup_function (ni, "getspnam_r");
@@ -127,8 +127,8 @@ copy_spwd_changes (struct spwd *dest, struct spwd *src,
     {
       if (buffer == NULL)
 	dest->sp_pwdp = strdup (src->sp_pwdp);
-      else if (dest->sp_pwdp &&
-	       strlen (dest->sp_pwdp) >= strlen (src->sp_pwdp))
+      else if (dest->sp_pwdp
+	       && strlen (dest->sp_pwdp) >= strlen (src->sp_pwdp))
 	strcpy (dest->sp_pwdp, src->sp_pwdp);
       else
 	{
@@ -215,7 +215,7 @@ _nss_compat_setspent (int stayopen)
 }
 
 
-static enum nss_status
+static enum nss_status __attribute_warn_unused_result__
 internal_endspent (ent_t *ent)
 {
   if (ent->stream != NULL)
@@ -244,6 +244,15 @@ internal_endspent (ent_t *ent)
   return NSS_STATUS_SUCCESS;
 }
 
+/* Like internal_endspent, but preserve errno in all cases.  */
+static void
+internal_endspent_noerror (ent_t *ent)
+{
+  int saved_errno = errno;
+  enum nss_status unused __attribute__ ((unused)) = internal_endspent (ent);
+  __set_errno (saved_errno);
+}
+
 enum nss_status
 _nss_compat_endspent (void)
 {
@@ -260,7 +269,6 @@ _nss_compat_endspent (void)
 
   return result;
 }
-
 
 static enum nss_status
 getspent_next_nss_netgr (const char *name, struct spwd *result, ent_t *ent,
@@ -330,8 +338,8 @@ getspent_next_nss_netgr (const char *name, struct spwd *result, ent_t *ent,
       p2 = buffer + (buflen - p2len);
       buflen -= p2len;
 
-      if (nss_getspnam_r (user, result, buffer, buflen, errnop) !=
-	  NSS_STATUS_SUCCESS)
+      if (nss_getspnam_r (user, result, buffer, buflen, errnop)
+	  != NSS_STATUS_SUCCESS)
 	continue;
 
       if (!in_blacklist (result->sp_namp, strlen (result->sp_namp), ent))
@@ -369,8 +377,8 @@ getspent_next_nss (struct spwd *result, ent_t *ent,
   buflen -= p2len;
   do
     {
-      if ((status = nss_getspent_r (result, buffer, buflen, errnop)) !=
-	  NSS_STATUS_SUCCESS)
+      if ((status = nss_getspent_r (result, buffer, buflen, errnop))
+	  != NSS_STATUS_SUCCESS)
 	return status;
     }
   while (in_blacklist (result->sp_namp, strlen (result->sp_namp), ent));
@@ -663,11 +671,11 @@ internal_getspnam_r (const char *name, struct spwd *result, ent_t *ent,
 	  while (isspace (*p))
 	    ++p;
 	}
-      while (*p == '\0' || *p == '#' ||	/* Ignore empty and comment lines.  */
+      while (*p == '\0' || *p == '#' /* Ignore empty and comment lines.  */
 	     /* Parse the line.  If it is invalid, loop to
 	        get the next line of the file to parse.  */
-	     !(parse_res = _nss_files_parse_spent (p, result, data, buflen,
-						   errnop)));
+	     || !(parse_res = _nss_files_parse_spent (p, result, data, buflen,
+						      errnop)));
 
       if (__glibc_unlikely (parse_res == -1))
 	/* The parser ran out of space.  */
@@ -786,7 +794,7 @@ _nss_compat_getspnam_r (const char *name, struct spwd *pwd,
   if (result == NSS_STATUS_SUCCESS)
     result = internal_getspnam_r (name, pwd, &ent, buffer, buflen, errnop);
 
-  internal_endspent (&ent);
+  internal_endspent_noerror (&ent);
 
   return result;
 }

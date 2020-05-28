@@ -1,5 +1,5 @@
 /* On-demand PLT fixup for shared objects.
-   Copyright (C) 1995-2018 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define IN_DL_RUNTIME 1		/* This can be tested in dl-machine.h.  */
 
@@ -183,10 +183,36 @@ _dl_profile_fixup (
   /* This is the address in the array where we store the result of previous
      relocations.  */
   struct reloc_result *reloc_result = &l->l_reloc_result[reloc_index];
-  DL_FIXUP_VALUE_TYPE *resultp = &reloc_result->addr;
 
-  DL_FIXUP_VALUE_TYPE value = *resultp;
-  if (DL_FIXUP_VALUE_CODE_ADDR (value) == 0)
+ /* CONCURRENCY NOTES:
+
+  Multiple threads may be calling the same PLT sequence and with
+  LD_AUDIT enabled they will be calling into _dl_profile_fixup to
+  update the reloc_result with the result of the lazy resolution.
+  The reloc_result guard variable is reloc_init, and we use
+  acquire/release loads and store to it to ensure that the results of
+  the structure are consistent with the loaded value of the guard.
+  This does not fix all of the data races that occur when two or more
+  threads read reloc_result->reloc_init with a value of zero and read
+  and write to that reloc_result concurrently.  The expectation is
+  generally that while this is a data race it works because the
+  threads write the same values.  Until the data races are fixed
+  there is a potential for problems to arise from these data races.
+  The reloc result updates should happen in parallel but there should
+  be an atomic RMW which does the final update to the real result
+  entry (see bug 23790).
+
+  The following code uses reloc_result->init set to 0 to indicate if it is
+  the first time this object is being relocated, otherwise 1 which
+  indicates the object has already been relocated.
+
+  Reading/Writing from/to reloc_result->reloc_init must not happen
+  before previous writes to reloc_result complete as they could
+  end-up with an incomplete struct.  */
+  DL_FIXUP_VALUE_TYPE value;
+  unsigned int init = atomic_load_acquire (&reloc_result->init);
+
+  if (init == 0)
     {
       /* This is the first time we have to relocate this object.  */
       const ElfW(Sym) *const symtab
@@ -299,15 +325,18 @@ _dl_profile_fixup (
 		{
 		  /* XXX Check whether both DSOs must request action or
 		     only one */
-		  if ((l->l_audit[cnt].bindflags & LA_FLG_BINDFROM) != 0
-		      && (result->l_audit[cnt].bindflags & LA_FLG_BINDTO) != 0)
+		  struct auditstate *l_state = link_map_audit_state (l, cnt);
+		  struct auditstate *result_state
+		    = link_map_audit_state (result, cnt);
+		  if ((l_state->bindflags & LA_FLG_BINDFROM) != 0
+		      && (result_state->bindflags & LA_FLG_BINDTO) != 0)
 		    {
 		      if (afct->symbind != NULL)
 			{
 			  uintptr_t new_value
 			    = afct->symbind (&sym, reloc_result->boundndx,
-					     &l->l_audit[cnt].cookie,
-					     &result->l_audit[cnt].cookie,
+					     &l_state->cookie,
+					     &result_state->cookie,
 					     &flags,
 					     strtab2 + defsym->st_name);
 			  if (new_value != (uintptr_t) sym.st_value)
@@ -346,19 +375,31 @@ _dl_profile_fixup (
 
       /* Store the result for later runs.  */
       if (__glibc_likely (! GLRO(dl_bind_not)))
-	*resultp = value;
+	{
+	  reloc_result->addr = value;
+	  /* Guarantee all previous writes complete before
+	     init is updated.  See CONCURRENCY NOTES earlier  */
+	  atomic_store_release (&reloc_result->init, 1);
+	}
+      init = 1;
     }
+  else
+    value = reloc_result->addr;
 
   /* By default we do not call the pltexit function.  */
   long int framesize = -1;
 
+
 #ifdef SHARED
   /* Auditing checkpoint: report the PLT entering and allow the
      auditors to change the value.  */
-  if (DL_FIXUP_VALUE_CODE_ADDR (value) != 0 && GLRO(dl_naudit) > 0
+  if (GLRO(dl_naudit) > 0
       /* Don't do anything if no auditor wants to intercept this call.  */
       && (reloc_result->enterexit & LA_SYMB_NOPLTENTER) == 0)
     {
+      /* Sanity check:  DL_FIXUP_VALUE_CODE_ADDR (value) should have been
+	 initialized earlier in this function or in another thread.  */
+      assert (DL_FIXUP_VALUE_CODE_ADDR (value) != 0);
       ElfW(Sym) *defsym = ((ElfW(Sym) *) D_PTR (reloc_result->bound,
 						l_info[DT_SYMTAB])
 			   + reloc_result->boundndx);
@@ -383,10 +424,13 @@ _dl_profile_fixup (
 		  & (LA_SYMB_NOPLTENTER << (2 * (cnt + 1)))) == 0)
 	    {
 	      long int new_framesize = -1;
+	      struct auditstate *l_state = link_map_audit_state (l, cnt);
+	      struct auditstate *bound_state
+		= link_map_audit_state (reloc_result->bound, cnt);
 	      uintptr_t new_value
 		= afct->ARCH_LA_PLTENTER (&sym, reloc_result->boundndx,
-					  &l->l_audit[cnt].cookie,
-					  &reloc_result->bound->l_audit[cnt].cookie,
+					  &l_state->cookie,
+					  &bound_state->cookie,
 					  regs, &flags, symname,
 					  &new_framesize);
 	      if (new_value != (uintptr_t) sym.st_value)
@@ -466,9 +510,11 @@ _dl_call_pltexit (struct link_map *l, ElfW(Word) reloc_arg,
 	  && (reloc_result->enterexit
 	      & (LA_SYMB_NOPLTEXIT >> (2 * cnt))) == 0)
 	{
+	  struct auditstate *l_state = link_map_audit_state (l, cnt);
+	  struct auditstate *bound_state
+	    = link_map_audit_state (reloc_result->bound, cnt);
 	  afct->ARCH_LA_PLTEXIT (&sym, reloc_result->boundndx,
-				 &l->l_audit[cnt].cookie,
-				 &reloc_result->bound->l_audit[cnt].cookie,
+				 &l_state->cookie, &bound_state->cookie,
 				 inregs, outregs, symname);
 	}
 

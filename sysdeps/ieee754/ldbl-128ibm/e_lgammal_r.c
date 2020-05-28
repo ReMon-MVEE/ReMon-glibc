@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with this library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* This file was copied from sysdeps/ieee754/ldbl-128/e_lgammal_r.c.  */
 
@@ -21,6 +21,7 @@
 #include <math.h>
 #include <math_private.h>
 #include <float.h>
+#include <libm-alias-finite.h>
 
 static const long double PIL = 3.1415926535897932384626433832795028841972E0L;
 static const long double MAXLGM = 0x5.d53649e2d469dbc1f01e99fd66p+1012L;
@@ -726,11 +727,11 @@ __ieee754_lgammal_r (long double x, int *signgamp)
       if (x < -2 && x > -48)
 	return __lgamma_negl (x, signgamp);
       q = -x;
-      p = __floorl (q);
+      p = floorl (q);
       if (p == q)
 	return (one / fabsl (p - p));
       long double halfp = p * 0.5L;
-      if (halfp == __floorl (halfp))
+      if (halfp == floorl (halfp))
 	*signgamp = -1;
       else
 	*signgamp = 1;
@@ -751,7 +752,7 @@ __ieee754_lgammal_r (long double x, int *signgamp)
   if (x < 13.5L)
     {
       p = 0;
-      nx = __floorl (x + 0.5L);
+      nx = floorl (x + 0.5L);
       nn = nx;
       switch (nn)
 	{
@@ -989,4 +990,4 @@ __ieee754_lgammal_r (long double x, int *signgamp)
   q += neval (p, RASY, NRASY) / x;
   return (q);
 }
-strong_alias (__ieee754_lgammal_r, __lgammal_r_finite)
+libm_alias_finite (__ieee754_lgammal_r, __lgammal_r)

@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2018 Free Software Foundation, Inc.
+# Copyright (C) 1991-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 #
 #	Sub-makefile for string portion of library.
@@ -25,7 +25,8 @@ include ../Makeconfig
 headers		:= string.h bits/string_fortified.h			\
 		   strings.h bits/strings_fortified.h			\
 		   byteswap.h bits/byteswap.h				\
-		   endian.h bits/endian.h bits/uintn-identity.h		\
+		   endian.h bits/endian.h bits/endianness.h		\
+		   bits/uintn-identity.h				\
 		   memory.h argz.h envz.h
 
 routines	:= strcat strchr strcmp strcoll strcpy strcspn		\
@@ -63,6 +64,12 @@ tests		:= tester inl-tester noinl-tester testcopy test-ffs	\
 
 # This test allocates a lot of memory and can run for a long time.
 xtests = tst-strcoll-overflow
+
+# This test needs libdl.
+ifeq (yes,$(build-shared))
+tests += test-strerror-errno
+LDLIBS-test-strerror-errno = $(libdl)
+endif
 
 ifeq ($(run-built-tests),yes)
 tests-special += $(objpfx)tst-svc-cmp.out

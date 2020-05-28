@@ -1,5 +1,5 @@
 /* Process tracing interface `ptrace' for GNU Hurd.
-   Copyright (C) 1991-2018 Free Software Foundation, Inc.
+   Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <sys/ptrace.h>
@@ -178,8 +178,8 @@ ptrace (enum __ptrace_request request, ... )
 	if (! err)
 	  {
 	    err = __msg_set_init_int (msgport, task, INIT_TRACEMASK,
-				      request == PTRACE_DETACH ? 0 :
-				      ~(sigset_t) 0);
+				      request == PTRACE_DETACH ? 0
+				      : ~(sigset_t) 0);
 	    if (! err)
 	      {
 		if (request == PTRACE_ATTACH)
@@ -349,8 +349,8 @@ ptrace (enum __ptrace_request request, ... )
 	task_t task = __pid2task (pid);
 	if (task == MACH_PORT_NULL)
 	  return -1;
-	if ((vm_address_t) addr % __vm_page_size == 0 &&
-	    (vm_address_t) data % __vm_page_size == 0)
+	if ((vm_address_t) addr % __vm_page_size == 0
+	    && (vm_address_t) data % __vm_page_size == 0)
 	  {
 	    /* Writing whole pages; can go directly from the user's buffer.  */
 	    ourpage = (vm_address_t) addr2;

@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Bernd Schmidt <crux@Pool.Informatik.RWTH-Aachen.DE>, 1997.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Tree search for red/black trees.
    The algorithm for adding nodes is taken from one of the many "Algorithms"
@@ -719,7 +719,41 @@ __twalk (const void *vroot, __action_fn_t action)
 libc_hidden_def (__twalk)
 weak_alias (__twalk, twalk)
 
+/* twalk_r is the same as twalk, but with a closure parameter instead
+   of the level.  */
+static void
+trecurse_r (const void *vroot, void (*action) (const void *, VISIT, void *),
+	    void *closure)
+{
+  const_node root = (const_node) vroot;
 
+  if (LEFT(root) == NULL && RIGHT(root) == NULL)
+    (*action) (root, leaf, closure);
+  else
+    {
+      (*action) (root, preorder, closure);
+      if (LEFT(root) != NULL)
+	trecurse_r (LEFT(root), action, closure);
+      (*action) (root, postorder, closure);
+      if (RIGHT(root) != NULL)
+	trecurse_r (RIGHT(root), action, closure);
+      (*action) (root, endorder, closure);
+    }
+}
+
+void
+__twalk_r (const void *vroot, void (*action) (const void *, VISIT, void *),
+	   void *closure)
+{
+  const_node root = (const_node) vroot;
+
+  CHECK_TREE ((node) root);
+
+  if (root != NULL && action != NULL)
+    trecurse_r (root, action, closure);
+}
+libc_hidden_def (__twalk_r)
+weak_alias (__twalk_r, twalk_r)
 
 /* The standardized functions miss an important functionality: the
    tree cannot be removed easily.  We provide a function to do this.  */

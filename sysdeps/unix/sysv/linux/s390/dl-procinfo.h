@@ -1,5 +1,5 @@
 /* Linux/s390 version of processor capability information handling macros.
-   Copyright (C) 2006-2018 Free Software Foundation, Inc.
+   Copyright (C) 2006-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Martin Schwidefsky <schwidefsky@de.ibm.com>, 2006.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _DL_S390_PROCINFO_H
 #define _DL_S390_PROCINFO_H	1
@@ -32,8 +32,8 @@ _dl_procinfo (unsigned int type, unsigned long int word)
      in the kernel sources.  */
   int i;
 
-  /* Fallback to unknown output mechanism.  */
-  if (type == AT_HWCAP2)
+  /* Fallback to generic output mechanism.  */
+  if (type != AT_HWCAP)
     return -1;
 
   _dl_printf ("AT_HWCAP:   ");

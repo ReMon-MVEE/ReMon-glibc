@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <internal-signals.h>
 
 
 static pthread_barrier_t b;
@@ -11,7 +12,6 @@ static pthread_t th2;
 static void *
 tf2 (void *arg)
 {
-#ifdef SIGCANCEL
   sigset_t mask;
   if (pthread_sigmask (SIG_SETMASK, NULL, &mask) != 0)
     {
@@ -23,7 +23,6 @@ tf2 (void *arg)
       puts ("SIGCANCEL blocked in new thread");
       exit (1);
     }
-#endif
 
   /* Sync with the main thread so that we do not test anything else.  */
   int e = pthread_barrier_wait (&b);
@@ -169,5 +168,4 @@ do_test (void)
 }
 
 #define TEST_FUNCTION do_test ()
-#define TIMEOUT 4
 #include "../test-skeleton.c"

@@ -1,5 +1,5 @@
 /* Support functionality for using dlopen/dlclose/dlsym.
-   Copyright (C) 2017-2018 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <stddef.h>
 #include <support/check.h>
@@ -28,22 +28,45 @@ xdlopen (const char *filename, int flags)
   if (dso == NULL)
     FAIL_EXIT1 ("error: dlopen: %s\n", dlerror ());
 
-  /* Clear any errors.  */
-  dlerror ();
-
   return dso;
 }
 
 void *
 xdlsym (void *handle, const char *symbol)
 {
+  /* Clear any pending errors.  */
+  dlerror ();
+
   void *sym = dlsym (handle, symbol);
 
   if (sym == NULL)
-    FAIL_EXIT1 ("error: dlsym: %s\n", dlerror ());
+    {
+      const char *error = dlerror ();
+      if (error != NULL)
+        FAIL_EXIT1 ("error: dlsym: %s\n", error);
+      /* If there was no error, we found a NULL symbol.  Return the
+         NULL value in this case.  */
+    }
 
-  /* Clear any errors.  */
+  return sym;
+}
+
+void *
+xdlvsym (void *handle, const char *symbol, const char *version)
+{
+  /* Clear any pending errors.  */
   dlerror ();
+
+  void *sym = dlvsym (handle, symbol, version);
+
+  if (sym == NULL)
+    {
+      const char *error = dlerror ();
+      if (error != NULL)
+        FAIL_EXIT1 ("error: dlvsym: %s\n", error);
+      /* If there was no error, we found a NULL symbol.  Return the
+         NULL value in this case.  */
+    }
 
   return sym;
 }
@@ -53,7 +76,4 @@ xdlclose (void *handle)
 {
   if (dlclose (handle) != 0)
     FAIL_EXIT1 ("error: dlclose: %s\n", dlerror ());
-
-  /* Clear any errors.  */
-  dlerror ();
 }

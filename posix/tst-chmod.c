@@ -1,5 +1,5 @@
 /* Test for chmod functions.
-   Copyright (C) 2000-2018 Free Software Foundation, Inc.
+   Copyright (C) 2000-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 2000.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <dirent.h>
 #include <errno.h>
@@ -368,10 +368,5 @@ do_test (int argc, char *argv[])
 
   return result;
 }
-
-
-/* We need a few seconds since we have a few sleeps in the code.  */
-#define TIMEOUT	20
-
 
 #include "../test-skeleton.c"

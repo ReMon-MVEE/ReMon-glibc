@@ -1,5 +1,5 @@
 /* Round long double to integer away from zero.
-   Copyright (C) 1997-2018 Free Software Foundation, Inc.
+   Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1997 and
 		  Jakub Jelinek <jj@ultra.linux.cz>, 1999.
@@ -16,17 +16,23 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
+#define NO_MATH_REDIRECT
 #include <math.h>
 
 #include <math_private.h>
 #include <libm-alias-ldouble.h>
+#include <math-use-builtins.h>
 
 
 _Float128
 __roundl (_Float128 x)
 {
+#if USE_ROUNDL_BUILTIN
+  return __builtin_roundl (x);
+#else
+  /* Use generic implementation.  */
   int32_t j0;
   uint64_t i1, i0;
 
@@ -77,5 +83,6 @@ __roundl (_Float128 x)
 
   SET_LDOUBLE_WORDS64 (x, i0, i1);
   return x;
+#endif /* ! USE_ROUNDL_BUILTIN  */
 }
 libm_alias_ldouble (__round, round)

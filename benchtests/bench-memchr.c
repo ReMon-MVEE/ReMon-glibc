@@ -1,5 +1,5 @@
 /* Measure memchr functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,14 +14,11 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef WIDE
-# define CHAR char
 # define SMALL_CHAR 127
 #else
-# include <wchar.h>
-# define CHAR wchar_t
 # define SMALL_CHAR 1273
 #endif /* WIDE */
 
@@ -35,10 +32,8 @@
 # include "bench-string.h"
 
 # ifndef WIDE
-#  define MEMCHR memchr
 #  define SIMPLE_MEMCHR simple_memchr
 # else
-#  define MEMCHR wmemchr
 #  define SIMPLE_MEMCHR simple_wmemchr
 # endif /* WIDE */
 
@@ -61,7 +56,7 @@ SIMPLE_MEMCHR (const CHAR *s, int c, size_t n)
 static void
 do_one_test (impl_t *impl, const CHAR *s, int c, size_t n)
 {
-  size_t i, iters = INNER_LOOP_ITERS;
+  size_t i, iters = INNER_LOOP_ITERS_LARGE;
   timing_t start, stop, cur;
 
   TIMING_NOW (start);

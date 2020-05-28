@@ -1,5 +1,5 @@
 /* Mail alias file parser in nss_files module.
-   Copyright (C) 1996-2018 Free Software Foundation, Inc.
+   Copyright (C) 1996-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, 1996.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <aliases.h>
 #include <ctype.h>
@@ -221,6 +221,13 @@ get_next_alias (FILE *stream, const char *match, struct aliasent *result,
 			{
 			  while (! feof_unlocked (listfile))
 			    {
+			      if (room_left < 2)
+				{
+				  free (old_line);
+				  fclose (listfile);
+				  goto no_more_room;
+				}
+
 			      first_unused[room_left - 1] = '\xff';
 			      line = fgets_unlocked (first_unused, room_left,
 						     listfile);
@@ -229,6 +236,7 @@ get_next_alias (FILE *stream, const char *match, struct aliasent *result,
 			      if (first_unused[room_left - 1] != '\xff')
 				{
 				  free (old_line);
+				  fclose (listfile);
 				  goto no_more_room;
 				}
 
@@ -256,6 +264,7 @@ get_next_alias (FILE *stream, const char *match, struct aliasent *result,
 						       + __alignof__ (char *)))
 					{
 					  free (old_line);
+					  fclose (listfile);
 					  goto no_more_room;
 					}
 				      room_left -= ((first_unused - cp)
@@ -324,6 +333,16 @@ get_next_alias (FILE *stream, const char *match, struct aliasent *result,
 		     can be ignored.  */
 		  first_unused[room_left - 1] = '\xff';
 		  line = fgets_unlocked (first_unused, room_left, stream);
+		  if (line == NULL)
+		    {
+		      /* Continuation line without any data and
+			 without a newline at the end.  Treat it as an
+			 empty line and retry, reaching EOF once
+			 more.  */
+		      line = first_unused;
+		      *line = '\0';
+		      continue;
+		    }
 		  if (first_unused[room_left - 1] != '\xff')
 		    goto no_more_room;
 		  cp = strpbrk (line, "#\n");

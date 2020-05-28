@@ -1,7 +1,7 @@
 #! @PERL@
 eval "exec @PERL@ -S $0 $@"
     if 0;
-# Copyright (C) 1997-2018 Free Software Foundation, Inc.
+# Copyright (C) 1997-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 # Contributed by Ulrich Drepper <drepper@gnu.org>, 1997.
 # Based on the mtrace.awk script.
@@ -18,7 +18,7 @@ eval "exec @PERL@ -S $0 $@"
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 $VERSION = "@VERSION@";
 $PKGVERSION = "@PKGVERSION@";
@@ -45,7 +45,7 @@ arglist: while (@ARGV) {
 	$ARGV[0] eq "--vers" || $ARGV[0] eq "--versi" ||
 	$ARGV[0] eq "--versio" || $ARGV[0] eq "--version") {
 	print "mtrace $PKGVERSION$VERSION\n";
-	print "Copyright (C) 2018 Free Software Foundation, Inc.\n";
+	print "Copyright (C) 2020 Free Software Foundation, Inc.\n";
 	print "This is free software; see the source for copying conditions.  There is NO\n";
 	print "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n";
 	print "Written by Ulrich Drepper <drepper\@gnu.org>\n";

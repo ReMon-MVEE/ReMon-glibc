@@ -1,5 +1,5 @@
 /* Helper macros for functions returning a narrower type.
-   Copyright (C) 2018 Free Software Foundation, Inc.
+   Copyright (C) 2018-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef	_MATH_NARROW_H
 #define	_MATH_NARROW_H	1
@@ -26,6 +26,7 @@
 #include <ieee754.h>
 #include <math-barriers.h>
 #include <math_private.h>
+#include <fenv_private.h>
 
 /* Carry out a computation using round-to-odd.  The computation is
    EXPR; the union type in which to store the result is UNION and the
@@ -162,6 +163,112 @@
 						\
       ret = (TYPE) ((X) - (Y));			\
       CHECK_NARROW_SUB (ret, (X), (Y));		\
+      return ret;				\
+    }						\
+  while (0)
+
+/* Check for error conditions from a narrowing multiply function
+   returning RET with arguments X and Y and set errno as needed.
+   Overflow and underflow can occur for finite arguments and a domain
+   error for Inf * 0.  */
+#define CHECK_NARROW_MUL(RET, X, Y)			\
+  do							\
+    {							\
+      if (!isfinite (RET))				\
+	{						\
+	  if (isnan (RET))				\
+	    {						\
+	      if (!isnan (X) && !isnan (Y))		\
+		__set_errno (EDOM);			\
+	    }						\
+	  else if (isfinite (X) && isfinite (Y))	\
+	    __set_errno (ERANGE);			\
+	}						\
+      else if ((RET) == 0 && (X) != 0 && (Y) != 0)	\
+	__set_errno (ERANGE);				\
+    }							\
+  while (0)
+
+/* Implement narrowing multiply using round-to-odd.  The arguments are
+   X and Y, the return type is TYPE and UNION, MANTISSA and SUFFIX are
+   as for ROUND_TO_ODD.  */
+#define NARROW_MUL_ROUND_TO_ODD(X, Y, TYPE, UNION, SUFFIX, MANTISSA)	\
+  do									\
+    {									\
+      TYPE ret;								\
+									\
+      ret = (TYPE) ROUND_TO_ODD (math_opt_barrier (X) * (Y),		\
+				 UNION, SUFFIX, MANTISSA);		\
+									\
+      CHECK_NARROW_MUL (ret, (X), (Y));					\
+      return ret;							\
+    }									\
+  while (0)
+
+/* Implement a narrowing multiply function that is not actually
+   narrowing or where no attempt is made to be correctly rounding (the
+   latter only applies to IBM long double).  The arguments are X and Y
+   and the return type is TYPE.  */
+#define NARROW_MUL_TRIVIAL(X, Y, TYPE)		\
+  do						\
+    {						\
+      TYPE ret;					\
+						\
+      ret = (TYPE) ((X) * (Y));			\
+      CHECK_NARROW_MUL (ret, (X), (Y));		\
+      return ret;				\
+    }						\
+  while (0)
+
+/* Check for error conditions from a narrowing divide function
+   returning RET with arguments X and Y and set errno as needed.
+   Overflow, underflow and divide-by-zero can occur for finite
+   arguments and a domain error for Inf / Inf and 0 / 0.  */
+#define CHECK_NARROW_DIV(RET, X, Y)			\
+  do							\
+    {							\
+      if (!isfinite (RET))				\
+	{						\
+	  if (isnan (RET))				\
+	    {						\
+	      if (!isnan (X) && !isnan (Y))		\
+		__set_errno (EDOM);			\
+	    }						\
+	  else if (isfinite (X))			\
+	    __set_errno (ERANGE);			\
+	}						\
+      else if ((RET) == 0 && (X) != 0 && !isinf (Y))	\
+	__set_errno (ERANGE);				\
+    }							\
+  while (0)
+
+/* Implement narrowing divide using round-to-odd.  The arguments are
+   X and Y, the return type is TYPE and UNION, MANTISSA and SUFFIX are
+   as for ROUND_TO_ODD.  */
+#define NARROW_DIV_ROUND_TO_ODD(X, Y, TYPE, UNION, SUFFIX, MANTISSA)	\
+  do									\
+    {									\
+      TYPE ret;								\
+									\
+      ret = (TYPE) ROUND_TO_ODD (math_opt_barrier (X) / (Y),		\
+				 UNION, SUFFIX, MANTISSA);		\
+									\
+      CHECK_NARROW_DIV (ret, (X), (Y));					\
+      return ret;							\
+    }									\
+  while (0)
+
+/* Implement a narrowing divide function that is not actually
+   narrowing or where no attempt is made to be correctly rounding (the
+   latter only applies to IBM long double).  The arguments are X and Y
+   and the return type is TYPE.  */
+#define NARROW_DIV_TRIVIAL(X, Y, TYPE)		\
+  do						\
+    {						\
+      TYPE ret;					\
+						\
+      ret = (TYPE) ((X) / (Y));			\
+      CHECK_NARROW_DIV (ret, (X), (Y));		\
       return ret;				\
     }						\
   while (0)

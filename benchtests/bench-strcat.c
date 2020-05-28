@@ -1,5 +1,5 @@
 /* Measure strcat functions.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,58 +14,44 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #define TEST_MAIN
 #ifndef WIDE
 # define TEST_NAME "strcat"
 #else
 # define TEST_NAME "wcscat"
+# define generic_strcat generic_wcscat
 #endif /* WIDE */
 #include "bench-string.h"
 
+#define BIG_CHAR MAX_CHAR
+
 #ifndef WIDE
-# define STRCAT strcat
-# define CHAR char
 # define sfmt "s"
-# define SIMPLE_STRCAT simple_strcat
-# define STRLEN strlen
-# define STRCMP strcmp
-# define BIG_CHAR CHAR_MAX
 # define SMALL_CHAR 127
 #else
-# include <wchar.h>
-# define STRCAT wcscat
-# define CHAR wchar_t
 # define sfmt "ls"
-# define SIMPLE_STRCAT simple_wcscat
-# define STRLEN wcslen
-# define STRCMP wcscmp
-# define BIG_CHAR WCHAR_MAX
 # define SMALL_CHAR 1273
 #endif /* WIDE */
 
 
 typedef CHAR *(*proto_t) (CHAR *, const CHAR *);
-CHAR *SIMPLE_STRCAT (CHAR *, const CHAR *);
-
-IMPL (SIMPLE_STRCAT, 0)
-IMPL (STRCAT, 1)
 
 CHAR *
-SIMPLE_STRCAT (CHAR *dst, const CHAR *src)
+generic_strcat (CHAR *dst, const CHAR *src)
 {
-  CHAR *ret = dst;
-  while (*dst++ != '\0');
-  --dst;
-  while ((*dst++ = *src++) != '\0');
-  return ret;
+  STRCPY (dst + STRLEN (dst), src);
+  return dst;
 }
+
+IMPL (STRCAT, 1)
+IMPL (generic_strcat, 0)
 
 static void
 do_one_test (impl_t *impl, CHAR *dst, const CHAR *src)
 {
-  size_t k = STRLEN (dst), i, iters = INNER_LOOP_ITERS;
+  size_t k = STRLEN (dst), i, iters = INNER_LOOP_ITERS_LARGE;
   timing_t start, stop, cur;
 
   if (CALL (impl, dst, src) != dst)

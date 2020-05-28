@@ -1,5 +1,5 @@
 /* Code to load locale data from the locale archive file.
-   Copyright (C) 2002-2018 Free Software Foundation, Inc.
+   Copyright (C) 2002-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <locale.h>
 #include <stddef.h>
@@ -274,7 +274,7 @@ _nl_load_locale_from_archive (int category, const char **namep)
 					+ head->namehash_offset);
 
   /* Avoid division by 0 if the file is corrupted.  */
-  if (__glibc_unlikely (head->namehash_size == 0))
+  if (__glibc_unlikely (head->namehash_size <= 2))
     goto close_and_out;
 
   idx = hval % head->namehash_size;

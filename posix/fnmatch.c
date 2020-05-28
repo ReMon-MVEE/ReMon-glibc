@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -53,7 +53,6 @@
    we support a correct implementation only in glibc.  */
 #ifdef _LIBC
 # include "../locale/localeinfo.h"
-# include "../locale/elem-hash.h"
 # include "../locale/coll-lookup.h"
 # include <shlib-compat.h>
 
@@ -237,6 +236,11 @@ __wcschrnul (const wchar_t *s, wint_t c)
 #  define MEMPCPY(D, S, N) __wmempcpy (D, S, N)
 #  define MEMCHR(S, C, N) __wmemchr (S, C, N)
 #  define STRCOLL(S1, S2) wcscoll (S1, S2)
+#  ifdef _LIBC
+#   define WMEMCMP(S1, S2, N) __wmemcmp (S1, S2, N)
+#  else
+#   define WMEMCMP(S1, S2, N) wmemcmp (S1, S2, N)
+#  endif
 #  define WIDE_CHAR_VERSION 1
 /* Change the name the header defines so it doesn't conflict with
    the <locale/weight.h> version included above.  */

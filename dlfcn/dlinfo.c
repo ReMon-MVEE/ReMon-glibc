@@ -1,5 +1,5 @@
 /* dlinfo -- Get information from the dynamic linker.
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2003-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <dlfcn.h>
 #include <link.h>
@@ -26,7 +26,7 @@
 int
 dlinfo (void *handle, int request, void *arg)
 {
-  return __dlinfo (handle, request, arg, RETURN_ADDRESS (0));
+  return __dlinfo (handle, request, arg);
 }
 
 #else
@@ -35,7 +35,6 @@ dlinfo (void *handle, int request, void *arg)
 
 struct dlinfo_args
 {
-  ElfW(Addr) caller;
   void *handle;
   int request;
   void *arg;
@@ -46,24 +45,6 @@ dlinfo_doit (void *argsblock)
 {
   struct dlinfo_args *const args = argsblock;
   struct link_map *l = args->handle;
-
-# if 0
-  if (args->handle == RTLD_SELF)
-    {
-      Lmid_t nsid;
-
-      /* Find the highest-addressed object that CALLER is not below.  */
-      for (nsid = 0; nsid < DL_NNS; ++nsid)
-	for (l = GL(dl_ns)[nsid]._ns_loaded; l != NULL; l = l->l_next)
-	  if (caller >= l->l_map_start && caller < l->l_map_end
-	      && (l->l_contiguous || _dl_addr_inside_object (l, caller)))
-	    break;
-
-      if (l == NULL)
-	_dl_signal_error (0, NULL, NULL, N_("\
-RTLD_SELF used in code not dynamically loaded"));
-    }
-# endif
 
   switch (args->request)
     {
@@ -108,16 +89,14 @@ RTLD_SELF used in code not dynamically loaded"));
 }
 
 int
-__dlinfo (void *handle, int request, void *arg DL_CALLER_DECL)
+__dlinfo (void *handle, int request, void *arg)
 {
 # ifdef SHARED
   if (!rtld_active ())
-    return _dlfcn_hook->dlinfo (handle, request, arg,
-				DL_CALLER);
+    return _dlfcn_hook->dlinfo (handle, request, arg);
 # endif
 
-  struct dlinfo_args args = { (ElfW(Addr)) DL_CALLER,
-			      handle, request, arg };
+  struct dlinfo_args args = { handle, request, arg };
   return _dlerror_run (&dlinfo_doit, &args) ? -1 : 0;
 }
 # ifdef SHARED

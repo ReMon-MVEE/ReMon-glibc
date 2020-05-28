@@ -1,5 +1,5 @@
 /* Initial program startup for running under the GNU Hurd.
-   Copyright (C) 1991-2018 Free Software Foundation, Inc.
+   Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
 #include <stdlib.h>
@@ -127,9 +127,9 @@ _hurd_startup (void **argptr, void (*main) (intptr_t *data))
 	 pointers and fill them in.  We allocate the space for the
 	 environment pointers immediately after the argv pointers because
 	 the ELF ABI will expect it.  */
-      argcptr = __alloca (sizeof (intptr_t) +
-			  (argc + 1 + envc + 1) * sizeof (char *) +
-			  sizeof (struct hurd_startup_data));
+      argcptr = __alloca (sizeof (intptr_t)
+			  + (argc + 1 + envc + 1) * sizeof (char *)
+			  + sizeof (struct hurd_startup_data));
       *argcptr = argc;
       argv = (void *) (argcptr + 1);
       __argz_extract (args, argslen, argv);

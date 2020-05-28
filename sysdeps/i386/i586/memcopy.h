@@ -1,5 +1,5 @@
 /* memcopy.h -- definitions for memory copy functions.  Pentium version.
-   Copyright (C) 1994-2018 Free Software Foundation, Inc.
+   Copyright (C) 1994-2020 Free Software Foundation, Inc.
    Contributed by Torbjorn Granlund (tege@sics.se).
    This file is part of the GNU C Library.
 
@@ -15,7 +15,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /* Get the i386 definitions.  We will override some of them below.  */
 #include <sysdeps/i386/memcopy.h>

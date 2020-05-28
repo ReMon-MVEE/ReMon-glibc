@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2018 Free Software Foundation, Inc.
+# Copyright (C) 1991-2020 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
 # You should have received a copy of the GNU Lesser General Public
 # License along with the GNU C Library; if not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 #
 #	Makefile for locales.
@@ -37,6 +37,8 @@ others		= localedef locale
 install-bin	= localedef locale
 extra-objs	= $(localedef-modules:=.o) $(localedef-aux:=.o) \
 		  $(locale-modules:=.o) $(lib-modules:=.o)
+generated 	+= C-translit.h
+before-compile	+= $(objpfx)C-translit.h
 
 extra-libs	= libBrokenLocale
 extra-libs-others = $(extra-libs)
@@ -60,6 +62,10 @@ lib-modules		:= charmap-dir simple-hash xmalloc xstrdup \
 GPERF = gperf
 GPERFFLAGS = -acCgopt -k1,2,5,9,$$ -L ANSI-C
 
+ifeq ($(run-built-tests),yes)
+tests-special += $(objpfx)tst-locale-locpath.out
+endif
+
 include ../Rules
 
 CFLAGS-md5.c += -I../crypt
@@ -74,8 +80,9 @@ $(objpfx)localedef: $(localedef-aux:%=$(objpfx)%.o)
 $(objpfx)locale: $(locale-modules:%=$(objpfx)%.o)
 $(objpfx)localedef $(objpfx)locale: $(lib-modules:%=$(objpfx)%.o)
 
-C-translit.h: C-translit.h.in gen-translit.pl
-	$(PERL) gen-translit.pl < $< > $@.tmp
+$(objpfx)C-translit.h: C-translit.h.in gen-translit.py
+	$(make-target-directory)
+	$(PYTHON) gen-translit.py < $< > $@.tmp
 	mv -f $@.tmp $@
 
 # The path to the compiled binary locale archive or compiled locales,
@@ -104,3 +111,7 @@ cpp-srcs-left := $(localedef-modules) $(localedef-aux) $(locale-modules) \
 		 $(lib-modules)
 lib := locale-programs
 include $(patsubst %,$(..)libof-iterator.mk,$(cpp-srcs-left))
+
+$(objpfx)tst-locale-locpath.out : tst-locale-locpath.sh $(objpfx)locale
+	$(SHELL) $< '$(common-objpfx)' '$(test-wrapper-env)' '$(run-program-env)' > $@; \
+	$(evaluate-test)

@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Ulrich Drepper <drepper@cygnus.com>, August 1995.
 
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sys/sem.h>
 #include <ipc_priv.h>
@@ -24,13 +24,16 @@
 /* Perform user-defined atomical operation of array of semaphores.  */
 
 int
-semtimedop (int semid, struct sembuf *sops, size_t nsops,
-	    const struct timespec *timeout)
+__semtimedop (int semid, struct sembuf *sops, size_t nsops,
+	      const struct timespec *timeout)
 {
-#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+  /* semtimedop wire-up syscall is not exported for 32-bit ABIs (they have
+     semtimedop_time64 instead with uses a 64-bit time_t).  */
+#if defined __ASSUME_DIRECT_SYSVIPC_SYSCALLS && defined __NR_semtimedop
   return INLINE_SYSCALL_CALL (semtimedop, semid, sops, nsops, timeout);
 #else
-  return INLINE_SYSCALL_CALL (ipc, IPCOP_semtimedop, semid, nsops, 0, sops,
-			      timeout);
+  return INLINE_SYSCALL_CALL (ipc, IPCOP_semtimedop, semid,
+			      SEMTIMEDOP_IPC_ARGS (nsops, sops, timeout));
 #endif
 }
+weak_alias (__semtimedop, semtimedop)

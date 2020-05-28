@@ -1,5 +1,5 @@
 /* MIPS16 syscall wrappers.
-   Copyright (C) 2013-2018 Free Software Foundation, Inc.
+   Copyright (C) 2013-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,15 +14,15 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
 
 #undef __mips16_syscall4
 
-long long __nomips16
-__mips16_syscall4 (long a0, long a1, long a2, long a3,
-		   long number)
+long long int __nomips16
+__mips16_syscall4 (long int a0, long int a1, long int a2, long int a3,
+		   long int number)
 {
   union __mips_syscall_return ret;
   ret.reg.v0 = INTERNAL_SYSCALL_MIPS16 (number, ret.reg.v1, 4,

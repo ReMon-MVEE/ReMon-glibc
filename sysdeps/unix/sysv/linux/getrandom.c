@@ -1,5 +1,5 @@
 /* Implementation of the getrandom system call.
-   Copyright (C) 2016-2018 Free Software Foundation, Inc.
+   Copyright (C) 2016-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #include <sys/random.h>
 #include <errno.h>
@@ -25,7 +25,7 @@
 /* Write up to LENGTH bytes of randomness starting at BUFFER.
    Return the number of bytes written, or -1 on error.  */
 ssize_t
-getrandom (void *buffer, size_t length, unsigned int flags)
+__getrandom (void *buffer, size_t length, unsigned int flags)
 {
   return SYSCALL_CANCEL (getrandom, buffer, length, flags);
 }
@@ -33,7 +33,7 @@ getrandom (void *buffer, size_t length, unsigned int flags)
 /* Always provide a definition, even if the kernel headers lack the
    system call number. */
 ssize_t
-getrandom (void *buffer, size_t length, unsigned int flags)
+__getrandom (void *buffer, size_t length, unsigned int flags)
 {
   /* Ideally, we would add a cancellation point here, but we currently
      cannot do so inside libc.  */
@@ -41,3 +41,5 @@ getrandom (void *buffer, size_t length, unsigned int flags)
   return -1;
 }
 #endif
+libc_hidden_def (__getrandom)
+weak_alias (__getrandom, getrandom)
