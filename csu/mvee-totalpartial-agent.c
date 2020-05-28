@@ -415,7 +415,7 @@ static INLINEIFNODEBUG void mvee_read_lock_result_wait(unsigned short op_type, v
 					// assert that we're at the end of the buffer			   
 					mvee_assert_at_end_of_buffer(current_pos);
 					// wait for everything before us to complete
-					mvee_wait_for_preceding_ops(start_pos, mvee_lock_buffer_info->size + 1, 1, 0);					
+					mvee_wait_for_preceding_ops(start_pos, mvee_lock_buffer_info->size, 1, 0);
 					mvee_lock_buffer_flush();
 					current_pos = mvee_lock_buffer_prev_pos = 0;
 					break;
