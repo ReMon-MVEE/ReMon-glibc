@@ -803,117 +803,104 @@ enum mvee_extended_atomics {
 //
 #define __arch_c_compare_and_exchange_val_8_acq(mem, newval, oldval)	\
 	({																	\
-		typeof(*mem) ____result;										\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_VAL, mem, 1);			\
-		____result = orig___arch_c_compare_and_exchange_val_8_acq(mem, newval, oldval); \
+		typeof(*mem) ____result = orig___arch_c_compare_and_exchange_val_8_acq(mem, newval, oldval); \
 		MVEE_POSTOP();													\
 		____result;														\
 	})
 
 #define __arch_c_compare_and_exchange_val_16_acq(mem, newval, oldval)	\
 	({																	\
-		typeof(*mem) ____result;										\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_VAL, mem, 1);			\
-		____result = orig___arch_c_compare_and_exchange_val_16_acq(mem, newval, oldval); \
+		typeof(*mem) ____result = orig___arch_c_compare_and_exchange_val_16_acq(mem, newval, oldval); \
 		MVEE_POSTOP();													\
 		____result;														\
 	})
 
 #define __arch_c_compare_and_exchange_val_32_acq(mem, newval, oldval)	\
 	({																	\
-		typeof(*mem) ____result;										\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_VAL, mem, 1);			\
-		____result = orig___arch_c_compare_and_exchange_val_32_acq(mem, newval, oldval); \
+		typeof(*mem) ____result = orig___arch_c_compare_and_exchange_val_32_acq(mem, newval, oldval); \
 		MVEE_POSTOP();													\
 		____result;														\
 	})
 
 #define __arch_c_compare_and_exchange_val_64_acq(mem, newval, oldval)	\
 	({																	\
-		typeof(*mem) ____result;										\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_VAL, mem, 1);			\
-		____result = orig___arch_c_compare_and_exchange_val_64_acq(mem, newval, oldval); \
+		typeof(*mem) ____result = orig___arch_c_compare_and_exchange_val_64_acq(mem, newval, oldval); \
 		MVEE_POSTOP();													\
 		____result;														\
 	})
 
 #define atomic_compare_and_exchange_val_acq(mem, newval, oldval)		\
 	({																	\
-		typeof(*mem) ____result;										\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_VAL, mem, 1);			\
-		____result = orig_atomic_compare_and_exchange_val_acq(mem, newval, oldval); \
+		typeof(*mem) ____result = orig_atomic_compare_and_exchange_val_acq(mem, newval, oldval); \
 		MVEE_POSTOP();													\
 		____result;														\
 	})
 
 #define atomic_compare_and_exchange_val_rel(mem, newval, oldval)		\
 	({																	\
-		typeof(*mem) ____result;										\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_VAL, mem, 1);			\
-		____result = orig_atomic_compare_and_exchange_val_rel(mem, newval, oldval); \
+		typeof(*mem) ____result = orig_atomic_compare_and_exchange_val_rel(mem, newval, oldval); \
 		MVEE_POSTOP();													\
 		____result;														\
 	})
 
 #define atomic_compare_and_exchange_bool_acq(mem, newval, oldval)		\
 	({																	\
-		bool ____result;												\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_BOOL, mem, 1);			\
-		____result = orig_atomic_compare_and_exchange_bool_acq(mem, newval, oldval); \
+		bool ____result = orig_atomic_compare_and_exchange_bool_acq(mem, newval, oldval); \
 		MVEE_POSTOP();													\
 		____result;														\
 	})
 
 #define atomic_compare_and_exchange_bool_rel(mem, newval, oldval)		\
 	({																	\
-		bool ____result;												\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_BOOL, mem, 1);			\
-		____result = orig_atomic_compare_and_exchange_bool_rel(mem, newval, oldval); \
+		bool ____result = orig_atomic_compare_and_exchange_bool_rel(mem, newval, oldval); \
 		MVEE_POSTOP();													\
 		____result;														\
 	})
 
 #define atomic_exchange_acq(mem, newvalue)						\
 	({															\
-		typeof(*mem) ____result;								\
 		MVEE_PREOP(ATOMIC_EXCHANGE, mem, 1);					\
-		____result = orig_atomic_exchange_acq(mem, newvalue);	\
+		typeof(*mem) ____result = orig_atomic_exchange_acq(mem, newvalue);	\
 		MVEE_POSTOP();											\
 		____result;												\
 	})
 
 #define atomic_exchange_rel(mem, newvalue)						\
 	({															\
-		typeof(*mem) ____result;								\
 		MVEE_PREOP(ATOMIC_EXCHANGE, mem, 1);					\
-		____result = orig_atomic_exchange_rel(mem, newvalue);	\
+		typeof(*mem) ____result = orig_atomic_exchange_rel(mem, newvalue);	\
 		MVEE_POSTOP();											\
 		____result;												\
 	})
 
 #define atomic_exchange_and_add(mem, value)						\
 	({															\
-		typeof(*mem) ____result;								\
 		MVEE_PREOP(ATOMIC_EXCHANGE_AND_ADD, mem, 1);			\
-		____result = orig_atomic_exchange_and_add(mem, value);	\
+		typeof(*mem) ____result = orig_atomic_exchange_and_add(mem, value);	\
 		MVEE_POSTOP();											\
 		____result;												\
 	})
 
 #define atomic_exchange_and_add_acq(mem, value)					\
 	({															\
-		typeof(*mem) ____result;								\
 		MVEE_PREOP(ATOMIC_EXCHANGE_AND_ADD, mem, 1);			\
-		____result = orig_atomic_exchange_and_add_acq(mem, value);	\
+		typeof(*mem) ____result = orig_atomic_exchange_and_add_acq(mem, value);	\
 		MVEE_POSTOP();											\
 		____result;												\
 	})
 
 #define atomic_exchange_and_add_rel(mem, value)					\
 	({															\
-		typeof(*mem) ____result;								\
 		MVEE_PREOP(ATOMIC_EXCHANGE_AND_ADD, mem, 1);			\
-		____result = orig_atomic_exchange_and_add_rel(mem, value);	\
+		typeof(*mem) ____result = orig_atomic_exchange_and_add_rel(mem, value);	\
 		MVEE_POSTOP();											\
 		____result;												\
 	})
@@ -934,18 +921,16 @@ enum mvee_extended_atomics {
 
 #define atomic_increment_and_test(mem)						\
 	({														\
-		unsigned char ____result;							\
 		MVEE_PREOP(ATOMIC_INCREMENT_AND_TEST, mem, 1);		\
-		____result = orig_atomic_increment_and_test(mem);	\
+		unsigned char ____result = orig_atomic_increment_and_test(mem);	\
 		MVEE_POSTOP();										\
 		____result;											\
 	})
 
 #define atomic_increment_val(mem)				\
 	({											\
-		typeof(*mem) ____result;				\
 		MVEE_PREOP(ATOMIC_INCREMENT, mem, 1);	\
-		____result = orig_atomic_increment_val(mem);	\
+		typeof(*mem) ____result = orig_atomic_increment_val(mem);	\
 		MVEE_POSTOP();							\
 		____result;								\
 	})
@@ -959,36 +944,32 @@ enum mvee_extended_atomics {
 
 #define atomic_decrement_and_test(mem)						\
 	({														\
-		unsigned char ____result;							\
 		MVEE_PREOP(ATOMIC_DECREMENT_AND_TEST, mem, 1);		\
-		____result = orig_atomic_decrement_and_test(mem);	\
+		unsigned char ____result = orig_atomic_decrement_and_test(mem);	\
 		MVEE_POSTOP();										\
 		____result;											\
 	})
 
 #define atomic_decrement_val(mem)				\
 	({											\
-		typeof(*mem) ____result;				\
 		MVEE_PREOP(ATOMIC_DECREMENT, mem, 1);	\
-		____result = orig_atomic_decrement_val(mem);	\
+		typeof(*mem) ____result = orig_atomic_decrement_val(mem);	\
 		MVEE_POSTOP();							\
 		____result;								\
 	})
 
 #define atomic_add_negative(mem, value)						\
 	({														\
-		unsigned char ____result;							\
 		MVEE_PREOP(ATOMIC_ADD, mem, 1);						\
-		____result = orig_atomic_add_negative(mem, value);	\
+		unsigned char ____result = orig_atomic_add_negative(mem, value);	\
 		MVEE_POSTOP();										\
 		____result;											\
 	})
 
 #define atomic_add_zero(mem, value)						\
 	({													\
-		unsigned char ____result;						\
 		MVEE_PREOP(ATOMIC_ADD_ZERO, mem, 1);			\
-		____result = orig_atomic_add_zero(mem, value);	\
+		unsigned char ____result = orig_atomic_add_zero(mem, value);	\
 		MVEE_POSTOP();									\
 		____result;										\
 	})
@@ -1002,9 +983,8 @@ enum mvee_extended_atomics {
 
 #define atomic_bit_test_set(mem, bit)						\
 	({														\
-		unsigned char ____result;							\
 		MVEE_PREOP(ATOMIC_BIT_TEST_SET, mem, 1);			\
-		____result = orig_atomic_bit_test_set(mem, bit);	\
+		unsigned char ____result = orig_atomic_bit_test_set(mem, bit);	\
 		MVEE_POSTOP();										\
 		____result;											\
 	})
@@ -1039,81 +1019,72 @@ enum mvee_extended_atomics {
 
 #define atomic_decrement_if_positive(mem)					\
 	({														\
-		__typeof(*mem) __result;							\
 		MVEE_PREOP(ATOMIC_DECREMENT_IF_POSITIVE, mem, 1);	\
-		__result = orig_atomic_decrement_if_positive(mem);	\
+		__typeof(*mem) __result = orig_atomic_decrement_if_positive(mem);	\
 		MVEE_POSTOP();										\
 		__result;											\
 	})
 
 #define atomic_and_val(mem, mask)							\
 	({														\
-		__typeof(*mem) __result;							\
 		MVEE_PREOP(ATOMIC_AND_VAL, mem, 1);					\
-		__result = orig_atomic_and_val(mem);				\
+		__typeof(*mem) __result = orig_atomic_and_val(mem);				\
 		MVEE_POSTOP();										\
 		__result;											\
 	})
 
 #define atomic_or_val(mem, mask)							\
 	({														\
-		__typeof(*mem) __result;							\
 		MVEE_PREOP(ATOMIC_OR_VAL, mem, 1);					\
-		__result = orig_atomic_or_val(mem);					\
+		__typeof(*mem) __result = orig_atomic_or_val(mem);					\
 		MVEE_POSTOP();										\
 		__result;											\
 	})
 
 #define atomic_forced_read(x)						\
 	({												\
-		typeof(x) ____result;						\
 		MVEE_PREOP(ATOMIC_FORCED_READ, &x, 0);		\
-		____result = orig_atomic_forced_read(x);	\
+		typeof(x) ____result = orig_atomic_forced_read(x);	\
 		MVEE_POSTOP();								\
 		____result;									\
 	})
 
 #define catomic_compare_and_exchange_val_acq(mem, newval, oldval)		\
 	({																	\
-		typeof(*mem) ____result;										\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_VAL, mem, 1);			\
-		____result = orig_catomic_compare_and_exchange_val_acq(mem, newval, oldval); \
+		typeof(*mem) ____result = orig_catomic_compare_and_exchange_val_acq(mem, newval, oldval); \
 		MVEE_POSTOP();													\
 		____result;														\
 	})
 
 #define catomic_compare_and_exchange_val_rel(mem, newval, oldval)		\
 	({																	\
-		typeof(*mem) ____result;										\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_VAL, mem, 1);			\
-		____result = orig_catomic_compare_and_exchange_val_rel(mem, newval, oldval); \
+		typeof(*mem) ____result = orig_catomic_compare_and_exchange_val_rel(mem, newval, oldval); \
 		MVEE_POSTOP();													\
 		____result;														\
 	})
 
 #define catomic_compare_and_exchange_bool_acq(mem, newval, oldval)		\
 	({																	\
-		bool ____result;												\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_BOOL, mem, 1);			\
-		____result = orig_catomic_compare_and_exchange_bool_acq(mem, newval, oldval); \
+		bool ____result = orig_catomic_compare_and_exchange_bool_acq(mem, newval, oldval); \
 		MVEE_POSTOP();													\
 		____result;														\
 	})
 
 #define catomic_compare_and_exchange_bool_rel(mem, newval, oldval)		\
 	({																	\
-		bool ____result;												\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_BOOL, mem, 1);			\
-		____result = orig_catomic_compare_and_exchange_bool_rel(mem, newval, oldval); \
+		bool ____result = orig_catomic_compare_and_exchange_bool_rel(mem, newval, oldval); \
 		MVEE_POSTOP();													\
 		____result;														\
 	})
 
 #define catomic_exchange_and_add(mem, value)					\
 	({															\
-		typeof(*mem) ____result;								\
 		MVEE_PREOP(CATOMIC_EXCHANGE_AND_ADD, mem, 1);			\
-		____result = orig_catomic_exchange_and_add(mem, value);	\
+		typeof(*mem) ____result = orig_catomic_exchange_and_add(mem, value);	\
 		MVEE_POSTOP();											\
 		____result;												\
 	})
@@ -1134,9 +1105,8 @@ enum mvee_extended_atomics {
 
 #define catomic_increment_val(mem)						\
 	({													\
-		typeof(*mem) ____result;						\
 		MVEE_PREOP(CATOMIC_INCREMENT, mem, 1);			\
-		____result = orig_catomic_increment_val(mem);	\
+		typeof(*mem) ____result = orig_catomic_increment_val(mem);	\
 		MVEE_POSTOP();									\
 		____result;										\
 	})
@@ -1150,9 +1120,8 @@ enum mvee_extended_atomics {
 
 #define catomic_decrement_val(mem)						\
 	({													\
-		typeof(*mem) ____result;						\
 		MVEE_PREOP(CATOMIC_DECREMENT, mem, 1);			\
-		____result = orig_catomic_decrement_val(mem);	\
+		typeof(*mem) ____result = orig_catomic_decrement_val(mem);	\
 		MVEE_POSTOP();									\
 		____result;										\
 	})
@@ -1193,9 +1162,8 @@ enum mvee_extended_atomics {
 
 #define atomic_load_acquire(mem)					\
 	({												\
-		__typeof(*mem) ____result;					\
 		MVEE_PREOP(ATOMIC_LOAD, mem, 0);			\
-		____result = orig_atomic_load_acquire(mem);	\
+		__typeof(*mem) ____result = orig_atomic_load_acquire(mem);	\
 		MVEE_POSTOP();								\
 		____result;									\
 	})
@@ -1216,117 +1184,104 @@ enum mvee_extended_atomics {
 
 #define atomic_compare_exchange_weak_relaxed(mem, expected, desired)	\
 	({																	\
-		bool __result;													\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_BOOL, mem, 1);			\
-		__result = orig_atomic_compare_exchange_weak_relaxed(mem, expected, desired); \
+		bool __result = orig_atomic_compare_exchange_weak_relaxed(mem, expected, desired); \
 		MVEE_POSTOP();													\
 		__result;														\
 	})
 
 #define atomic_compare_exchange_weak_acquire(mem, expected, desired)	\
 	({																	\
-		bool __result;													\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_BOOL, mem, 1);			\
-		__result = orig_atomic_compare_exchange_weak_acquire(mem, expected, desired); \
+		bool __result = orig_atomic_compare_exchange_weak_acquire(mem, expected, desired); \
 		MVEE_POSTOP();													\
 		__result;														\
 	})
 
 #define atomic_compare_exchange_weak_release(mem, expected, desired)	\
 	({																	\
-		bool __result;													\
 		MVEE_PREOP(ATOMIC_COMPARE_AND_EXCHANGE_BOOL, mem, 1);			\
-		__result = orig_atomic_compare_exchange_weak_release(mem, expected, desired); \
+		bool __result = orig_atomic_compare_exchange_weak_release(mem, expected, desired); \
 		MVEE_POSTOP();													\
 		__result;														\
 	})
 
 #define atomic_exchange_relaxed(mem, desired)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_EXCHANGE, mem, 1);						\
-		____result = orig_atomic_exchange_relaxed(mem, desired);	\
+		typeof(*mem) ____result = orig_atomic_exchange_relaxed(mem, desired);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
 
 #define atomic_exchange_acquire(mem, desired)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_EXCHANGE, mem, 1);						\
-		____result = orig_atomic_exchange_acquire(mem, desired);	\
+		typeof(*mem) ____result = orig_atomic_exchange_acquire(mem, desired);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
 
 #define atomic_exchange_release(mem, desired)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_EXCHANGE, mem, 1);						\
-		____result = orig_atomic_exchange_release(mem, desired);	\
+		typeof(*mem) ____result = orig_atomic_exchange_release(mem, desired);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
 
 #define atomic_fetch_add_relaxed(mem, operand)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_FETCH_ADD, mem, 1);						\
-		____result = orig_atomic_fetch_add_relaxed(mem, operand);	\
+		typeof(*mem) ____result = orig_atomic_fetch_add_relaxed(mem, operand);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
 
 #define atomic_fetch_add_acquire(mem, operand)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_FETCH_ADD, mem, 1);						\
-		____result = orig_atomic_fetch_add_acquire(mem, operand);	\
+		typeof(*mem) ____result = orig_atomic_fetch_add_acquire(mem, operand);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
 
 #define atomic_fetch_add_release(mem, operand)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_FETCH_ADD, mem, 1);						\
-		____result = orig_atomic_fetch_add_release(mem, operand);	\
+		typeof(*mem) ____result = orig_atomic_fetch_add_release(mem, operand);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
 
 #define atomic_fetch_add_acq_rel(mem, operand)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_FETCH_ADD, mem, 1);						\
-		____result = orig_atomic_fetch_add_acq_rel(mem, operand);	\
+		typeof(*mem) ____result = orig_atomic_fetch_add_acq_rel(mem, operand);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
 
 #define atomic_fetch_and_relaxed(mem, operand)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_FETCH_AND, mem, 1);						\
-		____result = orig_atomic_fetch_and_relaxed(mem, operand);	\
+		typeof(*mem) ____result = orig_atomic_fetch_and_relaxed(mem, operand);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
 
 #define atomic_fetch_and_acquire(mem, operand)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_FETCH_AND, mem, 1);						\
-		____result = orig_atomic_fetch_and_acquire(mem, operand);	\
+		typeof(*mem) ____result = orig_atomic_fetch_and_acquire(mem, operand);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
 
 #define atomic_fetch_and_release(mem, operand)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_FETCH_AND, mem, 1);						\
-		____result = orig_atomic_fetch_and_release(mem, operand);	\
+		typeof(*mem) ____result = orig_atomic_fetch_and_release(mem, operand);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
@@ -1334,36 +1289,32 @@ enum mvee_extended_atomics {
 
 #define atomic_fetch_or_relaxed(mem, operand)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_FETCH_OR, mem, 1);						\
-		____result = orig_atomic_fetch_or_relaxed(mem, operand);	\
+		typeof(*mem) ____result = orig_atomic_fetch_or_relaxed(mem, operand);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
 
 #define atomic_fetch_or_acquire(mem, operand)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_FETCH_OR, mem, 1);						\
-		____result = orig_atomic_fetch_or_acquire(mem, operand);	\
+		typeof(*mem) ____result = orig_atomic_fetch_or_acquire(mem, operand);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
 
 #define atomic_fetch_or_release(mem, operand)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_FETCH_OR, mem, 1);						\
-		____result = orig_atomic_fetch_or_release(mem, operand);	\
+		typeof(*mem) ____result = orig_atomic_fetch_or_release(mem, operand);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
 
 #define atomic_fetch_xor_release(mem, operand)						\
 	({																\
-		typeof(*mem) ____result;									\
 		MVEE_PREOP(ATOMIC_FETCH_XOR, mem, 1);						\
-		____result = orig_atomic_fetch_xor_release(mem, operand);	\
+		typeof(*mem) ____result = orig_atomic_fetch_xor_release(mem, operand);	\
 		MVEE_POSTOP();												\
 		____result;													\
 	})
@@ -1373,9 +1324,8 @@ enum mvee_extended_atomics {
 //
 #define THREAD_ATOMIC_GETMEM(descr, member)			\
 	({												\
-		__typeof(descr->member) ____result;			\
 		MVEE_PREOP(ATOMIC_LOAD, &descr->member, 1);	\
-		____result = THREAD_GETMEM(descr, member);	\
+		__typeof(descr->member) ____result = THREAD_GETMEM(descr, member);	\
 		MVEE_POSTOP();								\
 		____result;									\
 	})
