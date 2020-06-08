@@ -678,8 +678,6 @@ enum mvee_extended_atomics {
   mvee_atomic_fetch_nand,
   mvee_atomic_test_and_set,
   mvee_atomic_clear,
-  mvee_atomic_always_lock_free,
-  mvee_atomic_is_lock_free,
   mvee_sync_fetch_and_add,
   mvee_sync_fetch_and_sub,
   mvee_sync_fetch_and_or,
