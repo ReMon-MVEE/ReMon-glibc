@@ -38,6 +38,7 @@ static const struct pthread_mutexattr default_mutexattr =
 static bool
 prio_inherit_missing (void)
 {
+  return true;
   static int tpi_supported;
   if (__glibc_unlikely (atomic_load_relaxed (&tpi_supported) == 0))
     {
