@@ -27,7 +27,7 @@ subdir := csu
 include ../Makeconfig
 
 routines = init-first libc-start $(libc-init) sysdep version check_fds \
-	   libc-tls elf-init dso_handle
+	   libc-tls elf-init dso_handle mvee-sync-agent
 aux	 = errno
 elide-routines.os = libc-tls
 static-only-routines = elf-init

@@ -1,7 +1,4 @@
 static volatile unsigned int          mvee_lock_owner               = 0;
-static unsigned char                  mvee_sync_enabled             = 0;
-static unsigned char                  mvee_libc_initialized         = 0;
-static unsigned char                  mvee_master_variant           = 0;
 static unsigned char                  mvee_buffer_valid             = 0;
 static unsigned short                 mvee_num_variants             = 0;
 static unsigned short                 mvee_my_variant_num           = 0;
@@ -17,12 +14,6 @@ static __thread unsigned long         mvee_original_call_site       = 0;
 #else
 #define INLINEIFNODEBUG inline
 #endif
-
-
-#define likely(x)       __builtin_expect((x),1)
-#define unlikely(x)     __builtin_expect((x),0)
-
-extern void mvee_infinite_loop(void);
 
 // ========================================================================================================================
 // INITIALIZATION FUNCS

@@ -15,9 +15,6 @@ struct mvee_op_entry
   volatile unsigned long  counter_and_idx; // the value we must see in mvee_counters[idx] before we can replay the operation
 };
 
-static unsigned char                  mvee_sync_enabled             = 0;
-static unsigned char                  mvee_libc_initialized         = 0;
-static unsigned char                  mvee_master_variant           = 0;
 static __thread unsigned long         mvee_thread_local_pos         = 0; // our position in the thread local queue
 static __thread  
     struct mvee_op_entry*             mvee_thread_local_queue       = NULL;
@@ -26,15 +23,6 @@ static __thread unsigned short        mvee_prev_idx                 = 0;
 
 __attribute__((aligned (64)))
 static struct mvee_counter            mvee_counters[MVEE_TOTAL_CLOCK_COUNT + 1];
-
-#define likely(x)       __builtin_expect((x),1)
-#define unlikely(x)     __builtin_expect((x),0)
-#define gcc_barrier()  asm volatile("" ::: "memory")
-#ifndef arch_cpu_relax
-#define arch_cpu_relax()
-#endif
-
-extern void mvee_infinite_loop(void);
 
 void mvee_invalidate_buffer(void)
 {
