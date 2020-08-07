@@ -76,8 +76,6 @@ static INLINEIFNODEBUG int mvee_should_sync(void)
 
 #define cpu_relax() asm volatile("rep; nop" ::: "memory")
 
-#define gcc_barrier() asm volatile("" ::: "memory")
-
 /*
  * logs a (truncated) stack into the specified "eip" buffer. This stack is logged for EVERY variant,
  * which greatly facilitates debugging. The MVEE can dump the contents of this buffer very efficiently, 
