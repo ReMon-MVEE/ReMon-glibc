@@ -66,7 +66,7 @@ static INLINEIFNODEBUG int mvee_should_sync(void)
 	if (unlikely(!mvee_libc_initialized))
 	{
 		long res = syscall(MVEE_RUNS_UNDER_MVEE_CONTROL, &mvee_sync_enabled, &mvee_infinite_loop, 
-						   &mvee_num_variants, &mvee_my_variant_num, &mvee_master_variant);
+						   &mvee_num_variants, &mvee_my_variant_num, &mvee_master_variant, &mvee_shm_tag);
 		if (!(res < 0 && res > -4095))
 			mvee_check_buffer();
 		mvee_libc_initialized = 1;

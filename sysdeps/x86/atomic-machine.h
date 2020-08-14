@@ -590,6 +590,7 @@ typedef uintmax_t uatomic_max_t;
 #define MVEE_LIBC_MALLOC_DEBUG_BUFFER   11
 #define MVEE_LIBC_ATOMIC_BUFFER         13
 #define MVEE_LIBC_LOCK_BUFFER_PARTIAL   16
+#define MVEE_SHM_BUFFER                 23
 #define MVEE_FUTEX_WAIT_TID             30
 
 enum mvee_alloc_types

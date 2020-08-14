@@ -8,6 +8,7 @@ libc {
     mvee_atomic_postop_internal;
     mvee_invalidate_buffer;
     mvee_all_heaps_aligned;
+    mvee_shm_op;
     mvee_should_sync_tid;
     mvee_should_futex_unlock;
 	mvee_xcheck;
