@@ -1027,7 +1027,7 @@ enum mvee_extended_atomics {
 #define atomic_and_val(mem, mask)							\
 	({														\
 		MVEE_PREOP(ATOMIC_AND_VAL, mem, 1);					\
-		__typeof(*mem) __result = orig_atomic_and_val(mem);				\
+		__typeof(*mem) __result = orig_atomic_and_val(mem, mask);				\
 		MVEE_POSTOP();										\
 		__result;											\
 	})
@@ -1035,7 +1035,7 @@ enum mvee_extended_atomics {
 #define atomic_or_val(mem, mask)							\
 	({														\
 		MVEE_PREOP(ATOMIC_OR_VAL, mem, 1);					\
-		__typeof(*mem) __result = orig_atomic_or_val(mem);					\
+		__typeof(*mem) __result = orig_atomic_or_val(mem, mask);					\
 		MVEE_POSTOP();										\
 		__result;											\
 	})
