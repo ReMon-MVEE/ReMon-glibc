@@ -26,14 +26,27 @@
 # define SYMBOL_NAME memcpy
 # include "ifunc-memmove.h"
 
-libc_ifunc_redirected (__redirect_memcpy, __new_memcpy,
+libc_ifunc_redirected (__redirect_memcpy, orig_memcpy,
 		       IFUNC_SELECTOR ());
 
+extern __typeof (orig_memcpy) mvee_shm_memcpy;
+
+void *
+mvee_memcpy (void *__restrict dest, const void *__restrict src, size_t n)
+{
+  if ((unsigned long)dest & 0x8000000000000000ull)
+    return mvee_shm_memcpy(dest, src, n);
+  if ((unsigned long)src & 0x8000000000000000ull)
+    return mvee_shm_memcpy(dest, src, n);
+
+  return orig_memcpy(dest, src, n);
+}
+
 # ifdef SHARED
-__hidden_ver1 (__new_memcpy, __GI_memcpy, __redirect_memcpy)
+__hidden_ver1 (mvee_memcpy, __GI_memcpy, __redirect_memcpy)
   __attribute__ ((visibility ("hidden")));
 # endif
 
 # include <shlib-compat.h>
-versioned_symbol (libc, __new_memcpy, memcpy, GLIBC_2_14);
+versioned_symbol (libc, mvee_memcpy, memcpy, GLIBC_2_14);
 #endif

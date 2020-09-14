@@ -26,10 +26,22 @@
 # define SYMBOL_NAME memset
 # include "ifunc-memset.h"
 
-libc_ifunc_redirected (__redirect_memset, memset, IFUNC_SELECTOR ());
+libc_ifunc_redirected (__redirect_memset, orig_memset, IFUNC_SELECTOR ());
+
+extern __typeof (orig_memset) mvee_shm_memset;
+
+void *
+mvee_memset (void *dest, int ch, size_t len)
+{
+  if ((unsigned long)dest & 0x8000000000000000ull)
+    return mvee_shm_memset(dest, ch, len);
+
+  return orig_memset(dest, ch, len);
+}
 
 # ifdef SHARED
-__hidden_ver1 (memset, __GI_memset, __redirect_memset)
-  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (memset);
+__hidden_ver1 (mvee_memset, __GI_memset, __redirect_memset)
+  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (orig_memset);
 # endif
+strong_alias(mvee_memset, memset)
 #endif
