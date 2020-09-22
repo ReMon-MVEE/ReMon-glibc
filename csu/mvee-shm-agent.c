@@ -119,7 +119,7 @@ static struct mvee_shm_op_entry* mvee_shm_get_entry(size_t size)
   }
 
   // Calculate entry, update pos, and return
-  struct mvee_shm_op_entry* entry = (struct mvee_shm_op_entry*) mvee_shm_buffer + mvee_shm_local_pos;
+  struct mvee_shm_op_entry* entry = (struct mvee_shm_op_entry*) (mvee_shm_buffer + mvee_shm_local_pos);
   mvee_shm_local_pos += entry_size;
   return entry;
 }
