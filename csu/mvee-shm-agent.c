@@ -38,7 +38,19 @@ enum
 };
 
 // ========================================================================================================================
-// ASSERTIONS
+// Decoding address for specific variant, using tag
+// ========================================================================================================================
+unsigned long mvee_shm_tag;
+
+static void* mvee_shm_decode_address(const void* address)
+{
+  unsigned long high = (unsigned long)address & 0xffffffff00000000ull;
+  unsigned long low  = (unsigned long)address & 0x00000000ffffffffull;
+  return (void*) ((high ^ mvee_shm_tag) + low);
+}
+
+// ========================================================================================================================
+// Assertions and errors
 // ========================================================================================================================
 __attribute__((noinline))
 static void mvee_assert_same_address(const void* a, const void* b)
@@ -75,8 +87,14 @@ static void mvee_assert_same_value(int a, int b)
 		*(volatile long*)0 = a;
 }
 
+__attribute__((noinline))
+static void mvee_error_unsupported_id(unsigned long id)
+{
+  *(volatile long*)0 = (long)id;
+}
+
 // ========================================================================================================================
-// Structs, global variables, and static helper functions
+// All functionality related to the SHM buffer
 // ========================================================================================================================
 struct mvee_shm_op_entry {
   const void* address;
@@ -94,15 +112,6 @@ struct mvee_shm_op_ret {
 static __thread size_t                mvee_shm_local_pos    = 0; // our position in the thread local queue
 static __thread char*                 mvee_shm_buffer       = NULL;
 static __thread size_t                mvee_shm_buffer_size  = 0; // nr of slots in the thread local queue
-
-unsigned long mvee_shm_tag;
-
-static void* mvee_shm_decode_address(const void* address)
-{
-  unsigned long high = (unsigned long)address & 0xffffffff00000000ull;
-  unsigned long low  = (unsigned long)address & 0x00000000ffffffffull;
-  return (void*) ((high ^ mvee_shm_tag) + low);
-}
 
 static struct mvee_shm_op_entry* mvee_shm_get_entry(size_t size)
 {
@@ -236,9 +245,13 @@ struct mvee_shm_op_ret mvee_shm_op(unsigned char id, bool atomic, void* address,
   else
   {
     // Non-atomic operations, use SHM buffer
-    const void* in  = (id == LOAD) ? address : &value;
-    void* out = (id == LOAD) ? &ret.val : address;
-    mvee_shm_buffered_op(id, address, in, out, size, 0);
+
+    if (id == LOAD)
+      mvee_shm_buffered_op(id, address, address, &ret.val, size, 0);
+    else if (id == STORE)
+      mvee_shm_buffered_op(id, address, &value, address, size, 0);
+    else
+      mvee_error_unsupported_id(id);
   }
 
   return ret;
