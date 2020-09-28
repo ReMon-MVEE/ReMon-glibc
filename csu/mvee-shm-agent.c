@@ -14,6 +14,9 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <sys/shm.h>
+
+#if IS_IN (libc)
 // ========================================================================================================================
 // Forward declarations for the original (ifunc) implementations of mem* functions
 // ========================================================================================================================
@@ -36,6 +39,7 @@ enum
   MEMMOVE         = GLIBC_FUNC_BASE + 1,
   MEMSET          = GLIBC_FUNC_BASE + 2,
 };
+
 
 // ========================================================================================================================
 // Decoding address for specific variant, using tag
@@ -304,3 +308,116 @@ mvee_shm_memset (void *dest, int ch, size_t len)
   mvee_shm_buffered_op(MEMSET, shm_dest, NULL, shm_dest, len, ch);
   return dest;
 }
+
+
+// ========================================================================================================================
+// Hooks for mmap and related functions
+// ========================================================================================================================
+void *
+mvee_shm_mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset)
+{
+    unsigned long ret = orig_MMAP_CALL(addr, len, prot, flags, fd, offset);
+    if ((flags & MAP_SHARED) && fd && fd != -1 && (void *) ret != MAP_FAILED)
+    {
+        struct stat fd_stat;
+        fstat(fd, &fd_stat);
+        if (!(fd_stat.st_mode & O_RDWR))
+            return (void *) ret;
+
+        // the arguments will be filled in by the MVEE anyway
+        void *shadow = (void*) orig_SHMAT_CALL(0, 0, 0);
+        if ((void *) shadow == (void*) -1)
+        {
+            int errno_temp = errno;
+            orig_MUNMAP_CALL((void *) ret, len);
+            errno = errno_temp;
+            return MAP_FAILED;
+        }
+
+        // the arguments will be filled in by the MVEE anyway
+        void *bitmap = (void*) orig_SHMAT_CALL(0, 0, 0);
+        if ((void *) bitmap == (void*) -1)
+        {
+            int errno_temp = errno;
+            orig_MUNMAP_CALL((void *) ret, len);
+            orig_SHMDT_CALL(shadow);
+            errno = errno_temp;
+            return MAP_FAILED;
+        }
+
+        // Do bookkeeping
+    }
+    return (void *)ret;
+}
+
+
+void *
+mvee_shm_shmat (int shmid, const void *shmaddr, int shmflg)
+{
+    void* mapping = orig_SHMAT_CALL(shmid, shmaddr, shmflg);
+    if (mapping == (void*) -1)
+        return mapping;
+
+    // the arguments will be filled in by the MVEE anyway
+    void* shadow = (void*) orig_SHMAT_CALL(0, 0, 0);
+    if (shadow == (void*) -1)
+    {
+        int errno_temp = errno;
+        orig_SHMDT_CALL(mapping);
+        errno = errno_temp;
+        return (void*) -1;
+    }
+
+    // the arguments will be filled in by the MVEE anyway
+    void* bitmap = (void*) orig_SHMAT_CALL(0, 0, 0);
+    if (bitmap == (void*) -1)
+    {
+        int errno_temp = errno;
+        orig_SHMDT_CALL(mapping);
+        orig_SHMDT_CALL(shadow);
+        errno = errno_temp;
+        return (void*) -1;
+    }
+
+    // some magic...
+
+    return mapping;
+}
+
+int
+mvee_shm_shmdt (const void *shmaddr)
+{
+    int return_value = orig_SHMDT_CALL(shmaddr);
+    if (return_value)
+        return -1;
+    if ((unsigned long long) shmaddr & 0x8000000000000000ull)
+    {
+        // these will have to be filled in using magic
+        orig_SHMDT_CALL(0);
+        // these will have to be filled in using magic
+        orig_SHMDT_CALL(0);
+        // this is just here to fix some stuff for now
+        errno = 0;
+    }
+    return 0;
+}
+
+int
+mvee_shm_munmap (const void *addr, size_t len)
+{
+    int return_value = orig_MUNMAP_CALL(addr, len);
+    if (return_value)
+        return -1;
+    if ((unsigned long long) addr & 0x8000000000000000ull)
+    {
+        // these will have to be filled in using magic
+        orig_SHMDT_CALL(0);
+        // these will have to be filled in using magic
+        orig_SHMDT_CALL(0);
+        // this is just here to fix some stuff for now
+        errno = 0;
+    }
+    return 0;
+}
+
+#endif

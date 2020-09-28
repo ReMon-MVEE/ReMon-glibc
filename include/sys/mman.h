@@ -22,6 +22,19 @@ extern void *__mremap (void *__addr, size_t __old_len,
 		       size_t __new_len, int __flags, ...);
 libc_hidden_proto (__mremap)
 
+
+#  define orig_MUNMAP_CALL(__addr, __len)                                                                              \
+INLINE_SYSCALL_CALL (munmap, __addr, __len)
+# if IS_IN (libc)
+extern int mvee_shm_munmap (const void *addr, size_t len);
+
+#  define MUNMAP_CALL(__addr, __len)                                                                                   \
+mvee_shm_munmap (__addr, __len)
+# else
+#  define MUNMAP_CALL(__addr, __len)                                                                                   \
+orig_MUNMAP_CALL (__addr, __len)
+# endif
+
 # if IS_IN (rtld)
 #  include <dl-mman.h>
 # endif

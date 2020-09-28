@@ -48,15 +48,45 @@ __BEGIN_DECLS
 /* Shared memory control operation.  */
 extern int shmctl (int __shmid, int __cmd, struct shmid_ds *__buf) __THROW;
 
+
 /* Get shared memory segment.  */
 extern int shmget (key_t __key, size_t __size, int __shmflg) __THROW;
+
 
 /* Attach shared memory segment.  */
 extern void *shmat (int __shmid, const void *__shmaddr, int __shmflg)
      __THROW;
+extern void *mvee_shm_shmat (int __shmid, const void *__shmaddr, int __shmflg)
+     __THROW;
+
+#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+#define orig_SHMAT_CALL(__shmid, __shmaddr, __shmflg)                                                                  \
+(void*) INLINE_SYSCALL_CALL (shmat, __shmid, __shmaddr, __shmflg);
+#else
+#define orig_SHMAT_CALL(__shmid, __shmaddr, __shmflg)                                                                  \
+({                                                                                                                     \
+    INTERNAL_SYSCALL_DECL(err);                                                                                        \
+    unsigned long resultvar;                                                                                           \
+    void *raddr;                                                                                                       \
+                                                                                                                       \
+    resultvar = INTERNAL_SYSCALL_CALL (ipc, err, IPCOP_shmat, shmid, shmflg, &raddr, shmaddr);                         \
+    if (INTERNAL_SYSCALL_ERROR_P (resultvar, err))                                                                     \
+        raddr = (void *) INLINE_SYSCALL_ERROR_RETURN_VALUE (INTERNAL_SYSCALL_ERRNO (resultvar, err));                  \
+    raddr                                                                                                              \
+})
+#endif
+
 
 /* Detach shared memory segment.  */
 extern int shmdt (const void *__shmaddr) __THROW;
+extern int mvee_shm_shmdt (const void *__shmaddr) __THROW;
+
+#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
+#define orig_SHMDT_CALL(__shmaddr) INLINE_SYSCALL_CALL (shmdt, __shmaddr);
+#else
+#define orig_SHMDT_CALL(__shmaddr) INLINE_SYSCALL_CALL (ipc, IPCOP_shmdt, 0, 0, 0, __shmaddr);
+#endif
+
 
 __END_DECLS
 

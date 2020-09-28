@@ -20,6 +20,7 @@
 #include <ipc_priv.h>
 #include <sysdep.h>
 #include <errno.h>
+#include <sys/shm.h>
 
 /* Attach the shared memory segment associated with SHMID to the data
    segment of the calling process.  SHMADDR and SHMFLG determine how
@@ -28,19 +29,5 @@
 void *
 shmat (int shmid, const void *shmaddr, int shmflg)
 {
-#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
-  return (void*) INLINE_SYSCALL_CALL (shmat, shmid, shmaddr, shmflg);
-#else
-  INTERNAL_SYSCALL_DECL(err);
-  unsigned long resultvar;
-  void *raddr;
-
-  resultvar = INTERNAL_SYSCALL_CALL (ipc, err, IPCOP_shmat, shmid, shmflg,
-				     &raddr, shmaddr);
-  if (INTERNAL_SYSCALL_ERROR_P (resultvar, err))
-    return (void *) INLINE_SYSCALL_ERROR_RETURN_VALUE (INTERNAL_SYSCALL_ERRNO (resultvar,
-									       err));
-
-  return raddr;
-#endif
+    return mvee_shm_shmat (shmid, shmaddr, shmflg);
 }

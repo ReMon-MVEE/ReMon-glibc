@@ -42,8 +42,23 @@ static uint64_t page_unit;
 
 /* An architecture may override this.  */
 #ifndef MMAP_CALL
-# define MMAP_CALL(__nr, __addr, __len, __prot, __flags, __fd, __offset) \
-  INLINE_SYSCALL_CALL (__nr, __addr, __len, __prot, __flags, __fd, __offset)
+extern void* mvee_shm_mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset);
+
+#ifdef __NR_mmap2
+# define orig_MMAP_CALL(__addr, __len, __prot, __flags, __fd, __offset) \
+  INLINE_SYSCALL_CALL (mmap2, __addr, __len, __prot, __flags, __fd, __offset)
+#else
+# define orig_MMAP_CALL(__addr, __len, __prot, __flags, __fd, __offset) \
+  INLINE_SYSCALL_CALL (mmap, __addr, __len, __prot, __flags, __fd, __offset)
+#endif
+
+# if IS_IN (libc)
+#  define MMAP_CALL(__nr, __addr, __len, __prot, __flags, __fd, __offset) \
+  mvee_shm_mmap (__addr, __len, __prot, __flags, __fd, __offset)
+# else
+#  define MMAP_CALL(__nr, __addr, __len, __prot, __flags, __fd, __offset) \
+  orig_MMAP_CALL (__addr, __len, __prot, __flags, __fd, __offset)
+# endif
 #endif
 
 #endif /* MMAP_INTERNAL_LINUX_H  */
