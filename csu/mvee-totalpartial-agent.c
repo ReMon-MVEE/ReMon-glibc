@@ -105,6 +105,8 @@ static void __attribute__ ((noinline)) mvee_log_stack(unsigned int pos, int star
 				ret_addr = (unsigned long)__builtin_return_address(x);	\
 				break;
 			DEF_CASE(0);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wframe-address"
 #ifdef MVEE_CHECK_LOCK_TYPE
 			case 1:
 				ret_addr = (unsigned long)mvee_original_call_site;
@@ -122,6 +124,7 @@ static void __attribute__ ((noinline)) mvee_log_stack(unsigned int pos, int star
 			DEF_CASE(8);
 			DEF_CASE(9);
 			DEF_CASE(10);
+#pragma GCC diagnostic pop
 		}
 		
 		mvee_callstack_buffer[pos * mvee_num_variants + mvee_my_variant_num].callee[entries_logged++] = ret_addr;
