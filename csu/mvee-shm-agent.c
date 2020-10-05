@@ -16,7 +16,6 @@
 
 #include <sys/shm.h>
 
-#if IS_IN (libc)
 // ========================================================================================================================
 // Forward declarations for the original (ifunc) implementations of mem* functions
 // ========================================================================================================================
@@ -533,5 +532,3 @@ mvee_shm_munmap (const void *addr, size_t len)
   }
   return orig_MUNMAP_CALL(addr, len);
 }
-
-#endif
