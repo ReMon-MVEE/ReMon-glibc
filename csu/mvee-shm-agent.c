@@ -127,11 +127,6 @@ struct mvee_shm_op_entry {
   char data[];
 };
 
-struct mvee_shm_op_ret {
-  unsigned long val;
-  bool cmp;
-};
-
 static __thread size_t                mvee_shm_local_pos    = 0; // our position in the thread local queue
 static __thread char*                 mvee_shm_buffer       = NULL;
 static __thread size_t                mvee_shm_buffer_size  = 0; // nr of slots in the thread local queue
@@ -255,6 +250,11 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* shm_addr
 // ========================================================================================================================
 // The mvee_shm_op interface used by the wrapping shm_support compiler pass
 // ========================================================================================================================
+struct mvee_shm_op_ret {
+  unsigned long val;
+  bool cmp;
+};
+
 struct mvee_shm_op_ret mvee_shm_op(unsigned char id, bool atomic, void* address, unsigned long size, unsigned long value, unsigned long cmp)
 {
   struct mvee_shm_op_ret ret = { 0 };
