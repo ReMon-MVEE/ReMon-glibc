@@ -336,7 +336,8 @@ mvee_shm_mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset
 
         // the arguments will be filled in by the MVEE anyway
         void *bitmap = (void*) orig_SHMAT_CALL(0, 0, 0);
-        if ((void *) bitmap == (void*) -1)
+        if ((likely(mvee_master_variant) && (void *) bitmap == (void*) -1) ||
+                (likely(!mvee_master_variant) && (void *) bitmap != (void*) -1))
         {
             int errno_temp = errno;
             orig_MUNMAP_CALL((void *) ret, len);
@@ -370,7 +371,8 @@ mvee_shm_shmat (int shmid, const void *shmaddr, int shmflg)
 
     // the arguments will be filled in by the MVEE anyway
     void* bitmap = (void*) orig_SHMAT_CALL(0, 0, 0);
-    if (bitmap == (void*) -1)
+    if ((likely(mvee_master_variant) && (void *) bitmap == (void*) -1) ||
+            (likely(!mvee_master_variant) && (void *) bitmap != (void*) -1))
     {
         int errno_temp = errno;
         orig_SHMDT_CALL(mapping);
