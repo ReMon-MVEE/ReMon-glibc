@@ -97,6 +97,26 @@ static void mvee_error_unsupported_id(unsigned long id)
   *(volatile long*)0 = (long)id;
 }
 
+__attribute__((noinline))
+static void mvee_assert_mapping_exists(void *mapping)
+{
+  if (!mapping)
+    *(volatile long*)0 = 1;
+}
+
+__attribute__((noinline))
+static void mvee_assert_equal_mapping_size(size_t len, size_t size)
+{
+  if (len != size)
+    *(volatile long*)0 = len - size;
+}
+
+__attribute__((noinline))
+static void mvee_error_mapping_not_inserted(void *addr)
+{
+  *(volatile long*)0 = (volatile long) addr;
+}
+
 // ========================================================================================================================
 // All functionality related to the SHM buffer
 // ========================================================================================================================
@@ -311,115 +331,207 @@ mvee_shm_memset (void *dest, int ch, size_t len)
 
 
 // ========================================================================================================================
+// bookkeeping
+// ========================================================================================================================
+struct shared_mapping_info_t
+{
+  struct shared_mapping_info_t* previous;
+  void* base;
+  void* shadow;
+  void* bitmap;
+  size_t size;
+  struct shared_mapping_info_t* next;
+};
+static struct shared_mapping_info_t* shared_mapping_info = NULL;
+
+static void add_shared_mapping_info(void *base, void *shadow, void *bitmap, size_t size)
+{
+  struct shared_mapping_info_t *to_add = (struct shared_mapping_info_t *) malloc(sizeof(struct shared_mapping_info_t));
+  to_add->previous = NULL;
+  to_add->base = base;
+  to_add->shadow = shadow;
+  to_add->bitmap = bitmap;
+  to_add->size = size;
+  to_add->next = NULL;
+
+
+  if (shared_mapping_info == NULL)
+  {
+    shared_mapping_info = to_add;
+    return;
+  }
+
+  struct shared_mapping_info_t *iterator = shared_mapping_info;
+
+  if (iterator->base >= (base + size))
+  {
+    iterator->previous = to_add;
+    to_add->next = iterator;
+    shared_mapping_info = to_add;
+    return;
+  }
+
+  while (iterator && iterator->next)
+  {
+    if (((iterator->base + iterator->size) < base) && (iterator->next->base >= (base + size)))
+    {
+      iterator->next->previous = to_add;
+      to_add->next = iterator->next;
+      iterator->next = to_add;
+      to_add->previous = iterator;
+      return;
+    }
+    iterator = iterator->next;
+  }
+
+  if ((iterator->base + iterator->size) < base)
+  {
+    iterator->next = to_add;
+    to_add->previous = iterator;
+    return;
+  }
+
+  // should be unreachable
+  mvee_error_mapping_not_inserted(base);
+}
+
+static struct shared_mapping_info_t* find_shared_mapping_info(const void* addr)
+{
+  struct shared_mapping_info_t* iterator = shared_mapping_info;
+  while (iterator)
+  {
+    if (iterator->base <= addr && (iterator->base + iterator->size) > addr)
+      return iterator;
+    iterator = iterator->next;
+  }
+  mvee_assert_mapping_exists(iterator);
+  return iterator;
+}
+
+#define SHARED_TO_SHADOW_POINTER(__mapping, __address)                                                                 \
+__mapping->shadow + (__address - __mapping->base);
+
+static struct shared_mapping_info_t* remove_shared_mapping_info(const void* mapping)
+{
+  struct shared_mapping_info_t* remove = find_shared_mapping_info(mapping);
+  if (remove)
+  {
+    if (remove->previous)
+      remove->previous->next = remove->next;
+    if (remove->next)
+      remove->next->previous = remove->previous;
+  }
+  return remove;
+}
+
+// ========================================================================================================================
 // Hooks for mmap and related functions
 // ========================================================================================================================
 void *
 mvee_shm_mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset)
 {
-    unsigned long ret = orig_MMAP_CALL(addr, len, prot, flags, fd, offset);
-    if ((flags & MAP_SHARED) && fd && fd != -1 && (void *) ret != MAP_FAILED)
+  unsigned long ret = orig_MMAP_CALL(addr, len, prot, flags, fd, offset);
+  if ((flags & MAP_SHARED) && fd && fd != -1 && (void *) ret != MAP_FAILED)
+  {
+    struct stat fd_stat;
+    fstat(fd, &fd_stat);
+    if (!(fd_stat.st_mode & O_RDWR))
+      return (void *) ret;
+
+    // the arguments will be filled in by the MVEE anyway
+    void *shadow = (void *) orig_SHMAT_CALL(0, 0, 0);
+    if ((void *) shadow == (void *) -1)
     {
-        struct stat fd_stat;
-        fstat(fd, &fd_stat);
-        if (!(fd_stat.st_mode & O_RDWR))
-            return (void *) ret;
-
-        // the arguments will be filled in by the MVEE anyway
-        void *shadow = (void*) orig_SHMAT_CALL(0, 0, 0);
-        if ((void *) shadow == (void*) -1)
-        {
-            int errno_temp = errno;
-            orig_MUNMAP_CALL((void *) ret, len);
-            errno = errno_temp;
-            return MAP_FAILED;
-        }
-
-        // the arguments will be filled in by the MVEE anyway
-        void *bitmap = (void*) orig_SHMAT_CALL(0, 0, 0);
-        if ((likely(mvee_master_variant) && (void *) bitmap == (void*) -1) ||
-                (likely(!mvee_master_variant) && (void *) bitmap != (void*) -1))
-        {
-            int errno_temp = errno;
-            orig_MUNMAP_CALL((void *) ret, len);
-            orig_SHMDT_CALL(shadow);
-            errno = errno_temp;
-            return MAP_FAILED;
-        }
-
-        // Do bookkeeping
+      int errno_temp = errno;
+      orig_MUNMAP_CALL((void *) ret, len);
+      errno = errno_temp;
+      return MAP_FAILED;
     }
-    return (void *)ret;
+
+    // the arguments will be filled in by the MVEE anyway
+    void *bitmap = (void *) orig_SHMAT_CALL(0, 0, 0);
+    if ((mvee_master_variant && (void *) bitmap == (void *) -1) ||
+        (!mvee_master_variant && (void *) bitmap != (void *) -1))
+    {
+      int errno_temp = errno;
+      orig_MUNMAP_CALL((void *) ret, len);
+      orig_SHMDT_CALL(shadow);
+      errno = errno_temp;
+      return MAP_FAILED;
+    }
+
+    // Do bookkeeping
+    add_shared_mapping_info(mvee_shm_decode_address((void *) ret), shadow, bitmap, len);
+  }
+  return (void *)ret;
 }
 
 
 void *
 mvee_shm_shmat (int shmid, const void *shmaddr, int shmflg)
 {
-    void* mapping = orig_SHMAT_CALL(shmid, shmaddr, shmflg);
-    if (mapping == (void*) -1)
-        return mapping;
-
-    // the arguments will be filled in by the MVEE anyway
-    void* shadow = (void*) orig_SHMAT_CALL(0, 0, 0);
-    if (shadow == (void*) -1)
-    {
-        int errno_temp = errno;
-        orig_SHMDT_CALL(mapping);
-        errno = errno_temp;
-        return (void*) -1;
-    }
-
-    // the arguments will be filled in by the MVEE anyway
-    void* bitmap = (void*) orig_SHMAT_CALL(0, 0, 0);
-    if ((likely(mvee_master_variant) && (void *) bitmap == (void*) -1) ||
-            (likely(!mvee_master_variant) && (void *) bitmap != (void*) -1))
-    {
-        int errno_temp = errno;
-        orig_SHMDT_CALL(mapping);
-        orig_SHMDT_CALL(shadow);
-        errno = errno_temp;
-        return (void*) -1;
-    }
-
-    // some magic...
-
+  void* mapping = orig_SHMAT_CALL(shmid, shmaddr, shmflg);
+  if (mapping == (void*) -1)
     return mapping;
+
+  // the arguments will be filled in by the MVEE anyway
+  void* shadow = (void*) orig_SHMAT_CALL(0, 0, 0);
+  if (shadow == (void*) -1)
+  {
+    int errno_temp = errno;
+    orig_SHMDT_CALL(mapping);
+    errno = errno_temp;
+    return (void*) -1;
+  }
+
+  // the arguments will be filled in by the MVEE anyway
+  void* bitmap = (void*) orig_SHMAT_CALL(0, 0, 0);
+  if ((mvee_master_variant && (void *) bitmap == (void*) -1) ||
+      (!mvee_master_variant && (void *) bitmap != (void*) -1))
+  {
+    int errno_temp = errno;
+    orig_SHMDT_CALL(mapping);
+    orig_SHMDT_CALL(shadow);
+    errno = errno_temp;
+    return (void*) -1;
+  }
+
+  struct shmid_ds shm_info;
+  // just kinda assuming this won't fail at this point, should have succeeded if this point is reached...
+  shmctl(shmid, IPC_STAT, &shm_info);
+  add_shared_mapping_info(mvee_shm_decode_address(mapping), shadow, bitmap, shm_info.shm_segsz);
+
+  return mapping;
 }
 
 int
 mvee_shm_shmdt (const void *shmaddr)
 {
-    int return_value = orig_SHMDT_CALL(shmaddr);
-    if (return_value)
-        return -1;
-    if ((unsigned long long) shmaddr & 0x8000000000000000ull)
-    {
-        // these will have to be filled in using magic
-        orig_SHMDT_CALL(0);
-        // these will have to be filled in using magic
-        orig_SHMDT_CALL(0);
-        // this is just here to fix some stuff for now
-        errno = 0;
-    }
-    return 0;
+  if ((unsigned long long) shmaddr & 0x8000000000000000ull)
+  {
+    struct shared_mapping_info_t* mapping = remove_shared_mapping_info(mvee_shm_decode_address(shmaddr));
+
+    orig_SHMDT_CALL(mapping->shadow);
+    orig_SHMDT_CALL(mapping->bitmap); // todo this is -1 in followers, might not be the best idea actually
+    free(mapping);
+  }
+  return orig_SHMDT_CALL(shmaddr);
 }
 
 int
 mvee_shm_munmap (const void *addr, size_t len)
 {
-    int return_value = orig_MUNMAP_CALL(addr, len);
-    if (return_value)
-        return -1;
-    if ((unsigned long long) addr & 0x8000000000000000ull)
-    {
-        // these will have to be filled in using magic
-        orig_SHMDT_CALL(0);
-        // these will have to be filled in using magic
-        orig_SHMDT_CALL(0);
-        // this is just here to fix some stuff for now
-        errno = 0;
-    }
-    return 0;
+  if ((unsigned long long) addr & 0x8000000000000000ull)
+  {
+    struct shared_mapping_info_t* mapping = remove_shared_mapping_info(mvee_shm_decode_address(addr));
+    // I'm too lazy to do the parial munmap stuff, so just adding this to maybe have an idea when it does happen
+    mvee_assert_equal_mapping_size(len, mapping->size);
+
+    orig_SHMDT_CALL(mapping->shadow);
+    orig_SHMDT_CALL(mapping->bitmap); // todo this is -1 in followers, might not be the best idea actually
+    free(mapping);
+  }
+  return orig_MUNMAP_CALL(addr, len);
 }
 
 #endif
