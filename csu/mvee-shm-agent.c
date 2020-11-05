@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <mmap_internal.h>
 #include <sys/mman.h>
+#include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -13,8 +14,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
-
-#include <sys/shm.h>
 
 // ========================================================================================================================
 // Forward declarations for the original (ifunc) implementations of mem* functions
