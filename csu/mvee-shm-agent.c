@@ -119,26 +119,26 @@ static void mvee_error_mapping_not_inserted(void *addr)
 // ========================================================================================================================
 // All functionality related to the SHM buffer
 // ========================================================================================================================
-struct mvee_shm_op_entry {
+typedef struct mvee_shm_op_entry {
   const void* address;
   const void* second_address;
   size_t size;
   unsigned char type;
   char data[];
-};
+} mvee_shm_op_entry;
 
 static __thread size_t                mvee_shm_local_pos    = 0; // our position in the thread local queue
 static __thread char*                 mvee_shm_buffer       = NULL;
 static __thread size_t                mvee_shm_buffer_size  = 0; // nr of slots in the thread local queue
 
-static struct mvee_shm_op_entry* mvee_shm_get_entry(size_t size)
+static mvee_shm_op_entry* mvee_shm_get_entry(size_t size)
 {
   // Get the buffer if we don't have it yet
   if (unlikely(!mvee_shm_buffer))
     mvee_shm_buffer = (char*)syscall(__NR_shmat, syscall(MVEE_GET_SHARED_BUFFER, 0, MVEE_SHM_BUFFER, &mvee_shm_buffer_size, 1), NULL, 0);
 
   // Find location for entry in buffer
-  size_t entry_size = MVEE_ROUND_UP(sizeof(struct mvee_shm_op_entry) + size, sizeof(size_t));
+  size_t entry_size = MVEE_ROUND_UP(sizeof(mvee_shm_op_entry) + size, sizeof(size_t));
   if (unlikely(mvee_shm_local_pos + entry_size >= mvee_shm_buffer_size))
   {
     syscall(MVEE_FLUSH_SHARED_BUFFER, MVEE_SHM_BUFFER);
@@ -146,7 +146,7 @@ static struct mvee_shm_op_entry* mvee_shm_get_entry(size_t size)
   }
 
   // Calculate entry, update pos, and return
-  struct mvee_shm_op_entry* entry = (struct mvee_shm_op_entry*) (mvee_shm_buffer + mvee_shm_local_pos);
+  mvee_shm_op_entry* entry = (mvee_shm_op_entry*) (mvee_shm_buffer + mvee_shm_local_pos);
   mvee_shm_local_pos += entry_size;
   return entry;
 }
@@ -165,7 +165,7 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* shm_addr
     return;
 
   // Get an entry
-  struct mvee_shm_op_entry* entry = mvee_shm_get_entry(size);
+  mvee_shm_op_entry* entry = mvee_shm_get_entry(size);
 
   // Do actual operation, differently for leader and follower(s)
   if (likely(mvee_master_variant))
@@ -250,14 +250,14 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* shm_addr
 // ========================================================================================================================
 // The mvee_shm_op interface used by the wrapping shm_support compiler pass
 // ========================================================================================================================
-struct mvee_shm_op_ret {
+typedef struct mvee_shm_op_ret {
   unsigned long val;
   bool cmp;
-};
+} mvee_shm_op_ret;
 
-struct mvee_shm_op_ret mvee_shm_op(unsigned char id, bool atomic, void* address, unsigned long size, unsigned long value, unsigned long cmp)
+mvee_shm_op_ret mvee_shm_op(unsigned char id, bool atomic, void* address, unsigned long size, unsigned long value, unsigned long cmp)
 {
-  struct mvee_shm_op_ret ret = { 0 };
+  mvee_shm_op_ret ret = { 0 };
 
   address = mvee_shm_decode_address(address);
 
