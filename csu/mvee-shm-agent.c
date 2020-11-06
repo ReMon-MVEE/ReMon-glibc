@@ -1,6 +1,7 @@
 #include "mvee-agent-shared.h"
 
 #include <fcntl.h>
+#include <libc-lock.h>
 #include <mmap_internal.h>
 #include <sys/mman.h>
 #include <sys/shm.h>
@@ -55,6 +56,13 @@ static void* mvee_shm_decode_address(const void* address)
 // Assertions and errors
 // ========================================================================================================================
 __attribute__((noinline))
+static void mvee_assert_equal_mapping_size(size_t len, size_t size)
+{
+  if (len != size)
+    *(volatile long*)0 = len - size;
+}
+
+__attribute__((noinline))
 static void mvee_assert_same_address(const void* a, const void* b)
 {
 	if (a != b)
@@ -96,24 +104,129 @@ static void mvee_error_unsupported_id(unsigned long id)
 }
 
 __attribute__((noinline))
-static void mvee_assert_mapping_exists(void *mapping)
-{
-  if (!mapping)
-    *(volatile long*)0 = 1;
-}
-
-__attribute__((noinline))
-static void mvee_assert_equal_mapping_size(size_t len, size_t size)
-{
-  if (len != size)
-    *(volatile long*)0 = len - size;
-}
-
-__attribute__((noinline))
-static void mvee_error_mapping_not_inserted(void *addr)
+static void mvee_error_shm_entry_not_present(const void *addr)
 {
   *(volatile long*)0 = (volatile long) addr;
 }
+
+// ========================================================================================================================
+// Everything table-related
+// ========================================================================================================================
+typedef struct mvee_shm_table_entry {
+  void* address;
+  void* shadow;
+  void* bitmap;
+  size_t len;
+  struct mvee_shm_table_entry* prev;
+  struct mvee_shm_table_entry* next;
+} mvee_shm_table_entry;
+
+static mvee_shm_table_entry* mvee_shm_table_head = NULL;
+
+__libc_rwlock_define_initialized (, mvee_shm_table_lock attribute_hidden)
+
+void mvee_shm_table_add_entry(void* address, void* shadow, void* bitmap, size_t len)
+{
+  __libc_rwlock_wrlock(mvee_shm_table_lock);
+
+  /* Prepare entry */
+  mvee_shm_table_entry *entry = (mvee_shm_table_entry *) malloc(sizeof(mvee_shm_table_entry));
+  entry->address = address;
+  entry->shadow = shadow;
+  entry->bitmap = bitmap;
+  entry->len = len;
+  entry->prev = NULL;
+  entry->next = NULL;
+
+  /* Insert entry, or make it the new head if none exists yet */
+  if (mvee_shm_table_head)
+  {
+    mvee_shm_table_entry *iterator = mvee_shm_table_head;
+
+    /* Insert in a sorted order, so make our entry the new head if necessary */
+    if (iterator->address >= (address + len))
+    {
+      iterator->prev = entry;
+      entry->next = iterator;
+      mvee_shm_table_head = entry;
+    }
+    else
+    {
+      /* Insert half-way? */
+      while (iterator->next)
+      {
+        if (((iterator->address + iterator->len) < address) && (iterator->next->address >= (address + len)))
+        {
+          iterator->next->prev = entry;
+          entry->next = iterator->next;
+          iterator->next = entry;
+          entry->prev = iterator;
+          break;
+        }
+        iterator = iterator->next;
+      }
+
+      /* Insert at the end */
+      if (!iterator->next)
+      {
+        /* Do sanity check, should not be possible. */
+        if (address < (iterator->address + iterator->len))
+          mvee_error_shm_entry_not_present(address);
+
+        iterator->next = entry;
+        entry->prev = iterator;
+      }
+    }
+  }
+  else
+    mvee_shm_table_head = entry;
+
+  __libc_rwlock_unlock(mvee_shm_table_lock);
+}
+
+static mvee_shm_table_entry* mvee_shm_table_get_entry(const void* address)
+{
+  __libc_rwlock_rdlock(mvee_shm_table_lock);
+
+  mvee_shm_table_entry* entry = mvee_shm_table_head;
+  while (entry)
+  {
+    /* If we found the entry, quit */
+    if (((uintptr_t)entry->address <= (uintptr_t)address) && ((uintptr_t)address < ((uintptr_t)entry->address + entry->len)))
+      break;
+
+    entry = entry->next;
+  }
+
+  __libc_rwlock_unlock(mvee_shm_table_lock);
+
+  return entry;
+}
+
+static bool mvee_shm_table_delete_entry(mvee_shm_table_entry* remove)
+{
+  if (remove)
+  {
+    __libc_rwlock_wrlock(mvee_shm_table_lock);
+
+    /* Unlink */
+    if (remove->prev)
+      remove->prev->next = remove->next;
+    if (remove->next)
+      remove->next->prev = remove->prev;
+
+    /* Free memory */
+    free(remove);
+
+    __libc_rwlock_unlock(mvee_shm_table_lock);
+    return true;
+  }
+
+  return false;
+}
+
+#define SHARED_TO_SHADOW_POINTER(__mapping, __address)                                                                 \
+(__mapping->shadow + (__address - __mapping->address))
 
 // ========================================================================================================================
 // All functionality related to the SHM buffer
@@ -327,101 +440,6 @@ mvee_shm_memset (void *dest, int ch, size_t len)
   return dest;
 }
 
-
-// ========================================================================================================================
-// bookkeeping
-// ========================================================================================================================
-struct shared_mapping_info_t
-{
-  struct shared_mapping_info_t* previous;
-  void* base;
-  void* shadow;
-  void* bitmap;
-  size_t size;
-  struct shared_mapping_info_t* next;
-};
-static struct shared_mapping_info_t* shared_mapping_info = NULL;
-
-static void add_shared_mapping_info(void *base, void *shadow, void *bitmap, size_t size)
-{
-  struct shared_mapping_info_t *to_add = (struct shared_mapping_info_t *) malloc(sizeof(struct shared_mapping_info_t));
-  to_add->previous = NULL;
-  to_add->base = base;
-  to_add->shadow = shadow;
-  to_add->bitmap = bitmap;
-  to_add->size = size;
-  to_add->next = NULL;
-
-
-  if (shared_mapping_info == NULL)
-  {
-    shared_mapping_info = to_add;
-    return;
-  }
-
-  struct shared_mapping_info_t *iterator = shared_mapping_info;
-
-  if (iterator->base >= (base + size))
-  {
-    iterator->previous = to_add;
-    to_add->next = iterator;
-    shared_mapping_info = to_add;
-    return;
-  }
-
-  while (iterator && iterator->next)
-  {
-    if (((iterator->base + iterator->size) < base) && (iterator->next->base >= (base + size)))
-    {
-      iterator->next->previous = to_add;
-      to_add->next = iterator->next;
-      iterator->next = to_add;
-      to_add->previous = iterator;
-      return;
-    }
-    iterator = iterator->next;
-  }
-
-  if ((iterator->base + iterator->size) < base)
-  {
-    iterator->next = to_add;
-    to_add->previous = iterator;
-    return;
-  }
-
-  // should be unreachable
-  mvee_error_mapping_not_inserted(base);
-}
-
-static struct shared_mapping_info_t* find_shared_mapping_info(const void* addr)
-{
-  struct shared_mapping_info_t* iterator = shared_mapping_info;
-  while (iterator)
-  {
-    if (iterator->base <= addr && (iterator->base + iterator->size) > addr)
-      return iterator;
-    iterator = iterator->next;
-  }
-  mvee_assert_mapping_exists(iterator);
-  return iterator;
-}
-
-#define SHARED_TO_SHADOW_POINTER(__mapping, __address)                                                                 \
-__mapping->shadow + (__address - __mapping->base);
-
-static struct shared_mapping_info_t* remove_shared_mapping_info(const void* mapping)
-{
-  struct shared_mapping_info_t* remove = find_shared_mapping_info(mapping);
-  if (remove)
-  {
-    if (remove->previous)
-      remove->previous->next = remove->next;
-    if (remove->next)
-      remove->next->previous = remove->previous;
-  }
-  return remove;
-}
-
 // ========================================================================================================================
 // Hooks for mmap and related functions
 // ========================================================================================================================
@@ -459,7 +477,7 @@ mvee_shm_mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset
     }
 
     // Do bookkeeping
-    add_shared_mapping_info(mvee_shm_decode_address((void *) ret), shadow, bitmap, len);
+    mvee_shm_table_add_entry(mvee_shm_decode_address((void *) ret), shadow, bitmap, len);
   }
   return (void *)ret;
 }
@@ -497,7 +515,7 @@ mvee_shm_shmat (int shmid, const void *shmaddr, int shmflg)
   struct shmid_ds shm_info;
   // just kinda assuming this won't fail at this point, should have succeeded if this point is reached...
   shmctl(shmid, IPC_STAT, &shm_info);
-  add_shared_mapping_info(mvee_shm_decode_address(mapping), shadow, bitmap, shm_info.shm_segsz);
+  mvee_shm_table_add_entry(mvee_shm_decode_address(mapping), shadow, bitmap, shm_info.shm_segsz);
 
   return mapping;
 }
@@ -507,11 +525,13 @@ mvee_shm_shmdt (const void *shmaddr)
 {
   if ((unsigned long long) shmaddr & 0x8000000000000000ull)
   {
-    struct shared_mapping_info_t* mapping = remove_shared_mapping_info(mvee_shm_decode_address(shmaddr));
+    mvee_shm_table_entry* mapping = mvee_shm_table_get_entry(mvee_shm_decode_address(shmaddr));
+    if (!mapping)
+      mvee_error_shm_entry_not_present(shmaddr);
 
     orig_SHMDT_CALL(mapping->shadow);
     orig_SHMDT_CALL(mapping->bitmap); // todo this is -1 in followers, might not be the best idea actually
-    free(mapping);
+    mvee_shm_table_delete_entry(mapping);
   }
   return orig_SHMDT_CALL(shmaddr);
 }
@@ -521,13 +541,16 @@ mvee_shm_munmap (const void *addr, size_t len)
 {
   if ((unsigned long long) addr & 0x8000000000000000ull)
   {
-    struct shared_mapping_info_t* mapping = remove_shared_mapping_info(mvee_shm_decode_address(addr));
+    mvee_shm_table_entry* mapping = mvee_shm_table_get_entry(mvee_shm_decode_address(addr));
+    if (!mapping)
+      mvee_error_shm_entry_not_present(addr);
+
     // I'm too lazy to do the parial munmap stuff, so just adding this to maybe have an idea when it does happen
-    mvee_assert_equal_mapping_size(len, mapping->size);
+    mvee_assert_equal_mapping_size(len, mapping->len);
 
     orig_SHMDT_CALL(mapping->shadow);
     orig_SHMDT_CALL(mapping->bitmap); // todo this is -1 in followers, might not be the best idea actually
-    free(mapping);
+    mvee_shm_table_delete_entry(mapping);
   }
   return orig_MUNMAP_CALL(addr, len);
 }
