@@ -236,6 +236,7 @@ typedef struct mvee_shm_op_entry {
   const void* second_address;
   size_t size;
   unsigned char type;
+  bool data_present;
   char data[];
 } mvee_shm_op_entry;
 
@@ -269,7 +270,7 @@ static mvee_shm_op_entry* mvee_shm_get_entry(size_t size)
 // out_address  : a secondary helper address to which can be written, which might also be on the SHM page
 // size         : the number of accessed bytes
 // value        : a helper value
-static inline void mvee_shm_buffered_op(unsigned char type, const void* shm_address, const void* in_address, void* out_address, size_t size, uint64_t value)
+static inline void mvee_shm_buffered_op(unsigned char type, const void* in_address, const mvee_shm_table_entry* in, void* out_address, const mvee_shm_table_entry* out, size_t size, uint64_t value)
 {
   // If the memory operation has no size, don't do it, don't make an entry, and don't even check
   // This is an easier course than making entries with a size of 0, which would fuck up synchronization
@@ -278,6 +279,8 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* shm_addr
 
   // Get an entry
   mvee_shm_op_entry* entry = mvee_shm_get_entry(size);
+  const void* shm_address = out ? out_address : in_address;
+  const void* shm_address2 = (in && out) ? in_address : NULL;
 
   // Do actual operation, differently for leader and follower(s)
   if (likely(mvee_master_variant))
@@ -289,18 +292,66 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* shm_addr
     {
       case MEMCPY:
       case MEMMOVE:
-          entry->second_address = value ? in_address : NULL;// if value is set, shm_address equals out_address, and in_address is also on a SHM page
+          entry->second_address = shm_address2;
       case LOAD:
       case STORE:
-        {
-          orig_memcpy(&entry->data, in_address, size);
-          (type == MEMMOVE) ? orig_memmove(out_address, in_address, size) : orig_memcpy(out_address, in_address, size);
-          break;
-        }
+          {
+           /* When doing reads/writes we will use memcpy, **or** memmove if so requested. We can relax certain memmove's however, if we now
+            * **for a fact** that the destination and source won't overlap. For example, when handling MEMMOVE we can still perform writes from
+            * non-SHM pages to local shadow copy pages using memcpy.
+            */
+            if (in)
+            {
+              /* The input comes from a SHM page. Check whether it differs from our local copy or not. If it doesn't, we use our local copy as input.
+               * If it **does** differ, we copy the modified data on the SHM page to the buffer, and use that copy as input.
+               */
+              entry->data_present = memcmp(SHARED_TO_SHADOW_POINTER(in, in_address), in_address, size);
+              if (entry->data_present)
+                orig_memcpy(&entry->data, in_address, size);
+              const void* buf_or_shadow = (entry->data_present) ? &entry->data : SHARED_TO_SHADOW_POINTER(in, in_address);
+
+              if (out)
+              {
+                /* We're reading/writing to and from a SHM page. */
+                /* Write to actual SHM page, from (non-overlapping) buffer or local shadow copy */
+                orig_memcpy(out_address, buf_or_shadow, size);
+
+                /* Write local shadow copy, from buffer (can memcpy!) or local shadow copy (memmove, if requested) */
+                if (type == MEMMOVE && !entry->data_present)
+                  orig_memmove(SHARED_TO_SHADOW_POINTER(out, out_address), buf_or_shadow, size);
+                else
+                  orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), buf_or_shadow, size);
+              }
+              else
+              {
+                /* The input comes from a SHM page, the output goes to a non-SHM page. */
+                /* Write to non-SHM page, from (non-overlapping) buffer or local shadow copy */
+                orig_memcpy(out_address, buf_or_shadow, size);
+              }
+            }
+            else
+            {
+              /* The input comes from a non-SHM page, fill in the buffer */
+              orig_memcpy(&entry->data, in_address, size);
+
+              /* Write to actual SHM page, from (non-overlapping) non-SHM page */
+              orig_memcpy(out_address, in_address, size);
+
+              /* Write local shadow copy, from (non-overlapping) non-SHM page */
+              orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), in_address, size);
+            }
+            break;
+          }
       case MEMSET:
         {
+          /* Filling in buffer */
           orig_memset(&entry->data, value, 1);
+
+          /* Write to actual SHM page */
           orig_memset(out_address, value, size);
+
+          /* Write local shadow copy */
+          orig_memset(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
           break;
         }
       default:
@@ -323,34 +374,51 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* shm_addr
 
     switch(type)
     {
-      case LOAD:
-        {
-          orig_memcpy(out_address, &entry->data, size);
-          break;
-        }
-      case STORE:
-        {
-          mvee_assert_same_store(&entry->data, in_address, size);
-          break;
-        }
       case MEMCPY:
       case MEMMOVE:
+        mvee_assert_same_address(entry->second_address, shm_address2);
+      case LOAD:
+      case STORE:
         {
-          mvee_assert_same_address(entry->second_address, value ? in_address : NULL);
+          if (in)
+          {
+            /* The input comes from a SHM page. Check whether to read from the buffer or from the local shadow copy. */
+            const void* buf_or_shadow = (entry->data_present) ? &entry->data : SHARED_TO_SHADOW_POINTER(in, in_address);
 
-          // Check if the input comes from a non-SHM page
-          if (entry->address != in_address && entry->second_address != in_address)
+            if (out)
+            {
+              /* We're reading/writing to and from a SHM page. Write to the local shadow copy using a memcpy or memmove, depending
+               * on whether we can relax any requested MEMMOVEs (if we **know** source and destination won't overlap).
+               */
+              if (type == MEMMOVE && !entry->data_present)
+                orig_memmove(SHARED_TO_SHADOW_POINTER(out, out_address), buf_or_shadow, size);
+              else
+                orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), buf_or_shadow, size);
+            }
+            else
+            {
+              /* The input comes from a SHM page, the output goes to a non-SHM page. As we know **for a fact** that destination buffer does
+               * not overlap with the input buffer (either in the SHM buffer, or the local shadow page), we use a memcpy, even for MEMMOVE.
+               */
+              orig_memcpy(out_address, buf_or_shadow, size);
+            }
+          }
+          else
+          {
+            /* The input comes from a non-SHM page, check its correctness */
             mvee_assert_same_store(&entry->data, in_address, size);
 
-          // Check if the output goes to a non-SHM page
-          if (entry->address != out_address && entry->second_address != out_address)
-            (type == MEMCPY) ? orig_memcpy(out_address, &entry->data, size) : orig_memmove(out_address, &entry->data, size);
-
+            /* Write local shadow copy */
+            orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), in_address, size);
+          }
           break;
         }
       case MEMSET:
         {
           mvee_assert_same_value(*((int*)entry->data), value);
+
+          /* Write local shadow copy */
+          orig_memset(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
           break;
         }
       default:
@@ -381,11 +449,14 @@ mvee_shm_op_ret mvee_shm_op(unsigned char id, bool atomic, void* address, unsign
   else
   {
     // Non-atomic operations, use SHM buffer
+    mvee_shm_table_entry* entry = mvee_shm_table_get_entry(address);
+    if (!entry)
+      mvee_error_shm_entry_not_present(address);
 
     if (id == LOAD)
-      mvee_shm_buffered_op(id, address, address, &ret.val, size, 0);
+      mvee_shm_buffered_op(id, address, entry, &ret.val, NULL, size, 0);
     else if (id == STORE)
-      mvee_shm_buffered_op(id, address, &value, address, size, 0);
+      mvee_shm_buffered_op(id, &value, NULL, address, entry, size, 0);
     else
       mvee_error_unsupported_operation(id);
   }
@@ -401,15 +472,14 @@ void *
 mvee_shm_memcpy (void *__restrict dest, const void *__restrict src, size_t n)
 {
   /* Decode addresses */
-  if ((unsigned long)src & 0x8000000000000000ull)
-  {
-    if ((unsigned long)dest & 0x8000000000000000ull)
-      mvee_shm_buffered_op(MEMCPY, mvee_shm_decode_address(dest), mvee_shm_decode_address(src), mvee_shm_decode_address(dest), n, 1);
-    else
-      mvee_shm_buffered_op(MEMCPY, mvee_shm_decode_address(src), mvee_shm_decode_address(src), dest, n, 0);
-  }
-  else if ((unsigned long)dest & 0x8000000000000000ull)
-    mvee_shm_buffered_op(MEMCPY, mvee_shm_decode_address(dest), src, mvee_shm_decode_address(dest), n, 0);
+  void* shm_dest = mvee_shm_decode_address(dest);
+  void* shm_src = mvee_shm_decode_address(src);
+  mvee_shm_table_entry* dest_entry = mvee_shm_table_get_entry(shm_dest);
+  mvee_shm_table_entry* src_entry = mvee_shm_table_get_entry(shm_src);
+  if (!dest_entry && !src_entry)
+    mvee_error_shm_entry_not_present(dest);
+
+  mvee_shm_buffered_op(MEMCPY, src_entry ? shm_src : src, src_entry, dest_entry ? shm_dest : dest, dest_entry, n, 0);
 
   return dest;
 }
@@ -418,15 +488,14 @@ void *
 mvee_shm_memmove (void *dest, const void * src, size_t n)
 {
   /* Decode addresses */
-  if ((unsigned long)src & 0x8000000000000000ull)
-  {
-    if ((unsigned long)dest & 0x8000000000000000ull)
-      mvee_shm_buffered_op(MEMMOVE, mvee_shm_decode_address(dest), mvee_shm_decode_address(src), mvee_shm_decode_address(dest), n, 1);
-    else
-      mvee_shm_buffered_op(MEMMOVE, mvee_shm_decode_address(src), mvee_shm_decode_address(src), dest, n, 0);
-  }
-  else if ((unsigned long)dest & 0x8000000000000000ull)
-    mvee_shm_buffered_op(MEMMOVE, mvee_shm_decode_address(dest), src, mvee_shm_decode_address(dest), n, 0);
+  void* shm_dest = mvee_shm_decode_address(dest);
+  void* shm_src = mvee_shm_decode_address(src);
+  mvee_shm_table_entry* dest_entry = mvee_shm_table_get_entry(shm_dest);
+  mvee_shm_table_entry* src_entry = mvee_shm_table_get_entry(shm_src);
+  if (!dest_entry && !src_entry)
+    mvee_error_shm_entry_not_present(dest);
+
+  mvee_shm_buffered_op(MEMMOVE, src_entry ? shm_src : src, src_entry, dest_entry ? shm_dest : dest, dest_entry, n, 0);
 
   return dest;
 }
@@ -436,8 +505,11 @@ mvee_shm_memset (void *dest, int ch, size_t len)
 {
   /* Decode addresses */
   void* shm_dest = mvee_shm_decode_address(dest);
+  mvee_shm_table_entry* entry = mvee_shm_table_get_entry(shm_dest);
+  if (!entry)
+    mvee_error_shm_entry_not_present(dest);
 
-  mvee_shm_buffered_op(MEMSET, shm_dest, NULL, shm_dest, len, ch);
+  mvee_shm_buffered_op(MEMSET, NULL, NULL, shm_dest, entry, len, ch);
   return dest;
 }
 
