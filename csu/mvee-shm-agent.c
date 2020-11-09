@@ -98,7 +98,7 @@ static void mvee_assert_same_value(int a, int b)
 }
 
 __attribute__((noinline))
-static void mvee_error_unsupported_id(unsigned long id)
+static void mvee_error_unsupported_operation(unsigned long id)
 {
   *(volatile long*)0 = (long)id;
 }
@@ -304,7 +304,7 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* shm_addr
           break;
         }
       default:
-        break;// TODO: unsupported operation!
+        mvee_error_unsupported_operation(type);
     }
 
     // Signal entry is ready
@@ -354,7 +354,7 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* shm_addr
           break;
         }
       default:
-        break;// TODO: unsupported operation!
+        mvee_error_unsupported_operation(type);
     }
   }
 }
@@ -376,6 +376,7 @@ mvee_shm_op_ret mvee_shm_op(unsigned char id, bool atomic, void* address, unsign
   if (atomic)
   {
      // Atomic operations, hand over to MVEE
+    mvee_error_unsupported_operation(id);
   }
   else
   {
@@ -386,7 +387,7 @@ mvee_shm_op_ret mvee_shm_op(unsigned char id, bool atomic, void* address, unsign
     else if (id == STORE)
       mvee_shm_buffered_op(id, address, &value, address, size, 0);
     else
-      mvee_error_unsupported_id(id);
+      mvee_error_unsupported_operation(id);
   }
 
   return ret;
