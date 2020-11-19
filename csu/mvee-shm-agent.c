@@ -144,7 +144,7 @@ void mvee_shm_table_add_entry(void* address, void* shadow, void* bitmap, size_t 
     mvee_shm_table_entry *iterator = mvee_shm_table_head;
 
     /* Insert in a sorted order, so make our entry the new head if necessary */
-    if (iterator->address >= (address + len))
+    if ((address + len) <= iterator->address)
     {
       iterator->prev = entry;
       entry->next = iterator;
@@ -155,7 +155,7 @@ void mvee_shm_table_add_entry(void* address, void* shadow, void* bitmap, size_t 
       /* Insert half-way? */
       while (iterator->next)
       {
-        if (((iterator->address + iterator->len) < address) && (iterator->next->address >= (address + len)))
+        if (((iterator->address + iterator->len) <= address) && ((address + len) <= iterator->next->address))
         {
           iterator->next->prev = entry;
           entry->next = iterator->next;
@@ -208,6 +208,10 @@ static bool mvee_shm_table_delete_entry(mvee_shm_table_entry* remove)
   if (remove)
   {
     __libc_rwlock_wrlock(mvee_shm_table_lock);
+
+    /* Special case for head */
+    if (remove == mvee_shm_table_head)
+      mvee_shm_table_head = remove->next;
 
     /* Unlink */
     if (remove->prev)
