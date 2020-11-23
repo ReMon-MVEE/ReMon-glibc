@@ -115,7 +115,6 @@ static void mvee_error_shm_entry_not_present(const void *addr)
 typedef struct mvee_shm_table_entry {
   void* address;
   void* shadow;
-  void* bitmap;
   size_t len;
   struct mvee_shm_table_entry* prev;
   struct mvee_shm_table_entry* next;
@@ -125,7 +124,7 @@ static mvee_shm_table_entry* mvee_shm_table_head = NULL;
 
 __libc_rwlock_define_initialized (, mvee_shm_table_lock attribute_hidden)
 
-void mvee_shm_table_add_entry(void* address, void* shadow, void* bitmap, size_t len)
+void mvee_shm_table_add_entry(void* address, void* shadow, size_t len)
 {
   __libc_rwlock_wrlock(mvee_shm_table_lock);
 
@@ -133,7 +132,6 @@ void mvee_shm_table_add_entry(void* address, void* shadow, void* bitmap, size_t 
   mvee_shm_table_entry *entry = (mvee_shm_table_entry *) malloc(sizeof(mvee_shm_table_entry));
   entry->address = address;
   entry->shadow = shadow;
-  entry->bitmap = bitmap;
   entry->len = len;
   entry->prev = NULL;
   entry->next = NULL;
@@ -232,92 +230,6 @@ static bool mvee_shm_table_delete_entry(mvee_shm_table_entry* remove)
 #define SHARED_TO_SHADOW_POINTER(__mapping, __address)                                                                 \
 (__mapping->shadow + (__address - __mapping->address))
 
-void bitmap_clear(const mvee_shm_table_entry* entry, const void* address, size_t set_count)
-{
-  uint8_t* bitmap_base = (uint8_t*)entry->bitmap;
-  size_t offset = address - entry->address;
-
-  if ((offset & 0b111u) + set_count <= 8)
-    ((uint8_t*) bitmap_base)[offset >> 3u] &= (uint8_t) ~((0xffu >> (8 - set_count)) << (offset & 0b111u));
-  else
-  {
-    /* locally used variables */
-    size_t iterative_offset = offset;
-    ssize_t iterative_count = set_count + (offset & 0b111u);
-
-    /* first one might be middle of a bitmap byte */
-    ((uint8_t*) bitmap_base)[offset >> 3u] &= (uint8_t) ~(0xffu << (offset & 0b111u));
-
-    /* there might be some bits left */
-    while ((iterative_count-=8) > 0)
-    {
-      iterative_offset+=8;
-      /* write to bitmap */
-      ((uint8_t*) bitmap_base)[iterative_offset >> 3u] &= (uint8_t) ~(0xffu >>
-        (iterative_count > 8u ? 0 : (unsigned) (8 - iterative_count)));
-    }
-  }
-}
-
-bool bitmap_read(const mvee_shm_table_entry* entry, const void* address, size_t read_count)
-{
-  uint8_t* bitmap_base = (uint8_t*)entry->bitmap;
-  size_t offset = address - entry->address;
-
-  if ((offset & 0b111u) + read_count <= 8)
-    return ((unsigned) (((uint8_t*) bitmap_base)[offset >> 3u] >> (offset & 0b111u)) &
-        (0xffu >> (unsigned) (8 - read_count)));
-  /* locally used variables */
-  size_t iterative_offset = offset;
-  ssize_t iterative_count = read_count;
-
-  /* first one might be middle of a bitmap byte */
-  if ((((uint8_t*) bitmap_base)[offset >> 3u] << (offset & 0b111u)) != 0)
-    return true;
-  iterative_count -= (offset & 0b111u);
-
-  /* there might be some bits left */
-  while (iterative_count > 0)
-  {
-    iterative_offset+=8;
-    /* write to bitmap */
-    if ((((uint8_t*) bitmap_base)[iterative_offset >> 3u] >>
-          (iterative_count > 8u ? 0 : (unsigned) (8 - iterative_count))) != 0)
-      return true;
-    /* next bits to write */
-    iterative_count -= 8;
-  }
-
-  return false;
-}
-
-void bitmap_set(const mvee_shm_table_entry* entry, const void* address, size_t set_count)
-{
-  uint8_t* bitmap_base = (uint8_t*)entry->bitmap;
-  size_t offset = address - entry->address;
-
-  if ((offset & 0b111u) + set_count <= 8)
-    ((uint8_t*) bitmap_base)[offset >> 3u] |= (uint8_t) ((0xffu >> (8 - set_count)) << (offset & 0b111u));
-  else
-  {
-    /* locally used variables */
-    size_t iterative_offset = offset;
-    ssize_t iterative_count = set_count + (offset & 0b111u);
-
-    /* first one might be middle of a bitmap byte */
-    ((uint8_t*) bitmap_base)[offset >> 3u] |= (uint8_t) (0xffu << (offset & 0b111u));
-
-    /* there might be some bits left */
-    while ((iterative_count-=8) > 0)
-    {
-      iterative_offset+=8;
-      /* write to bitmap */
-      ((uint8_t*) bitmap_base)[iterative_offset >> 3u] |= (uint8_t) (0xffu >>
-        (iterative_count > 8u ? 0 : (unsigned) (8 - iterative_count)));
-    }
-  }
-}
-
 // ========================================================================================================================
 // All functionality related to the SHM buffer
 // ========================================================================================================================
@@ -392,16 +304,12 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* in_addre
             */
             if (in)
             {
-              /* The input comes from a SHM page. Check whether we wrote our local copy, and if we did, whether it differs the local copy differs
-               * from the SHM page. We use the local copy as input if we wrote to it and it doesn't differ from the SHM page. If it **does** differ,
-               * we copy the modified data on the SHM page to the buffer, and use that copy as input.
+              /* The input comes from a SHM page. Check whether it differs from our local copy or not. If it doesn't, we use our local copy as input.
+               * If it **does** differ, we copy the modified data on the SHM page to the buffer, and use that copy as input.
                */
-              entry->data_present = !bitmap_read(in, in_address, size) || memcmp(SHARED_TO_SHADOW_POINTER(in, in_address), in_address, size);
+              entry->data_present = memcmp(SHARED_TO_SHADOW_POINTER(in, in_address), in_address, size);
               if (entry->data_present)
-              {
                 orig_memcpy(&entry->data, in_address, size);
-                bitmap_clear(in, in_address, size);/* Clear, as we know our local copy to be stale */
-              }
               const void* buf_or_shadow = (entry->data_present) ? &entry->data : SHARED_TO_SHADOW_POINTER(in, in_address);
 
               if (out)
@@ -409,7 +317,6 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* in_addre
                 /* We're reading/writing to and from a SHM page. */
                 /* Write to actual SHM page, from (non-overlapping) buffer or local shadow copy */
                 orig_memcpy(out_address, buf_or_shadow, size);
-                bitmap_set(out, out_address, size);
 
                 /* Write local shadow copy, from buffer (can memcpy!) or local shadow copy (memmove, if requested) */
                 if (type == MEMMOVE && !entry->data_present)
@@ -431,7 +338,6 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* in_addre
 
               /* Write to actual SHM page, from (non-overlapping) non-SHM page */
               orig_memcpy(out_address, in_address, size);
-              bitmap_set(out, out_address, size);
 
               /* Write local shadow copy, from (non-overlapping) non-SHM page */
               orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), in_address, size);
@@ -445,7 +351,6 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* in_addre
 
           /* Write to actual SHM page */
           orig_memset(out_address, value, size);
-          bitmap_set(out, out_address, size);
 
           /* Write local shadow copy */
           orig_memset(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
@@ -634,20 +539,8 @@ mvee_shm_mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset
       return MAP_FAILED;
     }
 
-    // the arguments will be filled in by the MVEE anyway
-    void *bitmap = (void *) orig_SHMAT_CALL(0, 0, 0);
-    if ((mvee_master_variant && (void *) bitmap == (void *) -1) ||
-        (!mvee_master_variant && (void *) bitmap != (void *) -1))
-    {
-      int errno_temp = errno;
-      orig_MUNMAP_CALL((void *) ret, len);
-      orig_SHMDT_CALL(shadow);
-      errno = errno_temp;
-      return MAP_FAILED;
-    }
-
     // Do bookkeeping
-    mvee_shm_table_add_entry(mvee_shm_decode_address((void *) ret), shadow, bitmap, len);
+    mvee_shm_table_add_entry(mvee_shm_decode_address((void *) ret), shadow, len);
   }
   return (void *)ret;
 }
@@ -670,22 +563,10 @@ mvee_shm_shmat (int shmid, const void *shmaddr, int shmflg)
     return (void*) -1;
   }
 
-  // the arguments will be filled in by the MVEE anyway
-  void* bitmap = (void*) orig_SHMAT_CALL(0, 0, 0);
-  if ((mvee_master_variant && (void *) bitmap == (void*) -1) ||
-      (!mvee_master_variant && (void *) bitmap != (void*) -1))
-  {
-    int errno_temp = errno;
-    orig_SHMDT_CALL(mapping);
-    orig_SHMDT_CALL(shadow);
-    errno = errno_temp;
-    return (void*) -1;
-  }
-
   struct shmid_ds shm_info;
   // just kinda assuming this won't fail at this point, should have succeeded if this point is reached...
   shmctl(shmid, IPC_STAT, &shm_info);
-  mvee_shm_table_add_entry(mvee_shm_decode_address(mapping), shadow, bitmap, shm_info.shm_segsz);
+  mvee_shm_table_add_entry(mvee_shm_decode_address(mapping), shadow, shm_info.shm_segsz);
 
   return mapping;
 }
@@ -700,7 +581,6 @@ mvee_shm_shmdt (const void *shmaddr)
       mvee_error_shm_entry_not_present(shmaddr);
 
     orig_SHMDT_CALL(mapping->shadow);
-    orig_SHMDT_CALL(mapping->bitmap); // todo this is -1 in followers, might not be the best idea actually
     mvee_shm_table_delete_entry(mapping);
   }
   return orig_SHMDT_CALL(shmaddr);
@@ -719,7 +599,6 @@ mvee_shm_munmap (const void *addr, size_t len)
     mvee_assert_equal_mapping_size(len, mapping->len);
 
     orig_SHMDT_CALL(mapping->shadow);
-    orig_SHMDT_CALL(mapping->bitmap); // todo this is -1 in followers, might not be the best idea actually
     mvee_shm_table_delete_entry(mapping);
   }
   return orig_MUNMAP_CALL(addr, len);
