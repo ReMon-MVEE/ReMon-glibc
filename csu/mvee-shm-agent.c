@@ -526,7 +526,7 @@ mvee_shm_mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset
   {
     struct stat fd_stat;
     fstat(fd, &fd_stat);
-    if (!(fd_stat.st_mode & O_RDWR))
+    if (!((fd_stat.st_mode & S_IRUSR) && (fd_stat.st_mode & S_IWUSR)))
       return (void *) ret;
 
     // the arguments will be filled in by the MVEE anyway
