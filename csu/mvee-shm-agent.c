@@ -427,6 +427,11 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* in_addre
         mvee_error_unsupported_operation(type);
     }
   }
+
+#ifdef MVEE_LOG_SHM_MEM_OPS
+  if (GLIBC_FUNC_BASE <= type)
+    syscall(MVEE_LOG_SHM_MEM_OP, type, size);
+#endif
 }
 
 // ========================================================================================================================
