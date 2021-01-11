@@ -30,15 +30,43 @@ enum
 {
   LOAD            = 0,// Instruction::LoadInst
   STORE           = 1,// Instruction::StoreInst
-  ATOMICRMW       = 2,// Instruction::AtomicRMWInst
-  ATOMICCMPXCHG   = 3,// Instruction::AtomicCmpXchgInst
+  ATOMICCMPXCHG   = 2,// Instruction::AtomicCmpXchgInst
+  ATOMICRMW_FIRST = 3,// Instruction::AtomicRMWInst
+  ATOMICRMW_XCHG  = ATOMICRMW_FIRST +  0,// Instruction::AtomicRMWInst::Xchg, *p = v
+  ATOMICRMW_ADD   = ATOMICRMW_FIRST +  1,// Instruction::AtomicRMWInst::Add, *p = old + v
+  ATOMICRMW_SUB   = ATOMICRMW_FIRST +  2,// Instruction::AtomicRMWInst::Sub, *p = old - v
+  ATOMICRMW_AND   = ATOMICRMW_FIRST +  3,// Instruction::AtomicRMWInst::And, *p = old & v
+  ATOMICRMW_NAND  = ATOMICRMW_FIRST +  4,// Instruction::AtomicRMWInst::Nand, *p = ~(old & v)
+  ATOMICRMW_OR    = ATOMICRMW_FIRST +  5,// Instruction::AtomicRMWInst::Or, *p = old | v
+  ATOMICRMW_XOR   = ATOMICRMW_FIRST +  6,// Instruction::AtomicRMWInst::Xor, *p = old ^ v
+  ATOMICRMW_MAX   = ATOMICRMW_FIRST +  7,// Instruction::AtomicRMWInst::Max, *p = old >signed v ? old : v
+  ATOMICRMW_MIN   = ATOMICRMW_FIRST +  8,// Instruction::AtomicRMWInst::Min, *p = old <signed v ? old : v
+  ATOMICRMW_UMAX  = ATOMICRMW_FIRST +  9,// Instruction::AtomicRMWInst::UMax, *p = old >unsigned v ? old : v
+  ATOMICRMW_UMIN  = ATOMICRMW_FIRST + 10,// Instruction::AtomicRMWInst::UMin, *p = old <unsigned v ? old : v
+  ATOMICRMW_FADD  = ATOMICRMW_FIRST + 11,// Instruction::AtomicRMWInst::FAdd, *p = old + v
+  ATOMICRMW_FSUB  = ATOMICRMW_FIRST + 12,// Instruction::AtomicRMWInst::FSub, *p = old - v
+  ATOMICRMW_LAST  = ATOMICRMW_FSUB,
 
   GLIBC_FUNC_BASE = 128,
-  MEMCPY          = GLIBC_FUNC_BASE,
+  MEMCPY          = GLIBC_FUNC_BASE + 0,
   MEMMOVE         = GLIBC_FUNC_BASE + 1,
   MEMSET          = GLIBC_FUNC_BASE + 2,
 };
 
+#define ATOMICRMW_LEADER(__operation) \
+entry->value = value;                                                                                              \
+uint32_t shm_val = __operation((uint32_t*)in_address, value, __ATOMIC_RELAXED);                                    \
+uint32_t shadow_val = __operation((uint32_t*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_RELAXED);   \
+*((uint32_t*)out_address) = shm_val;                                                                               \
+entry->data_present = shm_val != shadow_val;                                                                       \
+if (entry->data_present)                                                                                           \
+  orig_memcpy(&entry->data, &shm_val, size);
+
+#define ATOMICRMW_FOLLOWER(__operation)                                                                            \
+mvee_assert_same_value(entry->value, value);                                                                       \
+if (entry->data_present)                                                                                           \
+  memcpy(SHARED_TO_SHADOW_POINTER(in, in_address), &entry->data, size);                                            \
+*((uint32_t*)out_address) = __operation((uint32_t*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_RELAXED);
 
 // ========================================================================================================================
 // Decoding address for specific variant, using tag
@@ -237,6 +265,8 @@ typedef struct mvee_shm_op_entry {
   const void* address;
   const void* second_address;
   size_t size;
+  uint32_t value;
+  uint32_t cmp;
   unsigned char type;
   bool data_present;
   char data[];
@@ -267,17 +297,20 @@ static mvee_shm_op_entry* mvee_shm_get_entry(size_t size)
 }
 
 // type         : type of operation
-// shm_address  : (one of) the address(es) of the operation that is on the SHM page
-// in_address   : a secondary helper address from which can be read, which might also be on the SHM page
-// out_address  : a secondary helper address to which can be written, which might also be on the SHM page
+// in_address   : the input address from which can be read, which might be on the SHM page
+// in           : the SHM metadata for the input address, or NULL if it isn't in shared memory
+// out_address  : the output address to which can be written, which might be on the SHM page
+// out          : the SHM metadata for the output address, or NULL if it isn't in shared memory
 // size         : the number of accessed bytes
 // value        : a helper value
-static inline void mvee_shm_buffered_op(unsigned char type, const void* in_address, const mvee_shm_table_entry* in, void* out_address, const mvee_shm_table_entry* out, size_t size, uint64_t value)
+// cmp          : a comparison value
+static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_address, const mvee_shm_table_entry* in, void* out_address, const mvee_shm_table_entry* out, size_t size, uint32_t value, uint32_t cmp)
 {
+  bool ret = false;
   // If the memory operation has no size, don't do it, don't make an entry, and don't even check
   // This is an easier course than making entries with a size of 0, which would fuck up synchronization
   if (!size)
-    return;
+    return ret;
 
   // Get an entry
   mvee_shm_op_entry* entry = mvee_shm_get_entry(size);
@@ -346,14 +379,60 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* in_addre
           }
       case MEMSET:
         {
-          /* Filling in buffer */
-          orig_memset(&entry->data, value, 1);
+          /* Fill in entry */
+          entry->value = value;
 
           /* Write to actual SHM page */
           orig_memset(out_address, value, size);
 
           /* Write local shadow copy */
           orig_memset(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
+          break;
+        }
+      case ATOMICCMPXCHG:
+        {
+          entry->value = value;
+          entry->cmp = cmp;
+          ret = __atomic_compare_exchange_n((uint32_t*)in_address, &cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+          bool shadow_cmp = __atomic_compare_exchange_n((uint32_t*)SHARED_TO_SHADOW_POINTER(in, in_address), &cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+          entry->data_present = (ret != shadow_cmp);
+          if (entry->data_present)
+             entry->data[0] = ret;
+          break;
+        }
+      case ATOMICRMW_XCHG:
+        {
+          ATOMICRMW_LEADER(__atomic_exchange_n);
+          break;
+        }
+      case ATOMICRMW_ADD:
+        {
+          ATOMICRMW_LEADER(__atomic_fetch_add);
+          break;
+        }
+      case ATOMICRMW_SUB:
+        {
+          ATOMICRMW_LEADER(__atomic_fetch_sub);
+          break;
+        }
+      case ATOMICRMW_AND:
+        {
+          ATOMICRMW_LEADER(__atomic_fetch_and);
+          break;
+        }
+      case ATOMICRMW_NAND:
+        {
+          ATOMICRMW_LEADER(__atomic_fetch_nand);
+          break;
+        }
+      case ATOMICRMW_OR:
+        {
+          ATOMICRMW_LEADER(__atomic_fetch_or);
+          break;
+        }
+      case ATOMICRMW_XOR:
+        {
+          ATOMICRMW_LEADER(__atomic_fetch_xor);
           break;
         }
       default:
@@ -417,10 +496,59 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* in_addre
         }
       case MEMSET:
         {
-          mvee_assert_same_value(*((int*)entry->data), value);
+          mvee_assert_same_value(entry->value, value);
 
           /* Write local shadow copy */
           orig_memset(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
+          break;
+        }
+      case ATOMICCMPXCHG:
+        {
+          mvee_assert_same_value(entry->value, value);
+          mvee_assert_same_value(entry->cmp, cmp);
+          if (entry->data_present)
+          {
+             ret = entry->data[0];
+             if (ret)
+               __atomic_exchange_n((uint32_t*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_RELAXED);
+          }
+          else
+            ret = __atomic_compare_exchange_n((uint32_t*)SHARED_TO_SHADOW_POINTER(in, in_address), &cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+          break;
+        }
+      case ATOMICRMW_XCHG:
+        {
+          ATOMICRMW_FOLLOWER(__atomic_exchange_n);
+          break;
+        }
+      case ATOMICRMW_ADD:
+        {
+          ATOMICRMW_FOLLOWER(__atomic_fetch_add);
+          break;
+        }
+      case ATOMICRMW_SUB:
+        {
+          ATOMICRMW_FOLLOWER(__atomic_fetch_sub);
+          break;
+        }
+      case ATOMICRMW_AND:
+        {
+          ATOMICRMW_FOLLOWER(__atomic_fetch_and);
+          break;
+        }
+      case ATOMICRMW_NAND:
+        {
+          ATOMICRMW_FOLLOWER(__atomic_fetch_nand);
+          break;
+        }
+      case ATOMICRMW_OR:
+        {
+          ATOMICRMW_FOLLOWER(__atomic_fetch_or);
+          break;
+        }
+      case ATOMICRMW_XOR:
+        {
+          ATOMICRMW_FOLLOWER(__atomic_fetch_xor);
           break;
         }
       default:
@@ -432,6 +560,8 @@ static inline void mvee_shm_buffered_op(unsigned char type, const void* in_addre
   if (GLIBC_FUNC_BASE <= type)
     syscall(MVEE_LOG_SHM_MEM_OP, type, size);
 #endif
+
+  return ret;
 }
 
 // ========================================================================================================================
@@ -446,25 +576,44 @@ mvee_shm_op_ret mvee_shm_op(unsigned char id, bool atomic, void* address, unsign
 {
   mvee_shm_op_ret ret = { 0 };
 
+  // Use SHM buffer
   address = mvee_shm_decode_address(address);
+  mvee_shm_table_entry* entry = mvee_shm_table_get_entry(address);
+  if (!entry)
+    mvee_error_shm_entry_not_present(address);
 
-  if (atomic)
+  switch (id)
   {
-     // Atomic operations, hand over to MVEE
-    mvee_error_unsupported_operation(id);
-  }
-  else
-  {
-    // Non-atomic operations, use SHM buffer
-    mvee_shm_table_entry* entry = mvee_shm_table_get_entry(address);
-    if (!entry)
-      mvee_error_shm_entry_not_present(address);
-
-    if (id == LOAD)
-      mvee_shm_buffered_op(id, address, entry, &ret.val, NULL, size, 0);
-    else if (id == STORE)
-      mvee_shm_buffered_op(id, &value, NULL, address, entry, size, 0);
-    else
+    case LOAD:
+      mvee_shm_buffered_op(id, address, entry, &ret.val, NULL, size, 0, 0);
+      break;
+    case STORE:
+      mvee_shm_buffered_op(id, &value, NULL, address, entry, size, 0, 0);
+      break;
+    case ATOMICCMPXCHG:
+      if (size != 4)
+        mvee_error_unsupported_operation(id);
+      ret.cmp = mvee_shm_buffered_op(id, address, entry, NULL, NULL, size, value, cmp);
+      break;
+    case ATOMICRMW_XCHG:
+    case ATOMICRMW_ADD:
+    case ATOMICRMW_SUB:
+    case ATOMICRMW_AND:
+    case ATOMICRMW_NAND:
+    case ATOMICRMW_OR:
+    case ATOMICRMW_XOR:
+      if (size != 4)
+        mvee_error_unsupported_operation(id);
+      mvee_shm_buffered_op(id, address, entry, &ret.val, NULL, size, value, 0);
+      break;
+      // We don't support these yet, haven't encountered them
+    case ATOMICRMW_MAX:
+    case ATOMICRMW_MIN:
+    case ATOMICRMW_UMAX:
+    case ATOMICRMW_UMIN:
+    case ATOMICRMW_FADD:
+    case ATOMICRMW_FSUB:
+    default:
       mvee_error_unsupported_operation(id);
   }
 
@@ -486,7 +635,7 @@ mvee_shm_memcpy (void *__restrict dest, const void *__restrict src, size_t n)
   if (!dest_entry && !src_entry)
     mvee_error_shm_entry_not_present(dest);
 
-  mvee_shm_buffered_op(MEMCPY, src_entry ? shm_src : src, src_entry, dest_entry ? shm_dest : dest, dest_entry, n, 0);
+  mvee_shm_buffered_op(MEMCPY, src_entry ? shm_src : src, src_entry, dest_entry ? shm_dest : dest, dest_entry, n, 0, 0);
 
   return dest;
 }
@@ -502,7 +651,7 @@ mvee_shm_memmove (void *dest, const void * src, size_t n)
   if (!dest_entry && !src_entry)
     mvee_error_shm_entry_not_present(dest);
 
-  mvee_shm_buffered_op(MEMMOVE, src_entry ? shm_src : src, src_entry, dest_entry ? shm_dest : dest, dest_entry, n, 0);
+  mvee_shm_buffered_op(MEMMOVE, src_entry ? shm_src : src, src_entry, dest_entry ? shm_dest : dest, dest_entry, n, 0, 0);
 
   return dest;
 }
@@ -516,7 +665,7 @@ mvee_shm_memset (void *dest, int ch, size_t len)
   if (!entry)
     mvee_error_shm_entry_not_present(dest);
 
-  mvee_shm_buffered_op(MEMSET, NULL, NULL, shm_dest, entry, len, ch);
+  mvee_shm_buffered_op(MEMSET, NULL, NULL, shm_dest, entry, len, ch, 0);
   return dest;
 }
 
