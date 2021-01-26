@@ -22,6 +22,7 @@
 extern __typeof (memcpy)  orig_memcpy;
 extern __typeof (memmove) orig_memmove;
 extern __typeof (memset)  orig_memset;
+extern __typeof (memchr)  orig_memchr;
 
 // ========================================================================================================================
 // Types of SHM operations
@@ -51,6 +52,7 @@ enum
   MEMCPY          = GLIBC_FUNC_BASE + 0,
   MEMMOVE         = GLIBC_FUNC_BASE + 1,
   MEMSET          = GLIBC_FUNC_BASE + 2,
+  MEMCHR          = GLIBC_FUNC_BASE + 3,
 };
 
 #define ATOMICRMW_LEADER(__operation) \
@@ -389,6 +391,27 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
           orig_memset(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
           break;
         }
+      case MEMCHR:
+        {
+          /* Fill in entry */
+          entry->value = value;
+
+          /* Search on actual SHM page */
+          void* shm_ret = orig_memchr(in_address, value, size);
+
+          /* Search on local shadow copy */
+          void* local_ret = orig_memchr(SHARED_TO_SHADOW_POINTER(in, in_address), value, size);
+
+          /* Write offset as return value */
+          *(ptrdiff_t*)out_address = shm_ret - in_address;
+
+          /* In case these differ, we have to return.. A different pointer in the followers? We'll encode the pointer offset in the buffer, reusing the second_address field */
+          entry->data_present = (shm_ret != local_ret);
+          if (entry->data_present)
+            entry->second_address = (void*)(shm_ret - in_address);
+
+          break;
+        }
       case ATOMICCMPXCHG:
         {
           entry->value = value;
@@ -500,6 +523,24 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
 
           /* Write local shadow copy */
           orig_memset(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
+          break;
+        }
+      case MEMCHR:
+        {
+          mvee_assert_same_value(entry->value, value);
+
+          /* Something changed in the leader, leading to a different return value. Get it from buffer */
+          if (entry->data_present)
+            *(ptrdiff_t*)out_address = (ptrdiff_t)entry->second_address;
+          else
+          {
+            /* Search on local shadow copy */
+            void* local_ret = orig_memchr(SHARED_TO_SHADOW_POINTER(in, in_address), value, size);
+
+            /* Write offset as return value */
+            *(ptrdiff_t*)out_address = local_ret - in_address;
+          }
+
           break;
         }
       case ATOMICCMPXCHG:
@@ -667,6 +708,20 @@ mvee_shm_memset (void *dest, int ch, size_t len)
 
   mvee_shm_buffered_op(MEMSET, NULL, NULL, shm_dest, entry, len, ch, 0);
   return dest;
+}
+
+void *
+mvee_shm_memchr (void const *src, int c_in, size_t n)
+{
+  /* Decode addresses */
+  void* shm_src = mvee_shm_decode_address(src);
+  mvee_shm_table_entry* entry = mvee_shm_table_get_entry(shm_src);
+  if (!entry)
+    mvee_error_shm_entry_not_present(src);
+
+  ptrdiff_t ret = 0;
+  mvee_shm_buffered_op(MEMCHR, shm_src, entry, &ret, NULL, n, c_in, 0);
+  return (void*)src + ret;
 }
 
 // ========================================================================================================================

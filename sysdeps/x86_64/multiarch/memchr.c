@@ -26,10 +26,22 @@
 # define SYMBOL_NAME memchr
 # include "ifunc-avx2.h"
 
-libc_ifunc_redirected (__redirect_memchr, memchr, IFUNC_SELECTOR ());
-strong_alias (memchr, __memchr)
+libc_ifunc_redirected (__redirect_memchr, orig_memchr, IFUNC_SELECTOR ());
+
+extern __typeof (orig_memchr) mvee_shm_memchr;
+
+void *
+mvee_memchr (void const *s, int c_in, size_t n)
+{
+  if ((unsigned long)s & 0x8000000000000000ull)
+    return mvee_shm_memchr(s, c_in, n);
+
+  return orig_memchr(s, c_in, n);
+}
+
 # ifdef SHARED
-__hidden_ver1 (memchr, __GI_memchr, __redirect_memchr)
-  __attribute__((visibility ("hidden"))) __attribute_copy__ (memchr);
+__hidden_ver1 (mvee_memchr, __GI_memchr, __redirect_memchr)
+  __attribute__((visibility ("hidden"))) __attribute_copy__ (orig_memchr);
 # endif
+strong_alias(mvee_memchr, memchr)
 #endif
