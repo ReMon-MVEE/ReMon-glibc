@@ -44,3 +44,7 @@ core
 /linuxthreads_db
 /rtkaio
 *.pyc
+
+*.vim
+/tags
+/compile_commands.json
