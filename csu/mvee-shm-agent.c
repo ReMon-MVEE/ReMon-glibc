@@ -23,6 +23,7 @@ extern __typeof (memcpy)  orig_memcpy;
 extern __typeof (memmove) orig_memmove;
 extern __typeof (memset)  orig_memset;
 extern __typeof (memchr)  orig_memchr;
+extern __typeof (memcmp)  orig_memcmp;
 
 // ========================================================================================================================
 // Types of SHM operations
@@ -53,6 +54,7 @@ enum
   MEMMOVE         = GLIBC_FUNC_BASE + 1,
   MEMSET          = GLIBC_FUNC_BASE + 2,
   MEMCHR          = GLIBC_FUNC_BASE + 3,
+  MEMCMP          = GLIBC_FUNC_BASE + 4,
 };
 
 #define ATOMICRMW_LEADER(__operation) \
@@ -67,7 +69,7 @@ if (entry->data_present)                                                        
 #define ATOMICRMW_FOLLOWER(__operation)                                                                            \
 mvee_assert_same_value(entry->value, value);                                                                       \
 if (entry->data_present)                                                                                           \
-  memcpy(SHARED_TO_SHADOW_POINTER(in, in_address), &entry->data, size);                                            \
+  orig_memcpy(SHARED_TO_SHADOW_POINTER(in, in_address), &entry->data, size);                                       \
 *((uint32_t*)out_address) = __operation((uint32_t*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_RELAXED);
 
 // ========================================================================================================================
@@ -109,7 +111,7 @@ static void mvee_assert_same_size(unsigned long a, unsigned long b)
 __attribute__((noinline))
 static void mvee_assert_same_store(const void* a, const void* b, unsigned long size)
 {
-	if (memcmp(a, b, size))
+	if (orig_memcmp(a, b, size))
 		*(volatile long*)0 = 1;
 }
 
@@ -342,7 +344,7 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
               /* The input comes from a SHM page. Check whether it differs from our local copy or not. If it doesn't, we use our local copy as input.
                * If it **does** differ, we copy the modified data on the SHM page to the buffer, and use that copy as input.
                */
-              entry->data_present = memcmp(SHARED_TO_SHADOW_POINTER(in, in_address), in_address, size);
+              entry->data_present = orig_memcmp(SHARED_TO_SHADOW_POINTER(in, in_address), in_address, size);
               if (entry->data_present)
                 orig_memcpy(&entry->data, in_address, size);
               const void* buf_or_shadow = (entry->data_present) ? &entry->data : SHARED_TO_SHADOW_POINTER(in, in_address);
@@ -722,6 +724,119 @@ mvee_shm_memchr (void const *src, int c_in, size_t n)
   ptrdiff_t ret = 0;
   mvee_shm_buffered_op(MEMCHR, shm_src, entry, &ret, NULL, n, c_in, 0);
   return (void*)src + ret;
+}
+
+int
+mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
+{
+  // The pointers we're actually gonna be using.
+  void* shm_s1 = (void*)s1;
+  void* shm_s2 = (void*)s2;
+
+  // Entries in the shared memory bookkeeping.
+  mvee_shm_table_entry* s1_entry = NULL;
+  mvee_shm_table_entry* s2_entry = NULL;
+
+  // If first pointer is shared memory pointer decode it and get the entry for it.
+  if ((unsigned long)s1 & 0x8000000000000000ull)
+  {
+    shm_s1 = mvee_shm_decode_address(s1);
+    s1_entry = mvee_shm_table_get_entry(shm_s1);
+    // If we're here, it should exist...
+    if (!s1_entry)
+      mvee_error_shm_entry_not_present(s1);
+  }
+  // If second pointer is shared memory pointer decode it and get the entry for it.
+  if ((unsigned long)s2 & 0x8000000000000000ull)
+  {
+    shm_s2 = mvee_shm_decode_address(s2);
+    s2_entry = mvee_shm_table_get_entry(shm_s2);
+    // If we're here, it should exist...
+    if (!s2_entry)
+      mvee_error_shm_entry_not_present(s2);
+  }
+
+
+  // Get an entry in the replication buffer.
+  // If both addresses are shared memory pointer, we will need a buffer of double length.
+  mvee_shm_op_entry* entry = mvee_shm_get_entry((s1_entry && s2_entry) ? (len * 2) : len);
+  if (likely(mvee_master_variant))
+  {
+      // Fill in the entry.
+    entry->address = s1_entry ? shm_s1 : shm_s2;
+    entry->second_address = (s1_entry && s2_entry) ? shm_s2 : NULL;
+    entry->type = MEMCMP;
+    entry->cmp = 0;
+
+    // When the first pointer is a shared memory pointer, check if the shared memory contents are still the
+    // same as in the shadow mapping, update the replication entry accordingly.
+    if (s1_entry)
+    {
+      // Copy the shared memory contents to the buffer and replace the pointer we'll be using from now on.
+      // This ensures that our view of shared memory does not change over the course of this function.
+      void* temp = entry->data;
+      orig_memcpy(temp, shm_s1, len);
+
+      // Update entry if the contents of shared memory differ with the shadow
+      if (orig_memcmp(temp, SHARED_TO_SHADOW_POINTER(s1_entry, shm_s1), len))
+        entry->cmp |= 1;
+      shm_s1 = temp;
+    }
+    // same as for first pointer
+    if (s2_entry)
+    {
+      // Copy the shared memory contents to the buffer and replace the pointer we'll be using from now on.
+      // This ensures that our view of shared memory does not change over the course of this function.
+      void* temp = entry->data + ((s1_entry && s2_entry) ? len : 0);
+      orig_memcpy(temp, shm_s2, len);
+
+      // Update entry if the contents of shared memory differ with the shadow
+      if (orig_memcmp(temp, SHARED_TO_SHADOW_POINTER(s2_entry, shm_s2), len))
+        entry->cmp |= 2;
+      shm_s2 = temp;
+    }
+
+    // save the return value for the memcmp.
+    entry->value = orig_memcmp(shm_s1, shm_s2, len);
+    orig_atomic_store_release(&entry->size, len);
+  }
+  else
+  {
+    // Wait until entry is ready
+    while (!orig_atomic_load_acquire(&entry->size))
+      syscall(__NR_sched_yield);
+
+    // memcmp should be called on the same relative pointers if they are shared memory pointers
+    mvee_assert_same_address(entry->address, (s1_entry ? shm_s1 : shm_s2));
+    mvee_assert_same_address(entry->second_address, ((s1_entry && s2_entry) ? shm_s2 : NULL));
+    // memcmp should be called with the same size
+    mvee_assert_same_size(entry->size, len);
+    // type check
+    mvee_assert_same_type(entry->type, MEMCMP);
+
+    if (s1_entry)
+    {
+      if (entry->cmp & 1)
+        shm_s1 = entry->data;
+      else
+        shm_s1 = SHARED_TO_SHADOW_POINTER(s1_entry, shm_s1);
+    }
+    if (s2_entry)
+    {
+      if (entry->cmp & 2)
+        shm_s2 = entry->data + (s1_entry ? len : 0);
+      else
+        shm_s2 = SHARED_TO_SHADOW_POINTER(s2_entry, shm_s2);
+    }
+
+    // perform the memcmp
+    int return_value = orig_memcmp(shm_s1, shm_s2, len);
+
+    // the return value for memcmp should be the same
+    mvee_assert_same_value(entry->value, return_value);
+  }
+
+  return entry->value;
 }
 
 // ========================================================================================================================

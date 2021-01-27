@@ -26,12 +26,24 @@
 # define SYMBOL_NAME memcmp
 # include "ifunc-memcmp.h"
 
-libc_ifunc_redirected (__redirect_memcmp, memcmp, IFUNC_SELECTOR ());
+libc_ifunc_redirected (__redirect_memcmp, orig_memcmp, IFUNC_SELECTOR ());
+
+extern __typeof (orig_memcmp) mvee_shm_memcmp;
+
+int
+mvee_memcmp (const void *s1, const void *s2, size_t len)
+{
+  if ((unsigned long)s1 & 0x8000000000000000ull || (unsigned long)s2 & 0x8000000000000000ull)
+    return mvee_shm_memcmp(s1, s2, len);
+  return orig_memcmp(s1, s2, len);
+}
+
 # undef bcmp
-weak_alias (memcmp, bcmp)
+weak_alias (mvee_memcmp, bcmp)
 
 # ifdef SHARED
-__hidden_ver1 (memcmp, __GI_memcmp, __redirect_memcmp)
-  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (memcmp);
+__hidden_ver1 (mvee_memcmp, __GI_memcmp, __redirect_memcmp)
+  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (mvee_memcmp);
 # endif
+strong_alias(mvee_memcmp, memcmp)
 #endif
