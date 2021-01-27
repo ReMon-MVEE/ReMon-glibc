@@ -731,7 +731,7 @@ void *
 mvee_shm_mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset)
 {
   unsigned long ret = orig_MMAP_CALL(addr, len, prot, flags, fd, offset);
-  if ((flags & MAP_SHARED) && fd && fd != -1 && (void *) ret != MAP_FAILED)
+  if ((flags & MAP_SHARED) && !(prot & PROT_EXEC) && fd && fd != -1 && (void *) ret != MAP_FAILED)
   {
     struct stat fd_stat;
     fstat(fd, &fd_stat);
