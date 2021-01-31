@@ -24,6 +24,7 @@ extern __typeof (memmove) orig_memmove;
 extern __typeof (memset)  orig_memset;
 extern __typeof (memchr)  orig_memchr;
 extern __typeof (memcmp)  orig_memcmp;
+extern __typeof (strlen)  orig_strlen;
 
 // ========================================================================================================================
 // Types of SHM operations
@@ -55,6 +56,7 @@ enum
   MEMSET          = GLIBC_FUNC_BASE + 2,
   MEMCHR          = GLIBC_FUNC_BASE + 3,
   MEMCMP          = GLIBC_FUNC_BASE + 4,
+  STRLEN          = GLIBC_FUNC_BASE + 5,
 };
 
 #define ATOMICRMW_LEADER(__operation) \
@@ -837,6 +839,42 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
   }
 
   return entry->value;
+}
+
+size_t
+mvee_shm_strlen (const char *str)
+{
+  const char *shm_str = mvee_shm_decode_address(str);
+  mvee_shm_table_entry* shm_entry = mvee_shm_table_get_entry(shm_str);
+  if (!shm_entry)
+    mvee_error_shm_entry_not_present(str);
+
+  // We're allocating sizeof(size_t) data since entry->value is only uint32_t.
+  mvee_shm_op_entry* entry = mvee_shm_get_entry(sizeof(size_t));
+  if (likely(mvee_master_variant))
+  {
+    entry->address = shm_str;
+    entry->type    = STRLEN;
+
+
+    // There isn't much point to any complicated shadow mapping stuff here.
+    // If the result for the shared and shadow mapping is the same, we could use either one. If it's different, we'd
+    // have to use the result from the shared mapping... So, we might as well just use the result from the shared
+    // mapping from the start. Maybe we could force the shadow results in both variants to be the same?
+    *(size_t*)entry->data = orig_strlen(shm_str);
+    orig_atomic_store_release(&entry->size, sizeof(size_t));
+  }
+  else
+  {
+    // Wait until entry is ready
+    while (!orig_atomic_load_acquire(&entry->size))
+      syscall(__NR_sched_yield);
+
+    mvee_assert_same_type(entry->type, STRLEN);
+    mvee_assert_same_address(entry->address, shm_str);
+  }
+
+  return *(size_t*)entry->data;
 }
 
 // ========================================================================================================================

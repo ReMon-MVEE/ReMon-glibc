@@ -26,9 +26,21 @@
 # define SYMBOL_NAME strlen
 # include "ifunc-avx2.h"
 
-libc_ifunc_redirected (__redirect_strlen, strlen, IFUNC_SELECTOR ());
+libc_ifunc_redirected (__redirect_strlen, orig_strlen, IFUNC_SELECTOR ());
+
+extern __typeof (orig_strlen) mvee_shm_strlen;
+
+size_t
+mvee_strlen (const char *str)
+{
+  if ((unsigned long)str & 0x8000000000000000ull)
+    return mvee_shm_strlen(str);
+  return orig_strlen(str);
+}
+
 # ifdef SHARED
-__hidden_ver1 (strlen, __GI_strlen, __redirect_strlen)
-  __attribute__((visibility ("hidden"))) __attribute_copy__ (strlen);
+__hidden_ver1 (mvee_strlen, __GI_strlen, __redirect_strlen)
+  __attribute__((visibility ("hidden"))) __attribute_copy__ (mvee_strlen);
 # endif
+strong_alias(mvee_strlen, strlen)
 #endif
