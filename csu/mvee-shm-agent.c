@@ -25,6 +25,7 @@ extern __typeof (memset)  orig_memset;
 extern __typeof (memchr)  orig_memchr;
 extern __typeof (memcmp)  orig_memcmp;
 extern __typeof (strlen)  orig_strlen;
+extern __typeof (strcmp)  orig_strcmp;
 
 // ========================================================================================================================
 // Types of SHM operations
@@ -57,6 +58,7 @@ enum
   MEMCHR          = GLIBC_FUNC_BASE + 3,
   MEMCMP          = GLIBC_FUNC_BASE + 4,
   STRLEN          = GLIBC_FUNC_BASE + 5,
+  STRCMP          = GLIBC_FUNC_BASE + 5,
 };
 
 #define ATOMICRMW_LEADER(__operation) \
@@ -836,6 +838,68 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
 
     // the return value for memcmp should be the same
     mvee_assert_same_value(entry->value, return_value);
+  }
+
+  return entry->value;
+}
+
+int
+mvee_shm_strcmp (const char *str1, const char *str2)
+{
+  // The pointers we're actually gonna be using.
+  void* shm_str1 = (void*)str1;
+  void* shm_str2 = (void*)str2;
+
+  // Entries in the shared memory bookkeeping.
+  mvee_shm_table_entry* str1_entry = NULL;
+  mvee_shm_table_entry* str2_entry = NULL;
+
+  // If first pointer is shared memory pointer decode it and get the entry for it.
+  if ((unsigned long)str1 & 0x8000000000000000ull)
+  {
+    shm_str1 = mvee_shm_decode_address(str1);
+    str1_entry = mvee_shm_table_get_entry(shm_str1);
+    // If we're here, it should exist...
+    if (!str1_entry)
+      mvee_error_shm_entry_not_present(str1);
+  }
+  // If second pointer is shared memory pointer decode it and get the entry for it.
+  if ((unsigned long)str2 & 0x8000000000000000ull)
+  {
+    shm_str2 = mvee_shm_decode_address(str2);
+    str2_entry = mvee_shm_table_get_entry(shm_str2);
+    // If we're here, it should exist...
+    if (!str2_entry)
+      mvee_error_shm_entry_not_present(str2);
+  }
+
+
+  // Get an entry in the replication buffer.
+  // If both addresses are shared memory pointer, we will need a buffer of double length.
+  mvee_shm_op_entry* entry = mvee_shm_get_entry(sizeof(int));
+  if (likely(mvee_master_variant))
+  {
+      // Fill in the entry.
+    entry->address = str1_entry ? shm_str1 : shm_str2;
+    entry->second_address = (str1_entry && str2_entry) ? shm_str2 : NULL;
+    entry->type = STRCMP;
+    entry->cmp = 0;
+
+    // save the return value for the memcmp.
+    *(int*)entry->data = orig_strcmp(shm_str1, shm_str2);
+    orig_atomic_store_release(&entry->size, sizeof(int));
+  }
+  else
+  {
+    // Wait until entry is ready
+    while (!orig_atomic_load_acquire(&entry->size))
+      syscall(__NR_sched_yield);
+
+    // memcmp should be called on the same relative pointers if they are shared memory pointers
+    mvee_assert_same_address(entry->address, (str1_entry ? shm_str1 : shm_str2));
+    mvee_assert_same_address(entry->second_address, ((str1_entry && str2_entry) ? shm_str2 : NULL));
+    // type check
+    mvee_assert_same_type(entry->type, STRCMP);
   }
 
   return entry->value;

@@ -50,10 +50,21 @@ IFUNC_SELECTOR (void)
   return OPTIMIZE (sse2);
 }
 
-libc_ifunc_redirected (__redirect_strcmp, strcmp, IFUNC_SELECTOR ());
+libc_ifunc_redirected (__redirect_strcmp, orig_strcmp, IFUNC_SELECTOR ());
+
+extern __typeof (orig_strcmp) mvee_shm_strcmp;
+
+int
+mvee_strcmp(const char *str1, const char *str2)
+{
+  if (((unsigned long)str1 & 0x8000000000000000ull) || ((unsigned long)str2 & 0x8000000000000000ull))
+    return mvee_shm_strcmp(str1, str2);
+  return orig_strcmp(str1, str2);
+}
 
 # ifdef SHARED
-__hidden_ver1 (strcmp, __GI_strcmp, __redirect_strcmp)
-  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (strcmp);
+__hidden_ver1 (mvee_strcmp, __GI_strcmp, __redirect_strcmp)
+  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (mvee_strcmp);
 # endif
+strong_alias(mvee_strcmp, strcmp)
 #endif
