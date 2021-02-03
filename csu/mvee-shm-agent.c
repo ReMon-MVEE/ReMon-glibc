@@ -101,36 +101,36 @@ static void mvee_assert_equal_mapping_size(size_t len, size_t size)
 __attribute__((noinline))
 static void mvee_assert_same_address(const void* a, const void* b)
 {
-	if (a != b)
-		*(volatile long*)0 = (long)a;
+  if (a != b)
+    syscall(__NR_gettid, 1337, 10000001, 101, a, b);
 }
 
 __attribute__((noinline))
 static void mvee_assert_same_size(unsigned long a, unsigned long b)
 {
-	if (a != b)
-		*(volatile long*)0 = a;
+  if (a != b)
+    syscall(__NR_gettid, 1337, 10000001, 102, a, b);
 }
 
 __attribute__((noinline))
 static void mvee_assert_same_store(const void* a, const void* b, unsigned long size)
 {
-	if (orig_memcmp(a, b, size))
-		*(volatile long*)0 = 1;
+  if (orig_memcmp(a, b, size))
+    syscall(__NR_gettid, 1337, 10000001, 103, a, b, size);
 }
 
 __attribute__((noinline))
 static void mvee_assert_same_type(unsigned char a, unsigned char b)
 {
-	if (a != b)
-	  *(volatile long *) 0 = a;
+  if (a != b)
+    syscall(__NR_gettid, 1337, 10000001, 104, a, b);
 }
 
 __attribute__((noinline))
 static void mvee_assert_same_value(int a, int b)
 {
-	if (a != b)
-		*(volatile long*)0 = a;
+  if (a != b)
+    syscall(__NR_gettid, 1337, 10000001, 105, a, b);
 }
 
 __attribute__((noinline))
