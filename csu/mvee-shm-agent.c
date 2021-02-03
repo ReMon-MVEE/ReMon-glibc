@@ -34,8 +34,10 @@ enum
 {
   LOAD            = 0,// Instruction::LoadInst
   STORE           = 1,// Instruction::StoreInst
-  ATOMICCMPXCHG   = 2,// Instruction::AtomicCmpXchgInst
-  ATOMICRMW_FIRST = 3,// Instruction::AtomicRMWInst
+  ATOMICLOAD      = 2,// Instruction::LoadInst, but atomic
+  ATOMICSTORE     = 3,// Instruction::StoreInst, but atomic
+  ATOMICCMPXCHG   = 4,// Instruction::AtomicCmpXchgInst
+  ATOMICRMW_FIRST = 5,// Instruction::AtomicRMWInst
   ATOMICRMW_XCHG  = ATOMICRMW_FIRST +  0,// Instruction::AtomicRMWInst::Xchg, *p = v
   ATOMICRMW_ADD   = ATOMICRMW_FIRST +  1,// Instruction::AtomicRMWInst::Add, *p = old + v
   ATOMICRMW_SUB   = ATOMICRMW_FIRST +  2,// Instruction::AtomicRMWInst::Sub, *p = old - v
@@ -338,6 +340,8 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
       case MEMMOVE:
           entry->second_address = shm_address2;
       case LOAD:
+      case ATOMICLOAD:
+      case ATOMICSTORE:
       case STORE:
           {
            /* When doing reads/writes we will use memcpy, **or** memmove if so requested. We can relax certain memmove's however, if we now
@@ -490,6 +494,8 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
         mvee_assert_same_address(entry->second_address, shm_address2);
       case LOAD:
       case STORE:
+      case ATOMICLOAD:
+      case ATOMICSTORE:
         {
           if (in)
           {
@@ -620,7 +626,7 @@ typedef struct mvee_shm_op_ret {
   bool cmp;
 } mvee_shm_op_ret;
 
-mvee_shm_op_ret mvee_shm_op(unsigned char id, bool atomic, void* address, unsigned long size, unsigned long value, unsigned long cmp)
+mvee_shm_op_ret mvee_shm_op(unsigned char id, void* address, unsigned long size, unsigned long value, unsigned long cmp)
 {
   mvee_shm_op_ret ret = { 0 };
 
@@ -632,9 +638,11 @@ mvee_shm_op_ret mvee_shm_op(unsigned char id, bool atomic, void* address, unsign
 
   switch (id)
   {
+    case ATOMICLOAD:
     case LOAD:
       mvee_shm_buffered_op(id, address, entry, &ret.val, NULL, size, 0, 0);
       break;
+    case ATOMICSTORE:
     case STORE:
       mvee_shm_buffered_op(id, &value, NULL, address, entry, size, 0, 0);
       break;
