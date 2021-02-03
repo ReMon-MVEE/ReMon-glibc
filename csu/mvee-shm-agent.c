@@ -605,7 +605,7 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
 
 #ifdef MVEE_LOG_SHM_MEM_OPS
   if (GLIBC_FUNC_BASE <= type)
-    syscall(MVEE_LOG_SHM_MEM_OP, type, size);
+    syscall(__NR_gettid, 1337, 10000001, 100, type, size);
 #endif
 
   return ret;
