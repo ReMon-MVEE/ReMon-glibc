@@ -116,7 +116,8 @@ __attribute__((noinline))
 static void mvee_assert_same_store(const void* a, const void* b, unsigned long size)
 {
   if (orig_memcmp(a, b, size))
-    syscall(__NR_gettid, 1337, 10000001, 103, a, b, size);
+    ;// Do nothing!
+    //syscall(__NR_gettid, 1337, 10000001, 103, a, b, size);
 }
 
 __attribute__((noinline))
