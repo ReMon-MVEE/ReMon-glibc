@@ -63,20 +63,80 @@ enum
   STRCMP          = GLIBC_FUNC_BASE + 5,
 };
 
-#define ATOMICRMW_LEADER(__operation) \
-entry->value = value;                                                                                              \
-uint32_t shm_val = __operation((uint32_t*)in_address, value, __ATOMIC_RELAXED);                                    \
-uint32_t shadow_val = __operation((uint32_t*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_RELAXED);   \
-*((uint32_t*)out_address) = shm_val;                                                                               \
-entry->data_present = shm_val != shadow_val;                                                                       \
-if (entry->data_present)                                                                                           \
-  orig_memcpy(&entry->data, &shm_val, size);
+#define ATOMICLOAD_BY_SIZE(out_address, in_address, size)                                                          \
+  do {                                                                                                             \
+    if (size == 1)                                                                                                 \
+      __atomic_load((uint8_t*)in_address, (uint8_t*)out_address, __ATOMIC_ACQUIRE);                                \
+    else if (size == 2)                                                                                            \
+      __atomic_load((uint16_t*)in_address, (uint16_t*)out_address, __ATOMIC_ACQUIRE);                              \
+    else if (size == 4)                                                                                            \
+      __atomic_load((uint32_t*)in_address, (uint32_t*)out_address, __ATOMIC_ACQUIRE);                              \
+    else if (size == 8)                                                                                            \
+      __atomic_load((uint64_t*)in_address, (uint64_t*)out_address, __ATOMIC_ACQUIRE);                              \
+  } while(0)
 
-#define ATOMICRMW_FOLLOWER(__operation)                                                                            \
+#define ATOMICSTORE_BY_SIZE(out_address, val, size)                                                                \
+  do {                                                                                                             \
+    if (size == 1)                                                                                                 \
+      __atomic_store_n((uint8_t*)out_address, (uint8_t)val, __ATOMIC_RELEASE);                                     \
+    else if (size == 2)                                                                                            \
+      __atomic_store_n((uint16_t*)out_address, (uint16_t)val, __ATOMIC_RELEASE);                                   \
+    else if (size == 4)                                                                                            \
+      __atomic_store_n((uint32_t*)out_address, (uint32_t)val, __ATOMIC_RELEASE);                                   \
+    else if (size == 8)                                                                                            \
+      __atomic_store_n((uint64_t*)out_address, (uint64_t)val, __ATOMIC_RELEASE);                                   \
+  } while(0)
+
+#define ATOMICCMPXCHG_BY_SIZE(addr, cmp, value, size)                                                              \
+  ({ bool __ret = false;                                                                                           \
+if (size == 1)                                                                                                     \
+  __ret = __atomic_compare_exchange_n((uint8_t*)addr, (uint8_t*)cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);\
+else if (size == 2)                                                                                                \
+  __ret = __atomic_compare_exchange_n((uint16_t*)addr, (uint16_t*)cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);\
+else if (size == 4)                                                                                                \
+  __ret = __atomic_compare_exchange_n((uint32_t*)addr, (uint32_t*)cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);\
+else if (size == 8)                                                                                                \
+  __ret = __atomic_compare_exchange_n((uint64_t*)addr, (uint64_t*)cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);\
+  __ret;})
+
+#define ATOMICRMW_LEADER(operation, utype)                                                                         \
+  do {                                                                                                             \
+    utype __shm_val = operation((utype*)in_address, value, __ATOMIC_RELAXED);                                      \
+    utype __shadow_val = operation((utype*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_RELAXED);     \
+    *((utype*)out_address) = __shm_val;                                                                            \
+    entry->data_present = (__shm_val != __shadow_val);                                                             \
+    if (entry->data_present)                                                                                       \
+      orig_memcpy(&entry->data, &__shm_val, sizeof(utype));                                                        \
+  } while(0)
+
+#define ATOMICRMW_LEADER_BY_SIZE(operation, size)                                                                  \
+entry->value = value;                                                                                              \
+if (size == 1)                                                                                                     \
+  ATOMICRMW_LEADER(operation, uint8_t);                                                                            \
+else if (size == 2)                                                                                                \
+  ATOMICRMW_LEADER(operation, uint16_t);                                                                           \
+else if (size == 4)                                                                                                \
+  ATOMICRMW_LEADER(operation, uint32_t);                                                                           \
+else if (size == 8)                                                                                                \
+  ATOMICRMW_LEADER(operation, uint64_t);
+
+#define ATOMICRMW_FOLLOWER(operation, utype)                                                                       \
+  do {                                                                                                             \
+    if (entry->data_present)                                                                                       \
+      orig_memcpy(SHARED_TO_SHADOW_POINTER(in, in_address), &entry->data, sizeof(utype));                          \
+    *((utype*)out_address) = operation((utype*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_RELAXED); \
+  } while(0)
+
+#define ATOMICRMW_FOLLOWER_BY_SIZE(operation, size)                                                                \
 mvee_assert_same_value(entry->value, value);                                                                       \
-if (entry->data_present)                                                                                           \
-  orig_memcpy(SHARED_TO_SHADOW_POINTER(in, in_address), &entry->data, size);                                       \
-*((uint32_t*)out_address) = __operation((uint32_t*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_RELAXED);
+if (size == 1)                                                                                                     \
+  ATOMICRMW_FOLLOWER(operation, uint8_t);                                                                          \
+else if (size == 2)                                                                                                \
+  ATOMICRMW_FOLLOWER(operation, uint16_t);                                                                         \
+else if (size == 4)                                                                                                \
+  ATOMICRMW_FOLLOWER(operation, uint32_t);                                                                         \
+else if (size == 8)                                                                                                \
+  ATOMICRMW_FOLLOWER(operation, uint64_t);
 
 // ========================================================================================================================
 // Decoding address for specific variant, using tag
@@ -276,8 +336,8 @@ typedef struct mvee_shm_op_entry {
   const void* address;
   const void* second_address;
   size_t size;
-  uint32_t value;
-  uint32_t cmp;
+  uint64_t value;
+  uint64_t cmp;
   unsigned char type;
   bool data_present;
   char data[];
@@ -315,7 +375,7 @@ static mvee_shm_op_entry* mvee_shm_get_entry(size_t size)
 // size         : the number of accessed bytes
 // value        : a helper value
 // cmp          : a comparison value
-static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_address, const mvee_shm_table_entry* in, void* out_address, const mvee_shm_table_entry* out, size_t size, uint32_t value, uint32_t cmp)
+static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_address, const mvee_shm_table_entry* in, void* out_address, const mvee_shm_table_entry* out, size_t size, uint64_t value, uint64_t cmp)
 {
   bool ret = false;
   // If the memory operation has no size, don't do it, don't make an entry, and don't even check
@@ -340,8 +400,6 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
       case MEMMOVE:
           entry->second_address = shm_address2;
       case LOAD:
-      case ATOMICLOAD:
-      case ATOMICSTORE:
       case STORE:
           {
            /* When doing reads/writes we will use memcpy, **or** memmove if so requested. We can relax certain memmove's however, if we now
@@ -423,12 +481,40 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
 
           break;
         }
+      case ATOMICLOAD:
+        {
+          /* Load from actual SHM page */
+          ATOMICLOAD_BY_SIZE(out_address, in_address, size);
+
+          /* Load from local shadow copy */
+          char local_ret[8];
+          ATOMICLOAD_BY_SIZE(&local_ret, SHARED_TO_SHADOW_POINTER(in, in_address), size);
+
+          /* If these two loads differ, put the load from the SHM page in the buffer */
+          entry->data_present = orig_memcmp(out_address, &local_ret, size);
+          if (entry->data_present)
+            orig_memcpy(&entry->data, out_address, size);
+
+          break;
+        }
+      case ATOMICSTORE:
+        {
+          entry->value = value;
+
+          /* Store on actual SHM page */
+          ATOMICSTORE_BY_SIZE(out_address, value, size);
+
+          /* Store on local shadow copy */
+          ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
+          break;
+        }
       case ATOMICCMPXCHG:
         {
           entry->value = value;
           entry->cmp = cmp;
-          ret = __atomic_compare_exchange_n((uint32_t*)in_address, &cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
-          bool shadow_cmp = __atomic_compare_exchange_n((uint32_t*)SHARED_TO_SHADOW_POINTER(in, in_address), &cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+
+          ret = ATOMICCMPXCHG_BY_SIZE(in_address, &cmp, value, size);
+          bool shadow_cmp = ATOMICCMPXCHG_BY_SIZE(SHARED_TO_SHADOW_POINTER(in, in_address), &cmp, value, size);
           entry->data_present = (ret != shadow_cmp);
           if (entry->data_present)
              entry->data[0] = ret;
@@ -436,37 +522,37 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
         }
       case ATOMICRMW_XCHG:
         {
-          ATOMICRMW_LEADER(__atomic_exchange_n);
+          ATOMICRMW_LEADER_BY_SIZE (__atomic_exchange_n, size);
           break;
         }
       case ATOMICRMW_ADD:
         {
-          ATOMICRMW_LEADER(__atomic_fetch_add);
+          ATOMICRMW_LEADER_BY_SIZE(__atomic_fetch_add, size);
           break;
         }
       case ATOMICRMW_SUB:
         {
-          ATOMICRMW_LEADER(__atomic_fetch_sub);
+          ATOMICRMW_LEADER_BY_SIZE(__atomic_fetch_sub, size);
           break;
         }
       case ATOMICRMW_AND:
         {
-          ATOMICRMW_LEADER(__atomic_fetch_and);
+          ATOMICRMW_LEADER_BY_SIZE(__atomic_fetch_and, size);
           break;
         }
       case ATOMICRMW_NAND:
         {
-          ATOMICRMW_LEADER(__atomic_fetch_nand);
+          ATOMICRMW_LEADER_BY_SIZE(__atomic_fetch_nand, size);
           break;
         }
       case ATOMICRMW_OR:
         {
-          ATOMICRMW_LEADER(__atomic_fetch_or);
+          ATOMICRMW_LEADER_BY_SIZE(__atomic_fetch_or, size);
           break;
         }
       case ATOMICRMW_XOR:
         {
-          ATOMICRMW_LEADER(__atomic_fetch_xor);
+          ATOMICRMW_LEADER_BY_SIZE(__atomic_fetch_xor, size);
           break;
         }
       default:
@@ -494,8 +580,6 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
         mvee_assert_same_address(entry->second_address, shm_address2);
       case LOAD:
       case STORE:
-      case ATOMICLOAD:
-      case ATOMICSTORE:
         {
           if (in)
           {
@@ -556,6 +640,23 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
 
           break;
         }
+      case ATOMICLOAD:
+        {
+          /* If data present, copy from the buffer. Otherwise, load from local shadow copy */
+          if (entry->data_present)
+            orig_memcpy(out_address, &entry->data, size);
+          else
+            ATOMICLOAD_BY_SIZE(out_address, SHARED_TO_SHADOW_POINTER(in, in_address), size);
+          break;
+        }
+      case ATOMICSTORE:
+        {
+          mvee_assert_same_value(entry->value, value);
+
+          /* Store on local shadow copy */
+          ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
+          break;
+        }
       case ATOMICCMPXCHG:
         {
           mvee_assert_same_value(entry->value, value);
@@ -564,45 +665,45 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
           {
              ret = entry->data[0];
              if (ret)
-               __atomic_exchange_n((uint32_t*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_RELAXED);
+               ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(in, in_address), value, size);
           }
           else
-            ret = __atomic_compare_exchange_n((uint32_t*)SHARED_TO_SHADOW_POINTER(in, in_address), &cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+            ret = ATOMICCMPXCHG_BY_SIZE(SHARED_TO_SHADOW_POINTER(in, in_address), &cmp, value, size);
           break;
         }
       case ATOMICRMW_XCHG:
         {
-          ATOMICRMW_FOLLOWER(__atomic_exchange_n);
+          ATOMICRMW_FOLLOWER_BY_SIZE(__atomic_exchange_n, size);
           break;
         }
       case ATOMICRMW_ADD:
         {
-          ATOMICRMW_FOLLOWER(__atomic_fetch_add);
+          ATOMICRMW_FOLLOWER_BY_SIZE(__atomic_fetch_add, size);
           break;
         }
       case ATOMICRMW_SUB:
         {
-          ATOMICRMW_FOLLOWER(__atomic_fetch_sub);
+          ATOMICRMW_FOLLOWER_BY_SIZE(__atomic_fetch_sub, size);
           break;
         }
       case ATOMICRMW_AND:
         {
-          ATOMICRMW_FOLLOWER(__atomic_fetch_and);
+          ATOMICRMW_FOLLOWER_BY_SIZE(__atomic_fetch_and, size);
           break;
         }
       case ATOMICRMW_NAND:
         {
-          ATOMICRMW_FOLLOWER(__atomic_fetch_nand);
+          ATOMICRMW_FOLLOWER_BY_SIZE(__atomic_fetch_nand, size);
           break;
         }
       case ATOMICRMW_OR:
         {
-          ATOMICRMW_FOLLOWER(__atomic_fetch_or);
+          ATOMICRMW_FOLLOWER_BY_SIZE(__atomic_fetch_or, size);
           break;
         }
       case ATOMICRMW_XOR:
         {
-          ATOMICRMW_FOLLOWER(__atomic_fetch_xor);
+          ATOMICRMW_FOLLOWER_BY_SIZE(__atomic_fetch_xor, size);
           break;
         }
       default:
@@ -643,12 +744,12 @@ mvee_shm_op_ret mvee_shm_op(unsigned char id, void* address, unsigned long size,
       mvee_shm_buffered_op(id, address, entry, &ret.val, NULL, size, 0, 0);
       break;
     case ATOMICSTORE:
+      mvee_shm_buffered_op(id, NULL, NULL, address, entry, size, value, 0);
+      break;
     case STORE:
       mvee_shm_buffered_op(id, &value, NULL, address, entry, size, 0, 0);
       break;
     case ATOMICCMPXCHG:
-      if (size != 4)
-        mvee_error_unsupported_operation(id);
       ret.cmp = mvee_shm_buffered_op(id, address, entry, NULL, NULL, size, value, cmp);
       break;
     case ATOMICRMW_XCHG:
@@ -658,8 +759,6 @@ mvee_shm_op_ret mvee_shm_op(unsigned char id, void* address, unsigned long size,
     case ATOMICRMW_NAND:
     case ATOMICRMW_OR:
     case ATOMICRMW_XOR:
-      if (size != 4)
-        mvee_error_unsupported_operation(id);
       mvee_shm_buffered_op(id, address, entry, &ret.val, NULL, size, value, 0);
       break;
       // We don't support these yet, haven't encountered them
