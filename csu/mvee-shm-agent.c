@@ -383,6 +383,10 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
   if (!size)
     return ret;
 
+#ifdef MVEE_LOG_SHM_OPS
+  syscall(__NR_gettid, 1337, 10000001, 100, type, size);
+#endif
+
   // Get an entry
   mvee_shm_op_entry* entry = mvee_shm_get_entry(size);
   const void* shm_address = out ? out_address : in_address;
@@ -710,10 +714,6 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
         mvee_error_unsupported_operation(type);
     }
   }
-
-#ifdef MVEE_LOG_SHM_OPS
-  syscall(__NR_gettid, 1337, 10000001, 100, type, size);
-#endif
 
   return ret;
 }
