@@ -90,19 +90,19 @@ enum
 #define ATOMICCMPXCHG_BY_SIZE(addr, cmp, value, size)                                                              \
   ({ bool __ret = false;                                                                                           \
 if (size == 1)                                                                                                     \
-  __ret = __atomic_compare_exchange_n((uint8_t*)addr, (uint8_t*)cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);\
+  __ret = __atomic_compare_exchange_n((uint8_t*)addr, (uint8_t*)cmp, value, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);\
 else if (size == 2)                                                                                                \
-  __ret = __atomic_compare_exchange_n((uint16_t*)addr, (uint16_t*)cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);\
+  __ret = __atomic_compare_exchange_n((uint16_t*)addr, (uint16_t*)cmp, value, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);\
 else if (size == 4)                                                                                                \
-  __ret = __atomic_compare_exchange_n((uint32_t*)addr, (uint32_t*)cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);\
+  __ret = __atomic_compare_exchange_n((uint32_t*)addr, (uint32_t*)cmp, value, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);\
 else if (size == 8)                                                                                                \
-  __ret = __atomic_compare_exchange_n((uint64_t*)addr, (uint64_t*)cmp, value, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);\
+  __ret = __atomic_compare_exchange_n((uint64_t*)addr, (uint64_t*)cmp, value, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);\
   __ret;})
 
 #define ATOMICRMW_LEADER(operation, utype)                                                                         \
   do {                                                                                                             \
-    utype __shm_val = operation((utype*)in_address, value, __ATOMIC_RELAXED);                                      \
-    utype __shadow_val = operation((utype*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_RELAXED);     \
+    utype __shm_val = operation((utype*)in_address, value, __ATOMIC_SEQ_CST);                                      \
+    utype __shadow_val = operation((utype*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_SEQ_CST);     \
     *((utype*)out_address) = __shm_val;                                                                            \
     entry->data_present = (__shm_val != __shadow_val);                                                             \
     if (entry->data_present)                                                                                       \
@@ -124,7 +124,7 @@ else if (size == 8)                                                             
   do {                                                                                                             \
     if (entry->data_present)                                                                                       \
       orig_memcpy(SHARED_TO_SHADOW_POINTER(in, in_address), &entry->data, sizeof(utype));                          \
-    *((utype*)out_address) = operation((utype*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_RELAXED); \
+    *((utype*)out_address) = operation((utype*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_SEQ_CST); \
   } while(0)
 
 #define ATOMICRMW_FOLLOWER_BY_SIZE(operation, size)                                                                \
