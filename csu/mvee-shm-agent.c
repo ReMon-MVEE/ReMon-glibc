@@ -101,9 +101,9 @@ else if (size == 8)                                                             
 
 #define ATOMICRMW_LEADER(operation, utype)                                                                         \
   do {                                                                                                             \
-    utype __shm_val = operation((utype*)in_address, value, __ATOMIC_SEQ_CST);                                      \
-    utype __shadow_val = operation((utype*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_SEQ_CST);     \
-    *((utype*)out_address) = __shm_val;                                                                            \
+    utype __shm_val = operation((utype*)out_address, value, __ATOMIC_SEQ_CST);                                     \
+    utype __shadow_val = operation((utype*)SHARED_TO_SHADOW_POINTER(out, out_address), value, __ATOMIC_SEQ_CST);   \
+    ret.val = __shm_val;                                                                                           \
     entry->data_present = (__shm_val != __shadow_val);                                                             \
     if (entry->data_present)                                                                                       \
       orig_memcpy(&entry->data, &__shm_val, sizeof(utype));                                                        \
@@ -123,8 +123,8 @@ else if (size == 8)                                                             
 #define ATOMICRMW_FOLLOWER(operation, utype)                                                                       \
   do {                                                                                                             \
     if (entry->data_present)                                                                                       \
-      orig_memcpy(SHARED_TO_SHADOW_POINTER(in, in_address), &entry->data, sizeof(utype));                          \
-    *((utype*)out_address) = operation((utype*)SHARED_TO_SHADOW_POINTER(in, in_address), value, __ATOMIC_SEQ_CST); \
+      orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), &entry->data, sizeof(utype));                        \
+    ret.val = operation((utype*)SHARED_TO_SHADOW_POINTER(out, out_address), value, __ATOMIC_SEQ_CST);              \
   } while(0)
 
 #define ATOMICRMW_FOLLOWER_BY_SIZE(operation, size)                                                                \
@@ -343,6 +343,11 @@ typedef struct mvee_shm_op_entry {
   char data[];
 } mvee_shm_op_entry;
 
+typedef struct mvee_shm_op_ret {
+  unsigned long val;
+  bool cmp;
+} mvee_shm_op_ret;
+
 static __thread size_t                mvee_shm_local_pos    = 0; // our position in the thread local queue
 static __thread char*                 mvee_shm_buffer       = NULL;
 static __thread size_t                mvee_shm_buffer_size  = 0; // nr of slots in the thread local queue
@@ -375,9 +380,9 @@ static mvee_shm_op_entry* mvee_shm_get_entry(size_t size)
 // size         : the number of accessed bytes
 // value        : a helper value
 // cmp          : a comparison value
-static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_address, const mvee_shm_table_entry* in, void* out_address, const mvee_shm_table_entry* out, size_t size, uint64_t value, uint64_t cmp)
+static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const void* in_address, const mvee_shm_table_entry* in, void* out_address, const mvee_shm_table_entry* out, size_t size, uint64_t value, uint64_t cmp)
 {
-  bool ret = false;
+  mvee_shm_op_ret ret = { 0 };
   // If the memory operation has no size, don't do it, don't make an entry, and don't even check
   // This is an easier course than making entries with a size of 0, which would fuck up synchronization
   if (!size)
@@ -475,8 +480,8 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
           /* Search on local shadow copy */
           void* local_ret = orig_memchr(SHARED_TO_SHADOW_POINTER(in, in_address), value, size);
 
-          /* Write offset as return value */
-          *(ptrdiff_t*)out_address = shm_ret - in_address;
+          /* Use offset as return value */
+          ret.val = shm_ret - in_address;
 
           /* In case these differ, we have to return.. A different pointer in the followers? We'll encode the pointer offset in the buffer, reusing the second_address field */
           entry->data_present = (shm_ret != local_ret);
@@ -517,11 +522,11 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
           entry->value = value;
           entry->cmp = cmp;
 
-          ret = ATOMICCMPXCHG_BY_SIZE(in_address, &cmp, value, size);
-          bool shadow_cmp = ATOMICCMPXCHG_BY_SIZE(SHARED_TO_SHADOW_POINTER(in, in_address), &cmp, value, size);
-          entry->data_present = (ret != shadow_cmp);
+          ret.cmp = ATOMICCMPXCHG_BY_SIZE(out_address, &cmp, value, size);
+          bool shadow_cmp = ATOMICCMPXCHG_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), &cmp, value, size);
+          entry->data_present = (ret.cmp != shadow_cmp);
           if (entry->data_present)
-             entry->data[0] = ret;
+             entry->data[0] = ret.cmp;
           break;
         }
       case ATOMICRMW_XCHG:
@@ -632,14 +637,14 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
 
           /* Something changed in the leader, leading to a different return value. Get it from buffer */
           if (entry->data_present)
-            *(ptrdiff_t*)out_address = (ptrdiff_t)entry->second_address;
+            ret.val = (unsigned long)entry->second_address;
           else
           {
             /* Search on local shadow copy */
             void* local_ret = orig_memchr(SHARED_TO_SHADOW_POINTER(in, in_address), value, size);
 
-            /* Write offset as return value */
-            *(ptrdiff_t*)out_address = local_ret - in_address;
+            /* Use offset as return value */
+            ret.val = local_ret - in_address;
           }
 
           break;
@@ -667,12 +672,12 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
           mvee_assert_same_value(entry->cmp, cmp);
           if (entry->data_present)
           {
-             ret = entry->data[0];
-             if (ret)
+             ret.cmp = entry->data[0];
+             if (ret.cmp)
                ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(in, in_address), value, size);
           }
           else
-            ret = ATOMICCMPXCHG_BY_SIZE(SHARED_TO_SHADOW_POINTER(in, in_address), &cmp, value, size);
+            ret.cmp = ATOMICCMPXCHG_BY_SIZE(SHARED_TO_SHADOW_POINTER(in, in_address), &cmp, value, size);
           break;
         }
       case ATOMICRMW_XCHG:
@@ -721,11 +726,6 @@ static inline bool mvee_shm_buffered_op(unsigned char type, const void* in_addre
 // ========================================================================================================================
 // The mvee_shm_op interface used by the wrapping shm_support compiler pass
 // ========================================================================================================================
-typedef struct mvee_shm_op_ret {
-  unsigned long val;
-  bool cmp;
-} mvee_shm_op_ret;
-
 mvee_shm_op_ret mvee_shm_op(unsigned char id, void* address, unsigned long size, unsigned long value, unsigned long cmp)
 {
   mvee_shm_op_ret ret = { 0 };
@@ -749,7 +749,7 @@ mvee_shm_op_ret mvee_shm_op(unsigned char id, void* address, unsigned long size,
       mvee_shm_buffered_op(id, &value, NULL, address, entry, size, 0, 0);
       break;
     case ATOMICCMPXCHG:
-      ret.cmp = mvee_shm_buffered_op(id, address, entry, NULL, NULL, size, value, cmp);
+      ret = mvee_shm_buffered_op(id, address, entry, address, entry, size, value, cmp);
       break;
     case ATOMICRMW_XCHG:
     case ATOMICRMW_ADD:
@@ -758,7 +758,7 @@ mvee_shm_op_ret mvee_shm_op(unsigned char id, void* address, unsigned long size,
     case ATOMICRMW_NAND:
     case ATOMICRMW_OR:
     case ATOMICRMW_XOR:
-      mvee_shm_buffered_op(id, address, entry, &ret.val, NULL, size, value, 0);
+      ret = mvee_shm_buffered_op(id, address, entry, address, entry, size, value, 0);
       break;
       // We don't support these yet, haven't encountered them
     case ATOMICRMW_MAX:
@@ -832,9 +832,8 @@ mvee_shm_memchr (void const *src, int c_in, size_t n)
   if (!entry)
     mvee_error_shm_entry_not_present(src);
 
-  ptrdiff_t ret = 0;
-  mvee_shm_buffered_op(MEMCHR, shm_src, entry, &ret, NULL, n, c_in, 0);
-  return (void*)src + ret;
+  mvee_shm_op_ret ret = mvee_shm_buffered_op(MEMCHR, shm_src, entry, NULL, NULL, n, c_in, 0);
+  return (void*)src + ret.val;
 }
 
 int
