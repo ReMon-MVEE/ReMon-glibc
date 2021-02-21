@@ -104,13 +104,12 @@ else if (size == 8)                                                             
     utype __shm_val = operation((utype*)out_address, value, __ATOMIC_SEQ_CST);                                     \
     utype __shadow_val = operation((utype*)SHARED_TO_SHADOW_POINTER(out, out_address), value, __ATOMIC_SEQ_CST);   \
     ret.val = __shm_val;                                                                                           \
-    entry->data_present = (__shm_val != __shadow_val);                                                             \
-    if (entry->data_present)                                                                                       \
+    data_in_buffer = (__shm_val != __shadow_val);                                                                  \
+    if (data_in_buffer)                                                                                            \
       orig_memcpy(&entry->data, &__shm_val, sizeof(utype));                                                        \
   } while(0)
 
 #define ATOMICRMW_LEADER_BY_SIZE(operation, size)                                                                  \
-entry->value = value;                                                                                              \
 if (size == 1)                                                                                                     \
   ATOMICRMW_LEADER(operation, uint8_t);                                                                            \
 else if (size == 2)                                                                                                \
@@ -122,13 +121,12 @@ else if (size == 8)                                                             
 
 #define ATOMICRMW_FOLLOWER(operation, utype)                                                                       \
   do {                                                                                                             \
-    if (entry->data_present)                                                                                       \
+    if (data_in_buffer)                                                                                            \
       orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), &entry->data, sizeof(utype));                        \
     ret.val = operation((utype*)SHARED_TO_SHADOW_POINTER(out, out_address), value, __ATOMIC_SEQ_CST);              \
   } while(0)
 
 #define ATOMICRMW_FOLLOWER_BY_SIZE(operation, size)                                                                \
-mvee_assert_same_value(entry->value, value);                                                                       \
 if (size == 1)                                                                                                     \
   ATOMICRMW_FOLLOWER(operation, uint8_t);                                                                          \
 else if (size == 2)                                                                                                \
@@ -338,8 +336,9 @@ typedef struct mvee_shm_op_entry {
   size_t size;
   uint64_t value;
   uint64_t cmp;
+  unsigned short nr_of_variants_checked;
   unsigned char type;
-  bool data_present;
+  unsigned char replication_type;// 0 is no replication, 1 is replication from shadow memory, 2 is replication from buffer
   char data[];
 } mvee_shm_op_entry;
 
@@ -380,11 +379,10 @@ static mvee_shm_op_entry* mvee_shm_get_entry(size_t size)
 // size         : the number of accessed bytes
 // value        : a helper value
 // cmp          : a comparison value
-static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const void* in_address, const mvee_shm_table_entry* in, void* out_address, const mvee_shm_table_entry* out, size_t size, uint64_t value, uint64_t cmp)
+static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, const void* in_address, const mvee_shm_table_entry* in, void* out_address, const mvee_shm_table_entry* out, const size_t size, const uint64_t value, const uint64_t cmp)
 {
   mvee_shm_op_ret ret = { 0 };
   // If the memory operation has no size, don't do it, don't make an entry, and don't even check
-  // This is an easier course than making entries with a size of 0, which would fuck up synchronization
   if (!size)
     return ret;
 
@@ -397,17 +395,67 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
   const void* shm_address = out ? out_address : in_address;
   const void* shm_address2 = (in && out) ? in_address : NULL;
 
-  // Do actual operation, differently for leader and follower(s)
+  // Do equivalence checking, unique access, and replication
+  // These differ between the variants, who need to synchronize with each other
   if (likely(mvee_master_variant))
   {
+    ////////////////////////////////////////////////////////////////////////////////
+    // Equivalence checking: leader fills in entry.
+    ////////////////////////////////////////////////////////////////////////////////
     entry->address = shm_address;
     entry->type = type;
+    entry->size = size;
 
     switch(type)
     {
       case MEMCPY:
       case MEMMOVE:
-          entry->second_address = shm_address2;
+        entry->second_address = shm_address2;
+      case STORE:
+        {
+          /* The input comes from a non-SHM page, fill in the buffer */
+          if (!in)
+            orig_memcpy(&entry->data, in_address, size);
+          break;
+        }
+      case ATOMICCMPXCHG:
+        entry->cmp = cmp;
+      case ATOMICRMW_XCHG:
+      case ATOMICRMW_ADD:
+      case ATOMICRMW_SUB:
+      case ATOMICRMW_AND:
+      case ATOMICRMW_NAND:
+      case ATOMICRMW_OR:
+      case ATOMICRMW_XOR:
+      case ATOMICSTORE:
+      case MEMCHR:
+      case MEMSET:
+        {
+          /* Fill in entry */
+          entry->value = value;
+          break;
+        }
+      default:
+        break;
+    }
+
+    // Signal to followers that entry is available
+    orig_atomic_store_release(&entry->nr_of_variants_checked, 1);
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Unique access: leader does access (on actual and shadow memory),
+    // enters replication data in buffer if required.
+    ////////////////////////////////////////////////////////////////////////////////
+
+    // Wait for followers to signal they finished checking. This is only necessary when we might write to shm (aka, when 'out' has a value).
+    while (out && (orig_atomic_load_acquire(&entry->nr_of_variants_checked) != mvee_num_variants))
+      syscall(__NR_sched_yield);
+
+    bool data_in_buffer = false;
+    switch(type)
+    {
+      case MEMCPY:
+      case MEMMOVE:
       case LOAD:
       case STORE:
           {
@@ -420,10 +468,10 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
               /* The input comes from a SHM page. Check whether it differs from our local copy or not. If it doesn't, we use our local copy as input.
                * If it **does** differ, we copy the modified data on the SHM page to the buffer, and use that copy as input.
                */
-              entry->data_present = orig_memcmp(SHARED_TO_SHADOW_POINTER(in, in_address), in_address, size);
-              if (entry->data_present)
+              data_in_buffer = orig_memcmp(SHARED_TO_SHADOW_POINTER(in, in_address), in_address, size);
+              if (data_in_buffer)
                 orig_memcpy(&entry->data, in_address, size);
-              const void* buf_or_shadow = (entry->data_present) ? &entry->data : SHARED_TO_SHADOW_POINTER(in, in_address);
+              const void* buf_or_shadow = data_in_buffer ? &entry->data : SHARED_TO_SHADOW_POINTER(in, in_address);
 
               if (out)
               {
@@ -432,7 +480,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
                 orig_memcpy(out_address, buf_or_shadow, size);
 
                 /* Write local shadow copy, from buffer (can memcpy!) or local shadow copy (memmove, if requested) */
-                if (type == MEMMOVE && !entry->data_present)
+                if (type == MEMMOVE && !data_in_buffer)
                   orig_memmove(SHARED_TO_SHADOW_POINTER(out, out_address), buf_or_shadow, size);
                 else
                   orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), buf_or_shadow, size);
@@ -446,9 +494,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
             }
             else
             {
-              /* The input comes from a non-SHM page, fill in the buffer */
-              orig_memcpy(&entry->data, in_address, size);
-
+              /* The input comes from a non-SHM page */
               /* Write to actual SHM page, from (non-overlapping) non-SHM page */
               orig_memcpy(out_address, in_address, size);
 
@@ -459,9 +505,6 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
           }
       case MEMSET:
         {
-          /* Fill in entry */
-          entry->value = value;
-
           /* Write to actual SHM page */
           orig_memset(out_address, value, size);
 
@@ -471,9 +514,6 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
         }
       case MEMCHR:
         {
-          /* Fill in entry */
-          entry->value = value;
-
           /* Search on actual SHM page */
           void* shm_ret = orig_memchr(in_address, value, size);
 
@@ -484,8 +524,8 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
           ret.val = shm_ret - in_address;
 
           /* In case these differ, we have to return.. A different pointer in the followers? We'll encode the pointer offset in the buffer, reusing the second_address field */
-          entry->data_present = (shm_ret != local_ret);
-          if (entry->data_present)
+          data_in_buffer = (shm_ret != local_ret);
+          if (data_in_buffer)
             entry->second_address = (void*)(shm_ret - in_address);
 
           break;
@@ -500,16 +540,14 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
           ATOMICLOAD_BY_SIZE(&local_ret, SHARED_TO_SHADOW_POINTER(in, in_address), size);
 
           /* If these two loads differ, put the load from the SHM page in the buffer */
-          entry->data_present = orig_memcmp(out_address, &local_ret, size);
-          if (entry->data_present)
+          data_in_buffer = orig_memcmp(out_address, &local_ret, size);
+          if (data_in_buffer)
             orig_memcpy(&entry->data, out_address, size);
 
           break;
         }
       case ATOMICSTORE:
         {
-          entry->value = value;
-
           /* Store on actual SHM page */
           ATOMICSTORE_BY_SIZE(out_address, value, size);
 
@@ -519,13 +557,10 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
         }
       case ATOMICCMPXCHG:
         {
-          entry->value = value;
-          entry->cmp = cmp;
-
           ret.cmp = ATOMICCMPXCHG_BY_SIZE(out_address, &cmp, value, size);
           bool shadow_cmp = ATOMICCMPXCHG_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), &cmp, value, size);
-          entry->data_present = (ret.cmp != shadow_cmp);
-          if (entry->data_present)
+          data_in_buffer = (ret.cmp != shadow_cmp);
+          if (data_in_buffer)
              entry->data[0] = ret.cmp;
           break;
         }
@@ -568,39 +603,90 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
         mvee_error_unsupported_operation(type);
     }
 
-    // Signal entry is ready
-    orig_atomic_store_release(&entry->size, size);
+    // Signal followers that replication data (or the sign of its absence) is available. Only necessary when actually reading from shm (aka, when 'in' has a value).
+    if (in)
+      orig_atomic_store_release(&entry->replication_type, data_in_buffer ? 2 : 1);
   }
   else
   {
-    // Wait until entry is ready
-    while (!orig_atomic_load_acquire(&entry->size))
+    ////////////////////////////////////////////////////////////////////////////////
+    // Equivalence checking: follower checks entry for equivalence with own operation
+    ////////////////////////////////////////////////////////////////////////////////
+
+    // Wait for leader to signal availability of the entry
+    while (!orig_atomic_load_acquire(&entry->nr_of_variants_checked))
       syscall(__NR_sched_yield);
 
     // Assert we're on the same entry
     mvee_assert_same_address(entry->address, shm_address);
-    mvee_assert_same_size(entry->size, size);
     mvee_assert_same_type(entry->type, type);
+    mvee_assert_same_size(entry->size, size);
 
     switch(type)
     {
       case MEMCPY:
       case MEMMOVE:
         mvee_assert_same_address(entry->second_address, shm_address2);
+      case STORE:
+        {
+          /* The input comes from a non-SHM page, check its correctness */
+          if (!in)
+            mvee_assert_same_store(&entry->data, in_address, size);
+          break;
+        }
+      case ATOMICCMPXCHG:
+        mvee_assert_same_value(entry->cmp, cmp);
+      case ATOMICRMW_XCHG:
+      case ATOMICRMW_ADD:
+      case ATOMICRMW_SUB:
+      case ATOMICRMW_AND:
+      case ATOMICRMW_NAND:
+      case ATOMICRMW_OR:
+      case ATOMICRMW_XOR:
+      case ATOMICSTORE:
+      case MEMCHR:
+      case MEMSET:
+        {
+          mvee_assert_same_value(entry->value, value);
+          break;
+        }
+      default:
+        break;
+    }
+
+    // Signal the leader that the check has succeeded. We only need to do this when we might write to shm (aka, when 'out' has a value).
+    if (out)
+      orig_atomic_increment(&entry->nr_of_variants_checked);
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Unique access: follower does access on shadow memory, reads replication data
+    // from buffer if available.
+    ////////////////////////////////////////////////////////////////////////////////
+
+    // Wait for leader to signal that replication data is available. Only necessary when actually reading from shm (aka, when 'in' has a value).
+    unsigned char replication_type = 0;
+    while (in && ((replication_type = orig_atomic_load_acquire(&entry->replication_type)) == 0))
+      syscall(__NR_sched_yield);
+
+    bool data_in_buffer = (replication_type == 2);
+    switch(type)
+    {
+      case MEMCPY:
+      case MEMMOVE:
       case LOAD:
       case STORE:
         {
           if (in)
           {
             /* The input comes from a SHM page. Check whether to read from the buffer or from the local shadow copy. */
-            const void* buf_or_shadow = (entry->data_present) ? &entry->data : SHARED_TO_SHADOW_POINTER(in, in_address);
+            const void* buf_or_shadow = data_in_buffer ? &entry->data : SHARED_TO_SHADOW_POINTER(in, in_address);
 
             if (out)
             {
               /* We're reading/writing to and from a SHM page. Write to the local shadow copy using a memcpy or memmove, depending
                * on whether we can relax any requested MEMMOVEs (if we **know** source and destination won't overlap).
                */
-              if (type == MEMMOVE && !entry->data_present)
+              if (type == MEMMOVE && !data_in_buffer)
                 orig_memmove(SHARED_TO_SHADOW_POINTER(out, out_address), buf_or_shadow, size);
               else
                 orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), buf_or_shadow, size);
@@ -615,9 +701,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
           }
           else
           {
-            /* The input comes from a non-SHM page, check its correctness */
-            mvee_assert_same_store(&entry->data, in_address, size);
-
+            /* The input comes from a non-SHM page */
             /* Write local shadow copy */
             orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), in_address, size);
           }
@@ -625,18 +709,14 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
         }
       case MEMSET:
         {
-          mvee_assert_same_value(entry->value, value);
-
           /* Write local shadow copy */
           orig_memset(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
           break;
         }
       case MEMCHR:
         {
-          mvee_assert_same_value(entry->value, value);
-
           /* Something changed in the leader, leading to a different return value. Get it from buffer */
-          if (entry->data_present)
+          if (data_in_buffer)
             ret.val = (unsigned long)entry->second_address;
           else
           {
@@ -652,7 +732,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
       case ATOMICLOAD:
         {
           /* If data present, copy from the buffer. Otherwise, load from local shadow copy */
-          if (entry->data_present)
+          if (data_in_buffer)
             orig_memcpy(out_address, &entry->data, size);
           else
             ATOMICLOAD_BY_SIZE(out_address, SHARED_TO_SHADOW_POINTER(in, in_address), size);
@@ -660,17 +740,13 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(unsigned char type, const voi
         }
       case ATOMICSTORE:
         {
-          mvee_assert_same_value(entry->value, value);
-
           /* Store on local shadow copy */
           ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
           break;
         }
       case ATOMICCMPXCHG:
         {
-          mvee_assert_same_value(entry->value, value);
-          mvee_assert_same_value(entry->cmp, cmp);
-          if (entry->data_present)
+          if (data_in_buffer)
           {
              ret.cmp = entry->data[0];
              if (ret.cmp)
