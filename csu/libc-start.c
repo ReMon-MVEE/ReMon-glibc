@@ -294,7 +294,7 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 
 #ifdef USE_MVEE_LIBC
   (void) syscall(MVEE_RUNS_UNDER_MVEE_CONTROL, &mvee_sync_enabled, &mvee_infinite_loop, 
-				 NULL, NULL, &mvee_master_variant, &mvee_shm_tag);
+				 &mvee_num_variants, NULL, &mvee_master_variant, &mvee_shm_tag);
   mvee_libc_initialized = 1;
 #endif
 

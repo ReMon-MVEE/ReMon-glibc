@@ -7,6 +7,7 @@
 unsigned char                  mvee_libc_initialized         = 0;
 unsigned char                  mvee_master_variant           = 0;
 unsigned char                  mvee_sync_enabled             = 0;
+unsigned short                 mvee_num_variants             = 0;
 
 #ifdef MVEE_USE_TOTALPARTIAL_AGENT
 #include "mvee-totalpartial-agent.c"

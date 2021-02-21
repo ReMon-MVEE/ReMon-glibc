@@ -5,6 +5,7 @@ extern unsigned char                  mvee_libc_initialized;
 extern unsigned char                  mvee_master_variant;
 extern unsigned char                  mvee_sync_enabled;
 extern unsigned long                  mvee_shm_tag;
+extern unsigned short                 mvee_num_variants;
 
 extern void mvee_infinite_loop(void);
 
