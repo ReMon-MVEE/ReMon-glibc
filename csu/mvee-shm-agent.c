@@ -383,7 +383,7 @@ static mvee_shm_op_entry* mvee_shm_get_entry(size_t size)
     mvee_shm_buffer = (char*)syscall(__NR_shmat, syscall(MVEE_GET_SHARED_BUFFER, 0, MVEE_SHM_BUFFER, &mvee_shm_buffer_size, 1, 0, &mvee_shm_buffer), NULL, 0);
 
   // Find location for entry in buffer
-  size_t entry_size = MVEE_ROUND_UP(sizeof(mvee_shm_op_entry) + size, sizeof(size_t));
+  size_t entry_size = MVEE_ROUND_UP(sizeof(mvee_shm_op_entry) + size, 64);
   if (unlikely(mvee_shm_local_pos + entry_size >= mvee_shm_buffer_size))
   {
     syscall(MVEE_FLUSH_SHARED_BUFFER, MVEE_SHM_BUFFER);
