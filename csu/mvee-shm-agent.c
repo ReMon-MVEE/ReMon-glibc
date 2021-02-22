@@ -60,7 +60,7 @@ enum
   MEMCHR          = GLIBC_FUNC_BASE + 3,
   MEMCMP          = GLIBC_FUNC_BASE + 4,
   STRLEN          = GLIBC_FUNC_BASE + 5,
-  STRCMP          = GLIBC_FUNC_BASE + 5,
+  STRCMP          = GLIBC_FUNC_BASE + 6,
 };
 
 #define ATOMICLOAD_BY_SIZE(out_address, in_address, size)                                                          \
