@@ -940,33 +940,13 @@ mvee_shm_memchr (void const *src, int c_in, size_t n)
 int
 mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
 {
-  // The pointers we're actually gonna be using.
-  void* shm_s1 = (void*)s1;
-  void* shm_s2 = (void*)s2;
-
-  // Entries in the shared memory bookkeeping.
-  mvee_shm_table_entry* s1_entry = NULL;
-  mvee_shm_table_entry* s2_entry = NULL;
-
-  // If first pointer is shared memory pointer decode it and get the entry for it.
-  if ((unsigned long)s1 & 0x8000000000000000ull)
-  {
-    shm_s1 = mvee_shm_decode_address(s1);
-    s1_entry = mvee_shm_table_get_entry(shm_s1);
-    // If we're here, it should exist...
-    if (!s1_entry)
-      mvee_error_shm_entry_not_present(s1);
-  }
-  // If second pointer is shared memory pointer decode it and get the entry for it.
-  if ((unsigned long)s2 & 0x8000000000000000ull)
-  {
-    shm_s2 = mvee_shm_decode_address(s2);
-    s2_entry = mvee_shm_table_get_entry(shm_s2);
-    // If we're here, it should exist...
-    if (!s2_entry)
-      mvee_error_shm_entry_not_present(s2);
-  }
-
+  /* Decode addresses */
+  const void* shm_s1 = mvee_shm_decode_address(s1);
+  const void* shm_s2 = mvee_shm_decode_address(s2);
+  mvee_shm_table_entry* s1_entry = mvee_shm_table_get_entry(shm_s1);
+  mvee_shm_table_entry* s2_entry = mvee_shm_table_get_entry(shm_s2);
+  if (!s1_entry && !s2_entry)
+    mvee_error_shm_entry_not_present(s1_entry);
 
   // Get an entry in the replication buffer.
   // If both addresses are shared memory pointer, we will need a buffer of double length.
@@ -976,11 +956,12 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
       // Fill in the entry.
     entry->address = s1_entry ? shm_s1 : shm_s2;
     entry->second_address = (s1_entry && s2_entry) ? shm_s2 : NULL;
+    entry->size = len;
     entry->type = MEMCMP;
-    entry->cmp = 0;
 
     // When the first pointer is a shared memory pointer, check if the shared memory contents are still the
     // same as in the shadow mapping, update the replication entry accordingly.
+    unsigned char replication_type = 0;
     if (s1_entry)
     {
       // Copy the shared memory contents to the buffer and replace the pointer we'll be using from now on.
@@ -990,9 +971,11 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
 
       // Update entry if the contents of shared memory differ with the shadow
       if (orig_memcmp(temp, SHARED_TO_SHADOW_POINTER(s1_entry, shm_s1), len))
-        entry->cmp |= 1;
+        replication_type |= 1;
       shm_s1 = temp;
     }
+    else
+      shm_s1 = s1;
     // same as for first pointer
     if (s2_entry)
     {
@@ -1003,38 +986,39 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
 
       // Update entry if the contents of shared memory differ with the shadow
       if (orig_memcmp(temp, SHARED_TO_SHADOW_POINTER(s2_entry, shm_s2), len))
-        entry->cmp |= 2;
+        replication_type |= 2;
       shm_s2 = temp;
     }
+    else
+      shm_s2 = s2;
 
     // save the return value for the memcmp.
     entry->value = orig_memcmp(shm_s1, shm_s2, len);
-    orig_atomic_store_release(&entry->size, len);
+    orig_atomic_store_release(&entry->nr_of_variants_checked, 1);
+    orig_atomic_store_release(&entry->replication_type, replication_type);
   }
   else
   {
     // Wait until entry is ready
-    while (!orig_atomic_load_acquire(&entry->size))
+    while (!orig_atomic_load_acquire(&entry->replication_type))
       syscall(__NR_sched_yield);
 
-    // memcmp should be called on the same relative pointers if they are shared memory pointers
+    // Check entry
     mvee_assert_same_address(entry->address, (s1_entry ? shm_s1 : shm_s2));
     mvee_assert_same_address(entry->second_address, ((s1_entry && s2_entry) ? shm_s2 : NULL));
-    // memcmp should be called with the same size
     mvee_assert_same_size(entry->size, len);
-    // type check
     mvee_assert_same_type(entry->type, MEMCMP);
 
     if (s1_entry)
     {
-      if (entry->cmp & 1)
+      if (entry->replication_type & 1)
         shm_s1 = entry->data;
       else
         shm_s1 = SHARED_TO_SHADOW_POINTER(s1_entry, shm_s1);
     }
     if (s2_entry)
     {
-      if (entry->cmp & 2)
+      if (entry->replication_type & 2)
         shm_s2 = entry->data + (s1_entry ? len : 0);
       else
         shm_s2 = SHARED_TO_SHADOW_POINTER(s2_entry, shm_s2);
@@ -1053,36 +1037,15 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
 int
 mvee_shm_strcmp (const char *str1, const char *str2)
 {
-  // The pointers we're actually gonna be using.
-  void* shm_str1 = (void*)str1;
-  void* shm_str2 = (void*)str2;
-
-  // Entries in the shared memory bookkeeping.
-  mvee_shm_table_entry* str1_entry = NULL;
-  mvee_shm_table_entry* str2_entry = NULL;
-
-  // If first pointer is shared memory pointer decode it and get the entry for it.
-  if ((unsigned long)str1 & 0x8000000000000000ull)
-  {
-    shm_str1 = mvee_shm_decode_address(str1);
-    str1_entry = mvee_shm_table_get_entry(shm_str1);
-    // If we're here, it should exist...
-    if (!str1_entry)
-      mvee_error_shm_entry_not_present(str1);
-  }
-  // If second pointer is shared memory pointer decode it and get the entry for it.
-  if ((unsigned long)str2 & 0x8000000000000000ull)
-  {
-    shm_str2 = mvee_shm_decode_address(str2);
-    str2_entry = mvee_shm_table_get_entry(shm_str2);
-    // If we're here, it should exist...
-    if (!str2_entry)
-      mvee_error_shm_entry_not_present(str2);
-  }
-
+  /* Decode addresses */
+  void* shm_str1 = mvee_shm_decode_address(str1);
+  void* shm_str2 = mvee_shm_decode_address(str2);
+  mvee_shm_table_entry* str1_entry = mvee_shm_table_get_entry(shm_str1);
+  mvee_shm_table_entry* str2_entry = mvee_shm_table_get_entry(shm_str2);
+  if (!str1_entry && !str2_entry)
+    mvee_error_shm_entry_not_present(str1_entry);
 
   // Get an entry in the replication buffer.
-  // If both addresses are shared memory pointer, we will need a buffer of double length.
   mvee_shm_op_entry* entry = mvee_shm_get_entry(sizeof(int));
   if (likely(mvee_master_variant))
   {
@@ -1090,22 +1053,21 @@ mvee_shm_strcmp (const char *str1, const char *str2)
     entry->address = str1_entry ? shm_str1 : shm_str2;
     entry->second_address = (str1_entry && str2_entry) ? shm_str2 : NULL;
     entry->type = STRCMP;
-    entry->cmp = 0;
 
-    // save the return value for the memcmp.
-    *(int*)entry->data = orig_strcmp(shm_str1, shm_str2);
-    orig_atomic_store_release(&entry->size, sizeof(int));
+    // save the return value
+    *(int*)entry->data = orig_strcmp(str1_entry ? shm_str1 : str1, str2_entry ? shm_str2 : str2);
+    orig_atomic_store_release(&entry->nr_of_variants_checked, 1);
+    orig_atomic_store_release(&entry->replication_type, 2);
   }
   else
   {
     // Wait until entry is ready
-    while (!orig_atomic_load_acquire(&entry->size))
+    while (!orig_atomic_load_acquire(&entry->replication_type))
       syscall(__NR_sched_yield);
 
-    // memcmp should be called on the same relative pointers if they are shared memory pointers
+    // Check entry
     mvee_assert_same_address(entry->address, (str1_entry ? shm_str1 : shm_str2));
     mvee_assert_same_address(entry->second_address, ((str1_entry && str2_entry) ? shm_str2 : NULL));
-    // type check
     mvee_assert_same_type(entry->type, STRCMP);
   }
 
@@ -1127,20 +1089,21 @@ mvee_shm_strlen (const char *str)
     entry->address = shm_str;
     entry->type    = STRLEN;
 
-
     // There isn't much point to any complicated shadow mapping stuff here.
     // If the result for the shared and shadow mapping is the same, we could use either one. If it's different, we'd
     // have to use the result from the shared mapping... So, we might as well just use the result from the shared
     // mapping from the start. Maybe we could force the shadow results in both variants to be the same?
     *(size_t*)entry->data = orig_strlen(shm_str);
-    orig_atomic_store_release(&entry->size, sizeof(size_t));
+    orig_atomic_store_release(&entry->nr_of_variants_checked, 1);
+    orig_atomic_store_release(&entry->replication_type, 2);
   }
   else
   {
     // Wait until entry is ready
-    while (!orig_atomic_load_acquire(&entry->size))
+    while (!orig_atomic_load_acquire(&entry->replication_type))
       syscall(__NR_sched_yield);
 
+    // Check entry
     mvee_assert_same_type(entry->type, STRLEN);
     mvee_assert_same_address(entry->address, shm_str);
   }
