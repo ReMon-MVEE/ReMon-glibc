@@ -583,10 +583,17 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
       case ATOMICCMPXCHG:
         {
           ret.cmp = ATOMICCMPXCHG_BY_SIZE(out_address, &cmp, value, size);
-          bool shadow_cmp = ATOMICCMPXCHG_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), &cmp, value, size);
-          data_in_buffer = (ret.cmp != shadow_cmp);
-          if (data_in_buffer)
-             entry->data[0] = ret.cmp;
+          entry->data[0] = ret.cmp;
+          /* Comparison failed, cmp := *out_address */
+          if (!ret.cmp)
+          {
+            memcpy(&entry->data[1], &cmp, size);
+            ret.val = cmp;
+          }
+          /* Comparison succeeded, *out_address = value */
+          else
+            ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
+
           break;
         }
       case ATOMICRMW_XCHG:
@@ -771,14 +778,16 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
         }
       case ATOMICCMPXCHG:
         {
-          if (data_in_buffer)
+          ret.cmp = entry->data[0];
+
+          /* Comparison failed, cmp := *out_address */
+          if (!ret.cmp)
           {
-             ret.cmp = entry->data[0];
-             if (ret.cmp)
-               ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(in, in_address), value, size);
+            memcpy(&ret.val, &entry->data[1], size);
           }
+          /* Comparison succeeded, *out_address = value */
           else
-            ret.cmp = ATOMICCMPXCHG_BY_SIZE(SHARED_TO_SHADOW_POINTER(in, in_address), &cmp, value, size);
+            ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
           break;
         }
       case ATOMICRMW_XCHG:
