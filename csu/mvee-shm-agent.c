@@ -961,7 +961,7 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
 
     // When the first pointer is a shared memory pointer, check if the shared memory contents are still the
     // same as in the shadow mapping, update the replication entry accordingly.
-    unsigned char replication_type = 0;
+    unsigned char replication_type = 4;
     if (s1_entry)
     {
       // Copy the shared memory contents to the buffer and replace the pointer we'll be using from now on.
@@ -1016,6 +1016,8 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
       else
         shm_s1 = SHARED_TO_SHADOW_POINTER(s1_entry, shm_s1);
     }
+    else
+      shm_s1 = s1;
     if (s2_entry)
     {
       if (entry->replication_type & 2)
@@ -1023,6 +1025,8 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
       else
         shm_s2 = SHARED_TO_SHADOW_POINTER(s2_entry, shm_s2);
     }
+    else
+      shm_s2 = s2;
 
     // perform the memcmp
     int return_value = orig_memcmp(shm_s1, shm_s2, len);
