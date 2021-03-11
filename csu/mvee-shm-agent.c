@@ -148,6 +148,16 @@ static void* mvee_shm_decode_address(const void* address)
   return (void*) ((high ^ mvee_shm_tag) + low);
 }
 
+static void* mvee_shm_decode_address_leader(const void* address)
+{
+  static unsigned long leader_tag = 0;
+  if (!leader_tag)
+    leader_tag = syscall(MVEE_GET_LEADER_SHM_TAG);
+  unsigned long high = (unsigned long)address & 0xffffffff00000000ull;
+  unsigned long low  = (unsigned long)address & 0x00000000ffffffffull;
+  return (void*) ((high ^ leader_tag) + low);
+}
+
 // ========================================================================================================================
 // Assertions and errors
 // ========================================================================================================================
@@ -175,33 +185,35 @@ static void mvee_assert_same_size(unsigned long a, unsigned long b)
 __attribute__((noinline))
 static void mvee_assert_same_store(const void* a, const void* b, const unsigned long size)
 {
-  /* Check if the buffers differ. We implemented this check based on three assumptions:
-   * 1. Only pointers can differ yet still be equivalent.
-   * 2. Pointers are stored in aligned manner.
+  /* Check if the buffers are equivalent. We implemented this check based on three assumptions:
+   * 1. The only type of data that can differ yet still be equivalent is pointers.
+   * 2. Pointers can only be stored in an aligned manner (this is not correct!).
    * 3. Pointers are stored using single stores, not memcpy. The overhead of comparing the
    * complete buffers first, and doing an element-wise comparison of the entire buffer after
    * is thus negligible.
    */
   if (orig_memcmp(a, b, size))
   {
-    /* If there is **any** difference in the entire buffer: Compare pointer-sized element by pointer-sized element */
+    /* If there is **any** difference in the entire buffer. Start looking for the difference, byte per byte */
     size_t offset;
-    for (offset = 0; (offset + sizeof(void*)) <= size; offset = offset + sizeof(void*))
+    for (offset = 0; (offset + sizeof(void*)) <= size; offset += sizeof(void*))
     {
-      if (orig_memcmp(a + offset, b + offset, sizeof(void*)))
-      {
-        uintptr_t pa, pb;
-        orig_memcpy(&pa, a + offset, sizeof(void*));
-        orig_memcpy(&pb, b + offset, sizeof(void*));
+      /* Read the data that constitutes the potential pointers */
+      void* pa = *((void**)(a + offset));
+      void* pb = *((void**)(b + offset));
 
-        /* We got differing elements, now we do equivalence checking */
-        if ((pa & 0x80000000ffffffffull) != (pb & 0x80000000ffffffffull))
-          syscall(__NR_gettid, 1337, 10000001, 103, a, b, size);
-      }
+      /* No difference, move on */
+      if (pa == pb)
+        continue;
+
+      /* Differing data! Decode both potential pointers */
+      void* pa_dec = mvee_shm_decode_address_leader(pa);
+      void* pb_dec = mvee_shm_decode_address(pb);
+
+      /* If the decoded pointers differ, they're actually differing data. Inform the monitor. */
+      if (pa_dec != pb_dec)
+        syscall(__NR_gettid, 1337, 10000001, 103, a, b, size);
     }
-    /* If we got to the end of the buffer, and the remaining bytes are not enough to make a pointer, it's a divergence for sure */
-    if (offset < size)
-      syscall(__NR_gettid, 1337, 10000001, 103, a, b, size);
   }
 }
 
