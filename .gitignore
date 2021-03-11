@@ -48,3 +48,4 @@ core
 *.vim
 /tags
 /compile_commands.json
+/.cache
