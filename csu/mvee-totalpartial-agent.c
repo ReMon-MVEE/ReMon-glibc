@@ -1,6 +1,5 @@
 static volatile unsigned int          mvee_lock_owner               = 0;
 static unsigned char                  mvee_buffer_valid             = 0;
-static unsigned short                 mvee_num_variants             = 0;
 static unsigned short                 mvee_my_variant_num           = 0;
 static struct mvee_buffer_info*       mvee_lock_buffer_info         = NULL;
 static struct mvee_buffer_entry*      mvee_lock_buffer              = NULL;
