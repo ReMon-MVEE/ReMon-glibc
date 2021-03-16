@@ -101,10 +101,19 @@ else if (size == 8)                                                             
 
 #define ATOMICRMW_LEADER(operation, utype)                                                                         \
   do {                                                                                                             \
+    /* This returns the original value at the address */                                                           \
     utype __shm_val = operation((utype*)out_address, value, __ATOMIC_SEQ_CST);                                     \
-    utype __shadow_val = operation((utype*)SHARED_TO_SHADOW_POINTER(out, out_address), value, __ATOMIC_SEQ_CST);   \
     ret.val = __shm_val;                                                                                           \
-    data_in_buffer = (__shm_val != __shadow_val);                                                                  \
+    /* Compare with shadow memory: do the original values differ? */                                               \
+    if (out->shadow)                                                                                               \
+    {                                                                                                              \
+      utype __shadow_val = operation((utype*)SHARED_TO_SHADOW_POINTER(out, out_address), value, __ATOMIC_SEQ_CST); \
+      data_in_buffer = (__shm_val != __shadow_val);                                                                \
+    }                                                                                                              \
+    /* If no shadow memory, always use buffer */                                                                   \
+    else                                                                                                           \
+      data_in_buffer = true;                                                                                       \
+    /* Put the original value in the buffer */                                                                     \
     if (data_in_buffer)                                                                                            \
       orig_memcpy(&entry->data, &__shm_val, sizeof(utype));                                                        \
   } while(0)
@@ -121,9 +130,15 @@ else if (size == 8)                                                             
 
 #define ATOMICRMW_FOLLOWER(operation, utype)                                                                       \
   do {                                                                                                             \
-    if (data_in_buffer)                                                                                            \
-      orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), &entry->data, sizeof(utype));                        \
-    ret.val = operation((utype*)SHARED_TO_SHADOW_POINTER(out, out_address), value, __ATOMIC_SEQ_CST);              \
+    if (out->shadow)                                                                                               \
+    {                                                                                                              \
+      /* If the original value differed in the leader, update it before doing the operation */                     \
+      if (data_in_buffer)                                                                                          \
+        orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), &entry->data, sizeof(utype));                      \
+      ret.val = operation((utype*)SHARED_TO_SHADOW_POINTER(out, out_address), value, __ATOMIC_SEQ_CST);            \
+    }                                                                                                              \
+    else                                                                                                           \
+      ret.val = *(utype*)&entry->data;                                                                             \
   } while(0)
 
 #define ATOMICRMW_FOLLOWER_BY_SIZE(operation, size)                                                                \
@@ -189,8 +204,12 @@ static inline void mvee_assert_same_size(size_t a, size_t b)
     syscall(__NR_gettid, 1337, 10000001, 102, a, b);
 }
 
-static void mvee_assert_same_store(const void* a, const void* b, const unsigned long size)
+static void mvee_assert_same_store(const void* a, const void* b, const unsigned long size, bool might_contain_pointers)
 {
+  /* Check if the buffers are the same. If they are, no issue! */
+  if (!orig_memcmp(a, b, size))
+    return;
+
   /* Check if the buffers are equivalent. We implemented this check based on three assumptions:
    * 1. The only type of data that can differ yet still be equivalent is pointers.
    * 2. Pointers can only be stored in an aligned manner (this is not correct!).
@@ -198,7 +217,7 @@ static void mvee_assert_same_store(const void* a, const void* b, const unsigned 
    * complete buffers first, and doing an element-wise comparison of the entire buffer after
    * is thus negligible.
    */
-  if (orig_memcmp(a, b, size))
+  if (might_contain_pointers)
   {
     /* If there is **any** difference in the entire buffer. Start looking for the difference, byte per byte */
     size_t offset;
@@ -217,6 +236,9 @@ static void mvee_assert_same_store(const void* a, const void* b, const unsigned 
         syscall(__NR_gettid, 1337, 10000001, 103, a, b, size);
     }
   }
+  /* The buffers **have** to be the same, so this is a divergence. Inform the monitor. */
+  else
+    syscall(__NR_gettid, 1337, 10000001, 103, a, b, size);
 }
 
 static inline void mvee_assert_same_type(unsigned char a, unsigned char b)
@@ -519,10 +541,17 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
             */
             if (in)
             {
-              /* The input comes from a SHM page. Check whether it differs from our local copy or not. If it doesn't, we use our local copy as input.
+              /* The input comes from a SHM page. We handle this differently depending on whether there's shadow memory or not. */
+
+              /* If there is a shadow copy, check whether it differs from our local copy or not. If it doesn't, we use our local copy as input.
                * If it **does** differ, we copy the modified data on the SHM page to the buffer, and use that copy as input.
                */
-              data_in_buffer = orig_memcmp(SHARED_TO_SHADOW_POINTER(in, in_address), in_address, size);
+              if (in->shadow)
+                data_in_buffer = orig_memcmp(SHARED_TO_SHADOW_POINTER(in, in_address), in_address, size);
+              /* If no shadow memory, always use buffer */
+              else
+                data_in_buffer = true;
+
               if (data_in_buffer)
                 orig_memcpy(&entry->data, in_address, size);
               const void* buf_or_shadow = data_in_buffer ? &entry->data : SHARED_TO_SHADOW_POINTER(in, in_address);
@@ -534,10 +563,13 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
                 orig_memcpy(out_address, buf_or_shadow, size);
 
                 /* Write local shadow copy, from buffer (can memcpy!) or local shadow copy (memmove, if requested) */
-                if (type == MEMMOVE && !data_in_buffer)
-                  orig_memmove(SHARED_TO_SHADOW_POINTER(out, out_address), buf_or_shadow, size);
-                else
-                  orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), buf_or_shadow, size);
+                if (out->shadow)
+                {
+                  if (type == MEMMOVE && !data_in_buffer)
+                    orig_memmove(SHARED_TO_SHADOW_POINTER(out, out_address), buf_or_shadow, size);
+                  else
+                    orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), buf_or_shadow, size);
+                }
               }
               else
               {
@@ -553,7 +585,8 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
               orig_memcpy(out_address, in_address, size);
 
               /* Write local shadow copy, from (non-overlapping) non-SHM page */
-              orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), in_address, size);
+              if (out->shadow)
+                orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), in_address, size);
             }
             break;
           }
@@ -563,7 +596,8 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
           orig_memset(out_address, value, size);
 
           /* Write local shadow copy */
-          orig_memset(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
+          if (out->shadow)
+            orig_memset(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
           break;
         }
       case MEMCHR:
@@ -571,14 +605,22 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
           /* Search on actual SHM page */
           void* shm_ret = orig_memchr(in_address, value, size);
 
-          /* Search on local shadow copy */
-          void* local_ret = orig_memchr(SHARED_TO_SHADOW_POINTER(in, in_address), value, size);
-
           /* Use offset as return value */
           ret.val = shm_ret - in_address;
 
-          /* In case these differ, we have to return.. A different pointer in the followers? We'll encode the pointer offset in the buffer, reusing the second_address field */
-          data_in_buffer = (shm_ret != local_ret);
+          /* If we have a shadow copy, compare */
+          if (in->shadow)
+          {
+            /* Search on local shadow copy */
+            void* local_ret = orig_memchr(SHARED_TO_SHADOW_POINTER(in, in_address), value, size);
+
+            /* In case these differ, we have to return.. A different pointer in the followers? We'll encode the pointer offset in the buffer, reusing the second_address field */
+            data_in_buffer = (shm_ret != local_ret);
+          }
+          /* If no shadow memory, always use buffer */
+          else
+            data_in_buffer = true;
+
           if (data_in_buffer)
             entry->second_address = (void*)(shm_ret - in_address);
 
@@ -589,12 +631,20 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
           /* Load from actual SHM page */
           ATOMICLOAD_BY_SIZE(out_address, in_address, size);
 
-          /* Load from local shadow copy */
-          char local_ret[8];
-          ATOMICLOAD_BY_SIZE(&local_ret, SHARED_TO_SHADOW_POINTER(in, in_address), size);
+          /* If we have a shadow copy, compare */
+          if (in->shadow)
+          {
+            /* Load from local shadow copy */
+            char local_ret[8];
+            ATOMICLOAD_BY_SIZE(&local_ret, SHARED_TO_SHADOW_POINTER(in, in_address), size);
 
-          /* If these two loads differ, put the load from the SHM page in the buffer */
-          data_in_buffer = orig_memcmp(out_address, &local_ret, size);
+            /* If these two loads differ, put the load from the SHM page in the buffer */
+            data_in_buffer = orig_memcmp(out_address, &local_ret, size);
+          }
+          /* If no shadow memory, always use buffer */
+          else
+            data_in_buffer = true;
+
           if (data_in_buffer)
             orig_memcpy(&entry->data, out_address, size);
 
@@ -606,7 +656,8 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
           ATOMICSTORE_BY_SIZE(out_address, value, size);
 
           /* Store on local shadow copy */
-          ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
+          if (out->shadow)
+            ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
           break;
         }
       case ATOMICCMPXCHG:
@@ -619,8 +670,8 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
             orig_memcpy(&entry->data[1], &cmp, size);
             ret.val = cmp;
           }
-          /* Comparison succeeded, *out_address = value */
-          else
+          /* Comparison succeeded, *out_address := value . Adjust shadow memory accordingly. */
+          else if (out->shadow)
             ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
 
           break;
@@ -692,7 +743,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
         {
           /* The input comes from a non-SHM page, check its correctness */
           if (!in)
-            mvee_assert_same_store(&entry->data, in_address, size);
+            mvee_assert_same_store(&entry->data, in_address, size, out->shadow);
           break;
         }
       case ATOMICCMPXCHG:
@@ -746,7 +797,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
             /* The input comes from a SHM page. Check whether to read from the buffer or from the local shadow copy. */
             const void* buf_or_shadow = data_in_buffer ? &entry->data : SHARED_TO_SHADOW_POINTER(in, in_address);
 
-            if (out)
+            if (out && out->shadow)
             {
               /* We're reading/writing to and from a SHM page. Write to the local shadow copy using a memcpy or memmove, depending
                * on whether we can relax any requested MEMMOVEs (if we **know** source and destination won't overlap).
@@ -768,14 +819,16 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
           {
             /* The input comes from a non-SHM page */
             /* Write local shadow copy */
-            orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), in_address, size);
+            if (out->shadow)
+              orig_memcpy(SHARED_TO_SHADOW_POINTER(out, out_address), in_address, size);
           }
           break;
         }
       case MEMSET:
         {
           /* Write local shadow copy */
-          orig_memset(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
+          if (out->shadow)
+            orig_memset(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
           break;
         }
       case MEMCHR:
@@ -806,7 +859,8 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
       case ATOMICSTORE:
         {
           /* Store on local shadow copy */
-          ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
+          if (out->shadow)
+            ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
           break;
         }
       case ATOMICCMPXCHG:
@@ -818,8 +872,8 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
           {
             orig_memcpy(&ret.val, &entry->data[1], size);
           }
-          /* Comparison succeeded, *out_address = value */
-          else
+          /* Comparison succeeded, *out_address := value . Adjust shadow memory accordingly. */
+          else if (out->shadow)
             ATOMICSTORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
           break;
         }
@@ -1012,7 +1066,13 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
       orig_memcpy(temp, shm_s1, len);
 
       // Update entry if the contents of shared memory differ with the shadow
-      if (orig_memcmp(temp, SHARED_TO_SHADOW_POINTER(s1_entry, shm_s1), len))
+      if (s1_entry->shadow)
+      {
+        if (orig_memcmp(temp, SHARED_TO_SHADOW_POINTER(s1_entry, shm_s1), len))
+          replication_type |= 1;
+      }
+      /* If no shadow memory, always use buffer */
+      else
         replication_type |= 1;
       shm_s1 = temp;
     }
@@ -1027,7 +1087,13 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
       orig_memcpy(temp, shm_s2, len);
 
       // Update entry if the contents of shared memory differ with the shadow
-      if (orig_memcmp(temp, SHARED_TO_SHADOW_POINTER(s2_entry, shm_s2), len))
+      if (s2_entry->shadow)
+      {
+        if (orig_memcmp(temp, SHARED_TO_SHADOW_POINTER(s2_entry, shm_s2), len))
+          replication_type |= 2;
+      }
+      /* If no shadow memory, always use buffer */
+      else
         replication_type |= 2;
       shm_s2 = temp;
     }
@@ -1222,7 +1288,8 @@ mvee_shm_shmdt (const void *shmaddr)
     if (!mapping)
       mvee_error_shm_entry_not_present(shmaddr);
 
-    orig_SHMDT_CALL(mapping->shadow);
+    if (mapping->shadow)
+      orig_SHMDT_CALL(mapping->shadow);
     mvee_shm_table_delete_entry(mapping);
   }
   return orig_SHMDT_CALL(shmaddr);
@@ -1240,7 +1307,8 @@ mvee_shm_munmap (const void *addr, size_t len)
     // I'm too lazy to do the parial munmap stuff, so just adding this to maybe have an idea when it does happen
     mvee_assert_equal_mapping_size(len, mapping->len);
 
-    orig_SHMDT_CALL(mapping->shadow);
+    if (mapping->shadow)
+      orig_SHMDT_CALL(mapping->shadow);
     mvee_shm_table_delete_entry(mapping);
   }
   return orig_MUNMAP_CALL(addr, len);
