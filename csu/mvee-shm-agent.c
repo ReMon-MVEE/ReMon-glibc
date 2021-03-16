@@ -599,7 +599,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
           /* Comparison failed, cmp := *out_address */
           if (!ret.cmp)
           {
-            memcpy(&entry->data[1], &cmp, size);
+            orig_memcpy(&entry->data[1], &cmp, size);
             ret.val = cmp;
           }
           /* Comparison succeeded, *out_address = value */
@@ -795,7 +795,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
           /* Comparison failed, cmp := *out_address */
           if (!ret.cmp)
           {
-            memcpy(&ret.val, &entry->data[1], size);
+            orig_memcpy(&ret.val, &entry->data[1], size);
           }
           /* Comparison succeeded, *out_address = value */
           else
