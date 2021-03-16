@@ -161,6 +161,15 @@ static void* mvee_shm_decode_address_leader(const void* address)
 // ========================================================================================================================
 // Assertions and errors
 // ========================================================================================================================
+static inline bool mvee_are_pointers_equivalent(const void* a, const void* b)
+{
+  /* Decode both potential pointers */
+  void* pa_dec = mvee_shm_decode_address_leader(a);
+  void* pb_dec = mvee_shm_decode_address(b);
+
+  return pa_dec == pb_dec;
+}
+
 __attribute__((noinline))
 static void mvee_assert_equal_mapping_size(size_t len, size_t size)
 {
@@ -206,12 +215,8 @@ static void mvee_assert_same_store(const void* a, const void* b, const unsigned 
       if (pa == pb)
         continue;
 
-      /* Differing data! Decode both potential pointers */
-      void* pa_dec = mvee_shm_decode_address_leader(pa);
-      void* pb_dec = mvee_shm_decode_address(pb);
-
       /* If the decoded pointers differ, they're actually differing data. Inform the monitor. */
-      if (pa_dec != pb_dec)
+      if (!mvee_are_pointers_equivalent(pa, pb))
         syscall(__NR_gettid, 1337, 10000001, 103, a, b, size);
     }
   }
@@ -224,10 +229,28 @@ static void mvee_assert_same_type(unsigned char a, unsigned char b)
     syscall(__NR_gettid, 1337, 10000001, 104, a, b);
 }
 
+/* A version where the compared values are int */
 __attribute__((noinline))
-static void mvee_assert_same_value(int a, int b)
+static void mvee_assert_same_value1(int a, int b)
 {
   if (a != b)
+    syscall(__NR_gettid, 1337, 10000001, 105, a, b);
+}
+
+/* A version where the compared values are pointer-sized, and possible pointers */
+__attribute__((noinline))
+static void mvee_assert_same_value2(uint64_t a, uint64_t b, bool might_contain_pointers)
+{
+  if (a == b)
+    return;
+
+  if (might_contain_pointers)
+  {
+    if (!mvee_are_pointers_equivalent((void*)a, (void*)b))
+      syscall(__NR_gettid, 1337, 10000001, 105, a, b);
+  }
+  /* The values **have** to be the same, so this is a divergence. Inform the monitor. */
+  else
     syscall(__NR_gettid, 1337, 10000001, 105, a, b);
 }
 
@@ -679,7 +702,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
           break;
         }
       case ATOMICCMPXCHG:
-        mvee_assert_same_value(entry->cmp, cmp);
+        mvee_assert_same_value2(entry->cmp, cmp, out->shadow);
       case ATOMICRMW_XCHG:
       case ATOMICRMW_ADD:
       case ATOMICRMW_SUB:
@@ -688,10 +711,14 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
       case ATOMICRMW_OR:
       case ATOMICRMW_XOR:
       case ATOMICSTORE:
+        {
+          mvee_assert_same_value2(entry->value, value, out->shadow);
+          break;
+        }
       case MEMCHR:
       case MEMSET:
         {
-          mvee_assert_same_value(entry->value, value);
+          mvee_assert_same_value1(entry->value, value);
           break;
         }
       default:
@@ -1053,7 +1080,7 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
     int return_value = orig_memcmp(shm_s1, shm_s2, len);
 
     // the return value for memcmp should be the same
-    mvee_assert_same_value(entry->value, return_value);
+    mvee_assert_same_value1(entry->value, return_value);
   }
 
   return entry->value;
