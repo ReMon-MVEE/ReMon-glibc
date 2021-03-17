@@ -177,21 +177,18 @@ static void mvee_assert_equal_mapping_size(size_t len, size_t size)
     *(volatile long*)0 = len - size;
 }
 
-__attribute__((noinline))
-static void mvee_assert_same_address(const void* a, const void* b)
+static inline void mvee_assert_same_address(const void* a, const void* b)
 {
   if (a != b)
     syscall(__NR_gettid, 1337, 10000001, 101, a, b);
 }
 
-__attribute__((noinline))
-static void mvee_assert_same_size(size_t a, size_t b)
+static inline void mvee_assert_same_size(size_t a, size_t b)
 {
   if (a != b)
     syscall(__NR_gettid, 1337, 10000001, 102, a, b);
 }
 
-__attribute__((noinline))
 static void mvee_assert_same_store(const void* a, const void* b, const unsigned long size)
 {
   /* Check if the buffers are equivalent. We implemented this check based on three assumptions:
@@ -222,24 +219,21 @@ static void mvee_assert_same_store(const void* a, const void* b, const unsigned 
   }
 }
 
-__attribute__((noinline))
-static void mvee_assert_same_type(unsigned char a, unsigned char b)
+static inline void mvee_assert_same_type(unsigned char a, unsigned char b)
 {
   if (a != b)
     syscall(__NR_gettid, 1337, 10000001, 104, a, b);
 }
 
 /* A version where the compared values are int */
-__attribute__((noinline))
-static void mvee_assert_same_value1(int a, int b)
+static inline void mvee_assert_same_value1(int a, int b)
 {
   if (a != b)
     syscall(__NR_gettid, 1337, 10000001, 105, a, b);
 }
 
 /* A version where the compared values are pointer-sized, and possible pointers */
-__attribute__((noinline))
-static void mvee_assert_same_value2(uint64_t a, uint64_t b, bool might_contain_pointers)
+static inline void mvee_assert_same_value2(uint64_t a, uint64_t b, bool might_contain_pointers)
 {
   if (a == b)
     return;
