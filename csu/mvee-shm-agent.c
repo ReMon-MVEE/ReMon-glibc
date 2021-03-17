@@ -176,7 +176,7 @@ static void mvee_assert_same_address(const void* a, const void* b)
 }
 
 __attribute__((noinline))
-static void mvee_assert_same_size(unsigned long a, unsigned long b)
+static void mvee_assert_same_size(size_t a, size_t b)
 {
   if (a != b)
     syscall(__NR_gettid, 1337, 10000001, 102, a, b);
