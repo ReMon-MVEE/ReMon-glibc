@@ -1230,13 +1230,8 @@ void *
 mvee_shm_mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset)
 {
   unsigned long ret = orig_MMAP_CALL(addr, len, prot, flags, fd, offset);
-  if ((flags & MAP_SHARED) && !(prot & PROT_EXEC) && fd && fd != -1 && (void *) ret != MAP_FAILED)
+  if ((void *) ret != MAP_FAILED && (long) ret < 0)
   {
-    struct stat fd_stat;
-    fstat(fd, &fd_stat);
-    if (!((fd_stat.st_mode & S_IRUSR) && (fd_stat.st_mode & S_IWUSR)))
-      return (void *) ret;
-
     // the arguments will be filled in by the MVEE anyway
     void *shadow = (void *) orig_SHMAT_CALL(0, 0, 0);
     if ((void *) shadow == (void *) -1)
