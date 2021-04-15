@@ -107,14 +107,14 @@ void mvee_atomic_postop_internal(unsigned char preop_result)
 {
 	atomic_full_barrier();
 	
-	if(likely(preop_result) == 1)
+	if(likely(preop_result == 1))
 	{
 		gcc_barrier();
 		orig_atomic_increment(&mvee_counters[mvee_prev_idx].counter);
 		atomic_full_barrier();
 		mvee_counters[mvee_prev_idx].lock = 0;
 	}
-	else if (likely(preop_result) == 2)
+	else if (likely(preop_result == 2))
 	{
 		gcc_barrier();
 		mvee_counters[mvee_prev_idx].counter++;

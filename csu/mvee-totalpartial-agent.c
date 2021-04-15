@@ -552,9 +552,9 @@ unsigned char mvee_atomic_preop_internal(unsigned short op_type, void* word_ptr)
 
 void mvee_atomic_postop_internal(unsigned char preop_result)
 {
-	if(likely(preop_result) == 1)
+	if(likely(preop_result == 1))
 		mvee_write_lock_result_finish();
-	else if (likely(preop_result) == 2)
+	else if (likely(preop_result == 2))
 		mvee_read_lock_result_wake();
 #ifdef MVEE_CHECK_LOCK_TYPE
 	mvee_original_call_site = 0;
