@@ -8,6 +8,7 @@ extern unsigned long                  mvee_shm_tag;
 extern unsigned short                 mvee_num_variants;
 
 extern void mvee_infinite_loop(void);
+extern void* mvee_shm_decode_address(const volatile void* address);
 
 #define likely(x)       __builtin_expect((x),1)
 #define unlikely(x)     __builtin_expect((x),0)

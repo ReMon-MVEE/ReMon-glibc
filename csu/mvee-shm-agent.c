@@ -156,14 +156,14 @@ else if (size == 8)                                                             
 // ========================================================================================================================
 unsigned long mvee_shm_tag;
 
-static void* mvee_shm_decode_address(const void* address)
+void* mvee_shm_decode_address(const volatile void* address)
 {
   unsigned long high = (unsigned long)address & 0xffffffff00000000ull;
   unsigned long low  = (unsigned long)address & 0x00000000ffffffffull;
   return (void*) ((high ^ mvee_shm_tag) + low);
 }
 
-static void* mvee_shm_decode_address_leader(const void* address)
+static void* mvee_shm_decode_address_leader(const volatile void* address)
 {
   static unsigned long leader_tag = 0;
   if (!leader_tag)
