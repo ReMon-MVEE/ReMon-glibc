@@ -432,7 +432,8 @@ static mvee_shm_op_entry* mvee_shm_get_entry(size_t size)
   // Get the buffer if we don't have it yet
   if (unlikely(!mvee_shm_buffer))
   {
-    mvee_shm_buffer = (char*)syscall(__NR_shmat, syscall(MVEE_GET_SHARED_BUFFER, 0, MVEE_SHM_BUFFER, &mvee_shm_buffer_size, 1, 0, &mvee_shm_buffer), NULL, 0);
+    mvee_shm_buffer = (char*)syscall(__NR_shmat, syscall(MVEE_GET_SHARED_BUFFER, 0, MVEE_SHM_BUFFER, &mvee_shm_buffer_size, 1, 0), NULL, 0);
+    syscall(MVEE_RESET_ATFORK, &mvee_shm_buffer, sizeof(mvee_shm_buffer));
     mvee_shm_local_pos = 0;
   }
 
