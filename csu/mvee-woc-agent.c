@@ -1,3 +1,5 @@
+#include <mmap_internal.h>
+
 #define MVEE_SLAVE_YIELD
 #define MVEE_TOTAL_CLOCK_COUNT   2048
 #define MVEE_CLOCK_GROUP_SIZE    64
@@ -23,6 +25,8 @@ static __thread unsigned short        mvee_prev_idx                 = 0;
 
 __attribute__((aligned (64)))
 static struct mvee_counter            mvee_counters[MVEE_TOTAL_CLOCK_COUNT + 1];
+__attribute__((aligned (64)))
+struct mvee_counter*                  mvee_variantwide_counters;
 
 void mvee_invalidate_buffer(void)
 {
@@ -31,7 +35,21 @@ void mvee_invalidate_buffer(void)
 
 unsigned char mvee_atomic_preop_internal(volatile void* word_ptr)
 {
-	if (unlikely(!mvee_sync_enabled))
+	// Tagged pointer => SHM
+	unsigned char is_shared = 0;
+	if (unlikely((unsigned long long) word_ptr & 0x8000000000000000ull))
+	{
+		// Set up global, variant-wide synchronization WoC
+		// We use anonymously shared memory for this right now. When mapped in a parent process, this memory will be to all its threads and children (and their threads).
+		// This serves us well enough to set up a variant-wide WoC right now, but won't work in some corner cases. Example: what if the parent only maps shared memory
+		// after the children have already mapped it?
+		if (unlikely(!mvee_variantwide_counters))
+			mvee_variantwide_counters = mmap(NULL, (MVEE_TOTAL_CLOCK_COUNT + 1) * sizeof(struct mvee_counter), PROT_READ|PROT_WRITE, MAP_ANON|MAP_SHARED, -1, 0);
+
+		word_ptr = mvee_shm_decode_address(word_ptr);
+		is_shared = 4;
+	}
+	else if (unlikely(!mvee_sync_enabled))
 		return 0;
 
 	if (unlikely(!mvee_thread_local_queue))
@@ -51,23 +69,35 @@ unsigned char mvee_atomic_preop_internal(volatile void* word_ptr)
 
 	if (likely(mvee_master_variant))
     {
+		unsigned long counter;
 		// page number defines the clock group
 		// offset within page defines the clock within that group
-		mvee_prev_idx = (((((unsigned long)word_ptr >> 24) % MVEE_TOTAL_CLOCK_GROUPS) * (MVEE_CLOCK_GROUP_SIZE) 
-						  + ((((unsigned long)word_ptr & 4095) >> 6) % MVEE_CLOCK_GROUP_SIZE))
-						 & 0xFFF) + 1;
+		mvee_prev_idx = (((((unsigned long)word_ptr >> 24) % MVEE_TOTAL_CLOCK_GROUPS) * (MVEE_CLOCK_GROUP_SIZE)
+					+ ((((unsigned long)word_ptr & 0xFFF) >> 6) % MVEE_CLOCK_GROUP_SIZE)) & 0xFFF) + 1;
 
-		while (!__sync_bool_compare_and_swap(&mvee_counters[mvee_prev_idx].lock, 0, 1))
-			arch_cpu_relax();
-		
-		unsigned long pos = mvee_counters[mvee_prev_idx].counter;    
+		if (unlikely(is_shared))
+		{
+			// sync op on shared memory, use variant-wide WoC
+			while (!__sync_bool_compare_and_swap(&mvee_variantwide_counters[mvee_prev_idx].lock, 0, 1))
+				arch_cpu_relax();
 
-		mvee_thread_local_queue[mvee_thread_local_pos++].counter_and_idx 
-			= (pos << 12) | mvee_prev_idx;
+			counter = mvee_variantwide_counters[mvee_prev_idx].counter;
+		}
+		else
+		{
+			// sync op on private memory, use process-wide WoC
+			while (!__sync_bool_compare_and_swap(&mvee_counters[mvee_prev_idx].lock, 0, 1))
+				arch_cpu_relax();
+
+			counter = mvee_counters[mvee_prev_idx].counter;
+		}
+
+		mvee_thread_local_queue[mvee_thread_local_pos++].counter_and_idx
+			= (counter << 12) | mvee_prev_idx;
 
 		atomic_full_barrier();
 
-		return 1;
+		return 1 | is_shared;
     }
 	else
     {
@@ -92,16 +122,28 @@ unsigned char mvee_atomic_preop_internal(volatile void* word_ptr)
 
 		atomic_full_barrier();
 
-		while ((mvee_counters[mvee_prev_idx].counter << 12) != counter_and_idx)
+		if (unlikely(is_shared))
+		{
+			while ((mvee_variantwide_counters[mvee_prev_idx].counter << 12) != counter_and_idx)
 #ifdef MVEE_SLAVE_YIELD
-			syscall(__NR_sched_yield);
+				syscall(__NR_sched_yield);
 #else
-		arch_cpu_relax();
+				arch_cpu_relax();
 #endif
+		}
+		else
+		{
+			while ((mvee_counters[mvee_prev_idx].counter << 12) != counter_and_idx)
+#ifdef MVEE_SLAVE_YIELD
+				syscall(__NR_sched_yield);
+#else
+				arch_cpu_relax();
+#endif
+		}
 
 		atomic_full_barrier();
 		
-		return 2;
+		return 2 | is_shared;
     }
 }
 
@@ -109,17 +151,31 @@ void mvee_atomic_postop_internal(unsigned char preop_result)
 {
 	atomic_full_barrier();
 	
-	if(likely(preop_result == 1))
+	if (likely(preop_result & 1))
 	{
 		gcc_barrier();
-		orig_atomic_increment(&mvee_counters[mvee_prev_idx].counter);
-		atomic_full_barrier();
-		mvee_counters[mvee_prev_idx].lock = 0;
+		if (unlikely(preop_result & 4))
+		{
+			// sync op on shared memory, use variant-wide WoC
+			orig_atomic_increment(&mvee_variantwide_counters[mvee_prev_idx].counter);
+			atomic_full_barrier();
+			mvee_variantwide_counters[mvee_prev_idx].lock = 0;
+		}
+		else
+		{
+			// sync op on private memory, use process-wide WoC
+			orig_atomic_increment(&mvee_counters[mvee_prev_idx].counter);
+			atomic_full_barrier();
+			mvee_counters[mvee_prev_idx].lock = 0;
+		}
 	}
-	else if (likely(preop_result == 2))
+	else if (likely(preop_result & 2))
 	{
 		gcc_barrier();
-		mvee_counters[mvee_prev_idx].counter++;
+		if (unlikely(preop_result & 4)) // sync op on shared memory, use variant-wide WoC
+			mvee_variantwide_counters[mvee_prev_idx].counter++;
+		else // sync op on private memory, use process-wide WoC
+			mvee_counters[mvee_prev_idx].counter++;
 		mvee_thread_local_pos++;
 	}
 }

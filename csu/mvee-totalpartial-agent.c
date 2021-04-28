@@ -531,8 +531,12 @@ static INLINEIFNODEBUG void mvee_read_lock_result_wake(void)
 
 unsigned char mvee_atomic_preop_internal(unsigned short op_type, void* word_ptr)
 {
-	if (unlikely(!mvee_should_sync()))
+    /* Tagged pointer => SHM */
+	if (unlikely((unsigned long long) word_ptr & 0x8000000000000000ull))
+		word_ptr = mvee_shm_decode_address(word_ptr);
+	else if (unlikely(!mvee_should_sync()))
 		return 0;
+
 	mvee_check_buffer();
 #ifdef MVEE_CHECK_LOCK_TYPE
 	if (!mvee_original_call_site)
