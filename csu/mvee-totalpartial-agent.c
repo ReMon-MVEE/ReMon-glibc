@@ -23,6 +23,7 @@ static void mvee_check_buffer(void)
 	if (unlikely(!mvee_master_thread_id))
     {
 		mvee_master_thread_id = syscall(MVEE_GET_MASTERTHREAD_ID);
+		syscall(MVEE_RESET_ATFORK, &mvee_master_thread_id, sizeof(mvee_master_thread_id));
 
 		if (!mvee_buffer_valid)
 		{
