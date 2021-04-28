@@ -37,7 +37,7 @@ unsigned char mvee_atomic_preop_internal(volatile void* word_ptr)
 	if (unlikely(!mvee_thread_local_queue))
     {
 		long mvee_thread_local_queue_id = syscall(MVEE_GET_SHARED_BUFFER, &mvee_counters, MVEE_LIBC_ATOMIC_BUFFER, &mvee_thread_local_queue_size, &mvee_thread_local_pos, NULL);
-		syscall(MVEE_RESET_ATFORK, &mvee_thread_local_queue, sizeof(mvee_thread_local_queue));
+		syscall(MVEE_RESET_ATFORK, &mvee_thread_local_queue, sizeof(&mvee_thread_local_queue));
 		mvee_thread_local_queue_size   /= sizeof(struct mvee_op_entry);
 		mvee_thread_local_queue         = (void*)syscall(__NR_shmat, mvee_thread_local_queue_id, NULL, 0);     
 		mvee_thread_local_pos = 0;
