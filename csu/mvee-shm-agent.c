@@ -317,8 +317,8 @@ void mvee_shm_table_add_entry(void* address, void* shadow, size_t len)
     /* Insert in a sorted order, so make our entry the new head if necessary */
     if ((address + len) <= iterator->address)
     {
-      iterator->prev = entry;
       entry->next = iterator;
+      iterator->prev = entry;
       mvee_shm_table_head = entry;
     }
     else
@@ -328,10 +328,10 @@ void mvee_shm_table_add_entry(void* address, void* shadow, size_t len)
       {
         if (((iterator->address + iterator->len) <= address) && ((address + len) <= iterator->next->address))
         {
-          iterator->next->prev = entry;
           entry->next = iterator->next;
-          iterator->next = entry;
           entry->prev = iterator;
+          iterator->next->prev = entry;
+          orig_atomic_store_release(&iterator->next, entry);
           break;
         }
         iterator = iterator->next;
@@ -344,32 +344,30 @@ void mvee_shm_table_add_entry(void* address, void* shadow, size_t len)
         if (address < (iterator->address + iterator->len))
           mvee_error_shm_entry_not_present(address);
 
-        iterator->next = entry;
         entry->prev = iterator;
+        orig_atomic_store_release(&iterator->next, entry);
       }
     }
   }
   else
     mvee_shm_table_head = entry;
 
+  atomic_full_barrier();
+
   __libc_rwlock_unlock(mvee_shm_table_lock);
 }
 
 static mvee_shm_table_entry* mvee_shm_table_get_entry(const void* address)
 {
-  __libc_rwlock_rdlock(mvee_shm_table_lock);
-
-  mvee_shm_table_entry* entry = mvee_shm_table_head;
+  mvee_shm_table_entry* entry = orig_atomic_load_relaxed(&mvee_shm_table_head);
   while (entry)
   {
     /* If we found the entry, quit */
     if (((uintptr_t)entry->address <= (uintptr_t)address) && ((uintptr_t)address < ((uintptr_t)entry->address + entry->len)))
       break;
 
-    entry = entry->next;
+    entry = orig_atomic_load_relaxed(&entry->next);
   }
-
-  __libc_rwlock_unlock(mvee_shm_table_lock);
 
   return entry;
 }
@@ -385,10 +383,12 @@ static bool mvee_shm_table_delete_entry(mvee_shm_table_entry* remove)
       mvee_shm_table_head = remove->next;
 
     /* Unlink */
-    if (remove->prev)
-      remove->prev->next = remove->next;
     if (remove->next)
       remove->next->prev = remove->prev;
+    if (remove->prev)
+      orig_atomic_store_release(&remove->prev->next, remove->next);
+
+    atomic_full_barrier();
 
     /* Free memory */
     free(remove);
