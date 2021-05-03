@@ -295,11 +295,11 @@ typedef struct mvee_shm_table_entry {
 
 static mvee_shm_table_entry* mvee_shm_table_head = NULL;
 
-__libc_rwlock_define_initialized (, mvee_shm_table_lock attribute_hidden)
+__libc_lock_define_initialized (static, mvee_shm_table_lock)
 
 void mvee_shm_table_add_entry(void* address, void* shadow, size_t len)
 {
-  __libc_rwlock_wrlock(mvee_shm_table_lock);
+  __libc_lock_lock(mvee_shm_table_lock);
 
   /* Prepare entry */
   mvee_shm_table_entry *entry = (mvee_shm_table_entry *) malloc(sizeof(mvee_shm_table_entry));
@@ -310,16 +310,15 @@ void mvee_shm_table_add_entry(void* address, void* shadow, size_t len)
   entry->next = NULL;
 
   /* Insert entry, or make it the new head if none exists yet */
-  if (mvee_shm_table_head)
+  mvee_shm_table_entry *iterator = mvee_shm_table_head;
+  if (iterator)
   {
-    mvee_shm_table_entry *iterator = mvee_shm_table_head;
-
     /* Insert in a sorted order, so make our entry the new head if necessary */
     if ((address + len) <= iterator->address)
     {
       entry->next = iterator;
       iterator->prev = entry;
-      mvee_shm_table_head = entry;
+      orig_atomic_store_release(&mvee_shm_table_head, entry);
     }
     else
     {
@@ -350,23 +349,25 @@ void mvee_shm_table_add_entry(void* address, void* shadow, size_t len)
     }
   }
   else
-    mvee_shm_table_head = entry;
+    orig_atomic_store_release(&mvee_shm_table_head, entry);
 
-  atomic_full_barrier();
-
-  __libc_rwlock_unlock(mvee_shm_table_lock);
+  __libc_lock_unlock(mvee_shm_table_lock);
 }
 
+/* There's no need for locks in this function, the store-release semantics used
+ * by the functions updating this table means a load-acquire should be enough
+ * here.
+ */
 static mvee_shm_table_entry* mvee_shm_table_get_entry(const void* address)
 {
-  mvee_shm_table_entry* entry = orig_atomic_load_relaxed(&mvee_shm_table_head);
+  mvee_shm_table_entry* entry = orig_atomic_load_acquire(&mvee_shm_table_head);
   while (entry)
   {
     /* If we found the entry, quit */
     if (((uintptr_t)entry->address <= (uintptr_t)address) && ((uintptr_t)address < ((uintptr_t)entry->address + entry->len)))
       break;
 
-    entry = orig_atomic_load_relaxed(&entry->next);
+    entry = orig_atomic_load_acquire(&entry->next);
   }
 
   return entry;
@@ -376,24 +377,22 @@ static bool mvee_shm_table_delete_entry(mvee_shm_table_entry* remove)
 {
   if (remove)
   {
-    __libc_rwlock_wrlock(mvee_shm_table_lock);
-
-    /* Special case for head */
-    if (remove == mvee_shm_table_head)
-      mvee_shm_table_head = remove->next;
+    __libc_lock_lock(mvee_shm_table_lock);
 
     /* Unlink */
-    if (remove->next)
-      remove->next->prev = remove->prev;
-    if (remove->prev)
-      orig_atomic_store_release(&remove->prev->next, remove->next);
-
-    atomic_full_barrier();
+    mvee_shm_table_entry* next = remove->next;
+    mvee_shm_table_entry* prev = remove->prev;
+    if (next)
+      next->prev = prev;
+    if (prev)
+      orig_atomic_store_release(&prev->next, next);
+    else if (remove == mvee_shm_table_head)/* Special case for head */
+      orig_atomic_store_release(&mvee_shm_table_head, next);
 
     /* Free memory */
     free(remove);
 
-    __libc_rwlock_unlock(mvee_shm_table_lock);
+    __libc_lock_unlock(mvee_shm_table_lock);
     return true;
   }
 
