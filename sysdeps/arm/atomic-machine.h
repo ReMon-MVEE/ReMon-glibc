@@ -179,6 +179,7 @@ void __arm_link_error (void);
 #define MVEE_LIBC_LOCK_BUFFER           3
 #define MVEE_LIBC_MALLOC_DEBUG_BUFFER   11
 #define MVEE_LIBC_ATOMIC_BUFFER         13
+#define MVEE_LIBC_VARIANTWIDE_ATOMIC_BUFFER         24
 #define MVEE_FUTEX_WAIT_TID             30
 
 enum mvee_alloc_types

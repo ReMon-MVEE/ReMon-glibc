@@ -39,11 +39,12 @@ unsigned char mvee_atomic_preop_internal(volatile void* word_ptr)
 	if (unlikely((unsigned long long) word_ptr & 0x8000000000000000ull))
 	{
 		// Set up global, variant-wide synchronization WoC
-		// We use anonymously shared memory for this right now. When mapped in a parent process, this memory will be to all its threads and children (and their threads).
-		// This serves us well enough to set up a variant-wide WoC right now, but won't work in some corner cases. Example: what if the parent only maps shared memory
-		// after the children have already mapped it?
+		// We use a variant-wide SHARED_BUFFER for this.
 		if (unlikely(!mvee_variantwide_counters))
-			mvee_variantwide_counters = mmap(NULL, (MVEE_TOTAL_CLOCK_COUNT + 1) * sizeof(struct mvee_counter), PROT_READ|PROT_WRITE, MAP_ANON|MAP_SHARED, -1, 0);
+		{
+			long id = syscall(MVEE_GET_SHARED_BUFFER, 0, MVEE_LIBC_VARIANTWIDE_ATOMIC_BUFFER, NULL, (MVEE_TOTAL_CLOCK_COUNT + 1) * sizeof(struct mvee_counter));
+			mvee_variantwide_counters = (void*)syscall(__NR_shmat, id, NULL, 0);
+		}
 
 		word_ptr = mvee_shm_decode_address(word_ptr);
 		is_shared = 4;
