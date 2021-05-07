@@ -14,7 +14,7 @@ extern void* mvee_shm_decode_address(const volatile void* address);
 #define unlikely(x)     __builtin_expect((x),0)
 #define gcc_barrier()  asm volatile("" ::: "memory")
 #ifndef arch_cpu_relax
-#define arch_cpu_relax()
+#define arch_cpu_relax() atomic_spin_nop()
 #endif
 
 #endif /* Not _MVEE_AGENTS_H_DECLS */
