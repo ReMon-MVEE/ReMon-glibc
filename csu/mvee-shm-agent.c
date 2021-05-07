@@ -528,7 +528,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
 
     // Wait for followers to signal they finished checking. This is only necessary when we might write to shm (aka, when 'out' has a value).
     while (out && (orig_atomic_load_acquire(&entry->nr_of_variants_checked) != mvee_num_variants))
-      syscall(__NR_sched_yield);
+        arch_cpu_relax();
 
     bool data_in_buffer = false;
     switch(type)
@@ -730,7 +730,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
 
     // Wait for leader to signal availability of the entry
     while (!orig_atomic_load_acquire(&entry->nr_of_variants_checked))
-      syscall(__NR_sched_yield);
+        arch_cpu_relax();
 
     // Assert we're on the same entry
     mvee_assert_same_address(entry->address, shm_address);
@@ -785,7 +785,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
     // Wait for leader to signal that replication data is available. Only necessary when actually reading from shm (aka, when 'in' has a value).
     unsigned char replication_type = 0;
     while (in && ((replication_type = orig_atomic_load_acquire(&entry->replication_type)) == 0))
-      syscall(__NR_sched_yield);
+        arch_cpu_relax();
 
     bool data_in_buffer = (replication_type == 2);
     switch(type)
@@ -1112,7 +1112,7 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
   {
     // Wait until entry is ready
     while (!orig_atomic_load_acquire(&entry->replication_type))
-      syscall(__NR_sched_yield);
+        arch_cpu_relax();
 
     // Check entry
     mvee_assert_same_address(entry->address, (s1_entry ? shm_s1 : shm_s2));
@@ -1178,7 +1178,7 @@ mvee_shm_strcmp (const char *str1, const char *str2)
   {
     // Wait until entry is ready
     while (!orig_atomic_load_acquire(&entry->replication_type))
-      syscall(__NR_sched_yield);
+        arch_cpu_relax();
 
     // Check entry
     mvee_assert_same_address(entry->address, (str1_entry ? shm_str1 : shm_str2));
@@ -1216,7 +1216,7 @@ mvee_shm_strlen (const char *str)
   {
     // Wait until entry is ready
     while (!orig_atomic_load_acquire(&entry->replication_type))
-      syscall(__NR_sched_yield);
+        arch_cpu_relax();
 
     // Check entry
     mvee_assert_same_type(entry->type, STRLEN);
