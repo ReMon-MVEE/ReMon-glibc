@@ -110,7 +110,10 @@ unsigned char mvee_atomic_preop_internal(volatile void* word_ptr)
 				break;
 
 #ifdef MVEE_SLAVE_YIELD
-			syscall(__NR_sched_yield);
+			if (is_shared)
+				arch_cpu_relax();// Don't yield for shared memory, master might wait for us there
+			else
+				syscall(__NR_sched_yield);
 #else
 			arch_cpu_relax();
 #endif
@@ -124,11 +127,7 @@ unsigned char mvee_atomic_preop_internal(volatile void* word_ptr)
 		if (unlikely(is_shared))
 		{
 			while ((mvee_variantwide_counters[mvee_prev_idx].counter << 12) != counter_and_idx)
-#ifdef MVEE_SLAVE_YIELD
-				syscall(__NR_sched_yield);
-#else
-				arch_cpu_relax();
-#endif
+				arch_cpu_relax();// Don't yield for shared memory, master might wait for us there
 		}
 		else
 		{
