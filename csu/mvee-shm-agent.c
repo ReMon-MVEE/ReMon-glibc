@@ -63,6 +63,18 @@ enum
   STRCMP          = GLIBC_FUNC_BASE + 6,
 };
 
+#define STORE_BY_SIZE(out_address, val, size)                                                                      \
+  do {                                                                                                             \
+    if (size == 1)                                                                                                 \
+      *(uint8_t*)out_address = (uint8_t)val;                                                                       \
+    else if (size == 2)                                                                                            \
+      *(uint16_t*)out_address = (uint16_t)val;                                                                     \
+    else if (size == 4)                                                                                            \
+      *(uint32_t*)out_address = (uint32_t)val;                                                                     \
+    else if (size == 8)                                                                                            \
+      *(uint64_t*)out_address = (uint64_t)val;                                                                     \
+  } while(0)
+
 #define ATOMICLOAD_BY_SIZE(out_address, in_address, size)                                                          \
   do {                                                                                                             \
     if (size == 1)                                                                                                 \
@@ -489,9 +501,8 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
     {
       case MEMCPY:
       case MEMMOVE:
-        entry->second_address = shm_address2;
-      case STORE:
         {
+          entry->second_address = shm_address2;
           /* The input comes from a non-SHM page, fill in the buffer */
           if (!in)
             orig_memcpy(&entry->data, in_address, size);
@@ -507,6 +518,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
       case ATOMICRMW_OR:
       case ATOMICRMW_XOR:
       case ATOMICSTORE:
+      case STORE:
       case MEMCHR:
       case MEMSET:
         {
@@ -533,10 +545,21 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
     bool data_in_buffer = false;
     switch(type)
     {
+
+
+      case STORE:
+        {
+          /* Write to actual SHM page, from (non-overlapping) non-SHM page */
+          STORE_BY_SIZE(out_address, value, size);
+
+          /* Write local shadow copy, from (non-overlapping) non-SHM page */
+          if (out->shadow)
+            STORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
+          break;
+        }
       case MEMCPY:
       case MEMMOVE:
       case LOAD:
-      case STORE:
           {
            /* When doing reads/writes we will use memcpy, **or** memmove if so requested. We can relax certain memmove's however, if we now
             * **for a fact** that the destination and source won't overlap. For example, when handling MEMMOVE we can still perform writes from
@@ -741,9 +764,8 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
     {
       case MEMCPY:
       case MEMMOVE:
-        mvee_assert_same_address(entry->second_address, shm_address2);
-      case STORE:
         {
+          mvee_assert_same_address(entry->second_address, shm_address2);
           /* The input comes from a non-SHM page, check its correctness */
           if (!in)
             mvee_assert_same_store(&entry->data, in_address, size, out->shadow);
@@ -759,6 +781,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
       case ATOMICRMW_OR:
       case ATOMICRMW_XOR:
       case ATOMICSTORE:
+      case STORE:
         {
           mvee_assert_same_value2(entry->value, value, out->shadow);
           break;
@@ -790,10 +813,16 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
     bool data_in_buffer = (replication_type == 2);
     switch(type)
     {
+      case STORE:
+        {
+          /* Write local shadow copy, from (non-overlapping) non-SHM page */
+          if (out->shadow)
+              STORE_BY_SIZE(SHARED_TO_SHADOW_POINTER(out, out_address), value, size);
+          break;
+        }
       case MEMCPY:
       case MEMMOVE:
       case LOAD:
-      case STORE:
         {
           if (in)
           {
@@ -943,10 +972,8 @@ mvee_shm_op_ret mvee_shm_op(unsigned char id, void* address, unsigned long size,
       mvee_shm_buffered_op(id, address, entry, &ret.val, NULL, size, 0, 0);
       break;
     case ATOMICSTORE:
-      mvee_shm_buffered_op(id, NULL, NULL, address, entry, size, value, 0);
-      break;
     case STORE:
-      mvee_shm_buffered_op(id, &value, NULL, address, entry, size, 0, 0);
+      mvee_shm_buffered_op(id, NULL, NULL, address, entry, size, value, 0);
       break;
     case ATOMICCMPXCHG:
       ret = mvee_shm_buffered_op(id, address, entry, address, entry, size, value, cmp);
