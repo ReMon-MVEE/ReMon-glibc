@@ -63,6 +63,18 @@ enum
   STRCMP          = GLIBC_FUNC_BASE + 6,
 };
 
+#define LOAD_BY_SIZE(out_address, in_address, size)                                                                \
+  do {                                                                                                             \
+    if (size == 1)                                                                                                 \
+      *(uint8_t*)out_address = *(uint8_t*)in_address;                                                              \
+    else if (size == 2)                                                                                            \
+      *(uint16_t*)out_address = *(uint16_t*)in_address;                                                            \
+    else if (size == 4)                                                                                            \
+      *(uint32_t*)out_address = *(uint32_t*)in_address;                                                            \
+    else if (size == 8)                                                                                            \
+      *(uint64_t*)out_address = *(uint64_t*)in_address;                                                            \
+  } while(0)
+
 #define STORE_BY_SIZE(out_address, val, size)                                                                      \
   do {                                                                                                             \
     if (size == 1)                                                                                                 \
@@ -545,8 +557,30 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
     bool data_in_buffer = false;
     switch(type)
     {
+      case LOAD:
+        {
+          /* Load from actual SHM page */
+          LOAD_BY_SIZE(out_address, in_address, size);
 
+          /* If we have a shadow copy, compare */
+          if (in->shadow)
+          {
+            /* Load from local shadow copy */
+            char local_ret[8];
+            LOAD_BY_SIZE(&local_ret, SHARED_TO_SHADOW_POINTER(in, in_address), size);
 
+            /* If these two loads differ, put the load from the SHM page in the buffer */
+            data_in_buffer = orig_memcmp(out_address, &local_ret, size);
+          }
+          /* If no shadow memory, always use buffer */
+          else
+            data_in_buffer = true;
+
+          if (data_in_buffer)
+            orig_memcpy(&entry->data, out_address, size);
+
+          break;
+        }
       case STORE:
         {
           /* Write to actual SHM page, from (non-overlapping) non-SHM page */
@@ -559,7 +593,6 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
         }
       case MEMCPY:
       case MEMMOVE:
-      case LOAD:
           {
            /* When doing reads/writes we will use memcpy, **or** memmove if so requested. We can relax certain memmove's however, if we now
             * **for a fact** that the destination and source won't overlap. For example, when handling MEMMOVE we can still perform writes from
@@ -813,6 +846,15 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
     bool data_in_buffer = (replication_type == 2);
     switch(type)
     {
+      case LOAD:
+        {
+          /* If data present, copy from the buffer. Otherwise, load from local shadow copy */
+          if (data_in_buffer)
+            orig_memcpy(out_address, &entry->data, size);
+          else
+            LOAD_BY_SIZE(out_address, SHARED_TO_SHADOW_POINTER(in, in_address), size);
+          break;
+        }
       case STORE:
         {
           /* Write local shadow copy, from (non-overlapping) non-SHM page */
@@ -822,7 +864,6 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
         }
       case MEMCPY:
       case MEMMOVE:
-      case LOAD:
         {
           if (in)
           {
