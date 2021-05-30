@@ -212,19 +212,19 @@ static inline bool mvee_are_pointers_equivalent(const void* a, const void* b)
 __attribute__((noinline))
 static void mvee_assert_equal_mapping_size(size_t len, size_t size)
 {
-  if (len != size)
+  if (unlikely(len != size))
     *(volatile long*)0 = len - size;
 }
 
 static inline void mvee_assert_same_address(const void* a, const void* b)
 {
-  if (a != b)
+  if (unlikely(a != b))
     syscall(__NR_gettid, 1337, 10000001, 101, a, b);
 }
 
 static inline void mvee_assert_same_size(size_t a, size_t b)
 {
-  if (a != b)
+  if (unlikely(a != b))
     syscall(__NR_gettid, 1337, 10000001, 102, a, b);
 }
 
@@ -267,14 +267,14 @@ static void mvee_assert_same_store(const void* a, const void* b, const unsigned 
 
 static inline void mvee_assert_same_type(unsigned char a, unsigned char b)
 {
-  if (a != b)
+  if (unlikely(a != b))
     syscall(__NR_gettid, 1337, 10000001, 104, a, b);
 }
 
 /* A version where the compared values are int */
 static inline void mvee_assert_same_value1(int a, int b)
 {
-  if (a != b)
+  if (unlikely(a != b))
     syscall(__NR_gettid, 1337, 10000001, 105, a, b);
 }
 
@@ -286,7 +286,7 @@ static inline void mvee_assert_same_value2(uint64_t a, uint64_t b, bool might_co
 
   if (might_contain_pointers)
   {
-    if (!mvee_are_pointers_equivalent((void*)a, (void*)b))
+    if (unlikely(!mvee_are_pointers_equivalent((void*)a, (void*)b)))
       syscall(__NR_gettid, 1337, 10000001, 105, a, b);
   }
   /* The values **have** to be the same, so this is a divergence. Inform the monitor. */
@@ -486,7 +486,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
 {
   mvee_shm_op_ret ret = { 0 };
   // If the memory operation has no size, don't do it, don't make an entry, and don't even check
-  if (!size)
+  if (unlikely(!size))
     return ret;
 
 #ifdef MVEE_LOG_SHM_OPS
@@ -511,7 +511,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
     entry->type = type;
 
     /* The input comes from a non-SHM page, fill in the buffer */
-    if (!in && ((type == MEMCPY) || (type == MEMMOVE)))
+    if (unlikely(!in && ((type == MEMCPY) || (type == MEMMOVE))))
       orig_memcpy(&entry->data, in_address, size);
 
     // Signal to followers that entry is available
@@ -975,7 +975,7 @@ mvee_shm_op_ret mvee_shm_op(unsigned char id, void* address, unsigned long size,
   // Use SHM buffer
   address = mvee_shm_decode_address(address);
   mvee_shm_table_entry* entry = mvee_shm_table_get_entry(address);
-  if (!entry)
+  if (unlikely(!entry))
     mvee_error_shm_entry_not_present(address);
 
   switch (id)
@@ -1026,7 +1026,7 @@ mvee_shm_memcpy (void *__restrict dest, const void *__restrict src, size_t n)
   void* shm_src = mvee_shm_decode_address(src);
   mvee_shm_table_entry* dest_entry = mvee_shm_table_get_entry(shm_dest);
   mvee_shm_table_entry* src_entry = mvee_shm_table_get_entry(shm_src);
-  if (!dest_entry && !src_entry)
+  if (unlikely(!dest_entry && !src_entry))
     mvee_error_shm_entry_not_present(dest);
 
   mvee_shm_buffered_op(MEMCPY, src_entry ? shm_src : src, src_entry, dest_entry ? shm_dest : dest, dest_entry, n, 0, 0);
@@ -1042,7 +1042,7 @@ mvee_shm_memmove (void *dest, const void * src, size_t n)
   void* shm_src = mvee_shm_decode_address(src);
   mvee_shm_table_entry* dest_entry = mvee_shm_table_get_entry(shm_dest);
   mvee_shm_table_entry* src_entry = mvee_shm_table_get_entry(shm_src);
-  if (!dest_entry && !src_entry)
+  if (unlikely(!dest_entry && !src_entry))
     mvee_error_shm_entry_not_present(dest);
 
   mvee_shm_buffered_op(MEMMOVE, src_entry ? shm_src : src, src_entry, dest_entry ? shm_dest : dest, dest_entry, n, 0, 0);
@@ -1056,7 +1056,7 @@ mvee_shm_memset (void *dest, int ch, size_t len)
   /* Decode addresses */
   void* shm_dest = mvee_shm_decode_address(dest);
   mvee_shm_table_entry* entry = mvee_shm_table_get_entry(shm_dest);
-  if (!entry)
+  if (unlikely(!entry))
     mvee_error_shm_entry_not_present(dest);
 
   mvee_shm_buffered_op(MEMSET, NULL, NULL, shm_dest, entry, len, ch, 0);
@@ -1069,7 +1069,7 @@ mvee_shm_memchr (void const *src, int c_in, size_t n)
   /* Decode addresses */
   void* shm_src = mvee_shm_decode_address(src);
   mvee_shm_table_entry* entry = mvee_shm_table_get_entry(shm_src);
-  if (!entry)
+  if (unlikely(!entry))
     mvee_error_shm_entry_not_present(src);
 
   mvee_shm_op_ret ret = mvee_shm_buffered_op(MEMCHR, shm_src, entry, NULL, NULL, n, c_in, 0);
@@ -1084,7 +1084,7 @@ mvee_shm_memcmp (const void *s1, const void *s2, size_t len)
   const void* shm_s2 = mvee_shm_decode_address(s2);
   mvee_shm_table_entry* s1_entry = mvee_shm_table_get_entry(shm_s1);
   mvee_shm_table_entry* s2_entry = mvee_shm_table_get_entry(shm_s2);
-  if (!s1_entry && !s2_entry)
+  if (unlikely(!s1_entry && !s2_entry))
     mvee_error_shm_entry_not_present(s1_entry);
 
   // Get an entry in the replication buffer.
@@ -1197,7 +1197,7 @@ mvee_shm_strcmp (const char *str1, const char *str2)
   void* shm_str2 = mvee_shm_decode_address(str2);
   mvee_shm_table_entry* str1_entry = mvee_shm_table_get_entry(shm_str1);
   mvee_shm_table_entry* str2_entry = mvee_shm_table_get_entry(shm_str2);
-  if (!str1_entry && !str2_entry)
+  if (unlikely(!str1_entry && !str2_entry))
     mvee_error_shm_entry_not_present(str1_entry);
 
   // Get an entry in the replication buffer.
@@ -1234,7 +1234,7 @@ mvee_shm_strlen (const char *str)
 {
   const char *shm_str = mvee_shm_decode_address(str);
   mvee_shm_table_entry* shm_entry = mvee_shm_table_get_entry(shm_str);
-  if (!shm_entry)
+  if (unlikely(!shm_entry))
     mvee_error_shm_entry_not_present(str);
 
   // We're allocating sizeof(size_t) data since entry->value is only uint32_t.
