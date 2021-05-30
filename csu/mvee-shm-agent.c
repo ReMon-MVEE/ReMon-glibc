@@ -523,8 +523,9 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
     ////////////////////////////////////////////////////////////////////////////////
 
     // Wait for followers to signal they finished checking. This is only necessary when we might write to shm (aka, when 'out' has a value).
-    while (out && (orig_atomic_load_acquire(&entry->nr_of_variants_checked) != mvee_num_variants))
-        arch_cpu_relax();
+    if (out)
+        while (orig_atomic_load_acquire(&entry->nr_of_variants_checked) != mvee_num_variants)
+            arch_cpu_relax();
 
     bool data_in_buffer = false;
     switch(type)
@@ -812,8 +813,9 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
 
     // Wait for leader to signal that replication data is available. Only necessary when actually reading from shm (aka, when 'in' has a value).
     unsigned char replication_type = 0;
-    while (in && ((replication_type = orig_atomic_load_acquire(&entry->replication_type)) == 0))
-        arch_cpu_relax();
+    if (in)
+        while ((replication_type = orig_atomic_load_acquire(&entry->replication_type)) == 0)
+            arch_cpu_relax();
 
     bool data_in_buffer = (replication_type == 2);
     switch(type)
