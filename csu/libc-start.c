@@ -295,6 +295,15 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
 #ifdef USE_MVEE_LIBC
   (void) syscall(MVEE_RUNS_UNDER_MVEE_CONTROL, &mvee_sync_enabled, &mvee_infinite_loop, 
 				 &mvee_num_variants, NULL, &mvee_master_variant, &mvee_shm_tag);
+
+#ifdef EXPOSE_MEMCPY_TO_DYNINST
+  extern uint64_t mvee_shm_memcpy_ptr_for_gs_segment;
+  extern void *mvee_shm_memcpy_dyninst (void *__restrict dest, const void *__restrict src, size_t n);
+
+  (void) syscall(158 /* SYS_arch_prctl */, ARCH_SET_GS, &mvee_shm_memcpy_ptr_for_gs_segment);
+  mvee_shm_memcpy_ptr_for_gs_segment = (uint64_t) mvee_shm_memcpy_dyninst;
+#endif
+
   mvee_libc_initialized = 1;
 #endif
 

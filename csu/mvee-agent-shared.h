@@ -17,4 +17,6 @@ extern void* mvee_shm_decode_address(const volatile void* address);
 #define arch_cpu_relax() atomic_spin_nop()
 #endif
 
+#define EXPOSE_MEMCPY_TO_DYNINST
+
 #endif /* Not _MVEE_AGENTS_H_DECLS */

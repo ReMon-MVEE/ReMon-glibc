@@ -1028,8 +1028,10 @@ mvee_shm_memcpy (void *__restrict dest, const void *__restrict src, size_t n)
   /* Decode addresses */
   void* shm_dest = mvee_shm_decode_address(dest);
   void* shm_src = mvee_shm_decode_address(src);
+
   mvee_shm_table_entry* dest_entry = mvee_shm_table_get_entry(shm_dest);
   mvee_shm_table_entry* src_entry = mvee_shm_table_get_entry(shm_src);
+
   if (unlikely(!dest_entry && !src_entry))
     mvee_error_shm_entry_not_present(dest);
 
@@ -1037,6 +1039,19 @@ mvee_shm_memcpy (void *__restrict dest, const void *__restrict src, size_t n)
 
   return dest;
 }
+
+void *
+mvee_shm_memcpy_dyninst(void *__restrict dest, const void *__restrict src, size_t n)
+{
+    if (   !((unsigned long long) src & 0x8000000000000000ull)
+        && !((unsigned long long) dest & 0x8000000000000000ull) ) {
+        return orig_memcpy(dest, src, n);
+    } else {
+        return mvee_shm_memcpy(dest, src, n);
+    }
+}
+
+uint64_t mvee_shm_memcpy_ptr_for_gs_segment;
 
 void *
 mvee_shm_memmove (void *dest, const void * src, size_t n)
