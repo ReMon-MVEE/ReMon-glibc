@@ -495,6 +495,8 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
 
   // Get an entry
   mvee_shm_op_entry* entry = mvee_shm_get_entry(size);
+  const void* shm_address = out ? out_address : in_address;
+  const void* shm_address2 = (in && out) ? in_address : NULL;
 
   // Do equivalence checking, unique access, and replication
   // These differ between the variants, who need to synchronize with each other
@@ -503,8 +505,8 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
     ////////////////////////////////////////////////////////////////////////////////
     // Equivalence checking: leader fills in entry.
     ////////////////////////////////////////////////////////////////////////////////
-    entry->address = in_address;
-    entry->second_address = out_address;
+    entry->address = shm_address;
+    entry->second_address = shm_address2;
     entry->size = size;
     entry->value = value;
     entry->cmp = cmp;
@@ -762,7 +764,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
         arch_cpu_relax();
 
     // Assert we're on the same entry
-    mvee_assert_same_address(entry->address, in_address);
+    mvee_assert_same_address(entry->address, shm_address);
     mvee_assert_same_size(entry->size, size);
     mvee_assert_same_type(entry->type, type);
 
@@ -771,7 +773,7 @@ static inline mvee_shm_op_ret mvee_shm_buffered_op(const unsigned char type, con
       case MEMCPY:
       case MEMMOVE:
         {
-          mvee_assert_same_address(entry->second_address, out_address);
+          mvee_assert_same_address(entry->second_address, shm_address2);
           /* The input comes from a non-SHM page, check its correctness */
           if (!in)
             mvee_assert_same_store(&entry->data, in_address, size, out->shadow);
