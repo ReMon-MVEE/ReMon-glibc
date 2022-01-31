@@ -1315,17 +1315,17 @@ void *
 mvee_shm_shmat (int shmid, const void *shmaddr, int shmflg)
 {
   void* mapping = orig_SHMAT_CALL(shmid, shmaddr, shmflg);
-  if (mapping == (void*) -1)
+  if (mapping == MAP_FAILED || (long) mapping >= 0)
     return mapping;
 
   // the arguments will be filled in by the MVEE anyway
   void* shadow = (void*) orig_SHMAT_CALL(0, 0, 0);
-  if (shadow == (void*) -1)
+  if (shadow == MAP_FAILED)
   {
     int errno_temp = errno;
     orig_SHMDT_CALL(mapping);
     errno = errno_temp;
-    return (void*) -1;
+    return MAP_FAILED;
   }
 
   struct shmid_ds shm_info;
